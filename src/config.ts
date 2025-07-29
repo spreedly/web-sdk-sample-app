@@ -8,6 +8,7 @@ interface Config {
   privateKey: string;
   certificateToken: string;
   apiKeyExpiryDays: number;
+  dbSource: string;
 }
 
 const config: Config = {
@@ -16,6 +17,7 @@ const config: Config = {
   privateKey: process.env.PRIVATE_KEY || '',
   certificateToken: process.env.CERTIFICATE_TOKEN || '',
   apiKeyExpiryDays: Number(process.env.API_KEY_EXPIRY_DAYS) || 30, // Default 30 days
+  dbSource: process.env.DB_SOURCE || 'database.db',
 };
 
 export default config;

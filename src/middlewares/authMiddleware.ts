@@ -1,6 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
-import { apiKeys } from '../models/apiKeys';
 import { getCurrentTimeInDays } from '../utils/date';
+import { db } from '../services/db';
+
+interface APIKey {
+  apiKey: string;
+  expiryIndays: number;
+}
 
 export const authMiddleware = (
   req: Request,
@@ -16,14 +21,17 @@ export const authMiddleware = (
     return res.status(401).json({ message: 'Unauthorized: API key is required' });
   }
 
-  const key = apiKeys.getApiKeys().find((item) => item.key === apiKey);
-  if (!key) {
-    return res.status(401).json({ message: 'Unauthorized: Invalid API key' });
-  }
-
-  if (key.expiresAt < getCurrentTimeInDays()) {
-    return res.status(401).json({ message: 'Unauthorized: API key expired' });
-  }
-
-  return next();
+  const sql = `SELECT * FROM api_keys WHERE apiKey = ?;`;
+  db.get<APIKey>(sql, [apiKey], (err, row) => {
+    if (err) {
+      return res.status(500).json({ message: 'Database error', error: err.message });
+    }
+    if (!row) {
+      return res.status(401).json({ message: 'Unauthorized: Invalid API key' });
+    }
+    if (row.expiryIndays < getCurrentTimeInDays()) {
+      return res.status(401).json({ message: 'Unauthorized: API key expired' });
+    }
+    return next();
+  });
 };
