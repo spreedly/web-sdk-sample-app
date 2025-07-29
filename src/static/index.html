@@ -91,7 +91,8 @@
         // Make API call
         const response = await axios.get('/api/auth/get-auth-params', {
           headers: {
-            'x-api-key': 'REDACTED_SAMPLE_UUID_3'
+            // TODO: Get API key from environment variable
+            'x-api-key': 'REDACTED_SAMPLE_UUID_4'
           }
         });
         const authParams = response.data;
