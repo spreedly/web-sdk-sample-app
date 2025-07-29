@@ -89,7 +89,11 @@
         messageElement.style.color = 'blue';
 
         // Make API call
-        const response = await axios.get('/api/auth/get-auth-params');
+        const response = await axios.get('/api/auth/get-auth-params', {
+          headers: {
+            'x-api-key': 'REDACTED_SAMPLE_UUID_3'
+          }
+        });
         const authParams = response.data;
 
         // Populate form fields

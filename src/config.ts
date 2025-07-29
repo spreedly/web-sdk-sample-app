@@ -7,6 +7,7 @@ interface Config {
   nodeEnv: string;
   privateKey: string;
   certificateToken: string;
+  apiKeyExpiryDays: number;
 }
 
 const config: Config = {
@@ -14,6 +15,7 @@ const config: Config = {
   nodeEnv: process.env.NODE_ENV || 'development',
   privateKey: process.env.PRIVATE_KEY || '',
   certificateToken: process.env.CERTIFICATE_TOKEN || '',
+  apiKeyExpiryDays: Number(process.env.API_KEY_EXPIRY_DAYS) || 30, // Default 30 days
 };
 
 export default config;

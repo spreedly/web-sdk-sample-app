@@ -1,5 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import * as crypto from 'crypto';
+import { apiKeys } from '../models/apiKeys';
+import config from '../config';
+import { getCurrentTimeInDays } from '../utils/date';
 
 export const getAuthParams = (
   req: Request,
@@ -7,8 +10,8 @@ export const getAuthParams = (
   next: NextFunction
 ) => {
   try {
-    const privateKey = process.env.PRIVATE_KEY;
-    const certificateToken = process.env.CERTIFICATE_TOKEN;
+    const privateKey = config.privateKey;
+    const certificateToken = config.certificateToken;
     const uuid = crypto.randomUUID();
     const timestamp = Math.floor(Date.now() / 1000);
     const signatureData = `${uuid}${timestamp}${certificateToken}`;
@@ -30,4 +33,17 @@ export const getAuthParams = (
   } catch (error) {
     next(error);
   }
+};
+
+export const getAPIKey = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const apiKey = crypto.randomUUID();
+  const currentTime = getCurrentTimeInDays();
+  const expiresAt = currentTime + config.apiKeyExpiryDays;
+
+  apiKeys.addApiKey({ key: apiKey, expiresAt });
+  res.json({ apiKey });
 };
