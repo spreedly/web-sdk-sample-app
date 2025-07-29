@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "module": "UMD",
+    "module": "commonjs",
     "moduleResolution": "node",
     "strict": true,
     "esModuleInterop": true,
@@ -9,7 +9,7 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "outDir": "./dist",
-    "rootDir": "./scripts",
+    "rootDir": "./src",
     "declaration": false,
     "sourceMap": false,
     "removeComments": false,
@@ -21,15 +21,9 @@
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true
   },
-  "include": [
-    "./scripts/hostedFields.ts",
-    "./scripts/expressCheckout.ts"
-  ],
+  "include": ["src/**/*"],
   "exclude": [
     "node_modules",
     "dist",
-    "script.js",
-    "hostedFields.js",
-    "expressCheckout.js"
   ]
 }
