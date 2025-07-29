@@ -6,8 +6,9 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
-    Ubuntu, Cantarell, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu,
+    Cantarell, sans-serif;
   line-height: 1.6;
   color: #333;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -72,7 +73,7 @@ body {
 }
 
 .payment-form-container::before {
-  content: "";
+  content: '';
   position: absolute;
   top: 0;
   left: 0;
@@ -294,7 +295,7 @@ body {
 }
 
 .submit-btn::before {
-  content: "";
+  content: '';
   position: absolute;
   top: 0;
   left: -100%;
@@ -329,7 +330,7 @@ body {
 }
 
 .submit-btn.loading::after {
-  content: "";
+  content: '';
   position: absolute;
   width: 16px;
   height: 16px;
@@ -383,7 +384,7 @@ body {
     font-size: 2rem;
   }
 
-  .row:not([data-testid="name-row"]):not([data-testid="card-row"]) {
+  .row:not([data-testid='name-row']):not([data-testid='card-row']) {
     flex-direction: column;
     gap: 15px;
   }
