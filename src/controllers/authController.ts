@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import * as crypto from 'crypto';
 import config from '../config';
+import { getCurrentTimeInDays } from '../utils/date';
+import { apiKeys } from '../models/apiKeys';
 
 export const getAuthParams = (
   req: Request,
@@ -31,4 +33,17 @@ export const getAuthParams = (
   } catch (error) {
     next(error);
   }
+};
+
+export const getAPIKey = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const apiKey = crypto.randomUUID();
+  const currentTime = getCurrentTimeInDays();
+  const expiresAt = currentTime + config.apiKeyExpiryDays;
+
+  apiKeys.addApiKey({ key: apiKey, expiresAt });
+  res.json({ apiKey });
 };
