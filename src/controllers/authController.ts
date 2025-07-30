@@ -1,8 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import * as crypto from 'crypto';
 import config from '../config';
-import { getCurrentTimeInDays } from '../utils/date';
-import { db } from '../services/db';
 
 export const getAuthParams = (
   req: Request,
@@ -33,26 +31,4 @@ export const getAuthParams = (
   } catch (error) {
     next(error);
   }
-};
-
-export const getAPIKey = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  const apiKey = crypto.randomUUID();
-  const currentTime = getCurrentTimeInDays();
-  const expiresAt = currentTime + config.apiKeyExpiryDays;
-  const sql = `INSERT INTO api_keys (apiKey, expiryIndays) VALUES (?, ?);`;
-
-  db.run(sql,
-    [apiKey, expiresAt],
-    (err) => {
-      if (err) {
-        console.error('Error inserting data:', err);
-      } else {
-        console.log('Data inserted successfully');
-        res.json({ apiKey });
-      }
-    });
 };

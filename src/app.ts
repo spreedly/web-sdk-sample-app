@@ -3,7 +3,6 @@ import authRoutes from './routes';
 import { errorHandler } from './middlewares/errorHandler';
 import path from 'path';
 import morgan from 'morgan';
-import { authMiddleware } from './middlewares/authMiddleware';
 
 const app = express();
 
@@ -12,7 +11,6 @@ app.use(morgan('combined'));
 app.use('/', express.static(path.join(__dirname, 'static')));
 
 app.use(express.json());
-app.use(authMiddleware);
 app.use('/api/auth', authRoutes);
 
 app.use(errorHandler);
