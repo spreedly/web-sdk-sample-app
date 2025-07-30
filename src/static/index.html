@@ -61,10 +61,6 @@
         </div>
 
         <div class="button-container" data-testid="button-container">
-          <button type="button" class="btn btn-fetch-auth" id="fetch-auth-btn" data-testid="btn-fetch-auth"
-            onclick="fetchAuthParams()">
-            Fetch Auth Params
-          </button>
           <button type="button" class="btn btn-express" id="express-btn" data-testid="btn-express"
             onclick="handleExpressClick()">
             Express
@@ -80,45 +76,18 @@
   <script src="../dist/index.js"></script>
   <script src="../dist/script.js"></script>
   <script>
-    // Function to fetch auth parameters from the API
     async function fetchAuthParams() {
       try {
-        // Show loading state
-        const messageElement = document.getElementById('token-container-message');
-        messageElement.textContent = 'Fetching auth params...';
-        messageElement.style.color = 'blue';
-
-        // Make API call
         const response = await axios.get('/api/auth/get-auth-params');
         const authParams = response.data;
-
-        // Populate form fields
-        document.getElementById('nonce').value = authParams.nonce || '';
-        document.getElementById('timestamp').value = authParams.timestamp || '';
-        document.getElementById('signature').value = authParams.signature || '';
-        document.getElementById('token').value = authParams.certificateToken || '';
-
-        // Populate JSON textarea
-        document.getElementById('json-input').value = JSON.stringify(authParams, null, 2);
-
-        // Show success message
-        messageElement.textContent = 'Auth params loaded successfully!';
-        messageElement.style.color = 'green';
-
+        console.log(authParams);
       } catch (error) {
         console.error('Error fetching auth params:', error);
-
-        // Show error message
-        const messageElement = document.getElementById('token-container-message');
-        messageElement.textContent = 'Error fetching auth params: ' + (error.response?.data?.message || error.message);
-        messageElement.style.color = 'red';
       }
     }
 
-    // Optional: Auto-fetch auth params when page loads
     document.addEventListener('DOMContentLoaded', function () {
-      // Uncomment the line below if you want to auto-fetch on page load
-      // fetchAuthParams();
+      fetchAuthParams();
     });
   </script>
 </body>

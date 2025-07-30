@@ -2,210 +2,102 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
-  <style>
-    /* .spreedly-iframe-class {
-      height: 600px;
-      width: 600px;
-    } */
-    body {
-      font-family: 'Roboto', sans-serif;
-    }
-
-    #spreedly-sdk-container {
-      height: 600px;
-      width: 600px;
-    }
-
-    .iframe-class {
-      height: 525px !important;
-      width: 600px !important;
-    }
-
-    body {
-      background: #e9f0f4;
-    }
-
-    .payment-form-container {
-      background: #fff;
-      max-width: 500px;
-      margin: 40px auto;
-      border-radius: 12px;
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-      padding: 32px 24px 24px 24px;
-    }
-
-    .section-title {
-      color: #2c4a5b;
-      font-size: 1.6rem;
-      margin-bottom: 12px;
-      margin-top: 0;
-    }
-
-    .row {
-      display: flex;
-      gap: 24px;
-      margin-bottom: 18px;
-    }
-
-    .input-group {
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-      min-width: 0;
-    }
-
-    .input-group label {
-      font-size: 1rem;
-      color: #444;
-      margin-bottom: 6px;
-    }
-
-    .input-group input {
-      padding: 10px;
-      border: 1px solid #cfd8dc;
-      border-radius: 5px;
-      font-size: 1rem;
-      outline: none;
-      background: #f7fafc;
-      transition: border 0.2s;
-    }
-
-    .input-group input:focus {
-      border: 1.5px solid #2c4a5b;
-    }
-
-    .hosted-field {
-      height: 42px;
-      background: #f7fafc;
-      border: 1px solid #cfd8dc;
-      border-radius: 5px;
-      display: flex;
-      align-items: center;
-    }
-
-    .expiry-group label {
-      margin-bottom: 6px;
-    }
-
-    .expiry-fields {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .expiry-fields input {
-      width: 60px;
-      text-align: center;
-    }
-
-    .slash {
-      font-size: 1.2rem;
-      color: #888;
-      margin: 0 4px;
-    }
-
-    hr {
-      border: none;
-      border-top: 1px solid #e0e0e0;
-      margin: 24px 0 18px 0;
-    }
-
-    .submit-btn {
-      width: 100%;
-      background: #466b80;
-      color: #fff;
-      font-size: 1.2rem;
-      padding: 12px 0;
-      border: none;
-      border-radius: 6px;
-      margin-top: 12px;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-
-    .submit-btn:hover {
-      background: #2c4a5b;
-    }
-
-    .checkout-plugin {
-      height: 650px !important;
-      width: 500px !important;
-    }
-
-    #token-container {
-      font-size: 22px;
-      color: green;
-      padding: 16px;
-      display: none;
-    }
-
-    #token-container-error {
-      font-size: 22px;
-      color: red;
-      padding: 16px;
-      display: none;
-    }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spreedly Hosted Fields Demo</title>
+  <link rel="stylesheet" href="../css/hostedFields.css" />
 </head>
 
 <body>
-  <h1>Client/Host application</h1>
-  <h2 id="message-container"></h2>
-  <div id="token-container"></div>
-  <div id="token-container-error"></div>
-  <div class="payment-form-container">
-    <form id="card-details-form" onsubmit="handlePaymentFormSubmit(event)">
-      <h2 class="section-title">Spreedly hosted fields demo form</h2>
-      <div class="row">
-        <div class="input-group">
-          <label for="first-name">First Name</label>
-          <input type="text" id="first-name" name="first-name" required value="Aniket" />
+  <div class="container" data-testid="hosted-fields-container">
+    <main class="main-content" data-testid="hosted-fields-main">
+      <div class="payment-form-container" data-testid="payment-form-container">
+        <!-- Form header -->
+        <div class="form-header" data-testid="form-header">
+          <h2 class="form-title" data-testid="form-title">
+            Hosted Fields Payment Demo
+          </h2>
+          <h3 class="auth-title" id="token-container-message" style="color: green"></h3>
         </div>
-        <div class="input-group">
-          <label for="last-name">Last Name</label>
-          <input type="text" id="last-name" name="last-name"  value="Chanana"/>
-        </div>
-      </div>
-      <div class="row">
-        <div class="input-group">
-          <label for="shipping-address1">Shipping Address 1</label>
-          <input type="text" id="shipping-address1" name="shipping_address1" required value="123 Main St" />
-        </div>
-      </div>
-      <hr />
-      <h2 class="section-title">Payment Details</h2>
-      <div class="row">
-        <div class="input-group">
-          <label for="spreedly-number-input-container">Credit Card Number</label>
-          <div id="spreedly-number-input-container" class="hosted-field"></div>
-        </div>
-        <div class="input-group">
-          <label for="spreedly-cvv-input-container">CVV</label>
-          <div id="spreedly-cvv-input-container" class="hosted-field"></div>
-        </div>
-      </div>
-      <div class="row">
-        <div class="input-group expiry-group">
-          <label>Expiration Date</label>
-          <div class="expiry-fields">
-            <input type="text" id="expiry-month" name="expiry-month" value="07" maxlength="2" placeholder="MM" required />
-            <span class="slash">/</span>
-            <input type="text" id="expiry-year" name="expiry-year" value="2027" maxlength="4" placeholder="YYYY" required />
+
+        <form id="card-details-form" onsubmit="handlePaymentFormSubmit(event)" data-testid="card-details-form">
+          <!-- Personal Information Section -->
+          <div class="form-section" data-testid="personal-info-section">
+            <h3 class="section-title" data-testid="personal-info-title">
+              Personal Information
+            </h3>
+            <div class="row" data-testid="name-row">
+              <div class="input-group" data-testid="input-group-first-name">
+                <label for="first-name" class="input-label" data-testid="label-first-name">First Name</label>
+                <input type="text" id="first-name" name="first-name" class="form-input" placeholder="Enter first name"
+                  required value="Aniket" data-testid="input-first-name" />
+              </div>
+              <div class="input-group" data-testid="input-group-last-name">
+                <label for="last-name" class="input-label" data-testid="label-last-name">Last Name</label>
+                <input type="text" id="last-name" name="last-name" class="form-input" placeholder="Enter last name"
+                  value="Chanana" data-testid="input-last-name" />
+              </div>
+            </div>
+            <div class="row" data-testid="address-row">
+              <div class="input-group" data-testid="input-group-shipping-address">
+                <label for="shipping-address1" class="input-label" data-testid="label-shipping-address">Shipping
+                  Address</label>
+                <input type="text" id="shipping-address1" name="shipping_address1" class="form-input"
+                  placeholder="Enter shipping address" required value="123 Main St"
+                  data-testid="input-shipping-address" />
+              </div>
+            </div>
           </div>
-        </div>
+
+          <hr class="divider" data-testid="form-divider" />
+
+          <!-- Payment Details Section -->
+          <div class="form-section" data-testid="payment-details-section">
+            <h3 class="section-title" data-testid="payment-details-title">
+              Payment Details
+            </h3>
+            <div class="row" data-testid="card-row">
+              <div class="input-group" data-testid="input-group-card-number">
+                <label for="spreedly-number-input-container" class="input-label" data-testid="label-card-number">Credit
+                  Card Number</label>
+                <div id="spreedly-number-input-container" class="hosted-field" data-testid="hosted-field-card-number">
+                </div>
+              </div>
+              <div class="input-group" data-testid="input-group-cvv">
+                <label for="spreedly-cvv-input-container" class="input-label" data-testid="label-cvv">CVV</label>
+                <div id="spreedly-cvv-input-container" class="hosted-field" data-testid="hosted-field-cvv"></div>
+              </div>
+            </div>
+            <div class="row" data-testid="expiry-row">
+              <div class="input-group expiry-group" data-testid="input-group-expiry">
+                <label class="input-label" data-testid="label-expiry">Expiration Date</label>
+                <div class="expiry-fields" data-testid="expiry-fields">
+                  <input type="text" id="expiry-month" name="expiry-month" class="form-input" value="07" maxlength="2"
+                    placeholder="MM" required data-testid="input-expiry-month" />
+                  <span class="slash" data-testid="expiry-slash">/</span>
+                  <input type="text" id="expiry-year" name="expiry-year" class="form-input" value="2027" maxlength="4"
+                    placeholder="YYYY" required data-testid="input-expiry-year" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" class="submit-btn" id="submit-payment-btn" data-testid="submit-payment-btn">
+            Submit Payment
+          </button>
+        </form>
       </div>
-      <hr />
-      <button type="submit" class="submit-btn" id="submit-payment-btn">Submit Payment</button>
-    </form>
+    </main>
   </div>
+
+  <script>
+    const tokenContainer = document.getElementById("token-container");
+    const tokenContainerError = document.getElementById(
+      "token-container-error"
+    );
+  </script>
+  <script src="../dist/index.js"></script>
+  <script src="../dist/hostedFields.js"></script>
 </body>
-<script>
-  const tokenContainer = document.getElementById('token-container');
-  const tokenContainerError = document.getElementById('token-container-error');
-</script>
-<script src="../dist/index.js"></script>
-<script src="../dist/hostedFields.js"></script>
+
 </html>
