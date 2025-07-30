@@ -102,6 +102,120 @@ body {
   font-weight: 400;
 }
 
+.button-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.btn-restart {
+  background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+  color: white;
+  box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+  border: none;
+  border-radius: 25px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-restart:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+}
+
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 16px;
+  padding: 16px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 15px;
+  border: 2px solid #dee2e6;
+  position: relative;
+}
+
+.options::before {
+  content: 'Hosted Fields Options';
+  position: absolute;
+  top: -10px;
+  left: 20px;
+  background: white;
+  padding: 0 10px;
+  font-size: 0.8rem;
+  color: #666;
+  font-weight: 600;
+  font-style: italic;
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: white;
+  border: 2px solid #e9ecef;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  color: #495057;
+  font-size: 0.9rem;
+  min-width: 180px;
+}
+
+.checkbox:hover {
+  border-color: #667eea;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+}
+
+.checkbox:has(input:checked) {
+  border-color: #667eea;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.checkbox input[type='checkbox'] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #dee2e6;
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.checkbox:hover input[type='checkbox'] {
+  border-color: #667eea;
+}
+
+.checkbox input[type='checkbox']:checked {
+  background: white;
+  border-color: white;
+}
+
+.checkbox input[type='checkbox']:checked::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #667eea;
+  font-size: 14px;
+  font-weight: bold;
+  line-height: 1;
+}
+
 /* Message containers */
 .message-container {
   text-align: center;
