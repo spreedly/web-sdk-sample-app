@@ -1,0 +1,13 @@
+{
+  "name": "spreedly-sdk-sample-app",
+  "version": "0.0.0",
+  "description": "Spreedly SDK Sample App",
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch"
+  },
+  "author": "Spreedly",
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}
