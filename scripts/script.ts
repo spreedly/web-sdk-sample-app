@@ -1,3 +1,5 @@
+// import SpreedlyWebSDK  from "../../checkout-web-sdk";
+
 interface AuthParams {
   "env-key": string;
   nonce: string;
@@ -163,13 +165,6 @@ function handleExpressClick(): void {
   sdkExpressCheckout.expressCheckout({
     className: "checkout-plugin",
     uiConfig: {
-      cardPaymentFormFields: {
-        phone_number: {
-          isRequired: true,
-          label: "Phone Number (required)",
-          placeholder: "Phone Number Dynamically added label",
-        },
-      },
       textConfig: {
         title: "Pay with Card",
         submitBtnText: "Pay",
@@ -185,6 +180,13 @@ function handleExpressClick(): void {
         },
       },
     },
+  });
+  sdkExpressCheckout.updateSubmitParams({
+    metadata: {
+      custom_field: "updated_custom_value",
+    },
+    allow_expired_date: true,
+    allow_blank_name: true,
   });
 }
 

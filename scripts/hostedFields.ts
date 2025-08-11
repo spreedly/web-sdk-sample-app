@@ -1,4 +1,6 @@
+// import SpreedlyWebSDK  from "../../checkout-web-sdk";
 declare const SpreedlyWebSDK: any;
+
 const nonceParams = JSON.parse(
   window.sessionStorage.getItem("authParams") || "{}"
 );
@@ -63,7 +65,11 @@ function handlePaymentFormSubmit(event: Event) {
       ).value,
     },
     {
-      platform: "web",
+      metadata: {
+        custom_field: "custom_value",
+      },
+      allow_expired_date: true,
+      allow_blank_name: true,
     }
   );
 }
