@@ -16,68 +16,6 @@ interface JsonAuthParams {
   signature: string;
 }
 
-// Loading overlay utility functions
-function showLoadingOverlay(
-  message: string = "Processing...",
-  subMessage: string = "Please wait while we process your request"
-): void {
-  const overlay = document.getElementById("loading-overlay");
-  const textElement = document.querySelector(
-    '[data-testid="loading-spinner-text"]'
-  ) as HTMLElement;
-  const subTextElement = document.querySelector(
-    '[data-testid="loading-spinner-subtext"]'
-  ) as HTMLElement;
-
-  if (overlay && textElement && subTextElement) {
-    textElement.textContent = message;
-    subTextElement.textContent = subMessage;
-    overlay.classList.add("show");
-  }
-}
-
-function hideLoadingOverlay(): void {
-  const overlay = document.getElementById("loading-overlay");
-  if (overlay) {
-    overlay.classList.remove("show");
-  }
-}
-
-// Form state utility functions
-function disableForm(): void {
-  const inputs = document.querySelectorAll(
-    ".auth-input, .json-textarea"
-  ) as NodeListOf<HTMLInputElement | HTMLTextAreaElement>;
-  const buttons = document.querySelectorAll(
-    ".btn"
-  ) as NodeListOf<HTMLButtonElement>;
-
-  inputs.forEach((input) => {
-    input.disabled = true;
-  });
-
-  buttons.forEach((button) => {
-    button.disabled = true;
-  });
-}
-
-function enableForm(): void {
-  const inputs = document.querySelectorAll(
-    ".auth-input, .json-textarea"
-  ) as NodeListOf<HTMLInputElement | HTMLTextAreaElement>;
-  const buttons = document.querySelectorAll(
-    ".btn"
-  ) as NodeListOf<HTMLButtonElement>;
-
-  inputs.forEach((input) => {
-    input.disabled = false;
-  });
-
-  buttons.forEach((button) => {
-    button.disabled = false;
-  });
-}
-
 function parseAuthParams(): void {
   const jsonInput = (
     document.getElementById("json-input") as HTMLTextAreaElement

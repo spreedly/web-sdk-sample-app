@@ -4,10 +4,21 @@
   "description": "Spreedly SDK Sample App",
   "scripts": {
     "build": "tsc",
-    "build:watch": "tsc --watch"
+    "build:watch": "tsc --watch",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:report": "playwright show-report",
+    "test:install": "playwright install"
   },
   "author": "Spreedly",
   "devDependencies": {
-    "typescript": "^5.8.3"
+    "@playwright/test": "^1.54.2",
+    "@types/node": "^24.2.1",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "@playwright/mcp": "^0.0.33"
   }
 }
