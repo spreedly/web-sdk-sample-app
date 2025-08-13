@@ -249,7 +249,7 @@ body {
 }
 
 .options::before {
-  content: "Configuration Options";
+  content: "Express checkout options";
   position: absolute;
   top: -10px;
   left: 20px;

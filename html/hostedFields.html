@@ -19,6 +19,23 @@
             <h2 class="form-title" data-testid="form-title">
               Hosted Fields Payment Demo
             </h2>
+
+            <div class="options">
+              <button type="button" class="btn-restart" id="restart-btn">
+                RESTART HOSTED FIELDS
+              </button>
+              <label class="checkbox">
+                <input type="checkbox" id="allow_blank_name" /> Allow blank name
+              </label>
+              <label class="checkbox">
+                <input type="checkbox" id="allow_expired_date" /> Allow expired
+                date
+              </label>
+              <label class="checkbox">
+                <input type="checkbox" id="two_digit_expiry" /> 2 digit expiry
+                (MM/YY)
+              </label>
+            </div>
             <h3
               class="auth-title"
               id="token-container-message"
@@ -144,23 +161,40 @@
                       id="expiry-month"
                       name="expiry-month"
                       class="form-input"
-                      value="07"
                       maxlength="2"
                       placeholder="MM"
                       required
                       data-testid="input-expiry-month"
                     />
-                    <span class="slash" data-testid="expiry-slash">/</span>
+                    <span
+                      class="slash"
+                      id="expiry-slash"
+                      data-testid="expiry-slash"
+                      >/</span
+                    >
                     <input
                       type="text"
                       id="expiry-year"
                       name="expiry-year"
                       class="form-input"
-                      value="2027"
                       maxlength="4"
                       placeholder="YYYY"
                       required
                       data-testid="input-expiry-year"
+                    />
+                  </div>
+                  <div
+                    class="expiry-single"
+                    id="expiry-single"
+                    style="display: none"
+                  >
+                    <input
+                      type="text"
+                      id="expiry-mm-yy"
+                      name="expiry-mm-yy"
+                      class="form-input"
+                      placeholder="MM/YY"
+                      maxlength="5"
                     />
                   </div>
                 </div>
