@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -32,6 +32,28 @@
               >
                 Hosted Fields
               </button>
+              <button
+                type="button"
+                class="btn btn-restart"
+                id="restart-btn"
+                data-testid="btn-restart"
+                onclick="handleRestartClick()"
+              >
+                Restart
+              </button>
+            </div>
+            <div class="options">
+              <label class="checkbox">
+                <input type="checkbox" id="allow_blank_name" /> Allow blank name
+              </label>
+              <label class="checkbox">
+                <input type="checkbox" id="allow_expired_date" />
+                Allow expired date
+              </label>
+              <label class="checkbox">
+                <input type="checkbox" id="open_in_embedded_mode" /> Open in
+                Embedded mode
+              </label>
             </div>
             <h3
               class="auth-title"
@@ -122,6 +144,7 @@
             ></textarea>
           </div>
         </div>
+        <div id="checkout-plugin-container"></div>
       </main>
     </div>
     <script src="../dist/index.js"></script>
@@ -157,16 +180,3 @@
     </script>
   </body>
 </html>
-
-<!-- Loading Overlay -->
-<div class="loading-overlay" id="loading-overlay" data-testid="loading-overlay">
-  <div class="loading-spinner" data-testid="loading-spinner">
-    <div class="loading-spinner-icon" data-testid="loading-spinner-icon"></div>
-    <h3 class="loading-spinner-text" data-testid="loading-spinner-text">
-      Processing...
-    </h3>
-    <p class="loading-spinner-subtext" data-testid="loading-spinner-subtext">
-      Please wait while we process your request
-    </p>
-  </div>
-</div>

@@ -1,5 +1,3 @@
-// import SpreedlyWebSDK  from "../../checkout-web-sdk";
-
 interface AuthParams {
   "env-key": string;
   nonce: string;
@@ -8,60 +6,109 @@ interface AuthParams {
   token: string;
 }
 
-interface JsonAuthParams {
-  envKey: string;
-  nonce: string;
-  timestamp: string;
-  certificate_token: string;
-  signature: string;
+let allowBlankNameChecked = false;
+let allowExpiryDateChecked = false;
+let openInEmbeddedModeChecked = false;
+
+function syncCheckboxStates(): void {
+  const allowBlankNameEl = document.getElementById("allow_blank_name") as HTMLInputElement | null;
+  const allowExpiryDateEl = document.getElementById("allow_expired_date") as HTMLInputElement | null;
+  const openInEmbeddedModeEl = document.getElementById("open_in_embedded_mode") as HTMLInputElement | null;
+  
+  if (allowBlankNameEl) allowBlankNameChecked = allowBlankNameEl.checked;
+  if (allowExpiryDateEl) allowExpiryDateChecked = allowExpiryDateEl.checked;
+  if (openInEmbeddedModeEl) openInEmbeddedModeChecked = openInEmbeddedModeEl.checked;
 }
 
-function parseAuthParams(): void {
-  const jsonInput = (
-    document.getElementById("json-input") as HTMLTextAreaElement
-  )?.value;
-
-  if (!jsonInput || jsonInput.trim() === "") {
-    alert("Please enter JSON data");
-    return;
-  }
-
-  try {
-    const parsedData: JsonAuthParams = JSON.parse(jsonInput);
-
-    const fieldMappings = {
-      "env-key": parsedData.envKey,
-      nonce: parsedData.nonce,
-      timestamp: parsedData.timestamp,
-      signature: parsedData.signature,
-      token: parsedData.certificate_token,
-    };
-
-    Object.entries(fieldMappings).forEach(([fieldId, value]) => {
-      const inputElement = document.getElementById(fieldId) as HTMLInputElement;
-      if (inputElement && value) {
-        inputElement.value = value;
-      }
-    });
-  } catch (error) {
-    alert("Invalid JSON format. Please check your input.");
-    console.error("JSON parsing error:", error);
-  }
+function attachCheckboxListeners(): void {
+  const allowBlankNameEl = document.getElementById("allow_blank_name") as HTMLInputElement | null;
+  const allowExpiryDateEl = document.getElementById("allow_expiry_date") as HTMLInputElement | null;
+  const openInEmbeddedModeEl = document.getElementById("open_in_embedded_mode") as HTMLInputElement | null;
+  
+  const handler = () => syncCheckboxStates();
+  
+  allowBlankNameEl?.addEventListener("change", handler);
+  allowExpiryDateEl?.addEventListener("change", handler);
+  openInEmbeddedModeEl?.addEventListener("change", handler);
+  
+  // Initialize state once on attach
+  syncCheckboxStates();
 }
+
+attachCheckboxListeners();
+
+function handleHostedFieldsClick(): void {
+  const authParams: AuthParams = captureAuthParams();
+  
+  disableCheckboxes();
+  disableButtons();
+  
+  window.sessionStorage.setItem("authParams", JSON.stringify(authParams));
+  window.location.href = "/html/hostedFields.html";
+}
+
+
+// ------------------------------------------------------------
+// Spreedly Web SDK Functions
+// ------------------------------------------------------------
 
 function captureAuthParams(): AuthParams {
   const authParams: AuthParams = {
     "env-key":
-      (document.getElementById("env-key") as HTMLInputElement)?.value || "",
+    (document.getElementById("env-key") as HTMLInputElement)?.value || "",
     nonce: (document.getElementById("nonce") as HTMLInputElement)?.value || "",
     timestamp:
-      (document.getElementById("timestamp") as HTMLInputElement)?.value || "",
+    (document.getElementById("timestamp") as HTMLInputElement)?.value || "",
     signature:
-      (document.getElementById("signature") as HTMLInputElement)?.value || "",
+    (document.getElementById("signature") as HTMLInputElement)?.value || "",
     token: (document.getElementById("token") as HTMLInputElement)?.value || "",
   };
-
+  
   return authParams;
+}
+
+function disableCheckboxes(): void {
+  const allowBlankNameEl = document.getElementById("allow_blank_name") as HTMLInputElement | null;
+  const allowExpiryDateEl = document.getElementById("allow_expired_date") as HTMLInputElement | null;
+  const openInEmbeddedModeEl = document.getElementById("open_in_embedded_mode") as HTMLInputElement | null;
+  
+  if (allowBlankNameEl) allowBlankNameEl.disabled = true;
+  if (allowExpiryDateEl) allowExpiryDateEl.disabled = true;
+  if (openInEmbeddedModeEl) openInEmbeddedModeEl.disabled = true;
+}
+
+function enableCheckboxes(): void {
+  const allowBlankNameEl = document.getElementById("allow_blank_name") as HTMLInputElement | null;
+  const allowExpiryDateEl = document.getElementById("allow_expired_date") as HTMLInputElement | null;
+  const openInEmbeddedModeEl = document.getElementById("open_in_embedded_mode") as HTMLInputElement | null;
+  
+  if (allowBlankNameEl) allowBlankNameEl.disabled = false;
+  if (allowExpiryDateEl) allowExpiryDateEl.disabled = false;
+  if (openInEmbeddedModeEl) openInEmbeddedModeEl.disabled = false;
+}
+
+function disableButtons(): void {
+  const expressBtn = document.getElementById("express-btn") as HTMLButtonElement | null;
+  const hostedFieldsBtn = document.getElementById("hosted-fields-btn") as HTMLButtonElement | null;
+  const restartBtn = document.getElementById("restart-btn") as HTMLButtonElement | null;
+  
+  if (expressBtn) expressBtn.disabled = true;
+  if (hostedFieldsBtn) hostedFieldsBtn.disabled = true;
+  if (restartBtn) restartBtn.disabled = false; // Keep restart button enabled
+}
+
+function enableButtons(): void {
+  const expressBtn = document.getElementById("express-btn") as HTMLButtonElement | null;
+  const hostedFieldsBtn = document.getElementById("hosted-fields-btn") as HTMLButtonElement | null;
+  const restartBtn = document.getElementById("restart-btn") as HTMLButtonElement | null;
+  
+  if (expressBtn) expressBtn.disabled = false;
+  if (hostedFieldsBtn) hostedFieldsBtn.disabled = false;
+  if (restartBtn) restartBtn.disabled = false;
+}
+
+function handleRestartClick(): void {
+  window.location.reload();
 }
 
 function handleExpressClick(): void {
@@ -77,6 +124,9 @@ function handleExpressClick(): void {
     alert("Please fill all auth fields");
     return;
   }
+  
+  disableCheckboxes();
+  disableButtons();
   const sdkExpressCheckout = new SpreedlyWebSDK({
     environment_key: authParams["env-key"],
     nonce: authParams.nonce,
@@ -92,16 +142,25 @@ function handleExpressClick(): void {
     });
   });
   sdkExpressCheckout.on("error", (error: any) => {
-    sdkExpressCheckout.close();
+    // sdkExpressCheckout.close();
     tokenContainer!.textContent = error;
   });
   sdkExpressCheckout.on("tokenGenerated", (token: any) => {
-    sdkExpressCheckout.close();
+    // sdkExpressCheckout.close();
     tokenContainer!.textContent = `Token: ${token.tokenResponse.token}`;
   });
-
+  console.log({
+    openInEmbeddedModeChecked,
+    allowExpiryDateChecked,
+    allowBlankNameChecked,
+  })
   sdkExpressCheckout.expressCheckout({
     className: "checkout-plugin",
+    ...(openInEmbeddedModeChecked ? { parentContainerId: "checkout-plugin-container" } : {}),
+    submitParams: {
+      allow_expired_date: allowExpiryDateChecked,
+      allow_blank_name: allowBlankNameChecked,
+    },
     uiConfig: {
       textConfig: {
         title: "Pay with Card",
@@ -119,17 +178,5 @@ function handleExpressClick(): void {
       },
     },
   });
-  sdkExpressCheckout.updateSubmitParams({
-    metadata: {
-      custom_field: "updated_custom_value",
-    },
-    allow_expired_date: true,
-    allow_blank_name: true,
-  });
 }
 
-function handleHostedFieldsClick(): void {
-  const authParams: AuthParams = captureAuthParams();
-  window.sessionStorage.setItem("authParams", JSON.stringify(authParams));
-  window.location.href = "/html/hostedFields.html";
-}
