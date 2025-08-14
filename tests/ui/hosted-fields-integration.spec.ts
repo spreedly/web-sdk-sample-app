@@ -37,8 +37,9 @@ test.describe("Hosted Fields Integration", () => {
     await expect(page.getByText("Credit Card Number")).toBeVisible();
     await expect(page.getByText("CVV")).toBeVisible();
     await expect(page.getByText("Expiration Date")).toBeVisible();
-    await expect(page.getByPlaceholder("MM")).toBeVisible();
-    await expect(page.getByPlaceholder("YYYY")).toBeVisible();
+
+    await expect(page.locator("#expiry-month")).toBeVisible();
+    await expect(page.locator("#expiry-year")).toBeVisible();
     await expect(page.getByRole("button", { name: "Submit Payment" })).toBeVisible();
 
     const cardNumberIframe = page.locator('iframe[src*="numberField.html"]');
@@ -61,9 +62,10 @@ test.describe("Hosted Fields Integration", () => {
     await expect(cardNumberFrame.getByRole("textbox", { name: "card number" })).toBeVisible();
     await expect(cvvFrame.getByRole("textbox", { name: "cvv number" })).toBeVisible();
 
-    await cardNumberFrame.getByRole("textbox", { name: "card number" }).fill("4111111111111111");
-    await cvvFrame.getByRole("textbox", { name: "cvv number" }).fill("123");
-    await page.locator('input[placeholder="YYYY"]').fill((new Date().getFullYear() + 1).toString());
+    await cardNumberFrame.locator('#spreedly-hosted-number-input').fill("4111111111111111");
+    await cvvFrame.locator("#spreedly-hosted-cvv-input").fill("123");
+    await page.locator("#expiry-year").fill((new Date().getFullYear() + 1).toString());
+    await page.locator("#expiry-month").fill('05');
 
     await expect(cardNumberFrame.getByRole("textbox", { name: "card number" })).toHaveValue(/4111/);
     await expect(cvvFrame.getByRole("textbox", { name: "cvv number" })).toHaveValue("123");
