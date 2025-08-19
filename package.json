@@ -7,13 +7,14 @@
     "build:watch": "tsc --watch",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:e2e:debug": "playwright test --debug",
-    "test:e2e:headed": "playwright test --headed",
-    "test:e2e:report": "playwright show-report",
-    "test:install": "playwright install"
+    "test:install": "playwright install",
+    "browserstack-test": "npx browserstack-node-sdk playwright test --config=./playwright.config.js",
+    "browserstack-local-test": "npx browserstack-node-sdk playwright test --config=./playwright.local.config.js",
+    "postinstall": "npm update browserstack-node-sdk"
   },
   "author": "Spreedly",
   "devDependencies": {
+    "browserstack-node-sdk": "^1.41.0",
     "@playwright/test": "^1.54.2",
     "@types/node": "^24.2.1",
     "typescript": "^5.9.2"
