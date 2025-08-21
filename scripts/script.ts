@@ -70,11 +70,13 @@ function captureAuthParams(): AuthParams {
 function disableCheckboxes(): void {
   const allowBlankNameEl = document.getElementById("allow_blank_name") as HTMLInputElement | null;
   const allowExpiryDateEl = document.getElementById("allow_expired_date") as HTMLInputElement | null;
+  const twoDigitExpiryEl = document.getElementById("two_digit_expiry") as HTMLInputElement | null;
   const openInEmbeddedModeEl = document.getElementById("open_in_embedded_mode") as HTMLInputElement | null;
   
   if (allowBlankNameEl) allowBlankNameEl.disabled = true;
   if (allowExpiryDateEl) allowExpiryDateEl.disabled = true;
   if (openInEmbeddedModeEl) openInEmbeddedModeEl.disabled = true;
+  if (twoDigitExpiryEl) twoDigitExpiryEl.disabled = true;
 }
 
 function enableCheckboxes(): void {
@@ -158,10 +160,11 @@ function handleExpressClick(): void {
     className: "checkout-plugin",
     ...(openInEmbeddedModeChecked ? { parentContainerId: "checkout-plugin-container" } : {}),
     submitParams: {
-      allow_expired_date: allowExpiryDateChecked,
-      allow_blank_name: allowBlankNameChecked,
+      allow_expired_date: (document.getElementById("allow_expired_date") as HTMLInputElement)?.checked || false,
+      allow_blank_name: (document.getElementById("allow_blank_name") as HTMLInputElement)?.checked || false,
     },
     uiConfig: {
+      twoDigitExpiry: (document.getElementById("two_digit_expiry") as HTMLInputElement)?.checked || false,
       textConfig: {
         title: "Pay with Card",
         submitBtnText: "Pay",
