@@ -5,6 +5,7 @@
   "scripts": {
     "build": "tsc",
     "build:watch": "tsc --watch",
+    "dev": "http-server -p 3000",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:install": "playwright install",
@@ -14,12 +15,10 @@
   },
   "author": "Spreedly",
   "devDependencies": {
-    "browserstack-node-sdk": "^1.41.0",
     "@playwright/test": "^1.54.2",
     "@types/node": "^24.2.1",
-    "typescript": "^5.9.2"
-  },
-  "dependencies": {
-    "@playwright/mcp": "^0.0.33"
+    "browserstack-node-sdk": "^1.41.0",
+    "typescript": "^5.9.2",
+    "http-server": "^14.1.1"
   }
 }
