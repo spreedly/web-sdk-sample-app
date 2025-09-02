@@ -191,5 +191,5 @@ function handleExpressClick(): void {
 function handleHostedFieldsClick(): void {
   const authParams: AuthParams = captureAuthParams();
   window.sessionStorage.setItem("authParams", JSON.stringify(authParams));
-  window.location.href = "/html/hostedFields.html";
+  window.location.href = "/hostedFields.html";
 }
