@@ -1,6 +1,6 @@
 // This is a sample config for what users might be running locally
 const config = {
-  testDir: './tests',
+  testDir: './test',
   testMatch: '**/*.spec.ts',
 
   timeout: 90 * 1000,
