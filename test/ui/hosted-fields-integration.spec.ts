@@ -16,7 +16,7 @@ test.describe("Hosted Fields Integration", () => {
     await expect(hostedFieldsButton).toBeEnabled();
 
     await hostedFieldsButton.click();
-    await expect(page).toHaveURL("/html/hostedFields.html");
+    await expect(page).toHaveURL("/hostedFields.html");
 
     const authParams = await page.evaluate(() => {
       const params = sessionStorage.getItem("authParams");

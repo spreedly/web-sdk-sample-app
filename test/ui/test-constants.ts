@@ -1,6 +1,6 @@
 export const URLS = {
     BASE: "http://localhost:3000/",
-    HOSTED_FIELDS: "http://localhost:3000/html/hostedFields.html",
+    HOSTED_FIELDS: "http://localhost:3000/hostedFields.html",
   } as const;
   
   export const API_ENDPOINTS = {
