@@ -10,3 +10,5 @@ log/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+.cursor

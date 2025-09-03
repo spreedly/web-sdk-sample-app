@@ -1,4 +1,3 @@
-// import SpreedlyWebSDK  from "../../checkout-web-sdk";
 declare const SpreedlyWebSDK: any;
 
 const nonceParams = JSON.parse(
