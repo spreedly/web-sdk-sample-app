@@ -21,19 +21,37 @@
             </h2>
 
             <div class="options">
-              <button type="button" class="btn-restart" id="restart-btn">
+              <button
+                data-testid="btn-restart-hosted-fields"
+                type="button"
+                class="btn-restart"
+                id="restart-btn"
+              >
                 RESTART HOSTED FIELDS
               </button>
               <label class="checkbox">
-                <input type="checkbox" id="allow_blank_name" /> Allow blank name
+                <input
+                  type="checkbox"
+                  id="allow_blank_name"
+                  data-testid="allow-blank-name"
+                />
+                Allow blank name
               </label>
               <label class="checkbox">
-                <input type="checkbox" id="allow_expired_date" /> Allow expired
-                date
+                <input
+                  type="checkbox"
+                  id="allow_expired_date"
+                  data-testid="allow-expired-date"
+                />
+                Allow expired date
               </label>
               <label class="checkbox">
-                <input type="checkbox" id="two_digit_expiry" /> 2 digit expiry
-                (MM/YY)
+                <input
+                  type="checkbox"
+                  id="two_digit_expiry"
+                  data-testid="two-digit-expiry"
+                />
+                2 digit expiry (MM/YY)
               </label>
             </div>
             <h3
