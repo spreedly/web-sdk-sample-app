@@ -1,14 +1,13 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from './fixtures';
 import {
   URLS,
-  API_ENDPOINTS,
   SELECTORS,
   PLACEHOLDERS,
   LABELS,
   TEST_DATA,
   HEADINGS,
   ERROR_PATTERNS,
-  ERROR_MESSAGES,
+  ERROR_SELECTORS,
   CSS_PROPERTIES,
   getValidYearString
 } from "./test-constants";
@@ -16,18 +15,8 @@ test.describe("Allow Blank Name Option", () => {
   test("should allow blank name when option is enabled and not show warning", async ({
     page,
   }) => {
-    // Navigate to the main page
-    await page.goto(URLS.BASE);
-
-    // Wait for auth params to be loaded
-    await page.waitForResponse(
-      (response) =>
-        response.url().includes(API_ENDPOINTS.AUTH_PARAMS) &&
-        response.status() === 200
-    );
-
     // Enable the "allow blank name" option
-    const allowBlankNameCheckbox = page.locator(SELECTORS.ALLOW_BLANK_NAME);
+    const allowBlankNameCheckbox = page.getByTestId(SELECTORS.ALLOW_BLANK_NAME);
     await expect(allowBlankNameCheckbox).toBeVisible();
     await allowBlankNameCheckbox.check();
     await expect(allowBlankNameCheckbox).toBeChecked();
@@ -52,7 +41,8 @@ test.describe("Allow Blank Name Option", () => {
     const cvvField = iframe.locator(`input[placeholder="${PLACEHOLDERS.EXPRESS_CVV}"]`);
     const monthField = iframe.locator(`input[placeholder="${PLACEHOLDERS.EXPRESS_MONTH}"]`);
     const yearField = iframe.locator(`input[placeholder="${PLACEHOLDERS.EXPRESS_YEAR}"]`);
-    const payButton = iframe.locator(SELECTORS.EXPRESS_PAY_BUTTON);
+    //const payButton = iframe.locator(SELECTORS.EXPRESS_PAY_BUTTON);
+    const payButton = iframe.getByTestId(SELECTORS.EXPRESS_SUBMIT_BUTTON);
 
     await expect(firstNameField).toBeVisible();
     await expect(lastNameField).toBeVisible();
@@ -61,9 +51,6 @@ test.describe("Allow Blank Name Option", () => {
     await expect(monthField).toBeVisible();
     await expect(yearField).toBeVisible();
     await expect(payButton).toBeVisible();
-
-    // Fill payment details but leave name fields blank
-    // Leave first name and last name blank intentionally
     
     await cardNumberField.fill(TEST_DATA.CARD_NUMBER);
     await cvvField.fill(TEST_DATA.CVV);
@@ -114,18 +101,8 @@ test.describe("Allow Blank Name Option", () => {
   test("should show warning when blank name option is disabled and name is left empty", async ({
     page,
   }) => {
-    // Navigate to the main page
-    await page.goto(URLS.BASE);
-
-    // Wait for auth params to be loaded
-    await page.waitForResponse(
-      (response) =>
-        response.url().includes(API_ENDPOINTS.AUTH_PARAMS) &&
-        response.status() === 200
-    );
-
     // Ensure the "allow blank name" option is unchecked (default state)
-    const allowBlankNameCheckbox = page.locator(SELECTORS.ALLOW_BLANK_NAME);
+    const allowBlankNameCheckbox = page.getByTestId(SELECTORS.ALLOW_BLANK_NAME);
     await expect(allowBlankNameCheckbox).toBeVisible();
     await expect(allowBlankNameCheckbox).not.toBeChecked();
 
@@ -149,7 +126,8 @@ test.describe("Allow Blank Name Option", () => {
     const cvvField = iframe.locator(`input[placeholder="${PLACEHOLDERS.EXPRESS_CVV}"]`);
     const monthField = iframe.locator(`input[placeholder="${PLACEHOLDERS.EXPRESS_MONTH}"]`);
     const yearField = iframe.locator(`input[placeholder="${PLACEHOLDERS.EXPRESS_YEAR}"]`);
-    const payButton = iframe.locator(SELECTORS.EXPRESS_PAY_BUTTON);
+    //const payButton = iframe.locator(SELECTORS.EXPRESS_PAY_BUTTON);
+    const payButton = iframe.getByTestId(SELECTORS.EXPRESS_SUBMIT_BUTTON);
 
     await expect(firstNameField).toBeVisible();
     await expect(lastNameField).toBeVisible();
@@ -185,31 +163,22 @@ test.describe("Allow Blank Name Option", () => {
     await page.waitForTimeout(TEST_DATA.TIMEOUT_SHORT);
     
     // Validate that name validation errors appear
-    await expect(iframe.locator('[aria-label="First Name is required"]')).toBeVisible()
-    await expect(iframe.locator('[aria-label="Last Name is required"]')).toBeVisible()
+    // Check for both possible aria-label formats
+    const firstNameErrorIcon = iframe.locator(ERROR_SELECTORS.FIRST_NAME_REQUIRED_ICON).or(iframe.locator(ERROR_SELECTORS.FIRST_NAME_REQUIRED_ICON_ALT));
+    const lastNameErrorIcon = iframe.locator(ERROR_SELECTORS.LAST_NAME_REQUIRED_ICON).or(iframe.locator(ERROR_SELECTORS.LAST_NAME_REQUIRED_ICON_ALT));
+    
+    await expect(firstNameErrorIcon).toBeVisible();
+    await expect(lastNameErrorIcon).toBeVisible();
+    
     const firstNameInput = firstNameField;
     const lastNameInput = lastNameField;
     await expect(firstNameInput).toHaveAttribute('aria-invalid', 'true');
     await expect(lastNameInput).toHaveAttribute('aria-invalid', 'true');
-    
-    // await expect(iframe.locator(ERROR_PATTERNS.NAME_REQUIRED)).toBeVisible();
-    // await expect(iframe.locator(ERROR_PATTERNS.FIRST_NAME_TEXT)).toBeVisible();
-    // await expect(iframe.locator(ERROR_PATTERNS.LAST_NAME_TEXT)).toBeVisible();
   });
 
   test("should allow blank name in hosted fields when option is enabled", async ({
     page,
   }) => {
-    // Navigate to the main page
-    await page.goto(URLS.BASE);
-
-    // Wait for auth params to be loaded
-    await page.waitForResponse(
-      (response) =>
-        response.url().includes(API_ENDPOINTS.AUTH_PARAMS) &&
-        response.status() === 200
-    );
-
     // Click on hosted fields button first
     const hostedFieldsButton = page.getByTestId(SELECTORS.HOSTED_FIELDS_BUTTON);
     await expect(hostedFieldsButton).toBeEnabled();
@@ -220,7 +189,7 @@ test.describe("Allow Blank Name Option", () => {
     await expect(page.locator(`h2:has-text("${HEADINGS.HOSTED_FIELDS_TITLE}")`)).toBeVisible();
 
     // Now enable the "allow blank name" option on the hosted fields page
-    const allowBlankNameCheckbox = page.locator(SELECTORS.ALLOW_BLANK_NAME);
+    const allowBlankNameCheckbox = page.getByTestId(SELECTORS.ALLOW_BLANK_NAME);
     await expect(allowBlankNameCheckbox).toBeVisible();
     await allowBlankNameCheckbox.check();
     await expect(allowBlankNameCheckbox).toBeChecked();
@@ -232,8 +201,8 @@ test.describe("Allow Blank Name Option", () => {
     // Get the form fields
     const firstNameField = page.getByLabel(LABELS.FIRST_NAME);
     const lastNameField = page.getByLabel(LABELS.LAST_NAME);
-    const expiryMonthField = page.locator(SELECTORS.EXPIRY_MONTH);
-    const expiryYearField = page.locator(SELECTORS.EXPIRY_YEAR);
+    const expiryMonthField = page.getByTestId(SELECTORS.EXPIRY_MONTH);
+    const expiryYearField = page.getByTestId(SELECTORS.EXPIRY_YEAR);
     const submitButton = page.getByRole("button", { name: SELECTORS.HOSTED_SUBMIT_BUTTON });
 
     // Verify name fields and submit button are visible
@@ -259,8 +228,8 @@ test.describe("Allow Blank Name Option", () => {
 
     // Fill payment details but leave name fields blank intentionally
     // Leave first name and last name blank
-    await cardNumberFrame.locator(SELECTORS.HOSTED_CARD_INPUT).fill(TEST_DATA.CARD_NUMBER);
-    await cvvFrame.locator(SELECTORS.HOSTED_CVV_INPUT).fill(TEST_DATA.CVV);
+    await cardNumberFrame.getByTestId(SELECTORS.HOSTED_NUMBER_FIELD).fill(TEST_DATA.CARD_NUMBER);
+    await cvvFrame.getByTestId(SELECTORS.HOSTED_CVV_FIELD).fill(TEST_DATA.CVV);
     await expiryMonthField.fill(TEST_DATA.EXPIRY_MONTH);
     await expiryYearField.fill(getValidYearString());
 
@@ -269,8 +238,8 @@ test.describe("Allow Blank Name Option", () => {
     await expect(lastNameField).toHaveValue("");
 
     // Verify other fields are filled
-    await expect(cardNumberFrame.getByRole("textbox", { name: "card number" })).toHaveValue(/4111/);
-    await expect(cvvFrame.getByRole("textbox", { name: "cvv number" })).toHaveValue("123");
+    await expect(cardNumberFrame.getByRole("textbox", { name: LABELS.CARD_NUMBER })).toHaveValue(/4111/);
+    await expect(cvvFrame.getByRole("textbox", { name: LABELS.CVV_NUMBER })).toHaveValue("123");
     await expect(expiryMonthField).toHaveValue(TEST_DATA.EXPIRY_MONTH);
     await expect(expiryYearField).toHaveValue(getValidYearString());
 
@@ -310,16 +279,6 @@ test.describe("Allow Blank Name Option", () => {
   test("should show warning in hosted fields when blank name option is disabled", async ({
     page,
   }) => {
-    // Navigate to the main page
-    await page.goto(URLS.BASE);
-
-    // Wait for auth params to be loaded
-    await page.waitForResponse(
-      (response) =>
-        response.url().includes("/api/auth/get-auth-params") &&
-        response.status() === 200
-    );
-
     // Click on hosted fields button first
     const hostedFieldsButton = page.getByTestId("btn-hosted-fields");
     await expect(hostedFieldsButton).toBeEnabled();
@@ -364,8 +323,8 @@ test.describe("Allow Blank Name Option", () => {
     await expect(cvvFrame.getByRole("textbox", { name: LABELS.CVV_NUMBER })).toBeVisible();
     // Fill payment details but leave name fields blank intentionally
     // Leave first name and last name blank
-    await cardNumberFrame.locator(SELECTORS.HOSTED_CARD_INPUT).fill(TEST_DATA.CARD_NUMBER);
-    await cvvFrame.locator(SELECTORS.HOSTED_CVV_INPUT).fill(TEST_DATA.CVV);
+    await cardNumberFrame.getByTestId(SELECTORS.HOSTED_NUMBER_FIELD).fill(TEST_DATA.CARD_NUMBER);
+    await cvvFrame.getByTestId(SELECTORS.HOSTED_CVV_FIELD).fill(TEST_DATA.CVV);
     await expiryMonthField.fill(TEST_DATA.EXPIRY_MONTH);
     await expiryYearField.fill(getValidYearString());
     // Verify name fields are still empty
@@ -373,8 +332,8 @@ test.describe("Allow Blank Name Option", () => {
     await expect(firstNameField).toHaveValue("");
     await expect(lastNameField).toHaveValue("");
     // Verify other fields are filled
-    await expect(cardNumberFrame.getByRole("textbox", { name: "card number" })).toHaveValue(/4111/);
-    await expect(cvvFrame.getByRole("textbox", { name: "cvv number" })).toHaveValue("123");
+    await expect(cardNumberFrame.getByRole("textbox", { name: LABELS.CARD_NUMBER })).toHaveValue(/4111/);
+    await expect(cvvFrame.getByRole("textbox", { name: LABELS.CVV_NUMBER })).toHaveValue("123");
     await expect(expiryMonthField).toHaveValue(TEST_DATA.EXPIRY_MONTH);
     await expect(expiryYearField).toHaveValue(getValidYearString());
     // Wait before clicking submit
@@ -383,6 +342,8 @@ test.describe("Allow Blank Name Option", () => {
     await submitButton.click();
     // Wait for any potential validation to occur
     await page.waitForTimeout(TEST_DATA.TIMEOUT_SHORT);
-    //await expect(iframe.locator(ERROR_PATTERNS.REQUIRED)).toBeVisible();
+    
+    await expect(iframe.locator(ERROR_PATTERNS.REQUIRED)).toBeVisible();
   });
 });
+

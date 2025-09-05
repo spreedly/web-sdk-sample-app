@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from './fixtures';
 import {
   URLS,
   API_ENDPOINTS,
@@ -11,24 +11,16 @@ import {
   ERROR_MESSAGES,
   CSS_PROPERTIES,
   getExpiredYearString,
+  waitForAuthParams,
 } from "./test-constants";
 
 test.describe("Allow Expired Date Option", () => {
   test("should allow expired date in express checkout when option is enabled", async ({
     page,
   }) => {
-    // Navigate to the main page
-    await page.goto(URLS.BASE);
-
-    // Wait for auth params to be loaded
-    await page.waitForResponse(
-      (response) =>
-        response.url().includes(API_ENDPOINTS.AUTH_PARAMS) &&
-        response.status() === 200
-    );
 
     // Enable the "allow expired date" option
-    const allowExpiredDateCheckbox = page.locator(SELECTORS.ALLOW_EXPIRED_DATE);
+    const allowExpiredDateCheckbox = page.getByTestId(SELECTORS.ALLOW_EXPIRED_DATE);
     await expect(allowExpiredDateCheckbox).toBeVisible();
     await allowExpiredDateCheckbox.check();
     await expect(allowExpiredDateCheckbox).toBeChecked();
@@ -53,7 +45,8 @@ test.describe("Allow Expired Date Option", () => {
     const cvvField = iframe.locator(`input[placeholder="${PLACEHOLDERS.EXPRESS_CVV}"]`);
     const monthField = iframe.locator(`input[placeholder="${PLACEHOLDERS.EXPRESS_MONTH}"]`);
     const yearField = iframe.locator(`input[placeholder="${PLACEHOLDERS.EXPRESS_YEAR}"]`);
-    const payButton = iframe.locator(SELECTORS.EXPRESS_PAY_BUTTON);
+    //const payButton = iframe.locator(SELECTORS.EXPRESS_PAY_BUTTON);
+    const payButton = iframe.getByTestId(SELECTORS.EXPRESS_SUBMIT_BUTTON);
 
     await expect(firstNameField).toBeVisible();
     await expect(lastNameField).toBeVisible();
@@ -104,18 +97,9 @@ test.describe("Allow Expired Date Option", () => {
   test("should show warning in express checkout when expired date option is disabled", async ({
     page,
   }) => {
-    // Navigate to the main page
-    await page.goto(URLS.BASE);
-
-    // Wait for auth params to be loaded
-    await page.waitForResponse(
-      (response) =>
-        response.url().includes(API_ENDPOINTS.AUTH_PARAMS) &&
-        response.status() === 200
-    );
 
     // Ensure the "allow expired date" option is unchecked (default state)
-    const allowExpiredDateCheckbox = page.locator(SELECTORS.ALLOW_EXPIRED_DATE);
+    const allowExpiredDateCheckbox = page.getByTestId(SELECTORS.ALLOW_EXPIRED_DATE);
     await expect(allowExpiredDateCheckbox).toBeVisible();
     await expect(allowExpiredDateCheckbox).not.toBeChecked();
 
@@ -139,7 +123,8 @@ test.describe("Allow Expired Date Option", () => {
     const cvvField = iframe.locator(`input[placeholder="${PLACEHOLDERS.EXPRESS_CVV}"]`);
     const monthField = iframe.locator(`input[placeholder="${PLACEHOLDERS.EXPRESS_MONTH}"]`);
     const yearField = iframe.locator(`input[placeholder="${PLACEHOLDERS.EXPRESS_YEAR}"]`);
-    const payButton = iframe.locator(SELECTORS.EXPRESS_PAY_BUTTON);
+    //const payButton = iframe.locator(SELECTORS.EXPRESS_PAY_BUTTON);
+    const payButton = iframe.getByTestId(SELECTORS.EXPRESS_SUBMIT_BUTTON);
 
     await expect(firstNameField).toBeVisible();
     await expect(lastNameField).toBeVisible();
@@ -189,15 +174,6 @@ test.describe("Allow Expired Date Option", () => {
   test("should allow expired date in hosted fields when option is enabled", async ({
     page,
   }) => {
-    // Navigate to the main page
-    await page.goto(URLS.BASE);
-
-    // Wait for auth params to be loaded
-    await page.waitForResponse(
-      (response) =>
-        response.url().includes(API_ENDPOINTS.AUTH_PARAMS) &&
-        response.status() === 200
-    );
 
     // Click on hosted fields button first
     const hostedFieldsButton = page.getByTestId(SELECTORS.HOSTED_FIELDS_BUTTON);
@@ -209,7 +185,7 @@ test.describe("Allow Expired Date Option", () => {
     await expect(page.locator(`h2:has-text("${HEADINGS.HOSTED_FIELDS_TITLE}")`)).toBeVisible();
 
     // Now enable the "allow expired date" option on the hosted fields page
-    const allowExpiredDateCheckbox = page.locator(SELECTORS.ALLOW_EXPIRED_DATE);
+    const allowExpiredDateCheckbox = page.getByTestId(SELECTORS.ALLOW_EXPIRED_DATE);
     await expect(allowExpiredDateCheckbox).toBeVisible();
     await allowExpiredDateCheckbox.check();
     await expect(allowExpiredDateCheckbox).toBeChecked();
@@ -221,8 +197,8 @@ test.describe("Allow Expired Date Option", () => {
     // Get the form fields
     const firstNameField = page.getByLabel(LABELS.FIRST_NAME);
     const lastNameField = page.getByLabel(LABELS.LAST_NAME);
-    const expiryMonthField = page.locator(SELECTORS.EXPIRY_MONTH);
-    const expiryYearField = page.locator(SELECTORS.EXPIRY_YEAR);
+    const expiryMonthField = page.getByTestId(SELECTORS.EXPIRY_MONTH);
+    const expiryYearField = page.getByTestId(SELECTORS.EXPIRY_YEAR);
     const submitButton = page.getByRole("button", { name: SELECTORS.HOSTED_SUBMIT_BUTTON });
 
     // Verify name fields and submit button are visible
@@ -249,8 +225,8 @@ test.describe("Allow Expired Date Option", () => {
     // Fill payment details with expired date
     await firstNameField.fill(TEST_DATA.FIRST_NAME);
     await lastNameField.fill(TEST_DATA.LAST_NAME);
-    await cardNumberFrame.locator(SELECTORS.HOSTED_CARD_INPUT).fill(TEST_DATA.CARD_NUMBER);
-    await cvvFrame.locator(SELECTORS.HOSTED_CVV_INPUT).fill(TEST_DATA.CVV);
+    await cardNumberFrame.getByTestId(SELECTORS.HOSTED_NUMBER_FIELD).fill(TEST_DATA.CARD_NUMBER);
+    await cvvFrame.getByTestId(SELECTORS.HOSTED_CVV_FIELD).fill(TEST_DATA.CVV);
     await expiryMonthField.fill(TEST_DATA.EXPIRED_MONTH);
     await expiryYearField.fill(getExpiredYearString()); // Use expired year
 
@@ -292,16 +268,6 @@ test.describe("Allow Expired Date Option", () => {
   test("should show warning in hosted fields when expired date option is disabled", async ({
     page,
   }) => {
-    // Navigate to the main page
-    await page.goto(URLS.BASE);
-
-    // Wait for auth params to be loaded
-    await page.waitForResponse(
-      (response) =>
-        response.url().includes(API_ENDPOINTS.AUTH_PARAMS) &&
-        response.status() === 200
-    );
-
     // Click on hosted fields button first
     const hostedFieldsButton = page.getByTestId(SELECTORS.HOSTED_FIELDS_BUTTON);
     await expect(hostedFieldsButton).toBeEnabled();
@@ -312,7 +278,7 @@ test.describe("Allow Expired Date Option", () => {
     await expect(page.locator(`h2:has-text("${HEADINGS.HOSTED_FIELDS_TITLE}")`)).toBeVisible();
 
     // Ensure the "allow expired date" option is unchecked (default state)
-    const allowExpiredDateCheckbox = page.locator(SELECTORS.ALLOW_EXPIRED_DATE);
+    const allowExpiredDateCheckbox = page.getByTestId(SELECTORS.ALLOW_EXPIRED_DATE);
     await expect(allowExpiredDateCheckbox).toBeVisible();
     await expect(allowExpiredDateCheckbox).not.toBeChecked();
 
@@ -323,8 +289,8 @@ test.describe("Allow Expired Date Option", () => {
     // Get the form fields
     const firstNameField = page.getByLabel(LABELS.FIRST_NAME);
     const lastNameField = page.getByLabel(LABELS.LAST_NAME);
-    const expiryMonthField = page.locator(SELECTORS.EXPIRY_MONTH);
-    const expiryYearField = page.locator(SELECTORS.EXPIRY_YEAR);
+    const expiryMonthField = page.getByTestId(SELECTORS.EXPIRY_MONTH);
+    const expiryYearField = page.getByTestId(SELECTORS.EXPIRY_YEAR);
     const submitButton = page.getByRole("button", { name: SELECTORS.HOSTED_SUBMIT_BUTTON });
 
     // Verify name fields and submit button are visible
@@ -351,8 +317,8 @@ test.describe("Allow Expired Date Option", () => {
     // Fill payment details with expired date
     await firstNameField.fill(TEST_DATA.FIRST_NAME);
     await lastNameField.fill(TEST_DATA.LAST_NAME);
-    await cardNumberFrame.locator(SELECTORS.HOSTED_CARD_INPUT).fill(TEST_DATA.CARD_NUMBER);
-    await cvvFrame.locator(SELECTORS.HOSTED_CVV_INPUT).fill(TEST_DATA.CVV);
+    await cardNumberFrame.getByTestId(SELECTORS.HOSTED_NUMBER_FIELD).fill(TEST_DATA.CARD_NUMBER);
+    await cvvFrame.getByTestId(SELECTORS.HOSTED_CVV_FIELD).fill(TEST_DATA.CVV);
     await expiryMonthField.fill(TEST_DATA.EXPIRED_MONTH);
     await expiryYearField.fill(getExpiredYearString()); // Use expired year
 
@@ -379,3 +345,4 @@ test.describe("Allow Expired Date Option", () => {
     await expect(expiredCardMessage).toHaveText(ERROR_MESSAGES.CARD_EXPIRED);
   });
 });
+
