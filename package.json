@@ -15,8 +15,8 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:install": "playwright install",
-    "test:browserstack": "npx browserstack-node-sdk playwright test --config=./playwright.config.js",
-    "test:local:browserstack": "npx browserstack-node-sdk playwright test --config=./playwright.local.config.js",
+    "test:browserstack": "browserstack-node-sdk playwright test --config=./playwright.config.js",
+    "test:local:browserstack": "browserstack-node-sdk playwright test --config=./playwright.local.config.js",
     "postinstall": "npm update browserstack-node-sdk"
   },
   "author": "Spreedly",

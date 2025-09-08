@@ -1,0 +1,82 @@
+name: E2E Tests - Playwright on BrowserStack
+
+on:
+  # Run 4 times a day with 6-hour intervals
+  schedule:
+    # Run at 00:00 UTC (midnight)
+    - cron: '0 0 * * *'
+    # Run at 06:00 UTC (6 AM)
+    - cron: '0 6 * * *'
+    # Run at 12:00 UTC (noon)
+    - cron: '0 12 * * *'
+    # Run at 18:00 UTC (6 PM)
+    - cron: '0 18 * * *'
+
+jobs:
+  comment-run:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        node: ['14', '16', '18', '20']
+        os: [ macos-latest, windows-latest, ubuntu-latest ]
+    name: NodeJS Playwright Repo ${{ matrix.node }} - ${{ matrix.os }} Sample
+    env:
+      BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
+      BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+      PACKAGE_URL: ${{ github.event.inputs.package_url }}
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.inputs.commit_sha }}
+      - uses: actions/github-script@98814c53be79b1d30f795b907e553d8679345975
+        id: status-check-in-progress
+        env:
+          job_name: ${{ matrix.node }} - ${{ matrix.os }} - E2E Tests
+          commit_sha: ${{ github.event.inputs.commit_sha }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const result = await github.rest.checks.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: process.env.job_name,
+              head_sha: process.env.commit_sha,
+              status: 'in_progress'
+            }).catch((err) => ({status: err.status, response: err.response}));
+            console.log(`The status-check response : ${result.status} Response : ${JSON.stringify(result.response)}`)
+            if (result.status !== 201) {
+              console.log('Failed to create check run')
+            }
+      - name: Setup node
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Run sample tests
+        run: npm run test:browserstack
+
+      - if: always()
+        uses: actions/github-script@98814c53be79b1d30f795b907e553d8679345975
+        id: status-check-completed
+        env:
+          conclusion: ${{ job.status }}
+          job_name: ${{ matrix.node }} - ${{ matrix.os }} - E2E Tests
+          commit_sha: ${{ github.event.inputs.commit_sha }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const result = await github.rest.checks.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            name: process.env.job_name,
+            head_sha: process.env.commit_sha,
+            status: 'completed',
+            conclusion: process.env.conclusion
+            }).catch((err) => ({status: err.status, response: err.response}));
+            console.log(`The status-check response : ${result.status} Response : ${JSON.stringify(result.response)}`)
+            if (result.status !== 201) {
+              console.log('Failed to create check run')
+            }
