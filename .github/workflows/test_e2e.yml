@@ -1,8 +1,10 @@
 name: E2E Tests - Playwright on BrowserStack
 
 on:
-  # Run 4 times a day with 6-hour intervals
-  schedule:
+  push:
+    branches:
+      - main
+  schedule:  # Run 4 times a day with 6-hour intervals
     # Run at 00:00 UTC (midnight)
     - cron: '0 0 * * *'
     # Run at 06:00 UTC (6 AM)
