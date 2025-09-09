@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures';
-import { URLS, API_ENDPOINTS, SELECTORS, HEADINGS, waitForAuthParams } from "./test-constants";
+import { SELECTORS, HEADINGS } from "./test-constants";
 
 test("opens express checkout in embedded mode when checkbox is checked", async ({ page }) => {
   // Check the 'Open in Embedded mode' option

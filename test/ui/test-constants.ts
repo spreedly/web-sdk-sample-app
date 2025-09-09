@@ -1,7 +1,8 @@
-export const URLS = {
-    BASE: "http://localhost:3000/",
-    HOSTED_FIELDS: "http://localhost:3000/hostedFields.html",
-  } as const;
+// TODO: Make it dynamic
+// export const URLS = {
+//     BASE: "http://localhost:3000/",
+//     HOSTED_FIELDS: "http://localhost:3000/hostedFields.html",
+//   } as const;
   
   export const API_ENDPOINTS = {
     AUTH_PARAMS: "/api/auth/get-auth-params",

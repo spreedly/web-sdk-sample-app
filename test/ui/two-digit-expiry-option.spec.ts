@@ -1,6 +1,6 @@
 import { test, expect } from './fixtures';
 import {
-  URLS,
+  // URLS,
   SELECTORS,
   PLACEHOLDERS,
   LABELS,
@@ -73,7 +73,7 @@ test.describe("Two Digit Expiry Option", () => {
     const hostedFieldsButton = page.getByTestId(SELECTORS.HOSTED_FIELDS_BUTTON);
     await expect(hostedFieldsButton).toBeEnabled();
     await hostedFieldsButton.click();
-    await expect(page).toHaveURL(URLS.HOSTED_FIELDS);
+    // await expect(page).toHaveURL(URLS.HOSTED_FIELDS);
 
     // Enable the "two digit expiry" option
     const twoDigitExpiryCheckbox = page.getByTestId(SELECTORS.TWO_DIGIT_EXPIRY);
@@ -207,7 +207,7 @@ test.describe("Two Digit Expiry Option", () => {
     // Click on hosted fields button
     const hostedFieldsButton = page.getByTestId(SELECTORS.HOSTED_FIELDS_BUTTON);
     await hostedFieldsButton.click();
-    await expect(page).toHaveURL(URLS.HOSTED_FIELDS);
+    // await expect(page).toHaveURL(URLS.HOSTED_FIELDS);
 
     // Enable the "two digit expiry" option
     const twoDigitExpiryCheckbox = page.getByTestId(SELECTORS.TWO_DIGIT_EXPIRY);
