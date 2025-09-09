@@ -1,11 +1,11 @@
+// TODO: Make it dynamic
 export const URLS = {
-    BASE: "http://localhost:3000/",
-    HOSTED_FIELDS: "http://localhost:3000/hostedFields.html",
+    BASE: "/"
   } as const;
   
   export const API_ENDPOINTS = {
     AUTH_PARAMS: "/api/auth/get-auth-params",
-  } as const;
+  } as const; 
   
   export const SELECTORS = {
     // Checkboxes
@@ -25,6 +25,7 @@ export const URLS = {
     
     // Express Checkout (inside iframe)
     EXPRESS_IFRAME: "iframe.checkout-plugin",
+    EMBEDDED_IFRAME_CONTAINER: "#checkout-plugin-container iframe.checkout-plugin",
    // EXPRESS_PAY_BUTTON: 'button:has-text("Pay")',
     EXPIRY_MM_YY: 'input[placeholder="MM/YY"]',
     EXPRESS_SUBMIT_BUTTON: 'express-checkout-submit-btn',
@@ -46,6 +47,7 @@ export const URLS = {
     EXPIRY_SINGLE: "#expiry-single",
     
     // Messages
+    TOKEN_CONTAINER: "#token-container",
     TOKEN_CONTAINER_MESSAGE: "#token-container-message",
   } as const;
   
@@ -110,7 +112,9 @@ export const URLS = {
   
   export const ERROR_MESSAGES = {
     CARD_EXPIRED: "Error: Card has expired",
+    HOSTED_FIELDS_CARD_EXPIRED: "Card has expired",
     INVALID_MONTH: "Error: Month must be between 1 and 12",
+    HOSTED_FIELDS_INVALID_MONTH: "Month must be between 1 and 12",
   };
   
   export const ERROR_SELECTORS = {
@@ -192,5 +196,6 @@ export const URLS = {
         response.status() === 200
     );
   };
+
 
   

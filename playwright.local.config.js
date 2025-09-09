@@ -3,6 +3,11 @@ const config = {
   testDir: './test',
   testMatch: '**/*.spec.ts',
 
+  use: {
+    baseURL: 'http://localhost:3000',
+    trace: 'on-first-retry',
+  },
+
   timeout: 90 * 1000,
   expect: {
     timeout: 5000,
