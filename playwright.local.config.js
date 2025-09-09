@@ -16,7 +16,7 @@ const config = {
   reporter: 'line',
   projects: [
     {
-      name: 'chrome',
+      name: 'Checkout Web SDK',
       use: {
         browserName: 'chromium',
         channel: 'chrome',
