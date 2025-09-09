@@ -1,8 +1,10 @@
 import { test, expect } from './fixtures';
-import { URLS, API_ENDPOINTS, SELECTORS, HEADINGS, waitForAuthParams } from "./test-constants";
+import { SELECTORS, HEADINGS,waitForAuthParams, URLS } from "./test-constants";
 
 test("opens express checkout in embedded mode when checkbox is checked", async ({ page }) => {
   // Check the 'Open in Embedded mode' option
+  await page.goto(URLS.BASE);
+  await waitForAuthParams(page);
   const openEmbeddedModeCheckbox = page.getByTestId(SELECTORS.OPEN_IN_EMBEDDED_MODE);
   await expect(openEmbeddedModeCheckbox).toBeVisible();
   await openEmbeddedModeCheckbox.check();
@@ -18,11 +20,13 @@ test("opens express checkout in embedded mode when checkbox is checked", async (
   await expect(iframeLocator).toBeVisible();
 
   // Verify the iframe is embedded inside the container
-  const embeddedIframe = page.locator('#checkout-plugin-container iframe.checkout-plugin');
+  const embeddedIframe = page.locator(SELECTORS.EMBEDDED_IFRAME_CONTAINER);
   await expect(embeddedIframe).toBeVisible();
 
   // Sanity check: verify content inside the iframe is loaded
   const iframe = page.frameLocator(SELECTORS.EXPRESS_IFRAME);
   await expect(iframe.locator(`h1:has-text("${HEADINGS.EXPRESS_TITLE}")`)).toBeVisible();
 });
+
+
 
