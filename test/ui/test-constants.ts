@@ -1,18 +1,22 @@
+// TODO: Make it dynamic
 export const URLS = {
-    BASE: "http://localhost:3000/",
-    HOSTED_FIELDS: "http://localhost:3000/hostedFields.html",
+    BASE: "/"
   } as const;
   
   export const API_ENDPOINTS = {
     AUTH_PARAMS: "/api/auth/get-auth-params",
-  } as const;
+  } as const; 
   
   export const SELECTORS = {
     // Checkboxes
-    ALLOW_BLANK_NAME: "#allow_blank_name",
-    TWO_DIGIT_EXPIRY: "#two_digit_expiry",
-    ALLOW_EXPIRED_DATE: "#allow_expired_date",
-    OPEN_IN_EMBEDDED_MODE: "#open_in_embedded_mode",
+    //ALLOW_BLANK_NAME: "#allow_blank_name",
+    ALLOW_BLANK_NAME: "allow-blank-name",
+    //TWO_DIGIT_EXPIRY: "#two_digit_expiry",
+    TWO_DIGIT_EXPIRY: "two-digit-expiry",
+    //ALLOW_EXPIRED_DATE: "#allow_expired_date",
+    ALLOW_EXPIRED_DATE: "allow-expired-date",
+    //OPEN_IN_EMBEDDED_MODE: "#open_in_embedded_mode",
+    OPEN_IN_EMBEDDED_MODE: "open-in-embedded-mode",
     
     // Buttons
     EXPRESS_BUTTON: "btn-express",
@@ -21,23 +25,29 @@ export const URLS = {
     
     // Express Checkout (inside iframe)
     EXPRESS_IFRAME: "iframe.checkout-plugin",
-    EXPRESS_PAY_BUTTON: 'button:has-text("Pay")',
-    EXPIRY_MM_YY: 'input[placeholder="MM/YY"]',
+    EMBEDDED_IFRAME_CONTAINER: "#checkout-plugin-container iframe.checkout-plugin",
+   // EXPRESS_PAY_BUTTON: 'button:has-text("Pay")',
+    EXPIRY_MM_YY: '#expiry-mm-yy',
+    EXPRESS_SUBMIT_BUTTON: 'express-checkout-submit-btn',
     
     // Hosted Fields
     HOSTED_SUBMIT_BUTTON: "Submit Payment",
     HOSTED_CARD_IFRAME: 'iframe[src*="numberField.html"]',
     HOSTED_CVV_IFRAME: 'iframe[src*="cvvField.html"]',
-    HOSTED_CARD_INPUT: "#spreedly-hosted-number-input",
-    HOSTED_CVV_INPUT: "#spreedly-hosted-cvv-input",
+    //HOSTED_CARD_INPUT: "#spreedly-hosted-number-input",
+    //HOSTED_CVV_INPUT: "#spreedly-hosted-cvv-input",
+    HOSTED_NUMBER_FIELD: "hosted-number-field",
+    HOSTED_CVV_FIELD: "hosted-cvv-field",
     
-    // Form Fields
-    EXPIRY_MONTH: "#expiry-month",
-    EXPIRY_YEAR: "#expiry-year",
+    // Form Fields(hosted fields data-testid)
+    EXPIRY_MONTH: "input-expiry-month",
+    EXPIRY_YEAR: "input-expiry-year",
+
     EXPIRY_FIELDS: ".expiry-fields",
     EXPIRY_SINGLE: "#expiry-single",
     
     // Messages
+    TOKEN_CONTAINER: "#token-container",
     TOKEN_CONTAINER_MESSAGE: "#token-container-message",
   } as const;
   
@@ -70,7 +80,11 @@ export const URLS = {
     CARD_NUMBER_TOO_SHORT: "411111111111", // 12 digits
     CARD_NUMBER_TOO_LONG: "41111111111111111111", // 20 digits
     CARD_NUMBER_FORMATTED: "4111 1111 1111 1111",
+    AMEX_CARD_NUMBER: "378282246310005",
     CVV: "123",
+    INVALID_CVV_LONG: "1234",
+    INVALID_CVV_SHORT: "12",
+    AMEX_CVV: "1234",
     EXPIRY_MONTH: "12",
     EXPIRY_YEAR_2_DIGIT: "25", // For MM/YY format
     EXPIRED_MONTH: "01",
@@ -102,7 +116,17 @@ export const URLS = {
   
   export const ERROR_MESSAGES = {
     CARD_EXPIRED: "Error: Card has expired",
+    HOSTED_FIELDS_CARD_EXPIRED: "Card has expired",
     INVALID_MONTH: "Error: Month must be between 1 and 12",
+    HOSTED_FIELDS_INVALID_MONTH: "Month must be between 1 and 12",
+    INVALID_CARD_NUMBER: "Error: Invalid card number",
+    HOSTED_FIELDS_INVALID_CARD_NUMBER: "Invalid card number",
+    CARD_NUMBER_LENGTH: "Error: Card number must be between 13 and 19 digits",
+    HOSTED_FIELDS_CARD_NUMBER_LENGTH: "Card number must be between 13 and 19 digits",
+    INVALID_CVV: "Error: CVV must be 3 digits",
+    HOSTED_FIELDS_INVALID_CVV: "CVV must be 3 digits",
+    AMEX_INVALID_CVV: "Error: CVV must be 4 digits",
+    HOSTED_FIELDS_AMEX_INVALID_CVV: "CVV must be 4 digits",
   };
   
   export const ERROR_SELECTORS = {
@@ -113,6 +137,10 @@ export const URLS = {
     LAST_NAME_REQUIRED_ICON: '[aria-label="Error: Last Name is required"]',
     FIRST_NAME_REQUIRED_ICON_ALT: '[aria-label="First Name is required"]',
     LAST_NAME_REQUIRED_ICON_ALT: '[aria-label="Last Name is required"]',
+    INVALID_CARD_NUMBER_ICON: `[aria-label="${ERROR_MESSAGES.INVALID_CARD_NUMBER}"]`,
+    CARD_NUMBER_LENGTH_ICON: `[aria-label="${ERROR_MESSAGES.CARD_NUMBER_LENGTH}"]`,
+    INVALID_CVV_ICON: `[aria-label="${ERROR_MESSAGES.INVALID_CVV}"]`,
+    AMEX_INVALID_CVV_ICON: `[aria-label="${ERROR_MESSAGES.AMEX_INVALID_CVV}"]`,
   };
   
   export const CSS_PROPERTIES = {
@@ -185,3 +213,5 @@ export const URLS = {
     );
   };
 
+
+  

@@ -9,15 +9,18 @@ import {
   ERROR_SELECTORS,
   ERROR_MESSAGES,
   getValidTwoDigitYear,
-  getExpiredYear
+  getExpiredYear,
+  waitForAuthParams,
 } from "./test-constants";
 
 test.describe("Two Digit Expiry Option", () => {
   test("should use MM/YY format in express checkout when two digit expiry is enabled", async ({
     page,
   }) => {
+    await page.goto(URLS.BASE);
+    await waitForAuthParams(page);
     // Enable the "two digit expiry" option
-    const twoDigitExpiryCheckbox = page.locator(SELECTORS.TWO_DIGIT_EXPIRY);
+    const twoDigitExpiryCheckbox = page.getByTestId(SELECTORS.TWO_DIGIT_EXPIRY);
     await expect(twoDigitExpiryCheckbox).toBeVisible();
     await twoDigitExpiryCheckbox.check();
     await expect(twoDigitExpiryCheckbox).toBeChecked();
@@ -59,7 +62,8 @@ test.describe("Two Digit Expiry Option", () => {
     // Verify the field accepts the MM/YY format
     await expect(mmyyField).toHaveValue(validMmyyValue);
     // Verify the Pay button is visible and enabled
-    const payButton = iframe.locator(SELECTORS.EXPRESS_PAY_BUTTON);
+    //const payButton = iframe.locator(SELECTORS.EXPRESS_PAY_BUTTON);
+    const payButton = iframe.getByTestId(SELECTORS.EXPRESS_SUBMIT_BUTTON);
     await payButton.click();
     await page.waitForTimeout(TEST_DATA.TIMEOUT_SHORT);
     await expect(iframe.locator(ERROR_SELECTORS.CARD_EXPIRED_ICON)).not.toBeVisible();
@@ -68,22 +72,25 @@ test.describe("Two Digit Expiry Option", () => {
   test("should use MM/YY format in hosted fields when two digit expiry is enabled", async ({
     page,
   }) => {
+    await page.goto(URLS.BASE);
+    await waitForAuthParams(page);
      // Click on hosted fields button
     const hostedFieldsButton = page.getByTestId(SELECTORS.HOSTED_FIELDS_BUTTON);
     await expect(hostedFieldsButton).toBeEnabled();
     await hostedFieldsButton.click();
-    await expect(page).toHaveURL(URLS.HOSTED_FIELDS);
+    // Verify we're on the hosted fields page
+    await expect(page.locator(`h2:has-text("${HEADINGS.HOSTED_FIELDS_TITLE}")`)).toBeVisible();
 
     // Enable the "two digit expiry" option
-    const twoDigitExpiryCheckbox = page.locator(SELECTORS.TWO_DIGIT_EXPIRY);
+    const twoDigitExpiryCheckbox = page.getByTestId(SELECTORS.TWO_DIGIT_EXPIRY);
     await expect(twoDigitExpiryCheckbox).toBeVisible();
     await twoDigitExpiryCheckbox.check();
     await expect(twoDigitExpiryCheckbox).toBeChecked();
 
     // Check expiry field configuration
     const mmyyField = page.locator(SELECTORS.EXPIRY_MM_YY);
-    const monthField = page.locator(SELECTORS.EXPIRY_MONTH);
-    const yearField = page.locator(SELECTORS.EXPIRY_YEAR);
+    const monthField = page.getByTestId(SELECTORS.EXPIRY_MONTH);
+    const yearField = page.getByTestId(SELECTORS.EXPIRY_YEAR);
     const submitButton = page.getByRole("button", { name: SELECTORS.HOSTED_SUBMIT_BUTTON });
 
     // Verify MM/YY field is visible and enabled when two digit expiry is enabled
@@ -96,17 +103,19 @@ test.describe("Two Digit Expiry Option", () => {
     // Verify separate month/year fields are not visible
     await expect(monthField).not.toBeVisible();
     await expect(yearField).not.toBeVisible();
-    const iframe = page.frameLocator(SELECTORS.EXPRESS_IFRAME);
+    
     // Fill out the form with valid data
     await page.getByLabel(LABELS.FIRST_NAME).fill(TEST_DATA.FIRST_NAME);
     await page.getByLabel(LABELS.LAST_NAME).fill(TEST_DATA.LAST_NAME);
 
     // Fill card number and CVV in iframes
     const cardNumberFrame = page.frameLocator(SELECTORS.HOSTED_CARD_IFRAME);
-    await cardNumberFrame.locator(SELECTORS.HOSTED_CARD_INPUT).fill(TEST_DATA.CARD_NUMBER);
+    await cardNumberFrame.getByTestId(SELECTORS.HOSTED_NUMBER_FIELD).fill(TEST_DATA.CARD_NUMBER);
+    await cardNumberFrame.getByTestId(SELECTORS.HOSTED_NUMBER_FIELD).click();
+    await page.waitForTimeout(TEST_DATA.TIMEOUT_SHORT);
 
     const cvvFrame = page.frameLocator(SELECTORS.HOSTED_CVV_IFRAME);
-    await cvvFrame.locator(SELECTORS.HOSTED_CVV_INPUT).fill(TEST_DATA.CVV);
+    await cvvFrame.getByTestId(SELECTORS.HOSTED_CVV_FIELD).fill(TEST_DATA.CVV);
 
     // Fill MM/YY field with valid two digit year format
     const validMmyyValue = `${TEST_DATA.EXPIRY_MONTH}/${getValidTwoDigitYear()}`;
@@ -124,14 +133,16 @@ test.describe("Two Digit Expiry Option", () => {
     // Verify "Card has expired" message appears
     const cardExpiredMessage = page.locator(SELECTORS.TOKEN_CONTAINER_MESSAGE);
     await expect(cardExpiredMessage).toBeVisible();
-    await expect(cardExpiredMessage).toHaveText(ERROR_MESSAGES.CARD_EXPIRED);
+    await expect(cardExpiredMessage).toHaveText(ERROR_MESSAGES.HOSTED_FIELDS_CARD_EXPIRED);
   });
 
   test("should show validation error for invalid date in express checkout with two digit expiry", async ({
     page,
   }) => {
+    await page.goto(URLS.BASE);
+    await waitForAuthParams(page);
     // Enable the "two digit expiry" option
-    const twoDigitExpiryCheckbox = page.locator(SELECTORS.TWO_DIGIT_EXPIRY);
+    const twoDigitExpiryCheckbox = page.getByTestId(SELECTORS.TWO_DIGIT_EXPIRY);
     await twoDigitExpiryCheckbox.check();
 
     // Click on express checkout button
@@ -156,7 +167,8 @@ test.describe("Two Digit Expiry Option", () => {
     await mmyyField.fill(`13/${getValidTwoDigitYear()}`);
     await expect(mmyyField).toHaveValue(`13/${getValidTwoDigitYear()}`);
     
-    const payButton = iframe.locator(SELECTORS.EXPRESS_PAY_BUTTON);
+    //const payButton = iframe.locator(SELECTORS.EXPRESS_PAY_BUTTON);
+    const payButton = iframe.getByTestId(SELECTORS.EXPRESS_SUBMIT_BUTTON);
     await payButton.click();
     await page.waitForTimeout(2000);
     
@@ -202,13 +214,16 @@ test.describe("Two Digit Expiry Option", () => {
   test("should show validation error for invalid date in hosted fields with two digit expiry", async ({
     page,
   }) => {
+    await page.goto(URLS.BASE);
+    await waitForAuthParams(page);
     // Click on hosted fields button
     const hostedFieldsButton = page.getByTestId(SELECTORS.HOSTED_FIELDS_BUTTON);
     await hostedFieldsButton.click();
-    await expect(page).toHaveURL(URLS.HOSTED_FIELDS);
+    // Verify we're on the hosted fields page
+    await expect(page.locator(`h2:has-text("${HEADINGS.HOSTED_FIELDS_TITLE}")`)).toBeVisible();
 
     // Enable the "two digit expiry" option
-    const twoDigitExpiryCheckbox = page.locator(SELECTORS.TWO_DIGIT_EXPIRY);
+    const twoDigitExpiryCheckbox = page.getByTestId(SELECTORS.TWO_DIGIT_EXPIRY);
     await twoDigitExpiryCheckbox.check();
 
     // Get the MM/YY field
@@ -222,10 +237,12 @@ test.describe("Two Digit Expiry Option", () => {
 
     // Fill card number and CVV in iframes
     const cardNumberFrame = page.frameLocator(SELECTORS.HOSTED_CARD_IFRAME);
-    await cardNumberFrame.locator(SELECTORS.HOSTED_CARD_INPUT).fill(TEST_DATA.CARD_NUMBER);
+    await cardNumberFrame.getByTestId(SELECTORS.HOSTED_NUMBER_FIELD).fill(TEST_DATA.CARD_NUMBER);
+    await cardNumberFrame.getByTestId(SELECTORS.HOSTED_NUMBER_FIELD).click();
+    await page.waitForTimeout(TEST_DATA.TIMEOUT_SHORT);
 
     const cvvFrame = page.frameLocator(SELECTORS.HOSTED_CVV_IFRAME);
-    await cvvFrame.locator(SELECTORS.HOSTED_CVV_INPUT).fill(TEST_DATA.CVV);
+    await cvvFrame.getByTestId(SELECTORS.HOSTED_CVV_FIELD).fill(TEST_DATA.CVV);
 
     const submitButton = page.getByRole("button", { name: SELECTORS.HOSTED_SUBMIT_BUTTON });
     const tokenMessage = page.locator(SELECTORS.TOKEN_CONTAINER_MESSAGE);
@@ -239,7 +256,7 @@ test.describe("Two Digit Expiry Option", () => {
     
     // Verify validation error message for invalid month (13)
     await expect(tokenMessage).toBeVisible();
-    await expect(tokenMessage).toHaveText(ERROR_MESSAGES.INVALID_MONTH);
+    await expect(tokenMessage).toHaveText(ERROR_MESSAGES.HOSTED_FIELDS_INVALID_MONTH);
     await expect(tokenMessage).toHaveClass(/auth-title/);
     
     // Test invalid month (00) - should also trigger invalid month error
@@ -252,7 +269,7 @@ test.describe("Two Digit Expiry Option", () => {
     
     // Verify validation error message for invalid month (00)
     await expect(tokenMessage).toBeVisible();
-    await expect(tokenMessage).toHaveText(ERROR_MESSAGES.INVALID_MONTH);
+    await expect(tokenMessage).toHaveText(ERROR_MESSAGES.HOSTED_FIELDS_INVALID_MONTH);
     await expect(tokenMessage).toHaveClass(/auth-title/);
 
     // Test expired year (past year) - should trigger expired card error
@@ -266,7 +283,7 @@ test.describe("Two Digit Expiry Option", () => {
     
     // Verify validation error message for expired card
     await expect(tokenMessage).toBeVisible();
-    await expect(tokenMessage).toHaveText(ERROR_MESSAGES.CARD_EXPIRED);
+    await expect(tokenMessage).toHaveText(ERROR_MESSAGES.HOSTED_FIELDS_CARD_EXPIRED);
     await expect(tokenMessage).toHaveClass(/auth-title/);
 
     // Test with valid date to ensure error clears
@@ -285,3 +302,5 @@ test.describe("Two Digit Expiry Option", () => {
     }
   });
 });
+
+
