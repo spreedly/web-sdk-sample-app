@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": [
+      "node",
+      "@playwright/test"
+    ],
+    "moduleResolution": "node",
+    "allowImportingTsExtensions": false
+  },
+  "include": [
+    "test/**/*.ts"
+  ],
+  "exclude": []
+}

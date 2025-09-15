@@ -12,3 +12,4 @@ log/
 /playwright/.cache/
 
 .cursor
+.DS_Store
