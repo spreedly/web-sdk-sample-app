@@ -14,12 +14,11 @@ import {
 } from "./test-constants";
 
 test.describe("Allow Blank Name Option", () => {
-  test("should allow blank name when option is enabled and not show warning", async ({
+  test("should allow blank name when option is enabled and not show warning in express checkout", async ({
     page,
   }) => {
     await page.goto(URLS.BASE);
     await waitForAuthParams(page);
-    // Enable the "allow blank name" option
     const allowBlankNameCheckbox = page.getByTestId(SELECTORS.ALLOW_BLANK_NAME);
     await expect(allowBlankNameCheckbox).toBeVisible();
     await allowBlankNameCheckbox.check();
@@ -102,7 +101,7 @@ test.describe("Allow Blank Name Option", () => {
     await expect(lastNameField).toHaveAttribute('placeholder', PLACEHOLDERS.EXPRESS_LAST_NAME);
   });
 
-  test("should show warning when blank name option is disabled and name is left empty", async ({
+  test("should show warning when blank name option is disabled and name is left empty in express checkout", async ({
     page,
   }) => {
     await page.goto(URLS.BASE);
@@ -236,7 +235,7 @@ test.describe("Allow Blank Name Option", () => {
 
     // Fill payment details but leave name fields blank intentionally
     // Leave first name and last name blank
-    await cardNumberFrame.getByTestId(SELECTORS.HOSTED_NUMBER_FIELD).fill(TEST_DATA.CARD_NUMBER);
+    await cardNumberFrame.getByTestId(SELECTORS.HOSTED_NUMBER_FIELD).fill(TEST_DATA.CARD_NUMBER_FORMATTED);
     await cardNumberFrame.getByTestId(SELECTORS.HOSTED_NUMBER_FIELD).click();
     await page.waitForTimeout(TEST_DATA.TIMEOUT_SHORT);
     await cvvFrame.getByTestId(SELECTORS.HOSTED_CVV_FIELD).fill(TEST_DATA.CVV);
@@ -335,7 +334,7 @@ test.describe("Allow Blank Name Option", () => {
     await expect(cvvFrame.getByRole("textbox", { name: LABELS.CVV_NUMBER })).toBeVisible();
     // Fill payment details but leave name fields blank intentionally
     // Leave first name and last name blank
-    await cardNumberFrame.getByTestId(SELECTORS.HOSTED_NUMBER_FIELD).fill(TEST_DATA.CARD_NUMBER);
+    await cardNumberFrame.getByTestId(SELECTORS.HOSTED_NUMBER_FIELD).fill(TEST_DATA.CARD_NUMBER_FORMATTED);
     await cardNumberFrame.getByTestId(SELECTORS.HOSTED_NUMBER_FIELD).click();
     await page.waitForTimeout(TEST_DATA.TIMEOUT_SHORT);
     await cvvFrame.getByTestId(SELECTORS.HOSTED_CVV_FIELD).fill(TEST_DATA.CVV);
