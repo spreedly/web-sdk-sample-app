@@ -285,79 +285,79 @@ test.describe("Allow Blank Name Option", () => {
     await expect(lastNameField).toHaveAttribute('placeholder', PLACEHOLDERS.HOSTED_LAST_NAME);
   });
 
-  // test("should show warning in hosted fields when blank name option is disabled", async ({
-  //   page,
-  // }) => {
-  //   await page.goto(URLS.BASE);
-  //   await waitForAuthParams(page);
-  //   // Click on hosted fields button first
-  //   const hostedFieldsButton = page.getByTestId("btn-hosted-fields");
-  //   await expect(hostedFieldsButton).toBeEnabled();
-  //   await hostedFieldsButton.click();
+  test("should show warning in hosted fields when blank name option is disabled", async ({
+    page,
+  }) => {
+    await page.goto(URLS.BASE);
+    await waitForAuthParams(page);
+    // Click on hosted fields button first
+    const hostedFieldsButton = page.getByTestId("btn-hosted-fields");
+    await expect(hostedFieldsButton).toBeEnabled();
+    await hostedFieldsButton.click();
 
-  //   // Verify we're on the hosted fields page
-  //   // await expect(page).toHaveURL(URLS.HOSTED_FIELDS);
-  //   await expect(page.locator('h2:has-text("Hosted Fields Payment Demo")')).toBeVisible();
+    // Verify we're on the hosted fields page
+    // await expect(page).toHaveURL(URLS.HOSTED_FIELDS);
+    await expect(page.locator('h2:has-text("Hosted Fields Payment Demo")')).toBeVisible();
 
-  //   // Ensure the "allow blank name" option is unchecked (default state)
-  //   const allowBlankNameCheckbox = page.locator("#allow_blank_name");
-  //   await expect(allowBlankNameCheckbox).toBeVisible();
-  //   await expect(allowBlankNameCheckbox).not.toBeChecked();
+    // Ensure the "allow blank name" option is unchecked (default state)
+    const allowBlankNameCheckbox = page.locator("#allow_blank_name");
+    await expect(allowBlankNameCheckbox).toBeVisible();
+    await expect(allowBlankNameCheckbox).not.toBeChecked();
 
-  //   // Verify form sections are visible
-  //   await expect(page.locator('h3:has-text("Personal Information")')).toBeVisible();
-  //   await expect(page.locator('h3:has-text("Payment Details")')).toBeVisible();
+    // Verify form sections are visible
+    await expect(page.locator('h3:has-text("Personal Information")')).toBeVisible();
+    await expect(page.locator('h3:has-text("Payment Details")')).toBeVisible();
 
-  //   // Get the form fields
-  //   const firstNameField = page.getByLabel("First Name");
-  //   const lastNameField = page.getByLabel("Last Name");
-  //   const expiryMonthField = page.locator("#expiry-month");
-  //   const expiryYearField = page.locator("#expiry-year");
-  //   const submitButton = page.getByRole("button", { name: "Submit Payment" });
+    // Get the form fields
+    const firstNameField = page.getByLabel("First Name");
+    const lastNameField = page.getByLabel("Last Name");
+    const expiryMonthField = page.locator("#expiry-month");
+    const expiryYearField = page.locator("#expiry-year");
+    const submitButton = page.getByRole("button", { name: "Submit Payment" });
 
-  //   // Verify name fields and submit button are visible
-  //   await expect(firstNameField).toBeVisible();
-  //   await expect(lastNameField).toBeVisible();
-  //   await expect(expiryMonthField).toBeVisible();
-  //   await expect(expiryYearField).toBeVisible();
-  //   await expect(submitButton).toBeVisible();
-  //   // Wait for hosted fields iframes to load
-  //   const cardNumberIframe = page.locator(SELECTORS.HOSTED_CARD_IFRAME);
-  //   const cvvIframe = page.locator(SELECTORS.HOSTED_CVV_IFRAME);
-  //   await expect(cardNumberIframe).toBeVisible();
-  //   await expect(cvvIframe).toBeVisible();
-  //   // Get frame locators for hosted fields
-  //   const cardNumberFrame = page.frameLocator(SELECTORS.HOSTED_CARD_IFRAME);
-  //   const cvvFrame = page.frameLocator(SELECTORS.HOSTED_CVV_IFRAME);
-  //   // Wait for the hosted field inputs to be ready
-  //   await expect(cardNumberFrame.getByRole("textbox", { name: LABELS.CARD_NUMBER })).toBeVisible();
-  //   await expect(cvvFrame.getByRole("textbox", { name: LABELS.CVV_NUMBER })).toBeVisible();
-  //   // Fill payment details but leave name fields blank intentionally
-  //   // Leave first name and last name blank
-  //   await cardNumberFrame.getByTestId(SELECTORS.HOSTED_NUMBER_FIELD).fill(TEST_DATA.CARD_NUMBER_FORMATTED);
-  //   await cardNumberFrame.getByTestId(SELECTORS.HOSTED_NUMBER_FIELD).click();
-  //   await page.waitForTimeout(TEST_DATA.TIMEOUT_SHORT);
-  //   await cvvFrame.getByTestId(SELECTORS.HOSTED_CVV_FIELD).fill(TEST_DATA.CVV);
-  //   await expiryMonthField.fill(TEST_DATA.EXPIRY_MONTH);
-  //   await expiryYearField.fill(getValidYearString());
-  //   // Verify name fields are still empty
-  //   const iframe = page.frameLocator(SELECTORS.EXPRESS_IFRAME);
-  //   await expect(firstNameField).toHaveValue("");
-  //   await expect(lastNameField).toHaveValue("");
-  //   // Verify other fields are filled
-  //   await expect(cardNumberFrame.getByRole("textbox", { name: LABELS.CARD_NUMBER })).toHaveValue(/4111/);
-  //   await expect(cvvFrame.getByRole("textbox", { name: LABELS.CVV_NUMBER })).toHaveValue("123");
-  //   await expect(expiryMonthField).toHaveValue(TEST_DATA.EXPIRY_MONTH);
-  //   await expect(expiryYearField).toHaveValue(getValidYearString());
-  //   // Wait before clicking submit
-  //   await page.waitForTimeout(TEST_DATA.TIMEOUT_SHORT);
-  //   // Click the submit payment button
-  //   await submitButton.click();
-  //   // Wait for any potential validation to occur
-  //   await page.waitForTimeout(TEST_DATA.TIMEOUT_SHORT);
+    // Verify name fields and submit button are visible
+    await expect(firstNameField).toBeVisible();
+    await expect(lastNameField).toBeVisible();
+    await expect(expiryMonthField).toBeVisible();
+    await expect(expiryYearField).toBeVisible();
+    await expect(submitButton).toBeVisible();
+    // Wait for hosted fields iframes to load
+    const cardNumberIframe = page.locator(SELECTORS.HOSTED_CARD_IFRAME);
+    const cvvIframe = page.locator(SELECTORS.HOSTED_CVV_IFRAME);
+    await expect(cardNumberIframe).toBeVisible();
+    await expect(cvvIframe).toBeVisible();
+    // Get frame locators for hosted fields
+    const cardNumberFrame = page.frameLocator(SELECTORS.HOSTED_CARD_IFRAME);
+    const cvvFrame = page.frameLocator(SELECTORS.HOSTED_CVV_IFRAME);
+    // Wait for the hosted field inputs to be ready
+    await expect(cardNumberFrame.getByRole("textbox", { name: LABELS.CARD_NUMBER })).toBeVisible();
+    await expect(cvvFrame.getByRole("textbox", { name: LABELS.CVV_NUMBER })).toBeVisible();
+    // Fill payment details but leave name fields blank intentionally
+    // Leave first name and last name blank
+    await cardNumberFrame.getByTestId(SELECTORS.HOSTED_NUMBER_FIELD).fill(TEST_DATA.CARD_NUMBER_FORMATTED);
+    await cardNumberFrame.getByTestId(SELECTORS.HOSTED_NUMBER_FIELD).click();
+    await page.waitForTimeout(TEST_DATA.TIMEOUT_SHORT);
+    await cvvFrame.getByTestId(SELECTORS.HOSTED_CVV_FIELD).fill(TEST_DATA.CVV);
+    await expiryMonthField.fill(TEST_DATA.EXPIRY_MONTH);
+    await expiryYearField.fill(getValidYearString());
+    // Verify name fields are still empty
+    const iframe = page.frameLocator(SELECTORS.EXPRESS_IFRAME);
+    await expect(firstNameField).toHaveValue("");
+    await expect(lastNameField).toHaveValue("");
+    // Verify other fields are filled
+    await expect(cardNumberFrame.getByRole("textbox", { name: LABELS.CARD_NUMBER })).toHaveValue(/4111/);
+    await expect(cvvFrame.getByRole("textbox", { name: LABELS.CVV_NUMBER })).toHaveValue("123");
+    await expect(expiryMonthField).toHaveValue(TEST_DATA.EXPIRY_MONTH);
+    await expect(expiryYearField).toHaveValue(getValidYearString());
+    // Wait before clicking submit
+    await page.waitForTimeout(TEST_DATA.TIMEOUT_SHORT);
+    // Click the submit payment button
+    await submitButton.click();
+    // Wait for any potential validation to occur
+    await page.waitForTimeout(TEST_DATA.TIMEOUT_SHORT);
     
-  //  // await expect(iframe.locator(ERROR_PATTERNS.REQUIRED)).toBeVisible();
-  // });
+   // await expect(iframe.locator(ERROR_PATTERNS.REQUIRED)).toBeVisible();
+  });
 });
 
 

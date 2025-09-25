@@ -17,14 +17,16 @@
     "test:e2e:local": "npm run test:typecheck && playwright test --config=./playwright.local.config.js",
     "test:e2e:ui": "npm run test:typecheck && playwright test --ui",
     "test:e2e:ui:local": "npm run test:typecheck && playwright test --ui --config=./playwright.local.config.js",
-    "test:install": "playwright install"
+    "test:install": "playwright install",
+    "test:browserstack": "npm run test:typecheck && browserstack-node-sdk playwright test --config=./playwright.config.js",
+    "test:local:browserstack": "npm run test:typecheck && browserstack-node-sdk playwright test --config=./playwright.local.config.js",
+    "postinstall": "npm update browserstack-node-sdk"
   },
   "author": "Spreedly",
   "engines": {
     "node": "22.x"
   },
   "devDependencies": {
-    "@types/node": "^24.2.1",
     "@typescript-eslint/eslint-plugin": "^8.38.0",
     "@typescript-eslint/parser": "^8.38.0",
     "eslint": "^9.32.0",
@@ -32,14 +34,16 @@
     "eslint-plugin-prettier": "^5.5.3",
     "nodemon": "^3.1.10",
     "prettier": "^3.6.2",
-    "ts-node": "^10.9.2"
+    "ts-node": "^10.9.2",
+    "@types/node": "^24.2.1",
+    "browserstack-node-sdk": "^1.41.0"
   },
   "dependencies": {
-    "@playwright/test": "^1.54.2",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "@types/morgan": "^1.9.10",
     "axios": "^1.11.0",
+    "@playwright/test": "^1.54.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
