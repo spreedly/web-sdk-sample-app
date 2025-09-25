@@ -300,6 +300,14 @@ body {
   min-width: 0;
 }
 
+[data-testid='input-group-card-number'] {
+  flex: 0 0 60% !important;
+}
+
+[data-testid='input-group-cvv'] {
+  flex: 0 0 40% !important;
+}
+
 .input-label {
   display: block;
   margin-bottom: 8px;
