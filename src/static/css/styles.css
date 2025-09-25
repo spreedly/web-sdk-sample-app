@@ -728,7 +728,12 @@ body {
 }
 
 .checkout-plugin {
-  height: 575px !important;
+  height: 520px !important;
+  width: 500px !important;
+}
+
+.checkout-plugin-small {
+  height: 440px !important;
   width: 500px !important;
 }
 
