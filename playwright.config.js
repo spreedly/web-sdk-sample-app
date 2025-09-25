@@ -13,7 +13,10 @@ const config = {
     timeout: 5000,
   },
   workers: 4,
-  reporter: 'line',
+  reporter: [
+    ['line'],
+    ['junit', { outputFile: 'playwright-report/junit.xml' }],
+  ],
   projects: [
     {
       name: 'Checkout Web SDK',
