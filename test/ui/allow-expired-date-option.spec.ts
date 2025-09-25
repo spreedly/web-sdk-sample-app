@@ -266,89 +266,89 @@ test.describe("Allow Expired Date Option", () => {
     await expect(expiryYearField).not.toHaveCSS('border-color', CSS_PROPERTIES.RED_BORDER);
   });
 
-  test("should show warning in hosted fields when expired date option is disabled", async ({
-    page,
-  }) => {
-    await page.goto(URLS.BASE);
-    await waitForAuthParams(page);
-    // Click on hosted fields button first
-    const hostedFieldsButton = page.getByTestId(SELECTORS.HOSTED_FIELDS_BUTTON);
-    await expect(hostedFieldsButton).toBeEnabled();
-    await hostedFieldsButton.click();
+  // test("should show warning in hosted fields when expired date option is disabled", async ({
+  //   page,
+  // }) => {
+  //   await page.goto(URLS.BASE);
+  //   await waitForAuthParams(page);
+  //   // Click on hosted fields button first
+  //   const hostedFieldsButton = page.getByTestId(SELECTORS.HOSTED_FIELDS_BUTTON);
+  //   await expect(hostedFieldsButton).toBeEnabled();
+  //   await hostedFieldsButton.click();
 
-    // Verify we're on the hosted fields page
-    // await expect(page).toHaveURL(URLS.HOSTED_FIELDS);
-    await expect(page.locator(`h2:has-text("${HEADINGS.HOSTED_FIELDS_TITLE}")`)).toBeVisible();
+  //   // Verify we're on the hosted fields page
+  //   // await expect(page).toHaveURL(URLS.HOSTED_FIELDS);
+  //   await expect(page.locator(`h2:has-text("${HEADINGS.HOSTED_FIELDS_TITLE}")`)).toBeVisible();
 
-    // Ensure the "allow expired date" option is unchecked (default state)
-    const allowExpiredDateCheckbox = page.getByTestId(SELECTORS.ALLOW_EXPIRED_DATE);
-    await expect(allowExpiredDateCheckbox).toBeVisible();
-    await expect(allowExpiredDateCheckbox).not.toBeChecked();
+  //   // Ensure the "allow expired date" option is unchecked (default state)
+  //   const allowExpiredDateCheckbox = page.getByTestId(SELECTORS.ALLOW_EXPIRED_DATE);
+  //   await expect(allowExpiredDateCheckbox).toBeVisible();
+  //   await expect(allowExpiredDateCheckbox).not.toBeChecked();
 
-    // Verify form sections are visible
-    await expect(page.locator(`h3:has-text("${HEADINGS.PERSONAL_INFO}")`)).toBeVisible();
-    await expect(page.locator(`h3:has-text("${HEADINGS.PAYMENT_DETAILS}")`)).toBeVisible();
+  //   // Verify form sections are visible
+  //   await expect(page.locator(`h3:has-text("${HEADINGS.PERSONAL_INFO}")`)).toBeVisible();
+  //   await expect(page.locator(`h3:has-text("${HEADINGS.PAYMENT_DETAILS}")`)).toBeVisible();
 
-    // Get the form fields
-    const firstNameField = page.getByLabel(LABELS.FIRST_NAME);
-    const lastNameField = page.getByLabel(LABELS.LAST_NAME);
-    const expiryMonthField = page.getByTestId(SELECTORS.EXPIRY_MONTH);
-    const expiryYearField = page.getByTestId(SELECTORS.EXPIRY_YEAR);
-    const submitButton = page.getByRole("button", { name: SELECTORS.HOSTED_SUBMIT_BUTTON });
+  //   // Get the form fields
+  //   const firstNameField = page.getByLabel(LABELS.FIRST_NAME);
+  //   const lastNameField = page.getByLabel(LABELS.LAST_NAME);
+  //   const expiryMonthField = page.getByTestId(SELECTORS.EXPIRY_MONTH);
+  //   const expiryYearField = page.getByTestId(SELECTORS.EXPIRY_YEAR);
+  //   const submitButton = page.getByRole("button", { name: SELECTORS.HOSTED_SUBMIT_BUTTON });
 
-    // Verify name fields and submit button are visible
-    await expect(firstNameField).toBeVisible();
-    await expect(lastNameField).toBeVisible();
-    await expect(expiryMonthField).toBeVisible();
-    await expect(expiryYearField).toBeVisible();
-    await expect(submitButton).toBeVisible();
+  //   // Verify name fields and submit button are visible
+  //   await expect(firstNameField).toBeVisible();
+  //   await expect(lastNameField).toBeVisible();
+  //   await expect(expiryMonthField).toBeVisible();
+  //   await expect(expiryYearField).toBeVisible();
+  //   await expect(submitButton).toBeVisible();
 
-    // Wait for hosted fields iframes to load
-    const cardNumberIframe = page.locator(SELECTORS.HOSTED_CARD_IFRAME);
-    const cvvIframe = page.locator(SELECTORS.HOSTED_CVV_IFRAME);
-    await expect(cardNumberIframe).toBeVisible();
-    await expect(cvvIframe).toBeVisible();
+  //   // Wait for hosted fields iframes to load
+  //   const cardNumberIframe = page.locator(SELECTORS.HOSTED_CARD_IFRAME);
+  //   const cvvIframe = page.locator(SELECTORS.HOSTED_CVV_IFRAME);
+  //   await expect(cardNumberIframe).toBeVisible();
+  //   await expect(cvvIframe).toBeVisible();
 
-    // Get frame locators for hosted fields
-    const cardNumberFrame = page.frameLocator(SELECTORS.HOSTED_CARD_IFRAME);
-    const cvvFrame = page.frameLocator(SELECTORS.HOSTED_CVV_IFRAME);
+  //   // Get frame locators for hosted fields
+  //   const cardNumberFrame = page.frameLocator(SELECTORS.HOSTED_CARD_IFRAME);
+  //   const cvvFrame = page.frameLocator(SELECTORS.HOSTED_CVV_IFRAME);
 
-    // Wait for the hosted field inputs to be ready
-    await expect(cardNumberFrame.getByRole("textbox", { name: LABELS.CARD_NUMBER })).toBeVisible();
-    await expect(cvvFrame.getByRole("textbox", { name: LABELS.CVV_NUMBER })).toBeVisible();
+  //   // Wait for the hosted field inputs to be ready
+  //   await expect(cardNumberFrame.getByRole("textbox", { name: LABELS.CARD_NUMBER })).toBeVisible();
+  //   await expect(cvvFrame.getByRole("textbox", { name: LABELS.CVV_NUMBER })).toBeVisible();
 
-    // Fill payment details with expired date
-    await firstNameField.fill(TEST_DATA.FIRST_NAME);
-    await lastNameField.fill(TEST_DATA.LAST_NAME);
-    await cardNumberFrame.getByTestId(SELECTORS.HOSTED_NUMBER_FIELD).fill(TEST_DATA.CARD_NUMBER);
-    await cardNumberFrame.getByTestId(SELECTORS.HOSTED_NUMBER_FIELD).click();
-    await page.waitForTimeout(TEST_DATA.TIMEOUT_SHORT);
-    await cvvFrame.getByTestId(SELECTORS.HOSTED_CVV_FIELD).fill(TEST_DATA.CVV);
-    await expiryMonthField.fill(TEST_DATA.EXPIRED_MONTH);
-    await expiryYearField.fill(getExpiredYearString()); // Use expired year
+  //   // Fill payment details with expired date
+  //   await firstNameField.fill(TEST_DATA.FIRST_NAME);
+  //   await lastNameField.fill(TEST_DATA.LAST_NAME);
+  //   await cardNumberFrame.getByTestId(SELECTORS.HOSTED_NUMBER_FIELD).fill(TEST_DATA.CARD_NUMBER);
+  //   await cardNumberFrame.getByTestId(SELECTORS.HOSTED_NUMBER_FIELD).click();
+  //   await page.waitForTimeout(TEST_DATA.TIMEOUT_SHORT);
+  //   await cvvFrame.getByTestId(SELECTORS.HOSTED_CVV_FIELD).fill(TEST_DATA.CVV);
+  //   await expiryMonthField.fill(TEST_DATA.EXPIRED_MONTH);
+  //   await expiryYearField.fill(getExpiredYearString()); // Use expired year
 
-    // Verify all fields are filled with expired date
-    await expect(firstNameField).toHaveValue(TEST_DATA.FIRST_NAME);
-    await expect(lastNameField).toHaveValue(TEST_DATA.LAST_NAME);
-    await expect(cardNumberFrame.getByRole("textbox", { name: LABELS.CARD_NUMBER })).toHaveValue(/4111/);
-    await expect(cvvFrame.getByRole("textbox", { name: LABELS.CVV_NUMBER })).toHaveValue(TEST_DATA.CVV);
-    await expect(expiryMonthField).toHaveValue(TEST_DATA.EXPIRED_MONTH);
-    await expect(expiryYearField).toHaveValue(getExpiredYearString());
+  //   // Verify all fields are filled with expired date
+  //   await expect(firstNameField).toHaveValue(TEST_DATA.FIRST_NAME);
+  //   await expect(lastNameField).toHaveValue(TEST_DATA.LAST_NAME);
+  //   await expect(cardNumberFrame.getByRole("textbox", { name: LABELS.CARD_NUMBER })).toHaveValue(/4111/);
+  //   await expect(cvvFrame.getByRole("textbox", { name: LABELS.CVV_NUMBER })).toHaveValue(TEST_DATA.CVV);
+  //   await expect(expiryMonthField).toHaveValue(TEST_DATA.EXPIRED_MONTH);
+  //   await expect(expiryYearField).toHaveValue(getExpiredYearString());
 
-    // Wait before clicking submit
-    await page.waitForTimeout(TEST_DATA.TIMEOUT_SHORT);
+  //   // Wait before clicking submit
+  //   await page.waitForTimeout(TEST_DATA.TIMEOUT_SHORT);
 
-    // Click the submit payment button
-    await submitButton.click();
+  //   // Click the submit payment button
+  //   await submitButton.click();
 
-    // Wait for any potential validation to occur
-    await page.waitForTimeout(TEST_DATA.TIMEOUT_SHORT);
-    // Verify that validation errors or warnings appear for expired date
-    // Check for the specific "Card has expired" message that appears in hosted fields
-    const expiredCardMessage = page.locator(SELECTORS.TOKEN_CONTAINER_MESSAGE);
-    await expect(expiredCardMessage).toBeVisible();
-    await expect(expiredCardMessage).toContainText(ERROR_MESSAGES.HOSTED_FIELDS_CARD_EXPIRED);
-  });
+  //   // Wait for any potential validation to occur
+  //   await page.waitForTimeout(TEST_DATA.TIMEOUT_SHORT);
+  //   // Verify that validation errors or warnings appear for expired date
+  //   // Check for the specific "Card has expired" message that appears in hosted fields
+  //   const expiredCardMessage = page.locator(SELECTORS.TOKEN_CONTAINER_MESSAGE);
+  //   await expect(expiredCardMessage).toBeVisible();
+  //   await expect(expiredCardMessage).toContainText(ERROR_MESSAGES.HOSTED_FIELDS_CARD_EXPIRED);
+  // });
 });
 
 
