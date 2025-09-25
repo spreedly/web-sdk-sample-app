@@ -246,8 +246,6 @@ export const waitForAuthParams = async (page: any, maxRetries: number = 3, retry
       }
     }
   }
-  
-  // If we get here, all retries failed
   throw new Error(`Failed to get auth params after ${maxRetries} attempts. Last error: ${lastError?.message}`);
 };
 
