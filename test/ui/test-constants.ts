@@ -219,11 +219,35 @@ export const COMMON_PATTERNS = {
 };
 
 // Common test utilities
-export const waitForAuthParams = async (page: any) => {
-  await page.waitForResponse(
-    (response: any) =>
-      response.url().includes(API_ENDPOINTS.AUTH_PARAMS) &&
-      response.status() === 200
-  );
+export const waitForAuthParams = async (page: any, maxRetries: number = 3, retryDelay: number = 2000) => {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`Attempt ${attempt}/${maxRetries}: Waiting for auth params...`);
+      
+      await page.waitForResponse(
+        (response: any) =>
+          response.url().includes(API_ENDPOINTS.AUTH_PARAMS) &&
+          response.status() === 200,
+        { timeout: 10000 } // 10 second timeout per attempt
+      );
+      
+      console.log(`Auth params received successfully on attempt ${attempt}`);
+      return; // Success, exit the function
+      
+    } catch (error) {
+      lastError = error as Error;
+      console.log(`Attempt ${attempt} failed: ${lastError.message}`);
+      
+      if (attempt < maxRetries) {
+        console.log(`Retrying in ${retryDelay}ms...`);
+        await page.waitForTimeout(retryDelay);
+      }
+    }
+  }
+  
+  // If we get here, all retries failed
+  throw new Error(`Failed to get auth params after ${maxRetries} attempts. Last error: ${lastError?.message}`);
 };
 
