@@ -479,7 +479,12 @@ body {
 }
 
 .checkout-plugin {
-  height: 575px !important;
+  height: 500px !important;
+  width: 500px !important;
+}
+
+.checkout-plugin-small {
+  height: 300px !important;
   width: 500px !important;
 }
 

@@ -134,7 +134,7 @@ const tokenContainer2 = document.getElementById("token-container-message");
 
 sdk.on("error", (error: any) => {
   sdk.close();
-  tokenContainer2!.textContent = error;
+  tokenContainer2!.textContent = error.error;
 });
 sdk.on("tokenGenerated", (token: any) => {
   sdk.close();
