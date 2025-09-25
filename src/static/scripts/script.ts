@@ -183,7 +183,11 @@ function handleExpressClick(): void {
   });
   sdkExpressCheckout.on('error', (error: any) => {
     // sdkExpressCheckout.close();
-    tokenContainer!.textContent = error.error;
+    if (typeof error === 'string') {
+      tokenContainer!.textContent = error;
+    } else {
+      tokenContainer!.textContent = error.error;
+    }
   });
   sdkExpressCheckout.on('tokenGenerated', (token: any) => {
     // sdkExpressCheckout.close();
