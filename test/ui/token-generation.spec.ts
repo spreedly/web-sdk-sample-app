@@ -192,8 +192,11 @@ test.describe('Token Generation', () => {
     await expect(cvvIframe).toBeVisible();
     const cardNumberFrame = page.frameLocator(SELECTORS.HOSTED_CARD_IFRAME);
     const cvvFrame = page.frameLocator(SELECTORS.HOSTED_CVV_IFRAME);
+    const shippingAddressField = page.getByTestId(SELECTORS.HOSTED_SHIPPING_ADDRESS_FIELD);
     await page.getByLabel(LABELS.FIRST_NAME).fill(TEST_DATA.FIRST_NAME);
     await page.getByLabel(LABELS.LAST_NAME).fill(TEST_DATA.LAST_NAME);
+    await shippingAddressField.fill(TEST_DATA.SHIPPING_ADDRESS);
+
     await cardNumberFrame.getByTestId(SELECTORS.HOSTED_NUMBER_FIELD).fill(TEST_DATA.CARD_NUMBER_FORMATTED);
     await cardNumberFrame.getByTestId(SELECTORS.HOSTED_NUMBER_FIELD).click();
     await page.waitForTimeout(TEST_DATA.TIMEOUT_SHORT);
@@ -522,6 +525,7 @@ test('should generate token and validate API response structure in hosted fields
     await expect(allowExpiredDateCheckbox).toBeChecked();
     const expiryMonthField = page.getByTestId(SELECTORS.EXPIRY_MONTH);
     const expiryYearField = page.getByTestId(SELECTORS.EXPIRY_YEAR);
+    const shippingAddressField = page.getByTestId(SELECTORS.HOSTED_SHIPPING_ADDRESS_FIELD);
     const submitButton = page.getByRole("button", { name: SELECTORS.HOSTED_SUBMIT_BUTTON });
     await expect(expiryMonthField).toBeVisible();
     await expect(expiryYearField).toBeVisible();
@@ -534,6 +538,7 @@ test('should generate token and validate API response structure in hosted fields
     const cvvFrame = page.frameLocator(SELECTORS.HOSTED_CVV_IFRAME);
     await expect(cardNumberFrame.getByRole("textbox", { name: LABELS.CARD_NUMBER })).toBeVisible();
     await expect(cvvFrame.getByRole("textbox", { name: LABELS.CVV_NUMBER })).toBeVisible();
+    await shippingAddressField.fill(TEST_DATA.SHIPPING_ADDRESS);
     await cardNumberFrame.getByTestId(SELECTORS.HOSTED_NUMBER_FIELD).fill(TEST_DATA.CARD_NUMBER_FORMATTED);
     await cardNumberFrame.getByTestId(SELECTORS.HOSTED_NUMBER_FIELD).click();
     await page.waitForTimeout(TEST_DATA.TIMEOUT_SHORT);

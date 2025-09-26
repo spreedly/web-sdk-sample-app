@@ -23,7 +23,7 @@ export const SELECTORS = {
   RESTART_BUTTON: "btn-restart",
 
   // Express Checkout (inside iframe)
-  EXPRESS_IFRAME: "iframe.checkout-plugin",
+  EXPRESS_IFRAME: "iframe.checkout-plugin, iframe.checkout-plugin-small",
   EMBEDDED_IFRAME_CONTAINER: "#checkout-plugin-container iframe.checkout-plugin",
   // EXPRESS_PAY_BUTTON: 'button:has-text("Pay")',
   EXPIRY_MM_YY: 'input[placeholder="MM/YY"]',
@@ -37,6 +37,7 @@ export const SELECTORS = {
   //HOSTED_CVV_INPUT: "#spreedly-hosted-cvv-input",
   HOSTED_NUMBER_FIELD: "hosted-number-field",
   HOSTED_CVV_FIELD: "hosted-cvv-field",
+  HOSTED_SHIPPING_ADDRESS_FIELD: "input-shipping-address",
 
   // Form Fields(hosted fields data-testid)
   EXPIRY_MONTH: "input-expiry-month",
@@ -92,6 +93,7 @@ export const TEST_DATA = {
   FIRST_NAME: "John",
   LAST_NAME: "Doe",
   EMPTY_STRING: "",
+  SHIPPING_ADDRESS: "123 Main St",
   // Timeout Values
   TIMEOUT_SHORT: 2000,
   TIMEOUT_LONG: 10000,
@@ -219,11 +221,34 @@ export const COMMON_PATTERNS = {
 };
 
 // Common test utilities
-export const waitForAuthParams = async (page: any) => {
-  await page.waitForResponse(
-    (response: any) =>
-      response.url().includes(API_ENDPOINTS.AUTH_PARAMS) &&
-      response.status() === 200
-  );
+export const waitForAuthParams = async (page: any, maxRetries: number = 3, retryDelay: number = 2000) => {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`Attempt ${attempt}/${maxRetries}: Waiting for auth params...`);
+      
+      await page.waitForResponse(
+        (response: any) =>
+          response.url().includes(API_ENDPOINTS.AUTH_PARAMS) &&
+          response.status() === 200,
+        { timeout: 10000 } 
+  
+      );
+      
+      console.log(`Auth params received successfully on attempt ${attempt}`);
+      return; 
+      
+    } catch (error) {
+      lastError = error as Error;
+      console.log(`Attempt ${attempt} failed: ${lastError.message}`);
+      
+      if (attempt < maxRetries) {
+        console.log(`Retrying in ${retryDelay}ms...`);
+        await page.waitForTimeout(retryDelay);
+      }
+    }
+  }
+  throw new Error(`Failed to get auth params after ${maxRetries} attempts. Last error: ${lastError?.message}`);
 };
 
