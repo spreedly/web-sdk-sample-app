@@ -52,6 +52,7 @@ function captureApiResponse(page: Page, responseData: {
 async function fillFormHostedFields(page: Page, year:string) {
     const firstNameField = page.getByLabel(LABELS.FIRST_NAME);
     const lastNameField = page.getByLabel(LABELS.LAST_NAME);
+    const shippingAddressField = page.getByTestId(SELECTORS.HOSTED_SHIPPING_ADDRESS_FIELD);
     const expiryMonthField = page.getByTestId(SELECTORS.EXPIRY_MONTH);
     const expiryYearField = page.getByTestId(SELECTORS.EXPIRY_YEAR);
     const cardNumberIframe = page.locator(SELECTORS.HOSTED_CARD_IFRAME);
@@ -62,6 +63,7 @@ async function fillFormHostedFields(page: Page, year:string) {
     const cvvFrame = page.frameLocator(SELECTORS.HOSTED_CVV_IFRAME);
     await firstNameField.fill(TEST_DATA.FIRST_NAME);
     await lastNameField.fill(TEST_DATA.LAST_NAME);
+    await shippingAddressField.fill(TEST_DATA.SHIPPING_ADDRESS);
     await cardNumberFrame.getByTestId(SELECTORS.HOSTED_NUMBER_FIELD).fill(TEST_DATA.CARD_NUMBER_FORMATTED);
     await cardNumberFrame.getByTestId(SELECTORS.HOSTED_NUMBER_FIELD).click();
     await page.waitForTimeout(TEST_DATA.TIMEOUT_SHORT);
