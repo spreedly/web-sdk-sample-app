@@ -300,12 +300,8 @@ body {
   min-width: 0;
 }
 
-[data-testid='input-group-card-number'] {
-  flex: 0 0 60% !important;
-}
-
 [data-testid='input-group-cvv'] {
-  flex: 0 0 40% !important;
+  flex: 0 0 15% !important;
 }
 
 .input-label {
@@ -337,6 +333,53 @@ body {
   color: #adb5bd;
 }
 
+.form-input.error {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
+}
+
+.form-input.error:focus {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
+}
+
+/* Error message styles - MUI-like helper text */
+.error-message {
+  font-size: 0.75rem;
+  line-height: 1.66;
+  color: #dc3545;
+  margin-top: 3px;
+  margin-left: 14px;
+  margin-right: 14px;
+  font-weight: 400;
+  letter-spacing: 0.03333em;
+  min-height: 1.25rem;
+  display: none !important;
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.error-message.show {
+  display: block !important;
+  opacity: 1;
+}
+
+/* Form error container */
+.form-error {
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
+  padding: 12px 16px;
+  margin: 16px 0;
+  font-size: 0.875rem;
+  color: #721c24;
+  display: none; /* Hidden by default */
+}
+
+.form-error-active {
+  display: block !important;
+}
+
 /* Hosted fields */
 .hosted-field {
   height: 48px;
@@ -361,8 +404,13 @@ body {
 
 .expiry-fields {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
+}
+
+.expiry-field-container {
+  display: flex;
+  flex-direction: column;
 }
 
 .expiry-fields input {

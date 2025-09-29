@@ -88,6 +88,7 @@
                     data-testid="input-first-name"
                     maxlength="350"
                   />
+                  <div class="error-message" id="first-name-error"></div>
                 </div>
                 <div class="input-group" data-testid="input-group-last-name">
                   <label
@@ -105,6 +106,7 @@
                     data-testid="input-last-name"
                     maxlength="350"
                   />
+                  <div class="error-message" id="last-name-error"></div>
                 </div>
               </div>
               <div class="row" data-testid="address-row">
@@ -124,11 +126,11 @@
                     name="shipping_address1"
                     class="form-input"
                     placeholder="Enter shipping address"
-                    required
                     value=""
                     data-testid="input-shipping-address"
-                    maxlength="500"
+                    maxlength="350"
                   />
+                  <div class="error-message" id="shipping-address1-error"></div>
                 </div>
               </div>
             </div>
@@ -177,32 +179,36 @@
                     >Expiration Date</label
                   >
                   <div class="expiry-fields" data-testid="expiry-fields">
-                    <input
-                      type="text"
-                      id="expiry-month"
-                      name="expiry-month"
-                      class="form-input"
-                      maxlength="2"
-                      placeholder="MM"
-                      required
-                      data-testid="input-expiry-month"
-                    />
+                    <div class="expiry-field-container">
+                      <input
+                        type="text"
+                        id="expiry-month"
+                        name="expiry-month"
+                        class="form-input"
+                        maxlength="2"
+                        placeholder="MM"
+                        data-testid="input-expiry-month"
+                      />
+                      <div class="error-message" id="expiry-month-error"></div>
+                    </div>
                     <span
                       class="slash"
                       id="expiry-slash"
                       data-testid="expiry-slash"
                       >/</span
                     >
-                    <input
-                      type="text"
-                      id="expiry-year"
-                      name="expiry-year"
-                      class="form-input"
-                      maxlength="4"
-                      placeholder="YYYY"
-                      required
-                      data-testid="input-expiry-year"
-                    />
+                    <div class="expiry-field-container">
+                      <input
+                        type="text"
+                        id="expiry-year"
+                        name="expiry-year"
+                        class="form-input"
+                        maxlength="4"
+                        placeholder="YYYY"
+                        data-testid="input-expiry-year"
+                      />
+                      <div class="error-message" id="expiry-year-error"></div>
+                    </div>
                   </div>
                   <div
                     class="expiry-single"
@@ -218,9 +224,13 @@
                       maxlength="5"
                     />
                   </div>
+                  <div class="error-message" id="expiry-error"></div>
                 </div>
               </div>
             </div>
+
+            <!-- General form error container -->
+            <div class="error-message form-error" id="form-error"></div>
 
             <button
               type="submit"
