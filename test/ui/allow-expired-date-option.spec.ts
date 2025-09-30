@@ -349,9 +349,12 @@ test.describe("Allow Expired Date Option", () => {
     await page.waitForTimeout(TEST_DATA.TIMEOUT_SHORT);
     // Verify that validation errors or warnings appear for expired date
     // Check for the specific "Card has expired" message that appears in hosted fields
-    const expiredCardMessage = page.locator(SELECTORS.TOKEN_CONTAINER_MESSAGE);
-    await expect(expiredCardMessage).toBeVisible();
-    await expect(expiredCardMessage).toContainText(ERROR_MESSAGES.HOSTED_FIELDS_CARD_EXPIRED);
+    const expiredYearError = page.locator(SELECTORS.EXPIRY_YEAR_ERROR);
+    const expiredMonthError = page.locator(SELECTORS.EXPIRY_MONTH_ERROR);
+    await expect(expiredYearError).toBeVisible();
+    await expect(expiredYearError).toContainText(ERROR_MESSAGES.HOSTED_FIELDS_CARD_EXPIRED);
+    await expect(expiredMonthError).toBeVisible();
+    await expect(expiredMonthError).toContainText(ERROR_MESSAGES.HOSTED_FIELDS_CARD_EXPIRED);
   });
 
 });

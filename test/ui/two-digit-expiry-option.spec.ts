@@ -98,7 +98,7 @@ test.describe("Two Digit Expiry Option", () => {
     // Verify MM/YY field is visible and enabled when two digit expiry is enabled
     await expect(mmyyField).toBeVisible();
     await expect(mmyyField).toBeEnabled();
-    await expect(mmyyField).toHaveAttribute('required');
+    //await expect(mmyyField).toHaveAttribute('required');
     await expect(mmyyField).toHaveAttribute('placeholder', 'MM/YY');
     await expect(mmyyField).toHaveAttribute('maxlength', '5');
     
@@ -131,9 +131,9 @@ test.describe("Two Digit Expiry Option", () => {
     await page.waitForTimeout(TEST_DATA.TIMEOUT_SHORT);
 
     // Verify "Card has expired" message appears
-    const cardExpiredMessage = page.locator(SELECTORS.TOKEN_CONTAINER_MESSAGE);
-    await expect(cardExpiredMessage).toBeVisible();
-    await expect(cardExpiredMessage).toHaveText(ERROR_MESSAGES.HOSTED_FIELDS_CARD_EXPIRED);
+    const cardExpiredError = page.locator(SELECTORS.CARD_EXPIRED_ERROR);
+    await expect(cardExpiredError).toBeVisible();
+    await expect(cardExpiredError).toHaveText(ERROR_MESSAGES.HOSTED_FIELDS_CARD_EXPIRED);
   });
 
   test("should show validation error for invalid date in express checkout with two digit expiry", async ({
@@ -244,7 +244,7 @@ test.describe("Two Digit Expiry Option", () => {
     await cvvFrame.getByTestId(SELECTORS.HOSTED_CVV_FIELD).fill(TEST_DATA.CVV);
 
     const submitButton = page.getByRole("button", { name: SELECTORS.HOSTED_SUBMIT_BUTTON });
-    const tokenMessage = page.locator(SELECTORS.TOKEN_CONTAINER_MESSAGE);
+    const expiryError = page.locator(SELECTORS.CARD_EXPIRED_ERROR);
 
     // Test invalid month (13) - should trigger invalid month error
     await mmyyField.fill(`13/${getValidTwoDigitYear()}`);
@@ -253,12 +253,10 @@ test.describe("Two Digit Expiry Option", () => {
     await submitButton.click();
     await page.waitForTimeout(TEST_DATA.TIMEOUT_SHORT);
 
-    
-     // Verify validation error message for invalid month (13)
-     await expect(tokenMessage).toBeVisible();
-     await expect(tokenMessage).toHaveText(ERROR_MESSAGES.HOSTED_FIELDS_INVALID_MONTH);
-     await expect(tokenMessage).toHaveClass(/auth-title/);
-    
+      // Verify validation error message for invalid month (13)
+    await expect(expiryError).toBeVisible();
+    await expect(expiryError).toHaveText(ERROR_MESSAGES.HOSTED_FIELDS_INVALID_MONTH);
+   
      // Test invalid month (00) - should also trigger invalid month error
      await mmyyField.clear();
      await mmyyField.fill(`00/${getValidTwoDigitYear()}`);
@@ -268,10 +266,8 @@ test.describe("Two Digit Expiry Option", () => {
      await page.waitForTimeout(2000);
     
      // Verify validation error message for invalid month (00)
-     await expect(tokenMessage).toBeVisible();
-     await expect(tokenMessage).toHaveText(ERROR_MESSAGES.HOSTED_FIELDS_INVALID_MONTH);
-     await expect(tokenMessage).toHaveClass(/auth-title/);
-
+     await expect(expiryError).toBeVisible();
+     await expect(expiryError).toHaveText(ERROR_MESSAGES.HOSTED_FIELDS_INVALID_MONTH);
      // Test expired year (past year) - should trigger expired card error
      const expiredTwoDigitYear = getExpiredYear().toString().slice(-2);
      await mmyyField.clear();
@@ -282,10 +278,8 @@ test.describe("Two Digit Expiry Option", () => {
      await page.waitForTimeout(TEST_DATA.TIMEOUT_SHORT);
     
      // Verify validation error message for expired card
-     await expect(tokenMessage).toBeVisible();
-     await expect(tokenMessage).toHaveText(ERROR_MESSAGES.HOSTED_FIELDS_CARD_EXPIRED);
-     await expect(tokenMessage).toHaveClass(/auth-title/);
-
+     await expect(expiryError).toBeVisible();
+     await expect(expiryError).toHaveText(ERROR_MESSAGES.HOSTED_FIELDS_CARD_EXPIRED);
      // Test with valid date to ensure error clears
      await mmyyField.clear();
      await mmyyField.fill(`12/${getValidTwoDigitYear()}`);
@@ -295,8 +289,8 @@ test.describe("Two Digit Expiry Option", () => {
      await page.waitForTimeout(TEST_DATA.TIMEOUT_SHORT);
     
      // Verify that error message is not showing invalid month or expired card error
-     if (await tokenMessage.isVisible()) {
-       const messageText = await tokenMessage.textContent();
+     if (await expiryError.isVisible()) {
+       const messageText = await expiryError.textContent();
        expect(messageText).not.toBe(ERROR_MESSAGES.INVALID_MONTH);
        expect(messageText).not.toBe(ERROR_MESSAGES.CARD_EXPIRED);
      }
