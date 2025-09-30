@@ -49,6 +49,9 @@ export const SELECTORS = {
   // Messages
   TOKEN_CONTAINER: "#token-container",
   TOKEN_CONTAINER_MESSAGE: "#token-container-message",
+  CARD_EXPIRED_ERROR: "#expiry-error",
+  EXPIRY_YEAR_ERROR: "#expiry-year-error",
+  EXPIRY_MONTH_ERROR: "#expiry-month-error",
 } as const;
 
 export const PLACEHOLDERS = {
