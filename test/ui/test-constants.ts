@@ -248,6 +248,9 @@ export const waitForAuthParams = async (page: any, maxRetries: number = 3, retry
       
       if (attempt < maxRetries) {
         console.log(`Retrying in ${retryDelay}ms...`);
+        console.log(`Refreshing page for attempt ${attempt + 1}...`);
+        await page.reload();
+        await page.waitForLoadState('networkidle');
         await page.waitForTimeout(retryDelay);
       }
     }
