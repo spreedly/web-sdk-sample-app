@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Spreedly Hosted Fields Demo</title>
     <link rel="stylesheet" href="./css/hostedFields.css" />
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   </head>
 
   <body>
@@ -244,6 +245,27 @@
         </div>
       </main>
     </div>
+
+    <script>
+      async function fetchAuthParams() {
+        try {
+          const response = await axios.get(
+            'https://checkout-web-sample-app-049a3c617015.herokuapp.com/api/auth/get-auth-params'
+          );
+          const authParams = {...response.data, token: response.data.certificateToken, 'env-key': '0RMACG59RG8VQ9A4G09QDD3F1Q'};
+          delete authParams.certificateToken
+          window.sessionStorage.setItem('authParams', JSON.stringify(authParams));
+        } catch (error) {
+          console.error('Error fetching auth params:', error);
+        }
+      }
+
+      if(!window.sessionStorage.getItem('authParams')
+      ) {
+        fetchAuthParams();
+      }
+
+    </script>
 
     <script>
       const tokenContainer = document.getElementById('token-container');
