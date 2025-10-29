@@ -253,27 +253,58 @@
             'https://checkout-web-sample-app-049a3c617015.herokuapp.com/api/auth/get-auth-params'
           );
           const authParams = {...response.data, token: response.data.certificateToken, 'env-key': 'REDACTED_ENVIRONMENT_KEY'};
-          delete authParams.certificateToken
+          delete authParams.certificateToken;
           window.sessionStorage.setItem('authParams', JSON.stringify(authParams));
         } catch (error) {
           console.error('Error fetching auth params:', error);
+          throw error; // Re-throw to prevent SDK loading on error
         }
       }
-
-      if(!window.sessionStorage.getItem('authParams')
-      ) {
-        fetchAuthParams();
+    
+      async function initializeSDK() {
+        try {
+          // Ensure auth params exist before loading SDK
+          if (!window.sessionStorage.getItem('authParams')) {
+            await fetchAuthParams();
+          }
+    
+          // Load SDK script after auth params are ready
+          return new Promise((resolve, reject) => {
+            
+            const sdkScript = document.createElement('script');
+            sdkScript.src = 'https://core-test.spreedly.com/checkout/sdk/rc/index.js';
+            sdkScript.onload = () => {
+              console.log('SDK loaded successfully');
+              // Load hosted fields script after SDK is ready
+              const hostedFieldsScript = document.createElement('script');
+              hostedFieldsScript.src = './scripts/hostedFields.js';
+              hostedFieldsScript.onload = () => {
+                console.log('Hosted fields initialized successfully');
+                resolve();
+              };
+              document.head.appendChild(hostedFieldsScript);
+            };
+            sdkScript.onerror = () => reject(new Error('Failed to load SDK script'));
+            document.head.appendChild(sdkScript);
+          });
+        } catch (error) {
+          console.error('Failed to initialize SDK:', error);
+          // Show user-friendly error message
+          document.body.innerHTML = '<div style="padding: 20px; color: red; text-align: center;"><h2>Failed to load payment form</h2><p>Please refresh the page and try again.</p></div>';
+        }
       }
-
+    
+      // Initialize when DOM is ready
+      document.addEventListener('DOMContentLoaded', function() {
+        initializeSDK();
+      });
     </script>
-
+    
     <script>
       const tokenContainer = document.getElementById('token-container');
       const tokenContainerError = document.getElementById(
         'token-container-error'
       );
     </script>
-    <script src="https://core-test.spreedly.com/checkout/sdk/rc/index.js"></script>
-    <script src="./scripts/hostedFields.js"></script>
   </body>
 </html>
