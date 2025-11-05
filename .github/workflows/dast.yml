@@ -13,4 +13,5 @@ jobs:
     steps:
       - name: ZAP Scan
         uses: zaproxy/action-full-scan@v0.13.0
-        with: 'https://checkout-web-sample-app-049a3c617015.herokuapp.com/'
+        with:
+          target: 'https://checkout-web-sample-app-049a3c617015.herokuapp.com/'
