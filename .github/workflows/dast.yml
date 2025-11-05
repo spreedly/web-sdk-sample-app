@@ -1,0 +1,16 @@
+name: DAST Security Scan
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  zap_scan:
+    runs-on: ubuntu-latest
+    name: Scan the webapplication
+    steps:
+      - name: ZAP Scan
+        uses: zaproxy/action-full-scan@v0.13.0
+        with: 'https://checkout-web-sample-app-049a3c617015.herokuapp.com/'
