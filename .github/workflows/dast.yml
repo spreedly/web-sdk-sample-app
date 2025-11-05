@@ -15,3 +15,14 @@ jobs:
         uses: zaproxy/action-full-scan@v0.13.0
         with:
           target: 'https://checkout-web-sample-app-049a3c617015.herokuapp.com/'
+          allow_issue_writing: false
+      
+      - name: Upload ZAP Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-security-report
+          path: |
+            report_html.html
+            report_md.md
+          retention-days: 30
