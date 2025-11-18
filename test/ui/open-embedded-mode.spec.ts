@@ -203,9 +203,9 @@ test("Allow blank option in open in embedded mode", async ({ page }) => {
     await cardNumberField.fill(TEST_DATA.CARD_NUMBER_TOO_SHORT);
     await payButton.click();
     await page.waitForTimeout(TEST_DATA.TIMEOUT_SHORT);
-    const cardNumberLengthIcon = iframe.locator(ERROR_SELECTORS.CARD_NUMBER_LENGTH_ICON);
+    const cardNumberLengthIcon = iframe.locator(ERROR_SELECTORS.INVALID_CARD_NUMBER_ICON);
     await expect(cardNumberLengthIcon).toBeVisible();
-    await expect(cardNumberLengthIcon).toHaveAttribute('aria-label', ERROR_MESSAGES.CARD_NUMBER_LENGTH);
+    await expect(cardNumberLengthIcon).toHaveAttribute('aria-label', ERROR_MESSAGES.INVALID_CARD_NUMBER);
     await cardNumberField.fill(TEST_DATA.CARD_NUMBER);
     await cvvField.fill(TEST_DATA.INVALID_CVV_LONG);
     await payButton.click();
