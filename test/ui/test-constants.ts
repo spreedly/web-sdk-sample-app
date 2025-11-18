@@ -128,7 +128,7 @@ export const ERROR_MESSAGES = {
   HOSTED_FIELDS_CARD_EXPIRED: "Card has expired",
   INVALID_MONTH: "Error: Month must be between 1 and 12",
   HOSTED_FIELDS_INVALID_MONTH: "Month must be between 1 and 12",
-  INVALID_CARD_NUMBER: "Error: Invalid card number",
+  INVALID_CARD_NUMBER: "Error: Please enter a valid card number",
   HOSTED_FIELDS_INVALID_CARD_NUMBER: "Invalid card number",
   CARD_NUMBER_LENGTH: "Error: Card number must be between 13 and 19 digits",
   HOSTED_FIELDS_CARD_NUMBER_LENGTH: "Card number must be between 13 and 19 digits",

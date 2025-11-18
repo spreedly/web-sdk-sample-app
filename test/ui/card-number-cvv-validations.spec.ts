@@ -129,9 +129,9 @@ test.describe('Card Number and CVV Validation', () => {
     await payButton.click();
     await page.waitForTimeout(TEST_DATA.TIMEOUT_SHORT);
     await expect(cardNumberField).toHaveAttribute('aria-invalid', 'true');
-    const cardNumberLengthIcon = iframe.locator(ERROR_SELECTORS.CARD_NUMBER_LENGTH_ICON);
+    const cardNumberLengthIcon = iframe.locator(ERROR_SELECTORS.INVALID_CARD_NUMBER_ICON);
     await expect(cardNumberLengthIcon).toBeVisible();
-    await expect(cardNumberLengthIcon).toHaveAttribute('aria-label', ERROR_MESSAGES.CARD_NUMBER_LENGTH);
+    await expect(cardNumberLengthIcon).toHaveAttribute('aria-label', ERROR_MESSAGES.INVALID_CARD_NUMBER);
   });
 
   test('Shows validation for too short card number in hosted fields', async ({ page }) => {
