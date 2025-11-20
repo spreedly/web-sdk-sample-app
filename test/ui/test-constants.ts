@@ -52,6 +52,9 @@ export const SELECTORS = {
   CARD_EXPIRED_ERROR: "#expiry-error",
   EXPIRY_YEAR_ERROR: "#expiry-year-error",
   EXPIRY_MONTH_ERROR: "#expiry-month-error",
+
+  BIN_CARD_LABEL:".MuiChip-label",
+  HOSTED_FIELDS_CARD_LABEL: "#card-type-icon .card-type-label",
 } as const;
 
 export const PLACEHOLDERS = {
