@@ -32,7 +32,6 @@ test.describe('BIN validation',()=>{
             const binCardLabel = iframe.locator(SELECTORS.BIN_CARD_LABEL);
             await binCardLabel.waitFor({ state: 'visible', timeout: 2000 });
             const binCardLabelText = await binCardLabel.textContent();
-            console.log(`BIN: ${bin}, Expected: ${expectedCardType}, Got: ${binCardLabelText}`);
             expect(binCardLabelText).toContain(expectedCardType.toUpperCase());
             await cardNumberField.clear();
             await page.waitForTimeout(500);
@@ -43,6 +42,7 @@ test.describe('BIN validation',()=>{
                 console.error(`ERROR: ${errorMessage}`);
             }
         } 
+        console.log(`${expectedCardType} BIN validations passed!`);
     }
     if (failures.length > 0) {
         const failureSummary = `\n\n${failures.length} failure(s) found:\n${failures.map((f, i) => `${i + 1}. ${f}`).join('\n')}`;
