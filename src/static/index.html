@@ -176,7 +176,7 @@
           document.getElementById('hosted-fields-btn').disabled = true;
           document.getElementById('express-btn').disabled = true;
           const response = await axios.get(
-            'https://checkout-web-sample-app-049a3c617015.herokuapp.com/api/auth/get-auth-params'
+            'https://checkout-web-sample-app-049a3c617015.herokuapp.com/api/v1/auth/params'
           );
           const authParams = response.data;
           authParams['env-key'] = 'REDACTED_ENVIRONMENT_KEY';
