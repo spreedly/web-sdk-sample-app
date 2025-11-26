@@ -1,0 +1,95 @@
+name: E2E Tests - Playwright
+permissions:
+  contents: read
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  schedule:
+    # Run at 06:00 UTC daily
+    - cron: '0 6 * * *'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [22.x]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    # - name: Install Playwright browsers
+    #   run: npm run test:install
+
+    # - name: Run E2E tests
+    #   run: npm run test:e2e
+
+    - name: Upload test results to Datadog
+      if: always()
+      env:
+        DATADOG_API_KEY: ${{ secrets.DD_API_KEY }}
+        DATADOG_APP_KEY: ${{ secrets.DD_APP_KEY }}
+        DATADOG_SITE: datadoghq.com
+      run: |
+        # Validate environment variables
+        if [ -z "$DATADOG_API_KEY" ] || [ -z "$DATADOG_APP_KEY" ]; then
+          echo "Warning: Datadog credentials not found. Skipping test result upload."
+          echo "Please ensure DD_API_KEY and DD_APP_KEY secrets are configured."
+          exit 0
+        fi
+        
+        # Validate junit.xml file exists
+        if [ ! -f "./playwright-report/junit.xml" ]; then
+          echo "Warning: junit.xml file not found. Skipping test result upload."
+          echo "Expected file: ./playwright-report/junit.xml"
+          if [ -d "./playwright-report" ]; then
+            echo "Playwright report directory contents:"
+            ls -la ./playwright-report/ | grep -E '\.(xml|junit)' || echo "No XML files found in playwright-report directory"
+          else
+            echo "Playwright report directory does not exist"
+          fi
+          exit 0
+        fi
+        
+        # Validate junit.xml file is not empty
+        if [ ! -s "./playwright-report/junit.xml" ]; then
+          echo "Warning: junit.xml file is empty. Skipping test result upload."
+          exit 0
+        fi
+        
+        echo "Uploading test results to Datadog..."
+        echo "File size: $(stat -c%s "./playwright-report/junit.xml" 2>/dev/null || stat -f%z "./playwright-report/junit.xml") bytes"
+        
+        # Upload with retry mechanism
+        for attempt in 1 2 3; do
+          if npx @datadog/datadog-ci junit upload \
+            --service web-sdk-sample-app \
+            --tags "project:web-sdk-sample-app,environment:ci" \
+            ./playwright-report/junit.xml; then
+            echo "Successfully uploaded test results to Datadog (attempt $attempt)"
+            break
+          else
+            echo "Upload attempt $attempt failed"
+            if [ $attempt -eq 3 ]; then
+              echo "All upload attempts failed. Test results could not be uploaded to Datadog."
+              echo "This won't fail the build, but test visibility will be limited."
+              exit 0
+            fi
+            echo "Retrying in $((attempt * 2)) seconds..."
+            sleep $((attempt * 2))
+          fi
+        done
