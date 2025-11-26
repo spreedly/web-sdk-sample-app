@@ -3,7 +3,7 @@ export const URLS = {
 } as const;
 
 export const API_ENDPOINTS = {
-  AUTH_PARAMS: "/api/auth/get-auth-params",
+  AUTH_PARAMS: "/api/v1/auth/params",
 } as const;
 
 export const SELECTORS = {

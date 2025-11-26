@@ -322,7 +322,7 @@ sdk.on("error", (error: any) => {
 });
 sdk.on("tokenGenerated", (token: any) => {
   sdk.close();
-  tokenContainer2!.textContent = `Token: ${token.tokenResponse.token}`;
+  tokenContainer2!.textContent = `Token: ${token.tokenResponse.payment_method.token}`;
 });
 sdk.inAppElements({
   number: {
