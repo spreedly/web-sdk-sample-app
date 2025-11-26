@@ -50,6 +50,23 @@ function attachCheckboxListeners(): void {
 
 attachCheckboxListeners();
 
+// Attach button event listeners
+document.addEventListener('DOMContentLoaded', () => {
+  const expressBtn = document.getElementById('express-btn');
+  const hostedFieldsBtn = document.getElementById('hosted-fields-btn');
+  const restartBtn = document.getElementById('restart-btn');
+
+  if (expressBtn) {
+    expressBtn.addEventListener('click', handleExpressClick);
+  }
+  if (hostedFieldsBtn) {
+    hostedFieldsBtn.addEventListener('click', handleHostedFieldsClick);
+  }
+  if (restartBtn) {
+    restartBtn.addEventListener('click', handleRestartClick);
+  }
+});
+
 function handleHostedFieldsClick(): void {
   const authParams: AuthParams = captureAuthParams();
 
@@ -191,7 +208,7 @@ function handleExpressClick(): void {
   });
   sdkExpressCheckout.on('tokenGenerated', (token: any) => {
     // sdkExpressCheckout.close();
-    tokenContainer!.textContent = `Token: ${token.tokenResponse.token}`;
+    tokenContainer!.textContent = `Token: ${token.tokenResponse.payment_method.token}`;
   });
   console.log({
     openInEmbeddedModeChecked,
