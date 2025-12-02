@@ -70,6 +70,14 @@
               <label class="checkbox">
                 <input
                   type="checkbox"
+                  id="retain_payment_method"
+                  data-testid="retain-payment-method"
+                />
+                Retain payment method
+              </label>
+              <label class="checkbox">
+                <input
+                  type="checkbox"
                   id="open_in_embedded_mode"
                   data-testid="open-in-embedded-mode"
                 />
@@ -165,9 +173,18 @@
             ></textarea>
           </div>
         </div>
+        
+        <!-- Saved Payment Methods Section -->
+        <div class="saved-cards-section" id="saved-cards-section">
+          <h3 class="saved-cards-title">Saved Payment Methods</h3>
+          <div class="saved-cards-list" id="saved-cards-list">
+          </div>
+        </div>
+        
         <div id="checkout-plugin-container"></div>
       </main>
     </div>
+    <!-- <script src="./scripts/index.js"></script> -->
     <script src="https://core-test.spreedly.com/checkout/sdk/rc/index.js"></script>
     <script src="./scripts/script.js"></script>
     <script>

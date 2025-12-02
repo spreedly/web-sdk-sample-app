@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { getAuthParams } from './controllers/auth';
-import { createPaymentMethod, getPaymentMethods, retainPaymentMethod } from './controllers/payments';
+import { createPaymentMethod, getPaymentMethods, retainPaymentMethod, recachePaymentMethod } from './controllers/payments';
 
 const router = Router();
 
@@ -97,5 +97,28 @@ router.get('/payment_methods', getPaymentMethods);
  *         description: Error retaining payment method
  */
 router.put('/payment_methods/:paymentMethodToken/retain', retainPaymentMethod);
+
+
+/**
+ * @swagger
+ * /api/v1/payment_methods/{paymentMethodToken}/recache:
+ *   post:
+ *     description: Recache a payment method
+ *     tags: [Payment Methods]
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: paymentMethodToken
+ *         description: The unique token identifying the payment method
+ *         in: path
+ *         required: true
+ *         type: string
+ *     responses:
+ *       200:
+ *         description: Payment method recached successfully
+ *       500:
+ *         description: Error recaching payment method
+ */
+router.put('/payment_methods/:paymentMethodToken/recache', recachePaymentMethod);
 
 export default router;
