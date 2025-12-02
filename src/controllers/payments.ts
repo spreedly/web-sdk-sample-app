@@ -82,3 +82,26 @@ export const retainPaymentMethod = async (req: Request, res: Response): Promise<
     }
   }
 };
+
+export const recachePaymentMethod = async (req: Request, res: Response): Promise<void> => {
+  const token = req.params.paymentMethodToken || '';
+  try {
+    const response = await axios.post(
+      `${config.spreedlyUrl}/v1/payment_methods/${token}/recache.json`,
+      req.body,
+      {
+        headers: {
+          'spreedly-environment-key': req.headers['spreedly-environment-key'],
+        },
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    if (error instanceof AxiosError) {
+      res.status(500).json({ error: error.message });
+    } else {
+      res.status(500).json({ error: 'An unknown error occurred' });
+    }
+  }
+};
