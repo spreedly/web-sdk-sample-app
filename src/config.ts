@@ -18,8 +18,8 @@ const config: Config = {
   privateKey: process.env.PRIVATE_KEY || '',
   certificateToken: process.env.CERTIFICATE_TOKEN || '',
   spreedlyUrl: process.env.SPREEDLY_URL || 'https://core.spreedly.com',
-  spreedlyEnvironmentKey: process.env.SPREEDLY_ENVIRONMENT_KEY || '',
-  spreedlyAccessSecret: process.env.SPREEDLY_ACCESS_SECRET || '',
+  spreedlyEnvironmentKey: process.env.SPREEDLY_ENVIRONMENT_KEY || 'REDACTED_ENVIRONMENT_KEY',
+  spreedlyAccessSecret: process.env.SPREEDLY_ACCESS_SECRET || 'REDACTED_ACCESS_SECRET',
 };
 
 export default config;
