@@ -737,6 +737,11 @@ body {
   width: 500px !important;
 }
 
+.checkout-plugin-recache {
+  height: 300px !important;
+  width: 500px !important;
+}
+
 #checkout-plugin-container {
   padding: 20px;
 }
