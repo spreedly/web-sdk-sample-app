@@ -287,13 +287,27 @@ function handleUseSelectedCard(): void {
   
   // Set up recache event listeners
   sdkRecache.on('recacheReady', () => {
-    console.log('SDK ready for recaching');
     // Open express checkout in recache mode
     sdkRecache.expressCheckout({
-      className: 'checkout-plugin',
+      className: 'checkout-plugin-recache',
       ...(openInEmbeddedModeChecked
         ? { parentContainerId: 'checkout-plugin-container' }
         : {}),
+        uiConfig: {
+          textConfig: {
+            title: 'Pay with Card',
+            submitBtnText: 'Pay',
+            processingText: 'Processing...',
+          },
+          styles: {
+            button: {
+              backgroundColor: '#000',
+              hover: {
+                backgroundColor: '#000',
+              },
+            },
+          },
+        },
     });
   });
   
@@ -414,8 +428,10 @@ function handleExpressClick(): void {
     tokenContainer!.textContent = `Token: ${paymentMethodToken}`;
     
     // Check if user wants to retain this payment method
+    // First check the in-modal checkbox (token.shouldRetain), then fallback to external checkbox
     const retainCheckbox = document.getElementById('retain_payment_method') as HTMLInputElement;
-    const shouldRetain = retainCheckbox?.checked || false;
+    const shouldRetain = token.shouldRetain ?? retainCheckbox?.checked ?? false;
+    
     
     if (shouldRetain) {
       // Call merchant backend to retain the payment method
@@ -480,6 +496,10 @@ function handleExpressClick(): void {
       twoDigitExpiry:
         (document.getElementById('two_digit_expiry') as HTMLInputElement)
           ?.checked || false,
+      // Show "Save this card" checkbox inside the modal
+      // The shouldRetain value will be passed in the tokenGenerated callback
+      showSaveCardCheckbox: true,
+      saveCardCheckboxLabel: 'Save this card for future payments',
       textConfig: {
         title: 'Pay with Card',
         submitBtnText: 'Pay',
