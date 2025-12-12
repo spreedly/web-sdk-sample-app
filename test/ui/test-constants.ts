@@ -16,6 +16,7 @@ export const SELECTORS = {
   ALLOW_EXPIRED_DATE: "allow-expired-date",
   //OPEN_IN_EMBEDDED_MODE: "#open_in_embedded_mode",
   OPEN_IN_EMBEDDED_MODE: "open-in-embedded-mode",
+  RETAIN_PAYMENT_OPTION: "retain-payment-method",
 
   // Buttons
   EXPRESS_BUTTON: "btn-express",
@@ -23,7 +24,7 @@ export const SELECTORS = {
   RESTART_BUTTON: "btn-restart",
 
   // Express Checkout (inside iframe)
-  EXPRESS_IFRAME: "iframe.checkout-plugin, iframe.checkout-plugin-small",
+  EXPRESS_IFRAME: "iframe.checkout-plugin, iframe.checkout-plugin-small:first-of-type",
   EMBEDDED_IFRAME_CONTAINER: "#checkout-plugin-container iframe.checkout-plugin",
   // EXPRESS_PAY_BUTTON: 'button:has-text("Pay")',
   EXPIRY_MM_YY: 'input[placeholder="MM/YY"]',
@@ -54,7 +55,6 @@ export const SELECTORS = {
   EXPIRY_MONTH_ERROR: "#expiry-month-error",
 
   BIN_CARD_LABEL:".MuiChip-label",
-  HOSTED_FIELDS_CARD_LABEL: "#card-type-icon .card-type-label",
 } as const;
 
 export const PLACEHOLDERS = {
@@ -87,6 +87,7 @@ export const TEST_DATA = {
   CARD_NUMBER_TOO_LONG: "41111111111111111111", // 20 digits
   CARD_NUMBER_FORMATTED: "4111 1111 1111 1111",
   AMEX_CARD_NUMBER: "3782 822463 10005",
+  MASKED_CARD_NUMBER:"•••• •••• •••• 1111",
   CVV: "123",
   INVALID_CVV_LONG: "1234",
   INVALID_CVV_SHORT: "12",
@@ -135,8 +136,8 @@ export const ERROR_MESSAGES = {
   HOSTED_FIELDS_INVALID_CARD_NUMBER: "Invalid card number",
   CARD_NUMBER_LENGTH: "Error: Card number must be between 13 and 19 digits",
   HOSTED_FIELDS_CARD_NUMBER_LENGTH: "Card number must be between 13 and 19 digits",
-  INVALID_CVV: "Error: CVV must be 3 digits",
-  HOSTED_FIELDS_INVALID_CVV: "CVV must be 3 digits",
+  INVALID_CVV: "Error: Please enter a valid CVV",
+  HOSTED_FIELDS_INVALID_CVV: "Please enter a valid CVV",
   AMEX_INVALID_CVV: "Error: CVV must be 4 digits",
   HOSTED_FIELDS_AMEX_INVALID_CVV: "CVV must be 4 digits",
   ERROR_MESSAGE_UNAUTHORIZED: "Request failed with status code 401",
@@ -226,6 +227,10 @@ export const COMMON_PATTERNS = {
   CARD_NUMBER_REGEX: /4111/,
 };
 
+export const getMaskedCardNumber =(cardNumber:string):RegExp=>{
+  return new RegExp(`•••• •••• •••• ${cardNumber.slice(-4)}`);
+}
+
 // Common test utilities
 export const waitForAuthParams = async (page: any, maxRetries: number = 3, retryDelay: number = 2000) => {
   let lastError: Error | null = null;
@@ -260,4 +265,5 @@ export const waitForAuthParams = async (page: any, maxRetries: number = 3, retry
   }
   throw new Error(`Failed to get auth params after ${maxRetries} attempts. Last error: ${lastError?.message}`);
 };
+
 
