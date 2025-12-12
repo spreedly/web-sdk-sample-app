@@ -10,7 +10,8 @@ import {
   ERROR_MESSAGES,
   CSS_PROPERTIES,
   getExpiredYearString,
-  waitForAuthParams
+  waitForAuthParams,
+  getMaskedCardNumber
 } from "./test-constants";
 
 test.describe("Allow Expired Date Option", () => {
@@ -67,7 +68,7 @@ test.describe("Allow Expired Date Option", () => {
     // Verify fields are filled with expired date
     await expect(firstNameField).toHaveValue(TEST_DATA.FIRST_NAME);
     await expect(lastNameField).toHaveValue(TEST_DATA.LAST_NAME);
-    await expect(cardNumberField).toHaveValue(TEST_DATA.CARD_NUMBER_FORMATTED);
+    await expect(cardNumberField).toHaveValue(getMaskedCardNumber(TEST_DATA.CARD_NUMBER));
     await expect(cvvField).toHaveValue(TEST_DATA.CVV);
     await expect(monthField).toHaveValue(TEST_DATA.EXPIRED_MONTH);
     await expect(yearField).toHaveValue(getExpiredYearString());
@@ -139,7 +140,7 @@ test.describe("Allow Expired Date Option", () => {
     // Verify fields are filled with expired date
     await expect(firstNameField).toHaveValue(TEST_DATA.FIRST_NAME);
     await expect(lastNameField).toHaveValue(TEST_DATA.LAST_NAME);
-    await expect(cardNumberField).toHaveValue(TEST_DATA.CARD_NUMBER_FORMATTED);
+    await expect(cardNumberField).toHaveValue(getMaskedCardNumber(TEST_DATA.CARD_NUMBER));
     await expect(cvvField).toHaveValue(TEST_DATA.CVV);
     await expect(monthField).toHaveValue(TEST_DATA.EXPIRED_MONTH);
     await expect(yearField).toHaveValue(getExpiredYearString());

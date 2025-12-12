@@ -10,7 +10,8 @@ import {
   CSS_PROPERTIES,
   getValidYearString,
   waitForAuthParams,
-  URLS
+  URLS,
+  getMaskedCardNumber
 } from "./test-constants";
 
 test.describe("Allow Blank Name Option", () => {
@@ -31,7 +32,7 @@ test.describe("Allow Blank Name Option", () => {
 
     // Wait for the payment iframe to load
     const iframe = page.frameLocator(SELECTORS.EXPRESS_IFRAME);
-    await expect(page.locator(SELECTORS.EXPRESS_IFRAME)).toBeVisible();
+    await expect(page.locator(SELECTORS.EXPRESS_IFRAME).first()).toBeVisible();
 
     // Verify the payment form is loaded
     const payWithCardTitle = iframe.locator(`h1:has-text("${HEADINGS.EXPRESS_TITLE}")`);
@@ -65,7 +66,7 @@ test.describe("Allow Blank Name Option", () => {
     await expect(lastNameField).toHaveValue("");
 
     // Verify other fields are filled
-    await expect(cardNumberField).toHaveValue(TEST_DATA.CARD_NUMBER_FORMATTED);
+    await expect(cardNumberField).toHaveValue(getMaskedCardNumber(TEST_DATA.CARD_NUMBER));
     await expect(cvvField).toHaveValue(TEST_DATA.CVV);
     await expect(monthField).toHaveValue(TEST_DATA.EXPIRY_MONTH);
     await expect(yearField).toHaveValue(getValidYearString());
@@ -155,7 +156,7 @@ test.describe("Allow Blank Name Option", () => {
     await expect(lastNameField).toHaveValue("");
 
     // Verify other fields are filled
-    await expect(cardNumberField).toHaveValue(TEST_DATA.CARD_NUMBER_FORMATTED);
+    await expect(cardNumberField).toHaveValue(getMaskedCardNumber(TEST_DATA.CARD_NUMBER));
     await expect(cvvField).toHaveValue(TEST_DATA.CVV);
     await expect(monthField).toHaveValue(TEST_DATA.EXPIRY_MONTH);
     await expect(yearField).toHaveValue(getValidYearString());
@@ -247,7 +248,7 @@ test.describe("Allow Blank Name Option", () => {
     await expect(lastNameField).toHaveValue("");
 
     // Verify other fields are filled
-    await expect(cardNumberFrame.getByRole("textbox", { name: LABELS.CARD_NUMBER })).toHaveValue(/4111/);
+    await expect(cardNumberFrame.getByRole("textbox", { name: LABELS.CARD_NUMBER })).toHaveValue(getMaskedCardNumber(TEST_DATA.CARD_NUMBER));
     await expect(cvvFrame.getByRole("textbox", { name: LABELS.CVV_NUMBER })).toHaveValue("123");
     await expect(expiryMonthField).toHaveValue(TEST_DATA.EXPIRY_MONTH);
     await expect(expiryYearField).toHaveValue(getValidYearString());
@@ -356,7 +357,7 @@ test.describe("Allow Blank Name Option", () => {
     // Wait for any potential validation to occur
     await page.waitForTimeout(TEST_DATA.TIMEOUT_SHORT);
     
-   // await expect(iframe.locator(ERROR_PATTERNS.REQUIRED)).toBeVisible();
+    //await expect(iframe.locator(ERROR_PATTERNS.REQUIRED)).toBeVisible();
   });
 });
 
