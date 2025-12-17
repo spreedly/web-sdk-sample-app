@@ -17,7 +17,7 @@ export const SELECTORS = {
   //OPEN_IN_EMBEDDED_MODE: "#open_in_embedded_mode",
   OPEN_IN_EMBEDDED_MODE: "open-in-embedded-mode",
   RETAIN_PAYMENT_OPTION: "retain-payment-method",
-
+  SAVE_PAYMENT_METHOD_OPTION: "[data-testid='save-card-checkbox'] input",
   // Buttons
   EXPRESS_BUTTON: "btn-express",
   HOSTED_FIELDS_BUTTON: "btn-hosted-fields",
@@ -26,8 +26,10 @@ export const SELECTORS = {
   // Express Checkout (inside iframe)
   EXPRESS_IFRAME: "iframe.checkout-plugin, iframe.checkout-plugin-small:first-of-type",
   EMBEDDED_IFRAME_CONTAINER: "#checkout-plugin-container iframe.checkout-plugin",
+  RECACHE_IFRAME: ".checkout-plugin-recache",
   // EXPRESS_PAY_BUTTON: 'button:has-text("Pay")',
   EXPIRY_MM_YY: 'input[placeholder="MM/YY"]',
+  CLOSE_PAYMENT_FORM: 'button[aria-label="Close payment form"]',
   EXPRESS_SUBMIT_BUTTON: 'express-checkout-submit-btn',
 
   // Hosted Fields
@@ -55,6 +57,10 @@ export const SELECTORS = {
   EXPIRY_MONTH_ERROR: "#expiry-month-error",
 
   BIN_CARD_LABEL:".MuiChip-label",
+  SAVE_CARD_CONTENT:".saved-card-content",
+  USE_CARD_BUTTON:".saved-card-use-button",
+  SAVED_CARD_CHECKMARK:".saved-card-checkmark",
+  RECACHE_TILE:"#payment-form-title"
 } as const;
 
 export const PLACEHOLDERS = {
@@ -63,6 +69,7 @@ export const PLACEHOLDERS = {
   EXPRESS_LAST_NAME: "Jones",
   EXPRESS_CARD_NUMBER: "1234 5678 9012 3456",
   EXPRESS_CVV: "123",
+  RECACHE_CVV: "•••",
   EXPRESS_MONTH: "MM",
   EXPRESS_YEAR: "YYYY",
 
