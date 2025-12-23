@@ -10,6 +10,8 @@ interface Config {
   spreedlyUrl: string;
   spreedlyEnvironmentKey: string;
   spreedlyAccessSecret: string;
+  spreedlyGatewayToken: string;
+  spreedlySCAProviderKey: string;
 }
 
 const config: Config = {
@@ -18,8 +20,10 @@ const config: Config = {
   privateKey: process.env.PRIVATE_KEY || '',
   certificateToken: process.env.CERTIFICATE_TOKEN || '',
   spreedlyUrl: process.env.SPREEDLY_URL || 'https://core.spreedly.com',
-  spreedlyEnvironmentKey: process.env.SPREEDLY_ENVIRONMENT_KEY || '0RMACG59RG8VQ9A4G09QDD3F1Q',
-  spreedlyAccessSecret: process.env.SPREEDLY_ACCESS_SECRET || 'lDDszZajmJS6pPWBcRzZPe7ql6a87YBlFAFuqPpu85I44tTuxEtlx9QiuR9dhBCO',
+  spreedlyEnvironmentKey: process.env.SPREEDLY_ENVIRONMENT_KEY || '',
+  spreedlyAccessSecret: process.env.SPREEDLY_ACCESS_SECRET || '',
+  spreedlyGatewayToken: process.env.SPREEDLY_GATEWAY_TOKEN || '',
+  spreedlySCAProviderKey: process.env.SPREEDLY_SCA_PROVIDER_KEY || '',
 };
 
 export default config;

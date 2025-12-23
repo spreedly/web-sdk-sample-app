@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { getAuthParams } from './controllers/auth';
-import { createPaymentMethod, getPaymentMethods, retainPaymentMethod, recachePaymentMethod } from './controllers/payments';
+import { createPaymentMethod, getPaymentMethods, retainPaymentMethod, recachePaymentMethod, createPurchaseTransaction } from './controllers/payments';
 
 const router = Router();
 
@@ -119,6 +119,43 @@ router.put('/payment_methods/:paymentMethodToken/retain', retainPaymentMethod);
  *       500:
  *         description: Error recaching payment method
  */
-router.put('/payment_methods/:paymentMethodToken/recache', recachePaymentMethod);
+router.post('/payment_methods/:paymentMethodToken/recache', recachePaymentMethod);
+
+/**
+ * @swagger
+ * /api/v1/purchase:
+ *   post:
+ *     description: Create a purchase transaction using a payment method token with SCA authentication
+ *     tags: [Transactions]
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: body
+ *         description: Purchase transaction details
+ *         in: body
+ *         required: true
+ *         schema:
+ *           type: object
+ *           required:
+ *             - amount
+ *             - currency_code
+ *             - payment_method_token
+ *           properties:
+ *             amount:
+ *               type: number
+ *               description: Transaction amount in dollars
+ *             currency_code:
+ *               type: string
+ *               description: ISO 4217 currency code (e.g., USD, EUR)
+ *             payment_method_token:
+ *               type: string
+ *               description: The token identifying the payment method to use
+ *     responses:
+ *       200:
+ *         description: Purchase transaction created successfully
+ *       500:
+ *         description: Error creating purchase transaction
+ */
+router.post('/purchase', createPurchaseTransaction);
 
 export default router;
