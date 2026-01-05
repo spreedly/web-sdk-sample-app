@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create a Purchase - Spreedly Web SDK Demo</title>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <link rel="stylesheet" href="../shared/styles.css">
+  <style>
+    /* Stepper Styles */
+    .stepper {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 2rem;
+      padding: 0 1rem;
+    }
+
+    .stepper-step {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .stepper-step:not(:last-child)::after {
+      content: '';
+      width: 60px;
+      height: 2px;
+      background: var(--color-gray-300);
+      margin: 0 1rem;
+    }
+
+    .stepper-step.completed:not(:last-child)::after {
+      background: var(--color-primary);
+    }
+
+    .step-number {
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1rem;
+      background: #e5e7eb;
+      color: #6b7280;
+      transition: all 0.2s ease;
+      border: 2px solid transparent;
+    }
+
+    .stepper-step.active .step-number {
+      background: #1f2937;
+      color: #ffffff;
+      border-color: #1f2937;
+      box-shadow: 0 0 0 4px rgba(31, 41, 55, 0.2);
+    }
+
+    .stepper-step.completed .step-number {
+      background: #22c55e;
+      color: #ffffff;
+      border-color: #22c55e;
+    }
+
+    .step-label {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--color-gray-500);
+    }
+
+    .stepper-step.active .step-label,
+    .stepper-step.completed .step-label {
+      color: var(--color-gray-900);
+    }
+
+    /* Step Content */
+    .step-content {
+      display: none;
+    }
+
+    .step-content.active {
+      display: block;
+    }
+
+    /* Products Grid */
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .product-card {
+      border: 2px solid var(--color-gray-200);
+      border-radius: var(--radius-lg);
+      padding: 1rem;
+      cursor: pointer;
+      transition: all var(--transition);
+      background: var(--color-white);
+    }
+
+    .product-card:hover {
+      border-color: var(--color-gray-300);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .product-card.selected {
+      border-color: var(--color-primary);
+      background: rgba(79, 70, 229, 0.05);
+    }
+
+    .product-image {
+      width: 100%;
+      height: 120px;
+      background: var(--color-gray-100);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 0.75rem;
+      font-size: 2.5rem;
+    }
+
+    .product-name {
+      font-weight: 600;
+      color: var(--color-gray-900);
+      margin-bottom: 0.25rem;
+    }
+
+    .product-description {
+      font-size: 0.75rem;
+      color: var(--color-gray-500);
+      margin-bottom: 0.5rem;
+    }
+
+    .product-price {
+      font-weight: 700;
+      color: var(--color-primary);
+    }
+
+    .product-quantity {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+
+    .quantity-btn {
+      width: 1.75rem;
+      height: 1.75rem;
+      border: 1px solid var(--color-gray-300);
+      border-radius: var(--radius-sm);
+      background: var(--color-white);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      color: var(--color-gray-600);
+      transition: all var(--transition);
+    }
+
+    .quantity-btn:hover {
+      background: var(--color-gray-100);
+    }
+
+    .quantity-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .quantity-value {
+      font-weight: 600;
+      min-width: 1.5rem;
+      text-align: center;
+    }
+
+    /* Order Summary */
+    .order-summary {
+      background: var(--color-gray-50);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .order-summary-title {
+      font-weight: 600;
+      color: var(--color-gray-900);
+      margin-bottom: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--color-gray-200);
+    }
+
+    .order-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 0;
+    }
+
+    .order-item-name {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .order-item-qty {
+      font-size: 0.75rem;
+      color: var(--color-gray-500);
+    }
+
+    .order-total {
+      display: flex;
+      justify-content: space-between;
+      font-weight: 700;
+      font-size: 1.125rem;
+      padding-top: 0.75rem;
+      margin-top: 0.5rem;
+      border-top: 1px solid var(--color-gray-300);
+    }
+
+    /* Payment Options */
+    .payment-options-title {
+      font-weight: 600;
+      color: var(--color-gray-900);
+      margin-bottom: 1rem;
+    }
+
+    .payment-tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .payment-tab {
+      flex: 1;
+      padding: 0.75rem 1rem;
+      border: 2px solid var(--color-gray-200);
+      border-radius: var(--radius-md);
+      background: var(--color-white);
+      cursor: pointer;
+      text-align: center;
+      font-weight: 500;
+      color: var(--color-gray-600);
+      transition: all var(--transition);
+    }
+
+    .payment-tab:hover {
+      border-color: var(--color-gray-300);
+    }
+
+    .payment-tab.active {
+      border-color: var(--color-primary);
+      background: rgba(79, 70, 229, 0.05);
+      color: var(--color-primary);
+    }
+
+    .payment-content {
+      display: none;
+    }
+
+    .payment-content.active {
+      display: block;
+    }
+
+    /* Saved Cards */
+    .saved-cards-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .saved-card {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem;
+      border: 2px solid var(--color-gray-200);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .saved-card:hover {
+      border-color: var(--color-gray-300);
+    }
+
+    .saved-card.selected {
+      border-color: var(--color-primary);
+      background: rgba(79, 70, 229, 0.05);
+    }
+
+    .saved-card-icon {
+      font-size: 1.5rem;
+    }
+
+    .saved-card-details {
+      flex: 1;
+    }
+
+    .saved-card-name {
+      font-weight: 600;
+      color: var(--color-gray-900);
+      margin-bottom: 0.125rem;
+    }
+
+    .saved-card-number {
+      font-size: 0.875rem;
+      color: var(--color-gray-600);
+    }
+
+    .saved-card-expiry {
+      font-size: 0.75rem;
+      color: var(--color-gray-500);
+    }
+
+    .saved-card-radio {
+      width: 1.25rem;
+      height: 1.25rem;
+    }
+
+    .no-saved-cards {
+      text-align: center;
+      padding: 2rem;
+      color: var(--color-gray-500);
+    }
+
+    /* Pagination */
+    .pagination {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--color-gray-200);
+    }
+
+    .pagination-btn {
+      padding: 0.5rem 1rem;
+      border: 1px solid var(--color-gray-300);
+      border-radius: var(--radius-md);
+      background: var(--color-white);
+      cursor: pointer;
+      font-size: 0.875rem;
+      color: var(--color-gray-600);
+      transition: all 0.2s ease;
+    }
+
+    .pagination-btn:hover:not(:disabled) {
+      background: var(--color-gray-50);
+      border-color: var(--color-gray-400);
+    }
+
+    .pagination-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .pagination-info {
+      font-size: 0.875rem;
+      color: var(--color-gray-500);
+      padding: 0 0.5rem;
+    }
+
+    /* Navigation Buttons */
+    .step-navigation {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-top: 1.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--color-gray-200);
+    }
+
+    .btn-back {
+      background: var(--color-white);
+      color: var(--color-gray-700);
+      border: 1px solid var(--color-gray-300);
+    }
+
+    .btn-back:hover {
+      background: var(--color-gray-50);
+    }
+
+    /* Result Section */
+    .result-section {
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .result-icon {
+      width: 4rem;
+      height: 4rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1rem;
+    }
+
+    .result-icon.success {
+      background: rgba(34, 197, 94, 0.1);
+      color: var(--color-success);
+    }
+
+    .result-icon.error {
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--color-error);
+    }
+
+    .result-icon svg {
+      width: 2rem;
+      height: 2rem;
+    }
+
+    .result-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .result-message {
+      color: var(--color-gray-600);
+      margin-bottom: 1.5rem;
+    }
+
+    .result-details {
+      background: var(--color-gray-50);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      text-align: left;
+      font-size: 0.875rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .result-detail-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--color-gray-200);
+    }
+
+    .result-detail-row:last-child {
+      border-bottom: none;
+    }
+
+    .result-detail-label {
+      color: var(--color-gray-500);
+    }
+
+    .result-detail-value {
+      font-weight: 600;
+      color: var(--color-gray-900);
+      font-family: var(--font-mono);
+    }
+  </style>
+</head>
+<body>
+  <div class="page-wrapper">
+    <!-- Header -->
+    <header class="header">
+      <div class="container header-inner">
+        <a href="../index.html" class="logo">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" />
+          </svg>
+          Spreedly
+        </a>
+        <div class="header-right">
+          <span class="badge" id="sdk-badge">Loading...</span>
+          <a href="../index.html" class="nav-link">← Back to Flows</a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="container" style="max-width: 900px;">
+        <!-- Page Title -->
+        <div class="page-header" style="text-align: center; margin-bottom: 2rem;">
+          <h1 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 0.5rem;">Create a Purchase</h1>
+          <p style="color: var(--color-gray-600);">Select products and complete checkout</p>
+        </div>
+
+        <!-- Stepper -->
+        <div class="stepper" id="stepper">
+          <div class="stepper-step active" data-step="1">
+            <span class="step-number">1</span>
+            <span class="step-label">Select Products</span>
+          </div>
+          <div class="stepper-step" data-step="2">
+            <span class="step-number">2</span>
+            <span class="step-label">Payment</span>
+          </div>
+          <div class="stepper-step" data-step="3">
+            <span class="step-number">3</span>
+            <span class="step-label">Confirmation</span>
+          </div>
+        </div>
+
+        <!-- Step 1: Select Products -->
+        <div class="step-content active" id="step-1">
+          <div class="card">
+            <div class="section-title">Choose Your Products</div>
+            <p style="color: var(--color-gray-600); margin-bottom: 1.5rem;">Select the items you'd like to purchase</p>
+            
+            <div class="products-grid" id="products-grid">
+              <!-- Products will be rendered here -->
+            </div>
+
+            <div class="order-summary" id="cart-summary" style="display: none;">
+              <div class="order-summary-title">Cart Summary</div>
+              <div id="cart-items"></div>
+              <div class="order-total">
+                <span>Total</span>
+                <span id="cart-total">$0.00</span>
+              </div>
+            </div>
+
+            <div class="step-navigation">
+              <div></div> <!-- Spacer -->
+              <button class="btn btn-primary" id="proceed-to-payment" disabled>
+                Proceed to Payment →
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Payment -->
+        <div class="step-content" id="step-2">
+          <div class="card">
+            <!-- Order Summary -->
+            <div class="order-summary" id="order-summary">
+              <div class="order-summary-title">Order Summary</div>
+              <div id="summary-items"></div>
+              <div class="order-total">
+                <span>Total</span>
+                <span id="summary-total">$0.00</span>
+              </div>
+            </div>
+
+            <!-- Payment Options -->
+            <div class="payment-options-title">Payment Method</div>
+            
+            <div class="payment-tabs">
+              <button class="payment-tab active" data-tab="saved">Saved Cards</button>
+              <button class="payment-tab" data-tab="new">New Card</button>
+            </div>
+
+            <!-- Saved Cards -->
+            <div class="payment-content active" id="payment-saved">
+              <div class="saved-cards-list" id="saved-cards-list">
+                <div class="loading" style="text-align: center; padding: 2rem;">
+                  <span class="spinner"></span>
+                  <span>Loading saved cards...</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- New Card Form -->
+            <div class="payment-content" id="payment-new">
+              <!-- Hosted Fields Form -->
+              <div id="hosted-fields-form" class="hidden">
+                <form id="payment-form">
+                  <!-- Cardholder Name -->
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label class="form-label" for="first_name">First Name</label>
+                      <input 
+                        type="text" 
+                        id="first_name" 
+                        name="first_name" 
+                        class="form-input" 
+                        placeholder="John"
+                        required
+                      >
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label" for="last_name">Last Name</label>
+                      <input 
+                        type="text" 
+                        id="last_name" 
+                        name="last_name" 
+                        class="form-input" 
+                        placeholder="Doe"
+                        required
+                      >
+                    </div>
+                  </div>
+
+                  <!-- Card Number - Hosted Field -->
+                  <div class="form-group">
+                    <label class="form-label">Card Number</label>
+                    <div id="card-number-field" class="hosted-field-container"></div>
+                  </div>
+
+                  <!-- Expiry Fields -->
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label class="form-label" for="month">Expiry Month</label>
+                      <input 
+                        type="text" 
+                        id="month" 
+                        name="month" 
+                        class="form-input" 
+                        placeholder="MM"
+                        maxlength="2"
+                        inputmode="numeric"
+                        pattern="[0-9]*"
+                        required
+                      >
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label" for="year">Expiry Year</label>
+                      <input 
+                        type="text" 
+                        id="year" 
+                        name="year" 
+                        class="form-input" 
+                        placeholder="YYYY"
+                        maxlength="4"
+                        inputmode="numeric"
+                        pattern="[0-9]*"
+                        required
+                      >
+                    </div>
+                  </div>
+
+                  <!-- CVV - Hosted Field -->
+                  <div class="form-group">
+                    <label class="form-label">CVV</label>
+                    <div id="cvv-field" class="hosted-field-container" style="max-width: 120px;"></div>
+                  </div>
+                </form>
+
+                <!-- Test Card Info -->
+                <div class="test-info">
+                  <div class="test-info-title">Test Card Details</div>
+                  <p style="color: var(--color-gray-600); font-size: 0.875rem;">
+                    Card: <code>4111 1111 1111 1111</code> &nbsp;
+                    CVV: <code>123</code> &nbsp;
+                    Expiry: <code>12/28</code>
+                  </p>
+                </div>
+              </div>
+
+              <!-- Express Checkout Container -->
+              <div id="express-checkout-section" class="hidden">
+                <div id="express-checkout-open-section">
+                  <div style="text-align: center; padding: 2rem;">
+                    <button class="btn btn-primary" id="open-express-checkout-btn" onclick="openExpressCheckoutForm()">
+                      Open Payment Form
+                    </button>
+                  </div>
+                </div>
+                <div id="express-checkout-container"></div>
+              </div>
+            </div>
+
+            <!-- Status Message -->
+            <div id="status-message" class="status-message"></div>
+
+            <div class="step-navigation">
+              <button class="btn btn-back" onclick="goToStep(1)">
+                ← Back
+              </button>
+              <button class="btn btn-primary" id="pay-btn" onclick="handlePayment()">
+                Pay Now
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3: Confirmation -->
+        <div class="step-content" id="step-3">
+          <div class="card">
+            <div class="result-section" id="result-section">
+              <!-- Result will be rendered here -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container footer-inner">
+        <span>Spreedly Web SDK Demo</span>
+        <div class="footer-links">
+          <a href="https://spreedly.com" target="_blank">Spreedly</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Express Checkout Dialog Overlay (550x550) -->
+  <div id="express-checkout-dialog" class="express-dialog-overlay hidden">
+    <div class="express-dialog-content">
+      <div id="express-checkout-dialog-container" style="height: 100%; width: 100%;"></div>
+    </div>
+  </div>
+
+  <script src="../shared/utils.js"></script>
+  <script src="purchase.js"></script>
+</body>
+</html>
+

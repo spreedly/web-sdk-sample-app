@@ -167,3 +167,87 @@ export const createPurchaseTransaction = async (req: UserAgentAugmentedRequest, 
     }
   }
 };
+
+// Web SDK endpoint for creating a purchase with 3DS
+export const createPurchaseWith3DS = async (req: Request, res: Response): Promise<void> => {
+  const sca_provider_key = config.spreedlySCAProviderKey;
+  const gateway_key = config.spreedlyGatewayToken;
+
+  const payment_method_token = req.body.payment_method_token;
+  const amount = req.body.amount;
+  const browser_info = req.body.browser_info;
+  const currency_code = req.body.currency_code;
+  const body = {
+    transaction: {
+      sca_provider_key,
+      payment_method_token,
+      amount,
+      browser_info,
+      currency_code,
+    },
+  };
+  try {
+    const response = await axios.post(
+      `${config.spreedlyUrl}/v1/gateways/${gateway_key}/purchase.json`, body, 
+      {
+        headers: {
+          Authorization: getAuthorizationHeader(),
+        },
+      }
+    );
+    res.json(response.data);
+  } catch (error) {
+    if (error instanceof AxiosError) {
+      res.status(500).json({ error: error.message }); 
+    } else {
+      res.status(500).json({ error: 'An unknown error occurred' });
+    }
+  }
+};
+
+// Web SDK endpoint for Simple purchase without 3DS (no sca_provider_key, browser_info)
+export const createSimplePurchase = async (req: Request, res: Response): Promise<void> => {
+  const gateway_key = config.spreedlyGatewayToken;
+
+  const payment_method_token = req.body.payment_method_token;
+  const amount = req.body.amount;
+  const currency_code = req.body.currency_code || 'USD';
+  
+  const body = {
+    transaction: {
+      payment_method_token,
+      amount,
+      currency_code,
+    },
+  };
+  
+  try {
+    const response = await axios.post(
+      `${config.spreedlyUrl}/v1/gateways/${gateway_key}/purchase.json`, body, 
+      {
+        headers: {
+          Authorization: getAuthorizationHeader(),
+        },
+      }
+    );
+    
+    const transaction = response.data?.transaction;
+    res.json({
+      success: transaction?.succeeded || false,
+      transaction: transaction,
+    });
+  } catch (error) {
+    if (error instanceof AxiosError) {
+      res.status(500).json({ 
+        success: false,
+        error: error.message,
+        details: error.response?.data 
+      }); 
+    } else {
+      res.status(500).json({ 
+        success: false,
+        error: 'An unknown error occurred' 
+      });
+    }
+  }
+};

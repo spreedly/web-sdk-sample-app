@@ -13,6 +13,7 @@ export const getAuthParams = (
     const uuid = crypto.randomUUID();
     const timestamp = Math.floor(Date.now() / 1000);
     const signatureData = `${uuid}${timestamp}${certificateToken}`;
+    const environmentKey = config.spreedlyEnvironmentKey
 
     if (!privateKey || !certificateToken) {
       console.error('Error: PRIVATE_KEY and CERTIFICATE_TOKEN environment variables are required');
@@ -23,7 +24,7 @@ export const getAuthParams = (
       const sign = crypto.createSign('SHA256');
       sign.write(signatureData);
       const signature = sign.sign(privateKey, 'base64');
-      res.json({ nonce: uuid, timestamp, signature, certificateToken });
+      res.json({ nonce: uuid, timestamp, signature, certificateToken, environmentKey });
     } catch (error) {
       console.error('Error generating signature:', error);
       throw new Error('Error generating signature');

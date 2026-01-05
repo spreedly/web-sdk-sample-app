@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spreedly Web SDK Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./shared/styles.css">
+</head>
+<body>
+  <div class="page-wrapper">
+    <!-- Header -->
+    <header class="header">
+      <div class="container header-inner">
+        <a href="index.html" class="logo">
+          <span class="logo-icon">S</span>
+          Spreedly Web SDK
+        </a>
+        <span class="nav-badge">Demo App</span>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+      <div class="container">
+        <div class="landing-content">
+          <div class="landing-header">
+            <h1>Spreedly Web SDK Demo</h1>
+            <p>Choose your SDK integration method and explore payment flows</p>
+          </div>
+
+          <!-- SDK Selection -->
+          <div class="sdk-selector card">
+            <div class="section-title">Select SDK Integration</div>
+            <div class="sdk-options">
+              <label class="sdk-option">
+                <input type="radio" name="sdk" value="hosted-fields" checked>
+                <div class="sdk-option-content">
+                  <div class="sdk-option-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" />
+                    </svg>
+                  </div>
+                  <div class="sdk-option-text">
+                    <span class="sdk-option-title">Hosted Fields</span>
+                    <span class="sdk-option-desc">Inline secure input fields</span>
+                  </div>
+                </div>
+              </label>
+              <label class="sdk-option">
+                <input type="radio" name="sdk" value="express-checkout">
+                <div class="sdk-option-content">
+                  <div class="sdk-option-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+                    </svg>
+                  </div>
+                  <div class="sdk-option-text">
+                    <span class="sdk-option-title">Express Checkout</span>
+                    <span class="sdk-option-desc">Pre-built payment form</span>
+                  </div>
+                </div>
+              </label>
+            </div>
+
+          </div>
+
+          <!-- Flow Options -->
+          <div class="flow-options">
+            <div class="section-title">Select a Flow</div>
+            
+            <div class="flow-cards">
+              <!-- Tokenize Card -->
+              <a href="#" class="flow-card" data-flow="tokenize">
+                <div class="flow-card-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" />
+                  </svg>
+                </div>
+                <div class="flow-card-content">
+                  <h3>Tokenize a Card</h3>
+                  <p>Create a payment method token from card details</p>
+                </div>
+                <div class="flow-card-arrow">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                  </svg>
+                </div>
+              </a>
+
+              <!-- Recache CVV -->
+              <a href="#" class="flow-card" data-flow="recache">
+                <div class="flow-card-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+                  </svg>
+                </div>
+                <div class="flow-card-content">
+                  <h3>Recache CVV</h3>
+                  <p>Update CVV for a saved payment method</p>
+                </div>
+                <div class="flow-card-arrow">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                  </svg>
+                </div>
+              </a>
+
+              <!-- Purchase -->
+              <a href="#" class="flow-card" data-flow="purchase">
+                <div class="flow-card-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
+                  </svg>
+                </div>
+                <div class="flow-card-content">
+                  <h3>Create a Purchase</h3>
+                  <p>Complete checkout with product selection</p>
+                </div>
+                <div class="flow-card-arrow">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                  </svg>
+                </div>
+              </a>
+
+              <!-- Purchase with 3DS -->
+              <a href="#" class="flow-card" data-flow="purchase-with-3ds">
+                <div class="flow-card-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
+                  </svg>
+                </div>
+                <div class="flow-card-content">
+                  <h3>Purchase with 3DS</h3>
+                  <p>Checkout with 3D Secure authentication</p>
+                  <span class="flow-badge">3DS</span>
+                </div>
+                <div class="flow-card-arrow">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                  </svg>
+                </div>
+              </a>
+            </div>
+          </div>
+
+          <!-- Test Card Info -->
+          <div class="test-info">
+            <div class="test-info-title">Test Card Details</div>
+            <p style="color: var(--color-gray-600);">
+              Card: <code>4111 1111 1111 1111</code> &nbsp;
+              CVV: <code>123</code> &nbsp;
+              Expiry: <code>12/28</code>
+            </p>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container footer-inner">
+        <span>Spreedly Web SDK Demo</span>
+        <div class="footer-links">
+          <a href="https://spreedly.com" target="_blank">Spreedly</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    // Handle flow card clicks
+    document.querySelectorAll('.flow-card').forEach(card => {
+      card.addEventListener('click', (e) => {
+        e.preventDefault();
+        const flow = card.dataset.flow;
+        const sdk = document.querySelector('input[name="sdk"]:checked').value;
+        window.location.href = `./${flow}/index.html?sdk=${sdk}`;
+      });
+    });
+  </script>
+</body>
+</html>
+
