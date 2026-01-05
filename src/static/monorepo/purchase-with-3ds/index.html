@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Purchase with 3DS - Spreedly Web SDK Demo</title>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <link rel="stylesheet" href="../shared/styles.css">
+  <style>
+    /* Stepper Styles */
+    .stepper {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 2rem;
+      padding: 0 1rem;
+    }
+
+    .stepper-step {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .stepper-step:not(:last-child)::after {
+      content: '';
+      width: 60px;
+      height: 2px;
+      background: var(--color-gray-300);
+      margin: 0 1rem;
+    }
+
+    .stepper-step.completed:not(:last-child)::after {
+      background: var(--color-success);
+    }
+
+    .step-number {
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1rem;
+      background: #e5e7eb;
+      color: #6b7280;
+      transition: all 0.2s ease;
+      border: 2px solid transparent;
+    }
+
+    .stepper-step.active .step-number {
+      background: #000000;
+      color: #ffffff;
+      border-color: #000000;
+      box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .stepper-step.completed .step-number {
+      background: #22c55e;
+      color: #ffffff;
+      border-color: #22c55e;
+    }
+
+    .step-label {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--color-gray-500);
+    }
+
+    .stepper-step.active .step-label,
+    .stepper-step.completed .step-label {
+      color: var(--color-gray-900);
+    }
+
+    /* Step Content */
+    .step-content {
+      display: none;
+      text-align: left;
+    }
+
+    .step-content.active {
+      display: block;
+    }
+
+    /* Products Grid */
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .product-card {
+      background: var(--color-white);
+      border: 1px solid var(--color-gray-200);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .product-emoji {
+      font-size: 3rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .product-name {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--color-gray-900);
+      margin-bottom: 0.25rem;
+    }
+
+    .product-description {
+      font-size: 0.875rem;
+      color: var(--color-gray-500);
+      margin-bottom: 0.75rem;
+    }
+
+    .product-price {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--color-accent);
+      margin-bottom: 1rem;
+    }
+
+    .quantity-control {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .quantity-btn {
+      background: var(--color-gray-100);
+      border: 1px solid var(--color-gray-300);
+      border-radius: var(--radius-md);
+      width: 2.25rem;
+      height: 2.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1.25rem;
+      color: var(--color-gray-700);
+      transition: all var(--transition);
+    }
+
+    .quantity-btn:hover:not(:disabled) {
+      background: var(--color-gray-200);
+    }
+
+    .quantity-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .quantity-input {
+      width: 3rem;
+      text-align: center;
+      border: 1px solid var(--color-gray-300);
+      border-radius: var(--radius-md);
+      padding: 0.25rem 0;
+      font-size: 1rem;
+      color: var(--color-gray-800);
+    }
+
+    /* Order Summary */
+    .order-summary {
+      background: var(--color-gray-50);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      margin-top: 1.5rem;
+    }
+
+    .order-summary-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--color-gray-900);
+      margin-bottom: 1rem;
+    }
+
+    .order-item {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+      color: var(--color-gray-700);
+    }
+
+    .order-item-qty {
+      font-size: 0.75rem;
+      color: var(--color-gray-500);
+    }
+
+    .order-total {
+      display: flex;
+      justify-content: space-between;
+      font-weight: 700;
+      font-size: 1.125rem;
+      padding-top: 0.75rem;
+      margin-top: 0.5rem;
+      border-top: 1px solid var(--color-gray-300);
+    }
+
+    /* Payment Options */
+    .payment-tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .payment-tab {
+      flex: 1;
+      padding: 0.75rem 1rem;
+      border: 2px solid var(--color-gray-200);
+      border-radius: var(--radius-md);
+      background: var(--color-white);
+      cursor: pointer;
+      text-align: center;
+      font-weight: 500;
+      color: var(--color-gray-600);
+      transition: all var(--transition);
+    }
+
+    .payment-tab:hover {
+      border-color: var(--color-gray-300);
+    }
+
+    .payment-tab.active {
+      border-color: var(--color-accent);
+      background: rgba(10, 10, 10, 0.05);
+      color: var(--color-accent);
+    }
+
+    .payment-content {
+      display: none;
+    }
+
+    .payment-content.active {
+      display: block;
+    }
+
+    /* Saved Cards */
+    .saved-cards-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      text-align: left;
+    }
+
+    .saved-card {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem;
+      border: 2px solid var(--color-gray-200);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all var(--transition);
+      text-align: left;
+    }
+
+    .saved-card:hover {
+      border-color: var(--color-gray-300);
+    }
+
+    .saved-card.selected {
+      border-color: var(--color-primary);
+      background: rgba(79, 70, 229, 0.05);
+    }
+
+    .saved-card-icon {
+      font-size: 1.5rem;
+    }
+
+    .saved-card-details {
+      flex: 1;
+    }
+
+    .saved-card-name {
+      font-weight: 600;
+      color: var(--color-gray-900);
+      margin-bottom: 0.125rem;
+    }
+
+    .saved-card-number {
+      font-size: 0.875rem;
+      color: var(--color-gray-600);
+    }
+
+    .saved-card-expiry {
+      font-size: 0.75rem;
+      color: var(--color-gray-500);
+    }
+
+    .saved-card-radio {
+      width: 1.25rem;
+      height: 1.25rem;
+    }
+
+    .no-saved-cards {
+      text-align: center;
+      padding: 2rem;
+      color: var(--color-gray-500);
+    }
+
+    .pagination-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--color-gray-100);
+    }
+
+    .pagination-btn {
+      background: var(--color-gray-100);
+      border: 1px solid var(--color-gray-300);
+      border-radius: var(--radius-md);
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--color-gray-700);
+      transition: all var(--transition);
+    }
+
+    .pagination-btn:hover:not(:disabled) {
+      background: var(--color-gray-200);
+    }
+
+    .pagination-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Form Styles */
+    .form-row {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .form-group {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-label {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--color-gray-700);
+      margin-bottom: 0.5rem;
+    }
+
+    .form-input {
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--color-gray-300);
+      border-radius: var(--radius-md);
+      font-size: 1rem;
+      color: var(--color-gray-900);
+      transition: border-color var(--transition);
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: var(--color-accent);
+    }
+
+    .hosted-field-container {
+      border: 1px solid var(--color-gray-300);
+      border-radius: var(--radius-md);
+      padding: 0.75rem 1rem;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      background-color: var(--color-white);
+    }
+
+    /* Navigation Buttons */
+    .step-navigation {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-top: 1.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--color-gray-200);
+    }
+
+    .btn-back {
+      background: var(--color-white);
+      color: var(--color-gray-700);
+      border: 1px solid var(--color-gray-300);
+    }
+
+    .btn-back:hover {
+      background: var(--color-gray-50);
+    }
+
+    /* Result Section */
+    .result-section {
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .result-icon {
+      width: 4rem;
+      height: 4rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1rem;
+    }
+
+    .result-icon.success {
+      background: rgba(34, 197, 94, 0.1);
+      color: var(--color-success);
+    }
+
+    .result-icon.error {
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--color-error);
+    }
+
+    .result-icon svg {
+      width: 2rem;
+      height: 2rem;
+    }
+
+    .result-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .result-message {
+      font-size: 1rem;
+      color: var(--color-gray-600);
+      margin-bottom: 1.5rem;
+    }
+
+    .result-details {
+      background: var(--color-gray-50);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      margin-bottom: 2rem;
+      text-align: left;
+      min-width: 300px;
+    }
+
+    .result-detail-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+    }
+
+    .result-detail-label {
+      color: var(--color-gray-600);
+    }
+
+    .result-detail-value {
+      font-weight: 500;
+      color: var(--color-gray-800);
+    }
+
+    /* 3DS Badge */
+    .threeds-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius-md);
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+
+    .threeds-badge svg {
+      width: 1rem;
+      height: 1rem;
+    }
+
+    /* Event Log */
+    .event-log-container {
+      background: var(--color-gray-900);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      margin-top: 1rem;
+    }
+
+    .event-log-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .event-log-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--color-gray-400);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .event-log {
+      max-height: 200px;
+      overflow-y: auto;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+    }
+
+    .event-log-entry {
+      padding: 0.25rem 0;
+      color: var(--color-gray-300);
+      border-bottom: 1px solid var(--color-gray-800);
+    }
+
+    .event-log-entry:last-child {
+      border-bottom: none;
+    }
+
+    .event-log-entry.success {
+      color: #4ade80;
+    }
+
+    .event-log-entry.error {
+      color: #f87171;
+    }
+
+    .event-log-entry.info {
+      color: #60a5fa;
+    }
+
+    .event-log-entry .time {
+      color: var(--color-gray-500);
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <header class="header">
+      <div class="container header-inner">
+        <a href="../index.html" class="back-link">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+          </svg>
+          Back to Flows
+        </a>
+        <div class="sdk-badge" id="sdk-badge"></div>
+      </div>
+    </header>
+
+    <main class="main-content">
+      <div class="container" style="max-width: 900px; text-align: center">
+        <h1 class="page-title">Purchase with 3DS</h1>
+        <p class="page-description">Secure checkout with 3D Secure authentication for enhanced fraud protection.</p>
+
+        <!-- 3DS Badge -->
+        <div class="threeds-badge">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
+          </svg>
+          3D Secure Protected
+        </div>
+
+        <!-- Stepper -->
+        <div class="stepper">
+          <div class="stepper-step active" id="stepper-step-1">
+            <div class="step-number">1</div>
+            <div class="step-label">Products</div>
+          </div>
+          <div class="stepper-step" id="stepper-step-2">
+            <div class="step-number">2</div>
+            <div class="step-label">Payment</div>
+          </div>
+          <div class="stepper-step" id="stepper-step-3">
+            <div class="step-number">3</div>
+            <div class="step-label">Confirmation</div>
+          </div>
+        </div>
+
+        <!-- Global Status Message -->
+        <div id="global-status-message" class="status-message"></div>
+
+        <!-- Step 1: Product Selection -->
+        <div class="step-content active" id="step-1">
+          <div class="card">
+            <div class="section-title">Select Products</div>
+            
+            <div class="products-grid" id="products-grid">
+              <!-- Products will be rendered here -->
+            </div>
+
+            <div class="order-summary" id="cart-summary" style="display: none;">
+              <div class="order-summary-title">Cart Summary</div>
+              <div id="cart-items"></div>
+              <div class="order-total">
+                <span>Total</span>
+                <span id="cart-total">$0.00</span>
+              </div>
+            </div>
+
+            <div class="step-navigation">
+              <div></div>
+              <button class="btn btn-primary" id="proceed-to-payment" disabled>
+                Proceed to Payment →
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Payment -->
+        <div class="step-content" id="step-2">
+          <div class="card">
+            <!-- Order Summary -->
+            <div class="order-summary" id="order-summary">
+              <div class="order-summary-title">Order Summary</div>
+              <div id="summary-items"></div>
+              <div class="order-total">
+                <span>Total</span>
+                <span id="summary-total">$0.00</span>
+              </div>
+            </div>
+
+            <!-- Payment Options -->
+            <div style="margin-top: 1.5rem;">
+              <div style="font-weight: 600; color: var(--color-gray-900); margin-bottom: 1rem;">Payment Method</div>
+              
+              <div class="payment-tabs">
+                <button class="payment-tab active" data-tab="saved">Saved Cards</button>
+                <button class="payment-tab" data-tab="new">New Card</button>
+              </div>
+
+              <!-- Saved Cards -->
+              <div class="payment-content active" id="payment-saved">
+                <div class="saved-cards-list" id="saved-cards-list">
+                  <div class="loading" style="text-align: center; padding: 2rem;">
+                    <span class="spinner"></span>
+                    <span>Loading saved cards...</span>
+                  </div>
+                </div>
+                <div id="saved-cards-pagination" class="pagination-controls hidden">
+                  <button class="pagination-btn" id="prev-cards-btn">← Previous</button>
+                  <span id="pagination-info" class="pagination-info"></span>
+                  <button class="pagination-btn" id="next-cards-btn">Next →</button>
+                </div>
+              </div>
+
+              <!-- New Card Form -->
+              <div class="payment-content" id="payment-new">
+                <div id="status-message" class="status-message"></div>
+
+                <!-- Hosted Fields Form -->
+                <div id="hosted-fields-form" class="hidden">
+                  <form id="payment-form">
+                    <div class="form-row">
+                      <div class="form-group">
+                        <label class="form-label" for="first_name">First Name</label>
+                        <input type="text" id="first_name" name="first_name" class="form-input" placeholder="John" required>
+                      </div>
+                      <div class="form-group">
+                        <label class="form-label" for="last_name">Last Name</label>
+                        <input type="text" id="last_name" name="last_name" class="form-input" placeholder="Doe" required>
+                      </div>
+                    </div>
+
+                    <div class="form-group">
+                      <label class="form-label">Card Number</label>
+                      <div id="card-number-field" class="hosted-field-container"></div>
+                    </div>
+
+                    <div class="form-group">
+                      <label class="form-label">CVV</label>
+                      <div id="cvv-field" class="hosted-field-container" style="max-width: 120px;"></div>
+                    </div>
+
+                    <div class="form-row">
+                      <div class="form-group">
+                        <label class="form-label" for="month">Expiry Month</label>
+                        <input type="text" id="month" name="month" class="form-input" placeholder="MM" maxlength="2" inputmode="numeric" required>
+                      </div>
+                      <div class="form-group">
+                        <label class="form-label" for="year">Expiry Year</label>
+                        <input type="text" id="year" name="year" class="form-input" placeholder="YYYY" maxlength="4" inputmode="numeric" required>
+                      </div>
+                    </div>
+
+                    <div class="form-group">
+                      <label class="form-label" for="email">Email (optional)</label>
+                      <input type="email" id="email" name="email" class="form-input" placeholder="john@example.com">
+                    </div>
+                  </form>
+                </div>
+
+                <!-- Express Checkout Section -->
+                <div id="express-checkout-section" class="hidden">
+                  <div id="express-checkout-open-section">
+                    <div style="text-align: center; padding: 2rem;">
+                      <button class="btn btn-primary" id="open-express-checkout-btn" onclick="openExpressCheckoutForm()">
+                        Open Payment Form
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Event Log (collapsible) -->
+            <details class="event-log-container" style="margin-top: 1.5rem;">
+              <summary class="event-log-header" style="cursor: pointer;">
+                <span class="event-log-title">Event Log</span>
+              </summary>
+              <div id="event-log" class="event-log"></div>
+            </details>
+
+            <div class="step-navigation">
+              <button class="btn btn-back" onclick="goToStep(1)">← Back</button>
+              <button class="btn btn-primary" id="pay-btn" onclick="handlePayment()" disabled>
+                <span class="btn-spinner hidden"><span class="spinner"></span></span>
+                <span class="btn-text">Pay with 3DS $0.00</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3: Confirmation -->
+        <div class="step-content" id="step-3">
+          <div class="card result-section" id="result-section">
+            <!-- Result content will be injected here -->
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="container footer-inner">
+        <span>Spreedly Web SDK Demo</span>
+        <div class="footer-links">
+          <a href="https://spreedly.com" target="_blank">Spreedly</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Hidden container for device fingerprinting -->
+  <div id="device-fingerprint" style="display: none;"></div>
+
+  <!-- 3DS Challenge Modal -->
+  <div class="threeds-modal hidden" id="challenge-overlay">
+    <div class="threeds-modal-content" id="challenge-container">
+      <!-- 3DS challenge iframe will be injected here -->
+    </div>
+  </div>
+
+  <!-- Express Checkout Dialog (550x550) -->
+  <div id="express-checkout-dialog" class="express-dialog-overlay hidden">
+    <div class="express-dialog-content">
+      <div id="express-checkout-dialog-container"></div>
+    </div>
+  </div>
+
+  <script src="../shared/utils.js"></script>
+  <script src="./purchase-with-3ds.js"></script>
+</body>
+</html>
+

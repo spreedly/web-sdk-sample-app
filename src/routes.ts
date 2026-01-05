@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { getAuthParams } from './controllers/auth';
-import { createPaymentMethod, getPaymentMethods, retainPaymentMethod, recachePaymentMethod, createPurchaseTransaction } from './controllers/payments';
+import { createPaymentMethod, getPaymentMethods, retainPaymentMethod, recachePaymentMethod, createPurchaseTransaction, createPurchaseWith3DS, createSimplePurchase } from './controllers/payments';
 
 const router = Router();
 
@@ -120,7 +120,6 @@ router.put('/payment_methods/:paymentMethodToken/retain', retainPaymentMethod);
  *         description: Error recaching payment method
  */
 router.post('/payment_methods/:paymentMethodToken/recache', recachePaymentMethod);
-
 /**
  * @swagger
  * /api/v1/purchase:
@@ -157,5 +156,70 @@ router.post('/payment_methods/:paymentMethodToken/recache', recachePaymentMethod
  *         description: Error creating purchase transaction
  */
 router.post('/purchase', createPurchaseTransaction);
+
+
+/**
+ * @swagger
+ * /api/v1/create-purchase-with-3ds:
+ *   post:
+ *     description: Create a purchase with 3DS
+ *     tags: [Transactions]
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: body
+ *         description: Purchase details
+ *         in: body
+ *         required: true
+ *         schema:
+ *           type: object
+ *           properties:
+ *             payment_method_token:
+ *               type: string
+ *             amount:
+ *               type: number
+ *             currency_code:
+ *               type: string
+ *             browser_info:
+ *               type: string
+ *             sca_provider_key:
+ *               type: string
+ *     responses:
+ *       200:
+ *         description: Purchase processed successfully
+ *       500:
+ *         description: Error processing purchase
+ */
+router.post('/create-purchase-with-3ds', createPurchaseWith3DS);
+
+/**
+ * @swagger
+ * /api/v1/simple-purchase:
+ *   post:
+ *     description: Create a simple purchase transaction
+ *     tags: [Transactions]
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: body
+ *         description: Purchase details
+ *         in: body
+ *         required: true
+ *         schema:
+ *           type: object
+ *           properties:
+ *             payment_method_token:
+ *               type: string
+ *             amount:
+ *               type: number
+ *             currency_code:
+ *               type: string
+ *     responses:
+ *       200:
+ *         description: Purchase processed successfully
+ *       500:
+ *         description: Error processing purchase
+ */
+router.post('/simple-purchase', createSimplePurchase);
 
 export default router;

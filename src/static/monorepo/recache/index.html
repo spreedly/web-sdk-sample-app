@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recache CVV | Spreedly Web SDK Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../shared/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <style>
+    /* Saved Cards Selection */
+    .saved-cards-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .saved-card {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem;
+      border: 2px solid var(--color-gray-200);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all var(--transition);
+      background: var(--color-white);
+    }
+
+    .saved-card:hover {
+      border-color: var(--color-gray-300);
+    }
+
+    .saved-card.selected {
+      border-color: var(--color-black);
+      background: var(--color-gray-50);
+    }
+
+    .saved-card-icon {
+      font-size: 1.5rem;
+    }
+
+    .saved-card-details {
+      flex: 1;
+    }
+
+    .saved-card-name {
+      font-weight: 600;
+      color: var(--color-gray-900);
+      margin-bottom: 0.125rem;
+    }
+
+    .saved-card-number {
+      font-size: 0.875rem;
+      color: var(--color-gray-600);
+    }
+
+    .saved-card-expiry {
+      font-size: 0.75rem;
+      color: var(--color-gray-500);
+    }
+
+    .saved-card-radio {
+      width: 1.25rem;
+      height: 1.25rem;
+      accent-color: var(--color-black);
+    }
+
+    .no-saved-cards {
+      text-align: center;
+      padding: 2rem;
+      color: var(--color-gray-500);
+    }
+
+    /* Selected Card Display */
+    .selected-card-display {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem;
+      background: var(--color-gray-50);
+      border: 1px solid var(--color-gray-200);
+      border-radius: var(--radius-md);
+      margin-bottom: 1.5rem;
+    }
+
+    .selected-card-display .card-icon {
+      font-size: 2rem;
+    }
+
+    .selected-card-display .card-info {
+      flex: 1;
+    }
+
+    .selected-card-display .card-type {
+      font-weight: 600;
+      color: var(--color-gray-900);
+    }
+
+    .selected-card-display .card-number {
+      font-family: var(--font-mono);
+      font-size: 0.875rem;
+      color: var(--color-gray-600);
+    }
+
+    .selected-card-display .card-expiry {
+      font-size: 0.75rem;
+      color: var(--color-gray-500);
+    }
+
+    /* CVV Form */
+    .cvv-form {
+      max-width: 200px;
+    }
+
+    /* Pagination */
+    .pagination {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--color-gray-200);
+    }
+
+    .pagination-btn {
+      padding: 0.5rem 1rem;
+      border: 1px solid var(--color-gray-300);
+      border-radius: var(--radius-md);
+      background: var(--color-white);
+      cursor: pointer;
+      font-size: 0.875rem;
+      color: var(--color-gray-600);
+      transition: all 0.2s ease;
+    }
+
+    .pagination-btn:hover:not(:disabled) {
+      background: var(--color-gray-50);
+      border-color: var(--color-gray-400);
+    }
+
+    .pagination-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .pagination-info {
+      font-size: 0.875rem;
+      color: var(--color-gray-500);
+      padding: 0 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="page-wrapper">
+    <!-- Header -->
+    <header class="header">
+      <div class="container header-inner">
+        <a href="../index.html" class="logo">
+          <span class="logo-icon">S</span>
+          Spreedly Web SDK
+        </a>
+        <span class="nav-badge" id="sdk-badge">Loading...</span>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+      <div class="container">
+        <div class="tokenize-layout">
+          <!-- Left Column - Main Content -->
+          <div class="tokenize-form">
+            <a href="../index.html" class="back-link">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+              </svg>
+              Back to flows
+            </a>
+
+            <h1 class="mb-2">Recache CVV</h1>
+            <p class="mb-6" style="color: var(--color-gray-500);">
+              Update the CVV for a saved payment method
+            </p>
+
+            <!-- Loading State -->
+            <div id="loading-state" class="card" style="text-align: center; padding: 3rem;">
+              <div class="loading">
+                <span class="spinner"></span>
+                <span>Loading saved cards...</span>
+              </div>
+            </div>
+
+            <!-- Step 1: Select a Saved Card -->
+            <div id="select-card-section" class="hidden">
+              <div class="card">
+                <div class="section-title">Select a Saved Card</div>
+                <p style="color: var(--color-gray-600); margin-bottom: 1.5rem;">
+                  Choose a previously saved card to update its CVV
+                </p>
+                
+                <div class="saved-cards-list" id="saved-cards-list">
+                  <!-- Cards will be rendered here -->
+                </div>
+
+                <button type="button" id="recache-btn" class="btn btn-primary btn-lg btn-block" disabled>
+                  <span class="btn-text">Recache CVV</span>
+                  <span class="btn-loading" style="display: none;">
+                    <span class="spinner"></span>
+                    <span class="loading-text">Loading...</span>
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Step 2: Enter CVV (Hosted Fields) -->
+            <div id="hosted-fields-cvv-section" class="hidden">
+              <div class="card">
+                <!-- Selected Card Display -->
+                <div class="selected-card-display" id="selected-card-display">
+                  <span class="card-icon">💳</span>
+                  <div class="card-info">
+                    <div class="card-type" id="display-card-type">Visa</div>
+                    <div class="card-number" id="display-card-number">•••• •••• •••• 4242</div>
+                    <div class="card-expiry" id="display-card-expiry">Expires 12/25</div>
+                  </div>
+                  <button type="button" class="btn btn-secondary" onclick="goBackToCardSelection()">
+                    Change
+                  </button>
+                </div>
+
+                <form id="cvv-form">
+                  <!-- Card Number - Hosted Field (shows masked number in recache mode) -->
+                  <div class="form-group">
+                    <label class="form-label">Card Number</label>
+                    <div id="card-number-field" class="hosted-field-container"></div>
+                  </div>
+
+                  <!-- CVV - Hosted Field -->
+                  <div class="form-group cvv-form">
+                    <label class="form-label">Enter New CVV</label>
+                    <div id="cvv-field" class="hosted-field-container"></div>
+                  </div>
+
+                  <!-- Status Message -->
+                  <div id="status-message" class="status-message"></div>
+
+                  <!-- Submit Button (disabled until recacheReady fires) -->
+                  <button type="submit" id="submit-cvv-btn" class="btn btn-primary btn-lg mt-4" disabled>
+                    <span class="btn-text">Update CVV</span>
+                    <span class="btn-loading" style="display: none;">
+                      <span class="spinner"></span>
+                      <span class="loading-text">Processing...</span>
+                    </span>
+                  </button>
+
+                  <div class="security-badge mt-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
+                    </svg>
+                    <span>PCI-compliant CVV update by Spreedly</span>
+                  </div>
+                </form>
+              </div>
+
+              <!-- Test Card Info -->
+              <div class="test-info mt-4">
+                <div class="test-info-title">Test CVV</div>
+                <p style="color: var(--color-gray-600);">
+                  CVV: <code>123</code> (or <code>1234</code> for Amex)
+                </p>
+              </div>
+            </div>
+
+            <!-- Step 2: Enter CVV (Express Checkout) -->
+            <div id="express-checkout-cvv-section" class="hidden">
+              <div class="card">
+                <!-- Selected Card Display -->
+                <div class="selected-card-display" id="express-selected-card-display">
+                  <span class="card-icon">💳</span>
+                  <div class="card-info">
+                    <div class="card-type" id="express-display-card-type">Visa</div>
+                    <div class="card-number" id="express-display-card-number">•••• •••• •••• 4242</div>
+                    <div class="card-expiry" id="express-display-card-expiry">Expires 12/25</div>
+                  </div>
+                  <button type="button" class="btn btn-secondary" onclick="goBackToCardSelection()">
+                    Change
+                  </button>
+                </div>
+
+                <div class="express-checkout-container">
+                  <div id="express-checkout-container"></div>
+                </div>
+
+                <!-- Status Message -->
+                <div id="express-status-message" class="status-message"></div>
+              </div>
+
+              <!-- Test Card Info -->
+              <div class="test-info mt-4">
+                <div class="test-info-title">Test CVV</div>
+                <p style="color: var(--color-gray-600);">
+                  CVV: <code>123</code> (or <code>1234</code> for Amex)
+                </p>
+              </div>
+            </div>
+
+            <!-- Global Status Message -->
+            <div id="global-status-message" class="status-message"></div>
+
+            <!-- Result Display -->
+            <div id="result-section" class="hidden">
+              <div id="result-card" class="result-card">
+                <div class="result-header">
+                  <div id="result-icon" class="result-icon">
+                    <svg id="result-icon-success" class="hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                    </svg>
+                    <svg id="result-icon-error" class="hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                    </svg>
+                  </div>
+                  <h3 id="result-title" class="result-title">CVV Updated</h3>
+                </div>
+                <div id="result-details" class="result-details">
+                  <!-- Dynamic content -->
+                </div>
+                <button type="button" class="btn btn-secondary btn-block mt-4" onclick="resetForm()">
+                  Recache Another Card
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column - Debug Panel -->
+          <div class="config-panel" id="config-panel">
+            <details class="config-section" style="font-size: 0.75rem;">
+              <summary style="cursor: pointer; font-weight: 500; color: var(--color-gray-600);">
+                Debug: Auth Parameters
+              </summary>
+              <div class="mt-3" style="font-family: var(--font-mono); color: var(--color-gray-500); word-break: break-all;">
+                <div class="mb-2"><strong>Env Key:</strong> <span id="debug-env-key">—</span></div>
+                <div class="mb-2"><strong>Nonce:</strong> <span id="debug-nonce">—</span></div>
+                <div class="mb-2"><strong>Timestamp:</strong> <span id="debug-timestamp">—</span></div>
+                <div class="mb-2"><strong>Status:</strong> <span id="debug-status">Initializing...</span></div>
+              </div>
+            </details>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container footer-inner">
+        <span>Spreedly Web SDK Demo</span>
+        <div class="footer-links">
+          <a href="https://spreedly.com" target="_blank">Spreedly</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Scripts -->
+  <script src="../shared/utils.js"></script>
+  <script src="./recache.js"></script>
+</body>
+</html>
+
