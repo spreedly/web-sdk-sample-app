@@ -326,7 +326,7 @@ function initializeExpressCheckout(authParams) {
   logEvent('Initializing Express Checkout SDK...');
   
   sdk = new SpreedlyExpressCheckout({
-    environment_key: authParams.environmentKey.environmentKey,
+    environment_key: authParams.environmentKey,
     nonce: authParams.nonce,
     timestamp: authParams.timestamp,
     certificate_token: authParams.certificateToken,
