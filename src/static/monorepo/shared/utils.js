@@ -57,6 +57,16 @@ async function fetchPaymentMethods() {
   }
 }
 
+async function retainPaymentMethod(paymentMethodToken) {
+  try {
+    const response = await axios.put(`${API_BASE_URL}/payment_methods/${paymentMethodToken}/retain`);
+    return response.data;
+  } catch (error) {
+    console.error('Error retaining payment method:', error);
+    throw error;
+  }
+}
+
 // API Calls
 async function createPurchase(paymentMethodToken, amount, currencyCode = 'USD') {
   try {
@@ -208,6 +218,7 @@ window.SpreedlyUtils = {
   fetchPaymentMethods,
   
   // API
+  retainPaymentMethod,
   createPurchase,
   createPurchaseWith3DS,
   

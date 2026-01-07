@@ -141,7 +141,7 @@ window.openHostedFieldsForm = function() {
   
   sdk.on('tokenGenerated', (response) => {
     console.log('Token generated:', response);
-    handleTokenSuccess(response);
+    handleTokenSuccess({...response, shouldRetain: document.getElementById('retain-payment-method')?.checked || false});
   });
   
   sdk.on('error', (error) => {
@@ -211,6 +211,7 @@ window.openExpressCheckoutForm = function() {
   
   const checkoutConfig = {
     uiConfig: {
+      showSaveCardCheckbox: true,
       textConfig: {
         title: 'Payment Details',
         submitBtnText: 'Create Payment Method',
@@ -374,11 +375,16 @@ function updateExpiryFieldDisplay() {
 }
 
 // Response Handlers
-function handleTokenSuccess(response) {
+async function handleTokenSuccess(response) {
+  let retainedPaymentMethod
+  if (response.shouldRetain) {
+    retainedPaymentMethod = await SpreedlyUtils.retainPaymentMethod(response.tokenResponse.payment_method.token);
+  }
+
   setLoading(false);
   hideStatus();
   
-  const paymentMethod = response?.tokenResponse?.payment_method || {};
+  const paymentMethod = retainedPaymentMethod?.transaction?.payment_method || response?.tokenResponse?.payment_method || {};
   const token = paymentMethod.token || 'Unknown';
   
   // Hide form, show result
