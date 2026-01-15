@@ -92,8 +92,8 @@ async function createPurchaseWith3DS(paymentMethodToken, amount, browserInfo, cu
     });  
     return response.data;
   } catch (error) {
-    console.error('Error creating 3DS purchase:', error);
-    throw error;
+    console.error('Error creating 3DS purchase:', error.response?.data ? error.response?.data : error);
+    throw error.response?.data ? error.response?.data : error;
   }
 }
 

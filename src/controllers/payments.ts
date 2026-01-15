@@ -161,7 +161,7 @@ export const createPurchaseTransaction = async (req: UserAgentAugmentedRequest, 
     res.json(response.data);
   } catch (error) {
     if (error instanceof AxiosError) {
-      res.status(500).json({ error: error.message });
+      res.status(error.response?.status || 500).json({ error: error.message, ...(error.response?.data ? { details: error.response?.data } : {}) }); 
     } else {
       res.status(500).json({ error: 'An unknown error occurred' });
     }
@@ -198,7 +198,7 @@ export const createPurchaseWith3DS = async (req: Request, res: Response): Promis
     res.json(response.data);
   } catch (error) {
     if (error instanceof AxiosError) {
-      res.status(500).json({ error: error.message }); 
+      res.status(error.response?.status || 500).json({ error: error.message, ...(error.response?.data ? { details: error.response?.data } : {}) }); 
     } else {
       res.status(500).json({ error: 'An unknown error occurred' });
     }

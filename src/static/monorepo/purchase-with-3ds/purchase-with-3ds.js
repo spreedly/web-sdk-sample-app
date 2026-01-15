@@ -633,8 +633,8 @@ async function processPurchaseWith3DS() {
     }
     
   } catch (error) {
-    logEvent(`Purchase failed: ${error.message}`, 'error');
-    showResult('error', { message: error.response?.data?.error || error.message || 'Purchase failed' });
+    logEvent(`Purchase failed: ${error.error}`, 'error');
+    showResult('error', { message: error.details?.transaction.message || error.message || 'Purchase failed' });
   }
 }
 
