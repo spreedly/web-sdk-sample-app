@@ -58,12 +58,54 @@ async function init() {
     displayModeConfig?.classList.add('hidden');
   }
   
+  // Set up config checkbox listeners on page load (so they work before SDK is ready)
+  setupConfigCheckboxListeners();
+  
   try {
     await loadAndInitializeSDK();
   } catch (error) {
     console.error('Failed to initialize:', error);
     showError('Failed to initialize SDK. Please refresh the page.');
   }
+}
+
+// Set up config checkbox listeners (called on page load)
+function setupConfigCheckboxListeners() {
+  document.getElementById('config-two-digit-expiry')?.addEventListener('change', function() {
+    config.twoDigitExpiryYear = this.checked;
+    if (isReady && sdkType === 'hosted-fields') {
+      updateExpiryFieldDisplay();
+      updateFormState();
+    }
+  });
+  
+  document.getElementById('config-allow-blank-name')?.addEventListener('change', function() {
+    config.allowBlankName = this.checked;
+    if (isReady && sdkType === 'hosted-fields') {
+      updateNameFieldsRequired();
+      updateFormState();
+    }
+  });
+  
+  document.getElementById('config-allow-blank-date')?.addEventListener('change', function() {
+    config.allowBlankDate = this.checked;
+    if (isReady && sdkType === 'hosted-fields') {
+      updateDateFieldsRequired();
+      updateFormState();
+    }
+  });
+  
+  document.getElementById('config-allow-expired-date')?.addEventListener('change', function() {
+    config.allowExpiredDate = this.checked;
+  });
+}
+
+// Sync config state from checkbox values (called when SDK becomes ready)
+function syncConfigFromCheckboxes() {
+  config.twoDigitExpiryYear = document.getElementById('config-two-digit-expiry')?.checked || false;
+  config.allowBlankName = document.getElementById('config-allow-blank-name')?.checked || false;
+  config.allowBlankDate = document.getElementById('config-allow-blank-date')?.checked || false;
+  config.allowExpiredDate = document.getElementById('config-allow-expired-date')?.checked || false;
 }
 
 async function loadAndInitializeSDK() {
@@ -176,6 +218,9 @@ window.openExpressCheckoutForm = function() {
     return;
   }
   
+  // Sync config state from checkboxes before building checkout config
+  syncConfigFromCheckboxes();
+  
   const displayMode = document.querySelector('input[name="display-mode"]:checked')?.value || 'embedded';
   
   SpreedlyUtils.setButtonLoading('open-payment-form-btn', true, 'Loading...');
@@ -211,6 +256,7 @@ window.openExpressCheckoutForm = function() {
   
   const checkoutConfig = {
     uiConfig: {
+      twoDigitExpiry: config.twoDigitExpiryYear,
       showSaveCardCheckbox: true,
       textConfig: {
         title: 'Payment Details',
@@ -231,7 +277,10 @@ window.openExpressCheckoutForm = function() {
       metadata: {
         source: 'tokenize-flow-demo',
         timestamp: new Date().toISOString(),
-      }
+      },
+      allow_blank_date: config.allowBlankDate,
+      allow_expired_date: config.allowExpiredDate,
+      allow_blank_name: config.allowBlankName,
     }
   };
   
@@ -266,22 +315,57 @@ function setupHostedFieldsEventListeners() {
     });
   }
   
-  // Config checkbox listeners
-  document.getElementById('config-two-digit-expiry')?.addEventListener('change', function() {
-    config.twoDigitExpiryYear = this.checked;
-    updateExpiryFieldDisplay();
-    updateFormState();
-  });
+  // Sync config state from checkboxes (in case user checked them before SDK was ready)
+  syncConfigFromCheckboxes();
   
-  document.getElementById('config-allow-blank-name')?.addEventListener('change', function() {
-    config.allowBlankName = this.checked;
-    updateFormState();
-  });
+  // Apply initial config state to UI
+  updateNameFieldsRequired();
+  updateDateFieldsRequired();
+  updateExpiryFieldDisplay();
+}
+
+// Update required attribute on name fields based on allowBlankName config
+function updateNameFieldsRequired() {
+  const firstNameInput = document.getElementById('first_name');
+  const lastNameInput = document.getElementById('last_name');
+  const firstNameLabel = document.querySelector('label[for="first_name"]');
+  const lastNameLabel = document.querySelector('label[for="last_name"]');
   
-  document.getElementById('config-allow-blank-date')?.addEventListener('change', function() {
-    config.allowBlankDate = this.checked;
-    updateFormState();
-  });
+  if (config.allowBlankName) {
+    firstNameInput?.removeAttribute('required');
+    lastNameInput?.removeAttribute('required');
+    if (firstNameLabel) firstNameLabel.textContent = 'First Name (optional)';
+    if (lastNameLabel) lastNameLabel.textContent = 'Last Name (optional)';
+  } else {
+    firstNameInput?.setAttribute('required', '');
+    lastNameInput?.setAttribute('required', '');
+    if (firstNameLabel) firstNameLabel.textContent = 'First Name';
+    if (lastNameLabel) lastNameLabel.textContent = 'Last Name';
+  }
+}
+
+// Update required attribute on date fields based on allowBlankDate config
+function updateDateFieldsRequired() {
+  const monthInput = document.getElementById('expiry_month');
+  const yearInput = document.getElementById('expiry_year');
+  const expiryDateInput = document.getElementById('expiry_date');
+  const monthLabel = document.querySelector('label[for="expiry_month"]');
+  const yearLabel = document.querySelector('label[for="expiry_year"]');
+  const expiryDateLabel = document.querySelector('label[for="expiry_date"]');
+  
+  if (config.allowBlankDate) {
+    monthInput?.removeAttribute('required');
+    yearInput?.removeAttribute('required');
+    expiryDateInput?.removeAttribute('required');
+    if (monthLabel) monthLabel.textContent = 'Expiry Month (optional)';
+    if (yearLabel) yearLabel.textContent = 'Expiry Year (optional)';
+    if (expiryDateLabel) expiryDateLabel.textContent = 'Expiry Date (optional)';
+  } else {
+    // Don't set required on these - the JS validation handles it
+    if (monthLabel) monthLabel.textContent = 'Expiry Month';
+    if (yearLabel) yearLabel.textContent = 'Expiry Year';
+    if (expiryDateLabel) expiryDateLabel.textContent = 'Expiry Date';
+  }
 }
 
 // Form Handling (Hosted Fields Only)
@@ -308,7 +392,10 @@ function handleFormSubmit(e) {
     metadata: {
       source: 'tokenize-flow-demo',
       timestamp: new Date().toISOString(),
-    }
+    },
+    allow_blank_date: config.allowBlankDate,
+    allow_expired_date: config.allowExpiredDate,
+    allow_blank_name: config.allowBlankName,
   });
 }
 
