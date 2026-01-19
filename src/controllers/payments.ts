@@ -53,13 +53,8 @@ export const getPaymentMethods = async (req: Request, res: Response): Promise<vo
       }
     );
 
-    // Added filtering to only return payment methods that have a first name, last name, or full name
     const paymentMethods: PaymentMethod[] = response.data.payment_methods;
-    const filteredResponse: PaymentMethod[] = paymentMethods.filter(
-      (paymentMethod) =>
-        paymentMethod.first_name || paymentMethod.last_name || paymentMethod.full_name
-    );
-    res.json({ payment_methods: filteredResponse });
+    res.json({ payment_methods: paymentMethods });
   } catch (error) {
     if (error instanceof AxiosError) {
       res.status(500).json({ error: error.message });

@@ -466,7 +466,7 @@ function renderSavedCards() {
   
   // Render cards
   container.innerHTML = paginatedCards.map(card => {
-    const fullName = [card.first_name, card.last_name].filter(Boolean).join(' ') || 'Cardholder';
+    const fullName = [card.first_name, card.last_name].filter(Boolean).join(' ') || '[Cardholder Name Not Available]';
     return `
     <div class="saved-card ${selectedSavedCard === card.token ? 'selected' : ''}" data-token="${card.token}" onclick="selectSavedCard('${card.token}')">
       <span class="saved-card-icon">${SpreedlyUtils.getCardIcon(card.card_type)}</span>

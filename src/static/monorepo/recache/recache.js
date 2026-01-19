@@ -13,6 +13,13 @@ let storedAuthParams = null;
 let savedCards = [];
 let selectedCard = null;
 
+// Config options
+const config = {
+  allowBlankName: false,
+  allowExpiredDate: false,
+  allowBlankDate: false,
+};
+
 // Pagination state
 const CARDS_PER_PAGE = 5;
 let currentPage = 1;
@@ -42,6 +49,28 @@ const elements = {
   debugTimestamp: () => document.getElementById('debug-timestamp'),
   debugStatus: () => document.getElementById('debug-status'),
 };
+
+// Sync config from checkboxes
+function syncConfigFromCheckboxes() {
+  config.allowBlankName = document.getElementById('config-allow-blank-name')?.checked || false;
+  config.allowExpiredDate = document.getElementById('config-allow-expired-date')?.checked || false;
+  config.allowBlankDate = document.getElementById('config-allow-blank-date')?.checked || false;
+}
+
+// Setup checkbox listeners
+function setupConfigCheckboxListeners() {
+  document.getElementById('config-allow-blank-name')?.addEventListener('change', function() {
+    config.allowBlankName = this.checked;
+  });
+  
+  document.getElementById('config-allow-expired-date')?.addEventListener('change', function() {
+    config.allowExpiredDate = this.checked;
+  });
+  
+  document.getElementById('config-allow-blank-date')?.addEventListener('change', function() {
+    config.allowBlankDate = this.checked;
+  });
+}
 
 // Initialization
 async function init() {
@@ -90,6 +119,9 @@ function setupEventListeners() {
   if (cvvForm) {
     cvvForm.addEventListener('submit', handleCvvSubmit);
   }
+  
+  // Setup config checkbox listeners
+  setupConfigCheckboxListeners();
 }
 
 // Saved Cards
@@ -99,7 +131,7 @@ async function loadSavedCards() {
     
     // Filter to only show retained cards (storage_state === 'retained')
     savedCards = savedCards.filter(card => 
-      card.storage_state === 'retained' || card.storage_state === 'cached'
+      card.storage_state === 'retained'
     );
     
     renderSavedCards();
@@ -143,7 +175,7 @@ function renderSavedCards() {
   
   // Render cards
   let html = paginatedCards.map(card => {
-    const fullName = [card.first_name, card.last_name].filter(Boolean).join(' ') || 'Cardholder';
+    const fullName = [card.first_name, card.last_name].filter(Boolean).join(' ') || '[Cardholder Name Not Available]';
     const isSelected = selectedCard?.token === card.token;
     return `
       <div class="saved-card ${isSelected ? 'selected' : ''}" data-token="${card.token}" onclick="selectCard('${card.token}')">
@@ -238,6 +270,7 @@ function initializeHostedFieldsRecache() {
     updateCardDisplay();
     
     // Set recache mode AFTER ready - THIS IS THE KEY CALL
+    syncConfigFromCheckboxes(); // Sync config before setRecache
     sdk.setRecache(selectedCard.token, {
       card_type: selectedCard.card_type,
       last_four_digits: selectedCard.last_four_digits,
@@ -246,6 +279,9 @@ function initializeHostedFieldsRecache() {
       month: String(selectedCard.month),
       year: String(selectedCard.year),
       full_name: [selectedCard.first_name, selectedCard.last_name].filter(Boolean).join(' '),
+      allow_blank_name: config.allowBlankName,
+      allow_expired_date: config.allowExpiredDate,
+      allow_blank_date: config.allowBlankDate,
     });
     
     updateDebugStatus('Recache mode active - Enter CVV');
@@ -318,11 +354,13 @@ function initializeExpressCheckoutRecache() {
     isReady = true;
     SpreedlyUtils.setButtonLoading('recache-btn', false);
     
+    // Hide card selection, show CVV form
     elements.selectCardSection().classList.add('hidden');
     elements.expressCheckoutCvvSection().classList.remove('hidden');
     
     updateCardDisplay('express');
     
+    syncConfigFromCheckboxes(); // Sync config before setRecache
     sdk.setRecache(selectedCard.token, {
       card_type: selectedCard.card_type,
       last_four_digits: selectedCard.last_four_digits,
@@ -331,6 +369,9 @@ function initializeExpressCheckoutRecache() {
       month: String(selectedCard.month),
       year: String(selectedCard.year),
       full_name: [selectedCard.first_name, selectedCard.last_name].filter(Boolean).join(' '),
+      allow_blank_name: config.allowBlankName,
+      allow_expired_date: config.allowExpiredDate,
+      allow_blank_date: config.allowBlankDate,
     });
     
     updateDebugStatus('Recache mode active');
