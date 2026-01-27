@@ -1,7 +1,7 @@
 import { Page } from "@playwright/test";
 import { expect } from "../util/fixtures";
 import { getMaskedCardNumber, LABELS, ERROR_MESSAGES } from "../util/test-constants";
-import { SELECTORS } from "../util/test-constants";
+import { SELECTORS, TEST_DATA } from "../util/test-constants";
 
 export const TEST_ID = {
     EXPRESS_CHECKOUT_SUBMIT_BUTTON: 'express-checkout-submit-btn',
@@ -218,7 +218,9 @@ export const PLACEHOLDERS = {
         return `${month}/${year.slice(-2)}`;
     },
 
-    verifyResultCard: async (page: Page, cardFirstSixDigits, cardLastFourDigits, expiryDate: { year: string, month: string }, storageState: string) => {
+    verifyResultCard: async (page: Page, cardFirstSixDigits, cardLastFourDigits, storageState: string, options?: {
+        expiryDate?: { year: string, month: string };
+    }) => {
         await expect(page.locator('.result-card')).toBeVisible();
          const firstSixValue = page.locator('.result-label:has-text("First Six")')
         .locator('+ .result-value');
@@ -228,10 +230,14 @@ export const PLACEHOLDERS = {
         await expect(storageStateValue).toHaveText(storageState);
         const lastFourValue = page.locator('.result-label:has-text("Last Four")')
         .locator('+ .result-value');
-        await expect(lastFourValue).toHaveText(cardLastFourDigits);      
-        const expiryValue = page.locator('.result-label:has-text("Expiry")')
-        .locator('+ .result-value');
-        await expect(expiryValue).toHaveText(helperFunctions.formatExpiryYear(expiryDate.year, expiryDate.month));
+        await expect(lastFourValue).toHaveText(cardLastFourDigits); 
+        if (options?.expiryDate?.year && options?.expiryDate?.month) {
+            const expiryValue = page.locator('.result-label:has-text("Expiry")')
+                .locator('+ .result-value');
+            await expect(expiryValue).toHaveText(
+                helperFunctions.formatExpiryYear(options.expiryDate.year, options.expiryDate.month)
+            );
+        }
     },
 
     captureApiResponse: async (page: Page, url1: string, options?: { url2?: string }): Promise<{ apiResponse: any; responseStatus: number | null }> => {

@@ -119,6 +119,7 @@ export const TEST_DATA = {
   CARD_LAST_FOUR_DIGITS_VISA: "1111",
   CARD_FIRST_SIX_DIGITS_VISA: "411111",
   CACHED_STORAGE_STATE: "cached",
+  BLANK_DATE_RESULT_CARD: "00/",
 };
 
 export const HEADINGS = {
@@ -143,6 +144,10 @@ export const ERROR_PATTERNS = {
 export const ERROR_MESSAGES = {
   CARD_EXPIRED: "Error: Card has expired",
   HOSTED_FIELDS_CARD_EXPIRED: "Card has expired",
+  FIRST_NAME_REQUIRED_EXPRESS_CHECKOUT: "Error: First Name is required",
+  LAST_NAME_REQUIRED_EXPRESS_CHECKOUT: "Error: Last Name is required",
+  YEAR_REQUIRED_EXPRESS_CHECKOUT: "Error: Year is required",
+  MONTH_REQUIRED_EXPRESS_CHECKOUT: "Error: Month is required",
   INVALID_MONTH: "Error: Month must be between 1 and 12",
   HOSTED_FIELDS_INVALID_MONTH: "Month must be between 1 and 12",
   INVALID_CARD_NUMBER: "Error: Please enter a valid card number",

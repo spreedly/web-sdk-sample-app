@@ -77,7 +77,12 @@ test.describe("Allow Expired Date Option", () => {
         await expect(await helperFunctions.getExpressCheckoutYearField(page)).toHaveAttribute('aria-invalid', 'false');
         const resultTitle = await tokenizePage.getResultCardTitle(page);
         await expect(resultTitle).toBe(HEADINGS.RESULT_TITLE_SUCCESS);
-        await helperFunctions.verifyResultCard(page, TEST_DATA.CARD_FIRST_SIX_DIGITS_VISA, TEST_DATA.CARD_LAST_FOUR_DIGITS_VISA, { year: getExpiredYearString(), month: TEST_DATA.EXPIRY_MONTH }, TEST_DATA.CACHED_STORAGE_STATE);
+        await helperFunctions.verifyResultCard(page, TEST_DATA.CARD_FIRST_SIX_DIGITS_VISA, TEST_DATA.CARD_LAST_FOUR_DIGITS_VISA, TEST_DATA.CACHED_STORAGE_STATE,{
+          expiryDate: {
+            year: getExpiredYearString(),
+            month: TEST_DATA.EXPIRY_MONTH,
+          },
+        });
     });
   
     test("should allow expired date in hosted fields when option is enabled", async ({
@@ -105,7 +110,12 @@ test.describe("Allow Expired Date Option", () => {
         await helperFunctions.clickOnHostedFieldsSubmitButton(page);
         const resultTitle = await tokenizePage.getResultCardTitle(page);
         await expect(resultTitle).toBe(HEADINGS.RESULT_TITLE_SUCCESS);
-        await helperFunctions.verifyResultCard(page, TEST_DATA.CARD_FIRST_SIX_DIGITS_VISA, TEST_DATA.CARD_LAST_FOUR_DIGITS_VISA, { year: getExpiredYearString(), month: TEST_DATA.EXPIRY_MONTH }, TEST_DATA.CACHED_STORAGE_STATE);
+        await helperFunctions.verifyResultCard(page, TEST_DATA.CARD_FIRST_SIX_DIGITS_VISA, TEST_DATA.CARD_LAST_FOUR_DIGITS_VISA, TEST_DATA.CACHED_STORAGE_STATE,{
+          expiryDate: { 
+            year: getExpiredYearString(),
+            month: TEST_DATA.EXPIRY_MONTH,
+          },
+        });
     });
   
     test("should show warning in hosted fields when expired date option is disabled", async ({
@@ -194,7 +204,12 @@ test.describe("Allow Expired Date Option", () => {
         await expect(await helperFunctions.getExpressCheckoutYearField(page)).toHaveAttribute('aria-invalid', 'false');
         const resultTitle = await tokenizePage.getResultCardTitle(page);
         await expect(resultTitle).toBe(HEADINGS.RESULT_TITLE_SUCCESS);
-        await helperFunctions.verifyResultCard(page, TEST_DATA.CARD_FIRST_SIX_DIGITS_VISA, TEST_DATA.CARD_LAST_FOUR_DIGITS_VISA, { year: getExpiredYearString(), month: TEST_DATA.EXPIRY_MONTH }, TEST_DATA.CACHED_STORAGE_STATE);
+        await helperFunctions.verifyResultCard(page, TEST_DATA.CARD_FIRST_SIX_DIGITS_VISA, TEST_DATA.CARD_LAST_FOUR_DIGITS_VISA, TEST_DATA.CACHED_STORAGE_STATE,{
+          expiryDate: {
+            year: getExpiredYearString(),
+            month: TEST_DATA.EXPIRY_MONTH,
+          },
+        });
     });
   });
   
