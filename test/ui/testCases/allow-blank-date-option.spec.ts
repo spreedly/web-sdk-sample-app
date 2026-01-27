@@ -83,20 +83,21 @@ test.describe("Allow Blank Date Option", () => {
     await tokenizePage.clickOnAllowBlankDateCheckbox(page);
     await tokenizePage.clickOnOpenPaymentFormButtonHostedFields(page);
     await helperFunctions.fillHostedFieldsForm(page, TEST_DATA.CARD_NUMBER, {
+      firstName: TEST_DATA.FIRST_NAME,
+      lastName: TEST_DATA.LAST_NAME,
       cvv: TEST_DATA.CVV,
-      expiryMonth: TEST_DATA.EXPIRY_MONTH,
-      expiryYear: getValidYearString(),
     }
   );
    await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.CARD_NUMBER, {
     firstName: TEST_DATA.FIRST_NAME,
     lastName: TEST_DATA.LAST_NAME,
-    cvv: TEST_DATA.CVV
+    cvv: TEST_DATA.CVV,
    });
    await helperFunctions.clickOnHostedFieldsSubmitButton(page);
    const resultTitle = await tokenizePage.getResultCardTitle(page);
+   await expect(resultTitle).toBe(HEADINGS.RESULT_TITLE_SUCCESS);
    await helperFunctions.verifyResultCard(page, TEST_DATA.CARD_FIRST_SIX_DIGITS_VISA, TEST_DATA.CARD_LAST_FOUR_DIGITS_VISA, TEST_DATA.CACHED_STORAGE_STATE);
-   // To be changed if the output in result card is changed
+    // To be changed if the output in result card is changed
    const expiryValue = page.locator('.result-label:has-text("Expiry")').locator('+ .result-value');
    await expect(expiryValue).toHaveText(TEST_DATA.BLANK_DATE_RESULT_CARD);
   });
