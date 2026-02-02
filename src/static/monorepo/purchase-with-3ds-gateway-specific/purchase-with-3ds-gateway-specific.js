@@ -1,14 +1,15 @@
 /**
- * Purchase with 3DS Flow - Spreedly Web SDK Demo
+ * Purchase with 3DS Gateway Specific Flow - Spreedly Web SDK Demo
  * 
- * This demonstrates a complete 3DS checkout flow:
- * 1. Select products
- * 2. Choose payment method (saved card or new card)
+ * This demonstrates the Gateway Specific 3DS flow:
+ * 1. Select amount (triggers different 3DS flows)
+ * 2. Choose payment method (filtered saved cards or new card)
  * 3. Tokenize if new card
- * 4. Collect browser info using serializeBrowserInfo()
- * 5. Create purchase with browser_info and sca_provider_key
- * 6. If transaction is pending, start SpreedlyThreeDSLifecycle
- * 7. Handle challenge/success/error
+ * 4. Create purchase with three_ds_version=2 and attempt_3dsecure=true
+ * 5. Check transaction state:
+ *    - succeeded: show success
+ *    - failed: show error  
+ *    - pending: start SpreedlyThreeDSLifecycle for gateway-specific flow
  */
 
 // Configuration
@@ -17,29 +18,11 @@ const CONFIG = {
   acceptHeader: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
 };
 
-// Products Data
-const PRODUCTS = [
-  {
-    id: 'prod_1',
-    name: 'Wireless Headphones',
-    description: 'Premium noise-canceling headphones',
-    price: 149.99,
-    emoji: '🎧'
-  },
-  {
-    id: 'prod_2',
-    name: 'Smart Watch',
-    description: 'Fitness tracker with heart rate monitor',
-    price: 299.99,
-    emoji: '⌚'
-  },
-  {
-    id: 'prod_3',
-    name: 'Laptop Stand',
-    description: 'Ergonomic aluminum stand',
-    price: 79.99,
-    emoji: '💻'
-  },
+// Gateway Specific 3DS Test Cards
+// These are the only cards that should be shown for saved cards
+const GATEWAY_SPECIFIC_TEST_CARDS = [
+  { first_six: '455676', last_four: '3886' }, // 4556761029983886 - Valid 3DS
+  { first_six: '402400', last_four: '4890' }, // 4024007101934890 - Invalid 3DS
 ];
 
 // State
@@ -47,12 +30,14 @@ let sdkType = null;
 let sdk = null;
 let lifecycle = null;
 let isReady = false;
+let hostedFieldsInitialized = false; // Track if Hosted Fields has been initialized
 let storedAuthParams = null;
-let cart = {};
 let savedCards = [];
+let filteredSavedCards = [];
 let selectedSavedCard = null;
 let paymentMethodToken = null;
 let currentStep = 1;
+let selectedAmount = 3001; // Default to frictionless flow
 const CARDS_PER_PAGE = 5;
 let currentCardsPage = 1;
 
@@ -61,13 +46,7 @@ const elements = {
   sdkBadge: () => document.getElementById('sdk-badge'),
   stepperSteps: () => document.querySelectorAll('.stepper-step'),
   stepContents: () => document.querySelectorAll('.step-content'),
-  productsGrid: () => document.getElementById('products-grid'),
-  cartSummary: () => document.getElementById('cart-summary'),
-  cartItems: () => document.getElementById('cart-items'),
-  cartTotal: () => document.getElementById('cart-total'),
-  proceedToPaymentBtn: () => document.getElementById('proceed-to-payment'),
-  summaryItems: () => document.getElementById('summary-items'),
-  summaryTotal: () => document.getElementById('summary-total'),
+  amountOptions: () => document.querySelectorAll('.amount-option-compact'),
   paymentTabs: () => document.querySelectorAll('.payment-tab'),
   paymentContents: () => document.querySelectorAll('.payment-content'),
   savedCardsList: () => document.getElementById('saved-cards-list'),
@@ -80,26 +59,10 @@ const elements = {
   payBtn: () => document.getElementById('pay-btn'),
   resultSection: () => document.getElementById('result-section'),
   statusMessage: () => document.getElementById('status-message'),
-  eventLog: () => document.getElementById('event-log'),
   challengeOverlay: () => document.getElementById('challenge-overlay'),
+  customAmountOption: () => document.getElementById('custom-amount-option'),
+  customAmountInput: () => document.getElementById('custom-amount-input'),
 };
-
-// Logging
-function logEvent(message, type = 'info') {
-  const log = elements.eventLog();
-  if (!log) return;
-  
-  const time = new Date().toLocaleTimeString('en-US', { hour12: false });
-  
-  const entry = document.createElement('div');
-  entry.className = `event-log-entry ${type}`;
-  entry.innerHTML = `<span class="time">[${time}]</span> ${message}`;
-  
-  log.appendChild(entry);
-  log.scrollTop = log.scrollHeight;
-  
-  console.log(`[${type.toUpperCase()}] ${message}`);
-}
 
 // Initialization
 document.addEventListener('DOMContentLoaded', init);
@@ -108,11 +71,9 @@ async function init() {
   sdkType = SpreedlyUtils.getSDKType();
   elements.sdkBadge().textContent = SpreedlyUtils.getSDKDisplayName();
 
-  logEvent('Initializing Purchase with 3DS flow...');
+  console.log('Initializing Purchase with 3DS Gateway Specific flow...');
   
-  // Render products first (doesn't depend on SDK)
-  renderProducts();
-  updateCartSummary();
+  // Setup event listeners
   setupEventListeners();
   goToStep(1);
 
@@ -120,51 +81,53 @@ async function init() {
   SpreedlyUtils.loadSDKScript(async (error) => {
     if (error) {
       console.error('Failed to load SDK:', error);
-      logEvent(`Failed to load SDK: ${error.message}`, 'error');
       SpreedlyUtils.showStatus('global-status-message', 'Failed to load SDK. Please refresh.', 'error');
       return;
     }
     
-    logEvent('SDK script loaded');
+    console.log('SDK script loaded');
     
     try {
       const authParams = await SpreedlyUtils.fetchAuthParams();
       storedAuthParams = authParams;
 
-      if (sdkType === 'express-checkout') {
-        initializeExpressCheckout(authParams);
-      } else {
-        initializeHostedFields(authParams);
-      }
+      // Don't initialize SDK yet - wait until user selects "New Card" tab
+      // This prevents Hosted Fields iframes from loading unnecessarily
+      console.log('Auth params fetched - SDK will initialize when New Card tab is selected');
       
       await loadSavedCards();
       
     } catch (error) {
       console.error('Failed to initialize:', error);
-      logEvent(`Initialization failed: ${error.message}`, 'error');
       SpreedlyUtils.showStatus('global-status-message', error.message || 'Failed to initialize SDK.', 'error');
     }
   });
 }
 
 function setupEventListeners() {
-  // Product quantity controls
-  elements.productsGrid().addEventListener('click', (e) => {
-    const target = e.target;
-    if (target.classList.contains('quantity-btn')) {
-      const productId = target.closest('.product-card').dataset.productId;
-      if (target.classList.contains('increase-qty')) {
-        updateCart(productId, (cart[productId] || 0) + 1);
-      } else if (target.classList.contains('decrease-qty')) {
-        updateCart(productId, (cart[productId] || 0) - 1);
+  // Amount selection
+  elements.amountOptions().forEach(option => {
+    option.addEventListener('click', () => {
+      const amount = option.dataset.amount;
+      if (amount === 'custom') {
+        selectCustomAmount();
+      } else {
+        selectAmount(parseInt(amount));
       }
-    }
+    });
   });
 
-  // Proceed to Payment button
-  elements.proceedToPaymentBtn().addEventListener('click', () => {
-    goToStep(2);
-  });
+  // Custom amount input
+  const customInput = elements.customAmountInput();
+  if (customInput) {
+    customInput.addEventListener('input', () => {
+      // Auto-select custom option when user types
+      selectCustomAmount();
+    });
+    customInput.addEventListener('focus', () => {
+      selectCustomAmount();
+    });
+  }
 
   // Payment tabs
   elements.paymentTabs().forEach(tab => {
@@ -176,6 +139,46 @@ function setupEventListeners() {
   // Pagination buttons
   elements.prevCardsBtn().addEventListener('click', () => changeCardsPage(-1));
   elements.nextCardsBtn().addEventListener('click', () => changeCardsPage(1));
+}
+
+// Amount Selection
+function selectAmount(amount) {
+  selectedAmount = amount;
+  
+  elements.amountOptions().forEach(option => {
+    const optionAmount = option.dataset.amount;
+    const isSelected = optionAmount !== 'custom' && parseInt(optionAmount) === amount;
+    option.classList.toggle('selected', isSelected);
+    option.querySelector('input[type="radio"]').checked = isSelected;
+  });
+  
+  // Clear custom input when selecting a preset amount
+  const customInput = elements.customAmountInput();
+  if (customInput) {
+    customInput.value = '';
+  }
+  
+  updatePayButton();
+}
+
+// Custom Amount Selection
+function selectCustomAmount() {
+  const customInput = elements.customAmountInput();
+  const customOption = elements.customAmountOption();
+  
+  // Deselect all preset options
+  elements.amountOptions().forEach(option => {
+    const optionAmount = option.dataset.amount;
+    const isCustom = optionAmount === 'custom';
+    option.classList.toggle('selected', isCustom);
+    option.querySelector('input[type="radio"]').checked = isCustom;
+  });
+  
+  // Get custom value
+  const customValue = parseInt(customInput?.value) || 0;
+  selectedAmount = customValue > 0 ? customValue : 0;
+  
+  updatePayButton();
 }
 
 // Stepper Navigation
@@ -201,85 +204,17 @@ window.goToStep = function(stepNumber) {
       content.classList.remove('active');
     }
   });
-
-  if (stepNumber === 2) {
-    updateOrderSummary();
-    updatePayButton();
-  }
 };
-
-// Product & Cart Management
-function renderProducts() {
-  elements.productsGrid().innerHTML = PRODUCTS.map(product => `
-    <div class="product-card" data-product-id="${product.id}">
-      <div class="product-emoji">${product.emoji}</div>
-      <div class="product-name">${product.name}</div>
-      <div class="product-description">${product.description}</div>
-      <div class="product-price">${SpreedlyUtils.formatCurrency(product.price)}</div>
-      <div class="quantity-control">
-        <button class="quantity-btn decrease-qty" ${!cart[product.id] || cart[product.id] <= 0 ? 'disabled' : ''}>-</button>
-        <input type="text" class="quantity-input" value="${cart[product.id] || 0}" readonly>
-        <button class="quantity-btn increase-qty">+</button>
-      </div>
-    </div>
-  `).join('');
-}
-
-function updateCart(productId, quantity) {
-  if (quantity <= 0) {
-    delete cart[productId];
-  } else {
-    cart[productId] = quantity;
-  }
-  renderProducts();
-  updateCartSummary();
-}
-
-function getCartTotal() {
-  return Object.entries(cart).reduce((total, [productId, quantity]) => {
-    const product = PRODUCTS.find(p => p.id === productId);
-    return total + (product ? product.price * quantity : 0);
-  }, 0);
-}
-
-function updateCartSummary() {
-  const total = getCartTotal();
-  if (total > 0) {
-    elements.cartSummary().style.display = 'block';
-    elements.cartItems().innerHTML = Object.entries(cart).map(([productId, quantity]) => {
-      const product = PRODUCTS.find(p => p.id === productId);
-      return product ? `
-        <div class="order-item">
-          <span>${product.emoji} ${product.name} <span class="order-item-qty">x${quantity}</span></span>
-          <span>${SpreedlyUtils.formatCurrency(product.price * quantity)}</span>
-        </div>
-      ` : '';
-    }).join('');
-    elements.cartTotal().textContent = SpreedlyUtils.formatCurrency(total);
-    elements.proceedToPaymentBtn().disabled = false;
-  } else {
-    elements.cartSummary().style.display = 'none';
-    elements.proceedToPaymentBtn().disabled = true;
-  }
-}
-
-function updateOrderSummary() {
-  const total = getCartTotal();
-  elements.summaryItems().innerHTML = Object.entries(cart).map(([productId, quantity]) => {
-    const product = PRODUCTS.find(p => p.id === productId);
-    return product ? `
-      <div class="order-item">
-        <span>${product.emoji} ${product.name} <span class="order-item-qty">x${quantity}</span></span>
-        <span>${SpreedlyUtils.formatCurrency(product.price * quantity)}</span>
-      </div>
-    ` : '';
-  }).join('');
-  elements.summaryTotal().textContent = SpreedlyUtils.formatCurrency(total);
-}
 
 // SDK Initialization
 function initializeHostedFields(authParams) {
-  logEvent('Initializing Hosted Fields SDK...');
+  if (hostedFieldsInitialized) {
+    console.log('Hosted Fields already initialized');
+    return;
+  }
+  
+  console.log('Initializing Hosted Fields SDK...');
+  hostedFieldsInitialized = true;
   
   sdk = new SpreedlyHostedFields({
     environment_key: authParams.environmentKey,
@@ -292,24 +227,24 @@ function initializeHostedFields(authParams) {
   sdk.on('ready', () => {
     isReady = true;
     elements.hostedFieldsForm().classList.remove('hidden');
-    logEvent('Hosted Fields ready', 'success');
+    console.log('Hosted Fields ready');
   });
   
   sdk.on('tokenGenerated', (response) => {
-    logEvent('Token generated', 'success');
+    console.log('Token generated');
     const token = response?.tokenResponse?.payment_method?.token;
     if (token) {
       paymentMethodToken = token;
-      processPurchaseWith3DS();
+      processPurchaseWithGatewaySpecific3DS();
     } else {
-      logEvent('Failed to extract token from response', 'error');
+      console.error('Failed to extract token from response');
       showStatus('Failed to generate payment token', 'error');
       setPayButtonLoading(false);
     }
   });
   
   sdk.on('error', (error) => {
-    logEvent(`SDK error: ${error.message}`, 'error');
+    console.error('SDK error:', error.message);
     showStatus(error.message || 'An error occurred', 'error');
     setPayButtonLoading(false);
   });
@@ -319,11 +254,11 @@ function initializeHostedFields(authParams) {
     cvv: { containerId: 'cvv-field' },
   });
   
-  logEvent('Hosted Fields SDK initialized');
+  console.log('Hosted Fields SDK initialized');
 }
 
 function initializeExpressCheckout(authParams) {
-  logEvent('Initializing Express Checkout SDK...');
+  console.log('Initializing Express Checkout SDK...');
   
   sdk = new SpreedlyExpressCheckout({
     environment_key: authParams.environmentKey,
@@ -334,7 +269,7 @@ function initializeExpressCheckout(authParams) {
   });
   
   elements.expressCheckoutSection().classList.remove('hidden');
-  logEvent('Express Checkout SDK initialized');
+  console.log('Express Checkout SDK initialized');
 }
 
 // Open Express Checkout in 550x550 dialog
@@ -353,30 +288,30 @@ window.openExpressCheckoutForm = function() {
     isReady = true;
     SpreedlyUtils.setButtonLoading('open-express-checkout-btn', false);
     document.getElementById('express-checkout-open-section').classList.add('hidden');
-    logEvent('Express Checkout ready', 'success');
+    console.log('Express Checkout ready');
   });
   
   sdk.on('tokenGenerated', (response) => {
-    logEvent('Token generated', 'success');
+    console.log('Token generated');
     const token = response?.tokenResponse?.payment_method?.token;
     if (token) {
       paymentMethodToken = token;
       dialogOverlay?.classList.add('hidden');
-      processPurchaseWith3DS();
+      processPurchaseWithGatewaySpecific3DS();
     } else {
-      logEvent('Failed to extract token', 'error');
+      console.error('Failed to extract token');
       showStatus('Failed to generate payment token', 'error');
     }
   });
   
   sdk.on('error', (error) => {
-    logEvent(`SDK error: ${error.message}`, 'error');
+    console.error('SDK error:', error.message);
     SpreedlyUtils.setButtonLoading('open-express-checkout-btn', false);
     showStatus(error.message || 'An error occurred', 'error');
   });
   
   sdk.on('close', () => {
-    logEvent('Express checkout closed');
+    console.log('Express checkout closed');
     dialogOverlay?.classList.add('hidden');
     document.getElementById('express-checkout-open-section').classList.remove('hidden');
   });
@@ -386,14 +321,14 @@ window.openExpressCheckoutForm = function() {
     uiConfig: {
       textConfig: {
         title: 'Payment Details',
-        submitBtnText: `Pay ${SpreedlyUtils.formatCurrency(getCartTotal())}`,
+        submitBtnText: `Pay ${formatCentsAsDollars(selectedAmount)}`,
         processingText: 'Processing...',
       },
       styles: {
         button: {
-          backgroundColor: '#1f2937',
+          backgroundColor: '#065f46',
           borderRadius: '8px',
-          hover: { backgroundColor: '#374151' },
+          hover: { backgroundColor: '#047857' },
         },
       },
     },
@@ -415,9 +350,17 @@ function switchPaymentTab(tabName) {
   if (tabName === 'new') {
     selectedSavedCard = null;
     if (sdkType === 'hosted-fields') {
+      // Initialize Hosted Fields only when "New Card" tab is first selected
+      if (!hostedFieldsInitialized && storedAuthParams) {
+        initializeHostedFields(storedAuthParams);
+      }
       elements.hostedFieldsForm().classList.remove('hidden');
       elements.expressCheckoutSection().classList.add('hidden');
     } else {
+      // Initialize Express Checkout only when "New Card" tab is first selected
+      if (!sdk && storedAuthParams) {
+        initializeExpressCheckout(storedAuthParams);
+      }
       elements.hostedFieldsForm().classList.add('hidden');
       elements.expressCheckoutSection().classList.remove('hidden');
     }
@@ -428,14 +371,23 @@ function switchPaymentTab(tabName) {
   updatePayButton();
 }
 
-// Saved Cards
+// Saved Cards - Filter for Gateway Specific 3DS test cards
 async function loadSavedCards() {
   try {
     savedCards = await SpreedlyUtils.fetchPaymentMethods();
+    
+    // Filter to only show gateway-specific 3DS test cards
+    filteredSavedCards = savedCards.filter(card => {
+      return GATEWAY_SPECIFIC_TEST_CARDS.some(testCard => 
+        card.first_six_digits === testCard.first_six && 
+        card.last_four_digits === testCard.last_four
+      );
+    });
+    
     renderSavedCards();
-    logEvent(`Loaded ${savedCards.length} saved cards`);
+    console.log(`Loaded ${savedCards.length} saved cards, ${filteredSavedCards.length} match gateway-specific test cards`);
   } catch (error) {
-    logEvent(`Failed to load saved cards: ${error.message}`, 'error');
+    console.error('Failed to load saved cards:', error.message);
     elements.savedCardsList().innerHTML = `<p style="text-align: center; color: var(--color-gray-500);">Failed to load saved cards</p>`;
   }
 }
@@ -443,14 +395,14 @@ async function loadSavedCards() {
 function renderSavedCards() {
   const container = elements.savedCardsList();
   
-  if (!savedCards || savedCards.length === 0) {
+  if (!filteredSavedCards || filteredSavedCards.length === 0) {
     container.innerHTML = `
       <div class="no-saved-cards">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 3rem; height: 3rem; margin-bottom: 0.5rem; opacity: 0.5;">
           <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" />
         </svg>
-        <p>No saved cards found</p>
-        <p style="font-size: 0.875rem; margin-top: 0.5rem;">Add a new card to continue</p>
+        <p>No gateway-specific 3DS test cards found</p>
+        <p style="font-size: 0.875rem; margin-top: 0.5rem;">Add a new card with number <code>4556761029983886</code> or <code>4024007101934890</code></p>
       </div>
     `;
     elements.savedCardsPagination().classList.add('hidden');
@@ -458,22 +410,26 @@ function renderSavedCards() {
   }
   
   // Calculate pagination
-  const totalCards = savedCards.length;
+  const totalCards = filteredSavedCards.length;
   const totalPages = Math.ceil(totalCards / CARDS_PER_PAGE);
   const startIndex = (currentCardsPage - 1) * CARDS_PER_PAGE;
   const endIndex = Math.min(startIndex + CARDS_PER_PAGE, totalCards);
-  const paginatedCards = savedCards.slice(startIndex, endIndex);
+  const paginatedCards = filteredSavedCards.slice(startIndex, endIndex);
   
   // Render cards
   container.innerHTML = paginatedCards.map(card => {
     const fullName = [card.first_name, card.last_name].filter(Boolean).join(' ') || '[Cardholder Name Not Available]';
+    const isValid3DS = card.first_six_digits === '455676' && card.last_four_digits === '3886';
+    const cardLabel = isValid3DS ? '✓ Valid 3DS' : '✗ Invalid 3DS';
+    const labelColor = isValid3DS ? 'color: var(--color-success);' : 'color: var(--color-error);';
+    
     return `
     <div class="saved-card ${selectedSavedCard === card.token ? 'selected' : ''}" data-token="${card.token}" onclick="selectSavedCard('${card.token}')">
       <span class="saved-card-icon">${SpreedlyUtils.getCardIcon(card.card_type)}</span>
       <div class="saved-card-details">
         <div class="saved-card-name">${fullName}</div>
         <div class="saved-card-number">${SpreedlyUtils.capitalizeFirst(card.card_type)} •••• ${card.last_four_digits}</div>
-        <div class="saved-card-expiry">Expires ${card.month}/${card.year}</div>
+        <div class="saved-card-expiry">Expires ${card.month}/${card.year} <span style="${labelColor} font-weight: 500; margin-left: 0.5rem;">${cardLabel}</span></div>
       </div>
       <input type="radio" name="saved-card" class="saved-card-radio" ${selectedSavedCard === card.token ? 'checked' : ''}>
     </div>
@@ -506,7 +462,7 @@ window.selectSavedCard = function(token) {
 };
 
 function changeCardsPage(direction) {
-  const totalPages = Math.ceil(savedCards.length / CARDS_PER_PAGE);
+  const totalPages = Math.ceil(filteredSavedCards.length / CARDS_PER_PAGE);
   currentCardsPage = Math.max(1, Math.min(totalPages, currentCardsPage + direction));
   renderSavedCards();
 }
@@ -516,16 +472,29 @@ function updatePayButton() {
   const activeTab = document.querySelector('.payment-tab.active').dataset.tab;
   const payBtn = elements.payBtn();
   
+  // Check if custom amount is selected but invalid
+  const isCustomSelected = elements.customAmountOption()?.classList.contains('selected');
+  const hasValidAmount = selectedAmount > 0;
+  
   if (activeTab === 'saved') {
-    payBtn.disabled = !selectedSavedCard;
+    payBtn.disabled = !selectedSavedCard || (isCustomSelected && !hasValidAmount);
   } else {
-    payBtn.disabled = false;
+    payBtn.disabled = isCustomSelected && !hasValidAmount;
   }
   
   const btnText = payBtn.querySelector('.btn-text');
   if (btnText) {
-    btnText.textContent = `Pay with 3DS ${SpreedlyUtils.formatCurrency(getCartTotal())}`;
+    if (isCustomSelected && !hasValidAmount) {
+      btnText.textContent = 'Pay with 3DS (Enter amount)';
+    } else {
+      btnText.textContent = `Pay with 3DS ${formatCentsAsDollars(selectedAmount)}`;
+    }
   }
+}
+
+// Helper to format cents as dollars
+function formatCentsAsDollars(cents) {
+  return SpreedlyUtils.formatCurrency(cents / 100);
 }
 
 // Payment Processing
@@ -534,16 +503,16 @@ window.handlePayment = function() {
   
   hideStatus();
   setPayButtonLoading(true);
-  logEvent('Starting payment process...');
+  console.log('Starting payment process...');
   
   if (activeTab === 'saved') {
     paymentMethodToken = selectedSavedCard;
-    logEvent('Using saved card token');
-    processPurchaseWith3DS();
+    console.log('Using saved card token');
+    processPurchaseWithGatewaySpecific3DS();
   } else {
     if (sdkType === 'express-checkout') {
       // Express Checkout handles its own tokenization
-      logEvent('Express Checkout will handle tokenization');
+      console.log('Express Checkout will handle tokenization');
       setPayButtonLoading(false);
     } else {
       tokenizeNewCard();
@@ -552,7 +521,7 @@ window.handlePayment = function() {
 };
 
 function tokenizeNewCard() {
-  logEvent('Tokenizing new card...');
+  console.log('Tokenizing new card...');
   
   if (!sdk || !isReady) {
     showStatus('SDK not ready. Please wait.', 'error');
@@ -586,8 +555,8 @@ function tokenizeNewCard() {
   sdk.submit(submitData);
 }
 
-// 3DS Purchase Flow
-async function processPurchaseWith3DS() {
+// Gateway Specific 3DS Purchase Flow
+async function processPurchaseWithGatewaySpecific3DS() {
   if (!paymentMethodToken) {
     showStatus('No payment method token available.', 'error');
     setPayButtonLoading(false);
@@ -595,53 +564,85 @@ async function processPurchaseWith3DS() {
   }
 
   try {
-    // Step 1: Collect browser info
-    logEvent('Collecting browser info...');
+    // Step 1: Collect browser info (still needed for gateway-specific)
+    console.log('Collecting browser info...');
     setPayButtonLoading(true, 'Collecting browser info...');
     
     const browserInfo = serializeBrowserInfo(CONFIG.browserSize, CONFIG.acceptHeader);
-    logEvent('Browser info collected', 'success');
+    console.log('Browser info collected');
     
-    // Step 2: Create purchase with 3DS
-    logEvent('Creating purchase with 3DS...');
+    // Step 2: Create purchase with gateway-specific 3DS params
+    console.log('Creating purchase with Gateway Specific 3DS...');
     setPayButtonLoading(true, 'Processing payment...');
     
-    const totalAmount = Math.round(getCartTotal() * 100); // Convert to cents
-    
-    const response = await SpreedlyUtils.createPurchaseWith3DS(
+    const response = await createPurchaseWithGatewaySpecific3DS(
       paymentMethodToken,
-      totalAmount,
+      selectedAmount, // Already in cents
       browserInfo,
       'USD'
     );
     
     const transaction = response.transaction;
     
-    logEvent(`Transaction created: ${transaction.token?.substring(0, 15)}...`);
-    logEvent(`State: ${transaction.state}`);
+    console.log(`Transaction created: ${transaction.token?.substring(0, 15)}...`);
+    console.log(`State: ${transaction.state}`);
     
     // Step 3: Handle based on transaction state
-    if (transaction.state === 'succeeded') {
-      logEvent('Transaction succeeded immediately', 'success');
-      showResult('success', transaction);
-    } else if (transaction.state === 'pending') {
-      logEvent('Transaction pending - starting 3DS lifecycle...', 'info');
-      start3DSLifecycle(transaction.token);
-    } else {
-      logEvent(`Transaction failed: ${transaction.state}`, 'error');
-      showResult('error', { message: transaction.message || `Transaction ${transaction.state}` });
+    switch (transaction.state) {
+      case 'succeeded':
+        console.log('Transaction succeeded immediately (frictionless)');
+        showResult('success', transaction);
+        break;
+        
+      case 'pending':
+        console.log('Transaction pending - starting Gateway Specific 3DS lifecycle...');
+        start3DSLifecycle(transaction.token);
+        break;
+        
+      case 'failed':
+      case 'gateway_processing_failed':
+      case 'gateway_setup_failed':
+        console.log(`Transaction failed: ${transaction.state}`);
+        showResult('error', { message: transaction.message || `Transaction ${transaction.state}` });
+        break;
+        
+      default:
+        console.log(`Unexpected transaction state: ${transaction.state}`);
+        showResult('error', { message: transaction.message || `Unexpected state: ${transaction.state}` });
     }
     
   } catch (error) {
-    logEvent(`Purchase failed: ${error.error}`, 'error');
-    showResult('error', { message: error.transaction.message || 'Purchase failed' });
+    console.error('Purchase failed:', error);
+    let errorMessage = ''
+    if(error?.transaction?.state === 'gateway_setup_failed' || error?.transaction?.state === 'gateway_processing_failed') {
+      errorMessage = 'Transaction failed due to gateway setup failure.'
+    } else {
+      errorMessage = error?.transaction?.message || error?.error || error?.message || 'Purchase failed';
+    }
+    showResult('error', { message: errorMessage });
   }
 }
 
-// 3DS Lifecycle
+// API call for Gateway Specific 3DS
+async function createPurchaseWithGatewaySpecific3DS(paymentMethodToken, amount, browserInfo, currencyCode) {
+  try {
+    const response = await axios.post(`${SpreedlyUtils.LOCAL_API_URL}/create-purchase-with-3ds-gateway-specific`, {
+      payment_method_token: paymentMethodToken,
+      amount: amount,
+      currency_code: currencyCode,
+      browser_info: browserInfo,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error creating gateway-specific 3DS purchase:', error.response?.data || error);
+    throw error.response?.data || error;
+  }
+}
+
+// 3DS Lifecycle - same for both Global and Gateway Specific
 function start3DSLifecycle(transactionToken) {
   setPayButtonLoading(true, 'Authenticating...');
-  logEvent('Creating 3DS Lifecycle...');
+  console.log('Creating 3DS Lifecycle for Gateway Specific flow...');
   
   lifecycle = new SpreedlyThreeDSLifecycle({
     transactionToken: transactionToken,
@@ -651,33 +652,89 @@ function start3DSLifecycle(transactionToken) {
     
     callbacks: {
       // All callbacks receive consistent event structure: { action, context, token, finalize, response }
+      
+      // Device fingerprint started (Gateway Specific)
+      onDeviceFingerprint: (event) => {
+        console.log(`3ds Callback: Device fingerprint (action: ${event.action}, token: ${event.token})`);
+      },
+      
+      // Challenge required - show modal
       onChallenge: (event) => {
-        logEvent(`Challenge required (action: ${event.action}) - showing modal`, 'info');
+        console.log(`3ds Callback: Challenge (action: ${event.action}) - showing modal`);
         setPayButtonLoading(true, 'Complete verification...');
         showChallengeModal();
       },
       
+      // 3DS authentication successful
       onSuccess: (event) => {
-        logEvent(`3DS authentication successful (action: ${event.action})`, 'success');
+        console.log(`3ds Callback: Success (action: ${event.action})`);
         hideChallengeModal();
         // event.context contains the full TransactionStatus
         showResult('success', event.context);
       },
       
+      // 3DS authentication failed
       onError: (event) => {
         // event.context is the error message, event.response has { state, message, error_code }
         let errorMsg = event.context;
         if (errorMsg === 'messages.failed_sca_authentication') {
           errorMsg = 'Transaction failed due to failed authentication. Please try again.';
         }
-        logEvent(`3DS error (action: ${event.action}): ${errorMsg}`, 'error');
+        console.error(`3ds Callback: Error (action: ${event.action}):`, errorMsg);
         hideChallengeModal();
         showResult('error', { message: errorMsg });
+      },
+      
+      // Gateway Specific: Device fingerprint/Braintree completed - call completion endpoint
+      onTriggerCompletion: async (event) => {
+        console.log(`3ds Callback: Trigger completion (action: ${event.action}, token: ${event.token})`);
+        console.log('Context:', event.context);
+        
+        try {
+          // Call the backend completion endpoint
+          console.log('Calling completion endpoint...');
+          const response = await axios.post(
+            `${SpreedlyUtils.LOCAL_API_URL}/transactions/${event.token}/complete`
+          );
+          
+          const transaction = response.data.transaction;
+          console.log('Completion response:', transaction.state);
+          
+          if (transaction.state === 'succeeded') {
+            // Transaction completed successfully - show success
+            console.log('Transaction succeeded after completion');
+            hideChallengeModal();
+            showResult('success', transaction);
+          } else if (transaction.state === 'pending') {
+            // Still pending - continue the 3DS flow (e.g., challenge required)
+            console.log('Transaction still pending - continuing 3DS flow');
+            event.finalize(transaction);
+          } else {
+            // Transaction failed
+            console.error('Transaction failed after completion:', transaction.message);
+            hideChallengeModal();
+            showResult('error', { message: transaction.message || 'Transaction failed' });
+          }
+        } catch (error) {
+          if (error.response.data.transaction.state === 'gateway_processing_failed') {
+            showResult('error', { message: error.response.data.transaction.message });
+          } else {
+            showResult('error', { message: 'Error calling completion endpoint' });
+          }
+        }
+      },
+      
+      // Gateway Specific: Challenge polling timed out (10-15 minutes)
+      onFinalizationTimeout: (event) => {
+        console.warn(`3ds Callback: Finalization timeout (action: ${event.action}, token: ${event.token})`);
+        console.log('Challenge polling timed out - merchant should attempt manual completion');
+        hideChallengeModal();
+        showResult('error', { message: 'Challenge timed out. Please try again.' });
       },
     },
   });
   
-  logEvent('Starting 3DS flow...');
+  console.log('Starting 3DS flow...');
   lifecycle.start();
 }
 
@@ -686,7 +743,7 @@ function showChallengeModal() {
   const overlay = elements.challengeOverlay();
   if (overlay) {
     overlay.classList.remove('hidden');
-    logEvent('Challenge modal displayed', 'info');
+    console.log('Challenge modal displayed');
   }
 }
 
@@ -703,7 +760,7 @@ function hideChallengeModal() {
 // Results
 function showResult(type, data) {
   setPayButtonLoading(false);
-  goToStep(3);
+  goToStep(2);
   
   const container = elements.resultSection();
   
@@ -714,8 +771,8 @@ function showResult(type, data) {
           <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
         </svg>
       </div>
-      <h2 class="result-title" style="color: var(--color-success);">3DS Payment Successful!</h2>
-      <p class="result-message">Your payment has been securely authenticated and processed.</p>
+      <h2 class="result-title" style="color: var(--color-success);">Gateway Specific 3DS Payment Successful!</h2>
+      <p class="result-message">Your payment has been authenticated via Gateway Specific 3DS and processed.</p>
       <div class="result-details">
         <div class="result-detail-row">
           <span class="result-detail-label">Transaction ID</span>
@@ -723,15 +780,15 @@ function showResult(type, data) {
         </div>
         <div class="result-detail-row">
           <span class="result-detail-label">Amount</span>
-          <span class="result-detail-value">${SpreedlyUtils.formatCurrency(getCartTotal())}</span>
+          <span class="result-detail-value">${formatCentsAsDollars(selectedAmount)}</span>
         </div>
         <div class="result-detail-row">
-          <span class="result-detail-label">3DS Status</span>
-          <span class="result-detail-value" style="color: var(--color-success);">✓ Authenticated</span>
+          <span class="result-detail-label">3DS Flow</span>
+          <span class="result-detail-value">Gateway Specific</span>
         </div>
         <div class="result-detail-row">
           <span class="result-detail-label">Status</span>
-          <span class="result-detail-value" style="color: var(--color-success);">Completed</span>
+          <span class="result-detail-value" style="color: var(--color-success);">✓ Authenticated & Completed</span>
         </div>
       </div>
       <button class="btn btn-primary" onclick="resetPurchase()">Make Another Purchase</button>
@@ -757,9 +814,6 @@ function showResult(type, data) {
 window.resetPurchase = function() {
   // Simply refresh the page to ensure SDK is properly reloaded
   window.location.reload();
-  
-  // Re-initialize
-  init();
 };
 
 // UI Helpers
@@ -780,16 +834,13 @@ function setPayButtonLoading(loading, text = null) {
   
   if (textEl) {
     if (loading) {
-      // Save original text if not already saved
       if (!originalPayBtnText) {
         originalPayBtnText = textEl.textContent;
       }
-      // Update text if provided
       if (text) {
         textEl.textContent = text;
       }
     } else {
-      // Restore original text when not loading
       if (originalPayBtnText) {
         textEl.textContent = originalPayBtnText;
         originalPayBtnText = null;
@@ -812,4 +863,3 @@ function hideStatus() {
     statusEl.className = 'status-message';
   }
 }
-

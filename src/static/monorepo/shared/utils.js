@@ -10,12 +10,12 @@ function getSDKType() {
 function getSDKScriptUrl() {
   const sdkType = getSDKType();
   // uncomment this to use local sdk
-  // if(window.location.hostname === 'localhost') {
-  //   if (sdkType === 'express-checkout') {
-  //     return 'http://localhost:5173/express-checkout.js';
-  //   }
-  //   return 'http://localhost:5000/index.js';
-  // }
+  if(window.location.hostname === 'localhost') {
+    if (sdkType === 'express-checkout') {
+      return 'http://localhost:5173/express-checkout.js';
+    }
+    return 'http://localhost:5000/index.js';
+  }
 
   if (sdkType === 'express-checkout') {
     return 'https://core-test.spreedly.com/checkout/elements/rc/express-checkout.js';
@@ -85,7 +85,7 @@ async function createPurchase(paymentMethodToken, amount, currencyCode = 'USD') 
 
 async function createPurchaseWith3DS(paymentMethodToken, amount, browserInfo, currencyCode = 'USD') {
   try {
-    const response = await axios.post(`${API_BASE_URL}/create-purchase-with-3ds`, {
+    const response = await axios.post(`${LOCAL_API_URL}/create-purchase-with-3ds`, {
       payment_method_token: paymentMethodToken,
       amount: amount,
       currency_code: currencyCode,

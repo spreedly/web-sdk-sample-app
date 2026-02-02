@@ -613,7 +613,7 @@ function showResult(type, data) {
       <h2 class="result-title" style="color: var(--color-error);">Payment Failed</h2>
       <p class="result-message">${errorMessage}</p>
       <div style="display: flex; gap: 1rem; justify-content: center;">
-        <button class="btn btn-back" onclick="goToStep(2)">← Try Again</button>
+        <button class="btn btn-back" onclick="window.location.reload()">← Try Again</button>
         <button class="btn btn-primary" onclick="resetPurchase()">Start Over</button>
       </div>
     `;
@@ -621,20 +621,8 @@ function showResult(type, data) {
 }
 
 window.resetPurchase = function() {
-  // Reset state
-  cart = {};
-  selectedSavedCard = null;
-  paymentMethodToken = null;
-  currentCardsPage = 1; // Reset pagination
-  
-  // Reset UI
-  renderProducts();
-  renderSavedCards();
-  switchPaymentTab('saved');
-  hideStatus();
-  
-  // Go to step 1
-  goToStep(1);
+  // Simply refresh the page to ensure SDK is properly reloaded
+  window.location.reload();
   
   // Reset form fields
   const firstName = document.getElementById('first_name');

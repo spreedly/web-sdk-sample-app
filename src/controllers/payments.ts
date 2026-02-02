@@ -132,13 +132,19 @@ export const createPurchaseTransaction = async (req: UserAgentAugmentedRequest, 
     os: req.useragent?.os,
   }
 
+  const sca_provider_key = config.spreedlySCAProviderKey;
+  const attempt_3dsecure = req.body.attempt_3dsecure;
+
   const requestBody = {
     transaction: {
       amount: req.body.amount,
       currency_code: req.body.currency_code,
       payment_method_token: req.body.payment_method_token,
-      sca_provider_key: config.spreedlySCAProviderKey,
       ip: req.ip || '127.0.0.1',
+      // If attempt_3dsecure is true, we want to attempt gateway specific 3DS
+      ...(sca_provider_key && !attempt_3dsecure ? { sca_provider_key } : {}),
+      ...(attempt_3dsecure ? { attempt_3dsecure, three_ds_version: 2 } : {}),
+      sca_provider_key: config.spreedlySCAProviderKey,
       browser_info: btoa(JSON.stringify(browserInfo)),
     }
   };
@@ -191,6 +197,63 @@ export const createPurchaseWith3DS = async (req: Request, res: Response): Promis
   } catch (error) {
     const apiError = error as AxiosError;
     res.status(apiError.response?.status || 500).json(apiError.response?.data); 
+  }
+};
+
+// Web SDK endpoint for Gateway Specific 3DS purchase
+// Uses three_ds_version=2 and attempt_3dsecure=true instead of sca_provider_key
+export const createPurchaseWith3DSGatewaySpecific = async (req: Request, res: Response): Promise<void> => {
+  const gateway_key = config.spreedlyGatewayToken;
+
+  const payment_method_token = req.body.payment_method_token;
+  const amount = req.body.amount;
+  const browser_info = req.body.browser_info;
+  const currency_code = req.body.currency_code || 'USD';
+  
+  const body = {
+    transaction: {
+      payment_method_token,
+      amount,
+      currency_code,
+      browser_info,
+      three_ds_version: '2',
+      attempt_3dsecure: true,
+    },
+  };
+  
+  try {
+    const response = await axios.post(
+      `${config.spreedlyUrl}/v1/gateways/${gateway_key}/purchase.json`, body, 
+      {
+        headers: {
+          Authorization: getAuthorizationHeader(),
+        },
+      }
+    );
+    res.json(response.data);
+  } catch (error) {
+    const apiError = error as AxiosError;
+    res.status(apiError.response?.status || 500).json(apiError.response?.data); 
+  }
+};
+
+// Complete a 3DS transaction
+export const completeTransaction = async (req: Request, res: Response): Promise<void> => {
+  const transactionToken = req.params.transactionToken || '';
+  try {
+    const response = await axios.post(
+      `${config.spreedlyUrl}/v1/transactions/${transactionToken}/complete.json`,
+      {},
+      {
+        headers: {
+          Authorization: getAuthorizationHeader(),
+        },
+      }
+    );
+    res.json(response.data);
+  } catch (error) {
+    const apiError = error as AxiosError;
+    res.status(apiError.response?.status || 500).json(apiError.response?.data);
   }
 };
 

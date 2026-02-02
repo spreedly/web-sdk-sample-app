@@ -136,7 +136,26 @@
                 <div class="flow-card-content">
                   <h3>Purchase with 3DS</h3>
                   <p>Checkout with 3D Secure authentication</p>
-                  <span class="flow-badge">3DS</span>
+                  <span class="flow-badge">3DS Global</span>
+                </div>
+                <div class="flow-card-arrow">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                  </svg>
+                </div>
+              </a>
+
+              <!-- Purchase with 3DS Gateway Specific -->
+              <a href="#" class="flow-card" data-flow="purchase-with-3ds-gateway-specific">
+                <div class="flow-card-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 14.25h13.5m-13.5 0a3 3 0 01-3-3m3 3a3 3 0 100 6h13.5a3 3 0 100-6m-16.5-3a3 3 0 013-3h13.5a3 3 0 013 3m-19.5 0a4.5 4.5 0 01.9-2.7L5.737 5.1a3.375 3.375 0 012.7-1.35h7.126c1.062 0 2.062.5 2.7 1.35l2.587 3.45a4.5 4.5 0 01.9 2.7m0 0a3 3 0 01-3 3m0 3h.008v.008h-.008v-.008zm0-6h.008v.008h-.008v-.008zm-3 6h.008v.008h-.008v-.008zm0-6h.008v.008h-.008v-.008z" />
+                  </svg>
+                </div>
+                <div class="flow-card-content">
+                  <h3>Purchase with 3DS Gateway Specific</h3>
+                  <p>Gateway-managed 3D Secure authentication</p>
+                  <span class="flow-badge">3DS Gateway</span>
                 </div>
                 <div class="flow-card-arrow">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
@@ -147,15 +166,7 @@
             </div>
           </div>
 
-          <!-- Test Card Info -->
-          <div class="test-info">
-            <div class="test-info-title">Test Card Details</div>
-            <p style="color: var(--color-gray-600);">
-              Card: <code>4111 1111 1111 1111</code> &nbsp;
-              CVV: <code>123</code> &nbsp;
-              Expiry: <code>12/28</code>
-            </p>
-          </div>
+
         </div>
       </div>
     </main>

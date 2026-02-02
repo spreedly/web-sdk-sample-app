@@ -543,6 +543,118 @@
     .event-log-entry .time {
       color: var(--color-gray-500);
     }
+
+    /* Two Column Layout for Payment Step */
+    .two-column-layout {
+      display: grid;
+      grid-template-columns: 1fr 260px;
+      gap: 1.5rem;
+      text-align: left;
+      align-items: start;
+    }
+
+    @media (max-width: 900px) {
+      .two-column-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .main-panel {
+      min-width: 0;
+    }
+
+    .side-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .test-data-card {
+      background: white;
+      min-width: 320px;
+      border: 1px solid var(--color-gray-200);
+      border-radius: var(--radius-md);
+      padding: 0.875rem;
+    }
+
+    .test-data-card h4 {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--color-gray-900);
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+    }
+
+    .test-data-card h4 svg {
+      width: 0.875rem;
+      height: 0.875rem;
+      color: var(--color-primary);
+    }
+
+    .test-scenario {
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--color-gray-200);
+    }
+
+    .test-scenario:last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+
+    .test-scenario-title {
+      font-size: 0.6875rem;
+      font-weight: 600;
+      color: var(--color-gray-700);
+      margin-bottom: 0.375rem;
+      text-transform: uppercase;
+      letter-spacing: 0.025em;
+    }
+
+    .test-scenario-title.success {
+      color: var(--color-success);
+    }
+
+    .test-scenario-title.failure {
+      color: var(--color-error);
+    }
+
+    .test-field {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .test-field:last-child {
+      margin-bottom: 0;
+    }
+
+    .test-field-label {
+      color: var(--color-gray-500);
+      font-size: 0.6875rem;
+    }
+
+    .test-field-value {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      color: var(--color-gray-800);
+      background: var(--color-white);
+      padding: 0.125rem 0.25rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--color-gray-200);
+    }
+
+    .test-note {
+      font-size: 0.625rem;
+      color: var(--color-gray-500);
+      margin-top: 0.375rem;
+      font-style: italic;
+    }
   </style>
 </head>
 <body>
@@ -560,7 +672,7 @@
     </header>
 
     <main class="main-content">
-      <div class="container" style="max-width: 900px; text-align: center">
+      <div class="container" style="text-align: center">
         <h1 class="page-title">Purchase with 3DS</h1>
         <p class="page-description">Secure checkout with 3D Secure authentication for enhanced fraud protection.</p>
 
@@ -620,114 +732,173 @@
 
         <!-- Step 2: Payment -->
         <div class="step-content" id="step-2">
-          <div class="card">
-            <!-- Order Summary -->
-            <div class="order-summary" id="order-summary">
-              <div class="order-summary-title">Order Summary</div>
-              <div id="summary-items"></div>
-              <div class="order-total">
-                <span>Total</span>
-                <span id="summary-total">$0.00</span>
+          <div class="two-column-layout">
+            <!-- Main Panel -->
+            <div class="main-panel">
+              <div class="card">
+                <!-- Order Summary -->
+                <div class="order-summary" id="order-summary">
+                  <div class="order-summary-title">Order Summary</div>
+                  <div id="summary-items"></div>
+                  <div class="order-total">
+                    <span>Total</span>
+                    <span id="summary-total">$0.00</span>
+                  </div>
+                </div>
+
+                <!-- Payment Options -->
+                <div style="margin-top: 1.5rem;">
+                  <div style="font-weight: 600; color: var(--color-gray-900); margin-bottom: 1rem;">Payment Method</div>
+                  
+                  <div class="payment-tabs">
+                    <button class="payment-tab active" data-tab="saved">Saved Cards</button>
+                    <button class="payment-tab" data-tab="new">New Card</button>
+                  </div>
+
+                  <!-- Saved Cards -->
+                  <div class="payment-content active" id="payment-saved">
+                    <div class="saved-cards-list" id="saved-cards-list">
+                      <div class="loading" style="text-align: center; padding: 2rem;">
+                        <span class="spinner"></span>
+                        <span>Loading saved cards...</span>
+                      </div>
+                    </div>
+                    <div id="saved-cards-pagination" class="pagination-controls hidden">
+                      <button class="pagination-btn" id="prev-cards-btn">← Previous</button>
+                      <span id="pagination-info" class="pagination-info"></span>
+                      <button class="pagination-btn" id="next-cards-btn">Next →</button>
+                    </div>
+                  </div>
+
+                  <!-- New Card Form -->
+                  <div class="payment-content" id="payment-new">
+                    <div id="status-message" class="status-message"></div>
+
+                    <!-- Hosted Fields Form -->
+                    <div id="hosted-fields-form" class="hidden">
+                      <form id="payment-form">
+                        <div class="form-row">
+                          <div class="form-group">
+                            <label class="form-label" for="first_name">First Name</label>
+                            <input type="text" id="first_name" name="first_name" class="form-input" placeholder="John" required>
+                          </div>
+                          <div class="form-group">
+                            <label class="form-label" for="last_name">Last Name</label>
+                            <input type="text" id="last_name" name="last_name" class="form-input" placeholder="Doe" required>
+                          </div>
+                        </div>
+
+                        <div class="form-group">
+                          <label class="form-label">Card Number</label>
+                          <div id="card-number-field" class="hosted-field-container"></div>
+                        </div>
+
+                        <div class="form-group">
+                          <label class="form-label">CVV</label>
+                          <div id="cvv-field" class="hosted-field-container" style="max-width: 120px;"></div>
+                        </div>
+
+                        <div class="form-row">
+                          <div class="form-group">
+                            <label class="form-label" for="month">Expiry Month</label>
+                            <input type="text" id="month" name="month" class="form-input" placeholder="MM" maxlength="2" inputmode="numeric" required>
+                          </div>
+                          <div class="form-group">
+                            <label class="form-label" for="year">Expiry Year</label>
+                            <input type="text" id="year" name="year" class="form-input" placeholder="YYYY" maxlength="4" inputmode="numeric" required>
+                          </div>
+                        </div>
+
+                        <div class="form-group">
+                          <label class="form-label" for="email">Email (optional)</label>
+                          <input type="email" id="email" name="email" class="form-input" placeholder="john@example.com">
+                        </div>
+                      </form>
+                    </div>
+
+                    <!-- Express Checkout Section -->
+                    <div id="express-checkout-section" class="hidden">
+                      <div id="express-checkout-open-section">
+                        <div style="text-align: center; padding: 2rem;">
+                          <button class="btn btn-primary" id="open-express-checkout-btn" onclick="openExpressCheckoutForm()">
+                            Open Payment Form
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Event Log (collapsible) -->
+                <details class="event-log-container" style="margin-top: 1.5rem;">
+                  <summary class="event-log-header" style="cursor: pointer;">
+                    <span class="event-log-title">Event Log</span>
+                  </summary>
+                  <div id="event-log" class="event-log"></div>
+                </details>
+
+                <div class="step-navigation">
+                  <button class="btn btn-back" onclick="goToStep(1)">← Back</button>
+                  <button class="btn btn-primary" id="pay-btn" onclick="handlePayment()" disabled>
+                    <span class="btn-spinner hidden"><span class="spinner"></span></span>
+                    <span class="btn-text">Pay with 3DS $0.00</span>
+                  </button>
+                </div>
               </div>
             </div>
 
-            <!-- Payment Options -->
-            <div style="margin-top: 1.5rem;">
-              <div style="font-weight: 600; color: var(--color-gray-900); margin-bottom: 1rem;">Payment Method</div>
-              
-              <div class="payment-tabs">
-                <button class="payment-tab active" data-tab="saved">Saved Cards</button>
-                <button class="payment-tab" data-tab="new">New Card</button>
-              </div>
+            <!-- Side Panel - Test Data -->
+            <div class="side-panel">
+              <div class="test-data-card">
+                <h4>
+                  3DS Global Test Data
+                </h4>
 
-              <!-- Saved Cards -->
-              <div class="payment-content active" id="payment-saved">
-                <div class="saved-cards-list" id="saved-cards-list">
-                  <div class="loading" style="text-align: center; padding: 2rem;">
-                    <span class="spinner"></span>
-                    <span>Loading saved cards...</span>
+                <!-- Challenge Flow -->
+                <div class="test-scenario">
+                  <div class="test-scenario-title">3DS2 Challenge Flow</div>
+                  <div class="test-field">
+                    <span class="test-field-label">Card</span>
+                    <span class="test-field-value">5111220000000009</span>
+                  </div>
+                  <div class="test-field">
+                    <span class="test-field-label">Success PIN</span>
+                    <span class="test-field-value">1234</span>
+                  </div>
+                  <div class="test-field">
+                    <span class="test-field-label">Fail PIN</span>
+                    <span class="test-field-value">4567</span>
+                  </div>
+                  <div class="test-field">
+                    <span class="test-field-label">Email</span>
+                    <span class="test-field-value">test@example.com</span>
                   </div>
                 </div>
-                <div id="saved-cards-pagination" class="pagination-controls hidden">
-                  <button class="pagination-btn" id="prev-cards-btn">← Previous</button>
-                  <span id="pagination-info" class="pagination-info"></span>
-                  <button class="pagination-btn" id="next-cards-btn">Next →</button>
-                </div>
-              </div>
 
-              <!-- New Card Form -->
-              <div class="payment-content" id="payment-new">
-                <div id="status-message" class="status-message"></div>
-
-                <!-- Hosted Fields Form -->
-                <div id="hosted-fields-form" class="hidden">
-                  <form id="payment-form">
-                    <div class="form-row">
-                      <div class="form-group">
-                        <label class="form-label" for="first_name">First Name</label>
-                        <input type="text" id="first_name" name="first_name" class="form-input" placeholder="John" required>
-                      </div>
-                      <div class="form-group">
-                        <label class="form-label" for="last_name">Last Name</label>
-                        <input type="text" id="last_name" name="last_name" class="form-input" placeholder="Doe" required>
-                      </div>
-                    </div>
-
-                    <div class="form-group">
-                      <label class="form-label">Card Number</label>
-                      <div id="card-number-field" class="hosted-field-container"></div>
-                    </div>
-
-                    <div class="form-group">
-                      <label class="form-label">CVV</label>
-                      <div id="cvv-field" class="hosted-field-container" style="max-width: 120px;"></div>
-                    </div>
-
-                    <div class="form-row">
-                      <div class="form-group">
-                        <label class="form-label" for="month">Expiry Month</label>
-                        <input type="text" id="month" name="month" class="form-input" placeholder="MM" maxlength="2" inputmode="numeric" required>
-                      </div>
-                      <div class="form-group">
-                        <label class="form-label" for="year">Expiry Year</label>
-                        <input type="text" id="year" name="year" class="form-input" placeholder="YYYY" maxlength="4" inputmode="numeric" required>
-                      </div>
-                    </div>
-
-                    <div class="form-group">
-                      <label class="form-label" for="email">Email (optional)</label>
-                      <input type="email" id="email" name="email" class="form-input" placeholder="john@example.com">
-                    </div>
-                  </form>
-                </div>
-
-                <!-- Express Checkout Section -->
-                <div id="express-checkout-section" class="hidden">
-                  <div id="express-checkout-open-section">
-                    <div style="text-align: center; padding: 2rem;">
-                      <button class="btn btn-primary" id="open-express-checkout-btn" onclick="openExpressCheckoutForm()">
-                        Open Payment Form
-                      </button>
-                    </div>
+                <!-- Frictionless Success -->
+                <div class="test-scenario">
+                  <div class="test-scenario-title success">3DS2 Frictionless Success</div>
+                  <div class="test-field">
+                    <span class="test-field-label">Card</span>
+                    <span class="test-field-value">5222220000000005</span>
                   </div>
+                  <div class="test-field">
+                    <span class="test-field-label">Email</span>
+                    <span class="test-field-value">approve@forter.com</span>
+                  </div>
+                  <p class="test-note">Transaction succeeds without user challenge</p>
+                </div>
+
+                <!-- Frictionless Failure -->
+                <div class="test-scenario">
+                  <div class="test-scenario-title failure">3DS Frictionless Failure</div>
+                  <div class="test-field">
+                    <span class="test-field-label">Card</span>
+                    <span class="test-field-value">5248481111200179</span>
+                  </div>
+                  <p class="test-note">Transaction fails without user challenge</p>
                 </div>
               </div>
-            </div>
-
-            <!-- Event Log (collapsible) -->
-            <details class="event-log-container" style="margin-top: 1.5rem;">
-              <summary class="event-log-header" style="cursor: pointer;">
-                <span class="event-log-title">Event Log</span>
-              </summary>
-              <div id="event-log" class="event-log"></div>
-            </details>
-
-            <div class="step-navigation">
-              <button class="btn btn-back" onclick="goToStep(1)">← Back</button>
-              <button class="btn btn-primary" id="pay-btn" onclick="handlePayment()" disabled>
-                <span class="btn-spinner hidden"><span class="spinner"></span></span>
-                <span class="btn-text">Pay with 3DS $0.00</span>
-              </button>
             </div>
           </div>
         </div>

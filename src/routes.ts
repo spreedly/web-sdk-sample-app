@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { getAuthParams } from './controllers/auth';
-import { createPaymentMethod, getPaymentMethods, retainPaymentMethod, recachePaymentMethod, createPurchaseTransaction, createPurchaseWith3DS, createSimplePurchase } from './controllers/payments';
+import { createPaymentMethod, getPaymentMethods, retainPaymentMethod, recachePaymentMethod, createPurchaseTransaction, createPurchaseWith3DS, createPurchaseWith3DSGatewaySpecific, createSimplePurchase, completeTransaction } from './controllers/payments';
 
 const router = Router();
 
@@ -194,6 +194,38 @@ router.post('/create-purchase-with-3ds', createPurchaseWith3DS);
 
 /**
  * @swagger
+ * /api/v1/create-purchase-with-3ds-gateway-specific:
+ *   post:
+ *     description: Create a purchase with Gateway Specific 3DS (uses three_ds_version=2 and attempt_3dsecure=true)
+ *     tags: [Transactions]
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: body
+ *         description: Purchase details
+ *         in: body
+ *         required: true
+ *         schema:
+ *           type: object
+ *           properties:
+ *             payment_method_token:
+ *               type: string
+ *             amount:
+ *               type: number
+ *             currency_code:
+ *               type: string
+ *             browser_info:
+ *               type: string
+ *     responses:
+ *       200:
+ *         description: Purchase processed successfully
+ *       500:
+ *         description: Error processing purchase
+ */
+router.post('/create-purchase-with-3ds-gateway-specific', createPurchaseWith3DSGatewaySpecific);
+
+/**
+ * @swagger
  * /api/v1/simple-purchase:
  *   post:
  *     description: Create a simple purchase transaction
@@ -221,5 +253,29 @@ router.post('/create-purchase-with-3ds', createPurchaseWith3DS);
  *         description: Error processing purchase
  */
 router.post('/simple-purchase', createSimplePurchase);
+
+/**
+ * @swagger
+ * /api/v1/transactions/{transactionToken}/complete:
+ *   post:
+ *     description: Complete a 3DS transaction (Gateway Specific). Called after device fingerprint or challenge.
+ *     tags: [Transactions]
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: transactionToken
+ *         description: The unique token identifying the transaction
+ *         in: path
+ *         required: true
+ *         type: string
+ *     responses:
+ *       200:
+ *         description: Transaction completed successfully
+ *       400:
+ *         description: Invalid transaction token format
+ *       500:
+ *         description: Error completing transaction
+ */
+router.post('/transactions/:transactionToken/complete', completeTransaction);
 
 export default router;
