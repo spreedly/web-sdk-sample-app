@@ -144,7 +144,6 @@ export const createPurchaseTransaction = async (req: UserAgentAugmentedRequest, 
       // If attempt_3dsecure is true, we want to attempt gateway specific 3DS
       ...(sca_provider_key && !attempt_3dsecure ? { sca_provider_key } : {}),
       ...(attempt_3dsecure ? { attempt_3dsecure, three_ds_version: 2 } : {}),
-      sca_provider_key: config.spreedlySCAProviderKey,
       browser_info: btoa(JSON.stringify(browserInfo)),
     }
   };
