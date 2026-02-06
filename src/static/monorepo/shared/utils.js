@@ -200,6 +200,33 @@ function loadSDKScript(callback) {
   document.body.appendChild(script);
 }
 
+// Offsite Payments
+async function createOffsitePurchase(paymentMethodToken, amount, redirectUrl, callbackUrl, currencyCode = 'USD') {
+  try {
+    const response = await axios.post(`http://localhost:3000/api/v1/offsite-purchase`, {
+      payment_method_token: paymentMethodToken,
+      amount: amount,
+      currency_code: currencyCode,
+      redirect_url: redirectUrl,
+      callback_url: callbackUrl,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error creating offsite purchase:', error);
+    throw error;
+  }
+}
+
+async function getTransactionStatus(transactionToken) {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/transactions/${transactionToken}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error getting transaction status:', error);
+    throw error;
+  }
+}
+
 window.SpreedlyUtils = {
   // Config
   API_BASE_URL,
@@ -222,6 +249,10 @@ window.SpreedlyUtils = {
   retainPaymentMethod,
   createPurchase,
   createPurchaseWith3DS,
+  
+  // Offsite Payments
+  createOffsitePurchase,
+  getTransactionStatus,
   
   // UI helpers
   showStatus,

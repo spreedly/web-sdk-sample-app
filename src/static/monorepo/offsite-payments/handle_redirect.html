@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Complete | Spreedly Web SDK Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./shared/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="./shared/utils.js"></script>
+  <style>
+    .redirect-container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    
+    .redirect-card {
+      background: white;
+      border-radius: 16px;
+      padding: 2.5rem 2rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    .redirect-card.success {
+      border-top: 4px solid var(--color-success, #10b981);
+    }
+    
+    .redirect-card.pending {
+      border-top: 4px solid var(--color-warning, #f59e0b);
+    }
+    
+    .redirect-card.error {
+      border-top: 4px solid var(--color-error, #ef4444);
+    }
+    
+    .result-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    
+    .redirect-icon {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.5rem;
+    }
+    
+    .redirect-icon.success {
+      background: var(--color-success-light, #d1fae5);
+      color: var(--color-success, #10b981);
+    }
+    
+    .redirect-icon.pending {
+      background: var(--color-warning-light, #fef3c7);
+      color: var(--color-warning, #f59e0b);
+    }
+    
+    .redirect-icon.error {
+      background: var(--color-error-light, #fee2e2);
+      color: var(--color-error, #ef4444);
+    }
+    
+    .redirect-icon.loading {
+      background: var(--color-gray-100);
+    }
+    
+    .redirect-icon svg {
+      width: 40px;
+      height: 40px;
+    }
+    
+    .redirect-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+    
+    .redirect-title.success {
+      color: var(--color-success, #10b981);
+    }
+    
+    .redirect-title.pending {
+      color: var(--color-warning, #f59e0b);
+    }
+    
+    .redirect-title.error {
+      color: var(--color-error, #ef4444);
+    }
+    
+    .redirect-message {
+      color: var(--color-gray-500);
+      line-height: 1.6;
+    }
+    
+    .transaction-details {
+      background: var(--color-gray-50);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    
+    .transaction-details-title {
+      font-weight: 600;
+      color: var(--color-gray-700);
+      margin-bottom: 1rem;
+      font-size: 0.875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--color-gray-200);
+    }
+    
+    .detail-row:last-child {
+      border-bottom: none;
+    }
+    
+    .detail-label {
+      font-weight: 500;
+      color: var(--color-gray-600);
+    }
+    
+    .detail-value {
+      font-family: var(--font-mono);
+      font-size: 0.875rem;
+      color: var(--color-gray-900);
+      text-align: right;
+      word-break: break-all;
+      max-width: 280px;
+    }
+    
+    .status-badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    
+    .status-badge.succeeded {
+      background: var(--color-success-light, #d1fae5);
+      color: var(--color-success, #10b981);
+    }
+    
+    .status-badge.pending {
+      background: var(--color-warning-light, #fef3c7);
+      color: var(--color-warning, #f59e0b);
+    }
+    
+    .status-badge.failed, .status-badge.gateway_processing_failed {
+      background: var(--color-error-light, #fee2e2);
+      color: var(--color-error, #ef4444);
+    }
+    
+    .btn-group {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    
+    .btn {
+      flex: 1;
+      padding: 0.875rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: center;
+      text-decoration: none;
+    }
+    
+    .btn-primary {
+      background: var(--color-primary, #0a0a0a);
+      color: white;
+      border: none;
+    }
+    
+    .btn-primary:hover {
+      opacity: 0.9;
+    }
+    
+    .btn-secondary {
+      background: white;
+      color: var(--color-gray-700);
+      border: 1px solid var(--color-gray-300);
+    }
+    
+    .btn-secondary:hover {
+      background: var(--color-gray-50);
+    }
+    
+    .spinner-large {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--color-gray-200);
+      border-top-color: var(--color-primary, #0a0a0a);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .error-message {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: var(--color-error-light, #fee2e2);
+      border-radius: 8px;
+      color: var(--color-error, #ef4444);
+      font-size: 0.875rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="page-wrapper">
+    <!-- Header -->
+    <header class="header">
+      <div class="container header-inner">
+        <a href="index.html" class="logo">
+          <span class="logo-icon">S</span>
+          Spreedly Web SDK
+        </a>
+        <span class="nav-badge">Payment Result</span>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+      <div class="container">
+        <div class="redirect-container">
+          <div id="redirect-card" class="redirect-card">
+            <div class="result-header">
+              <div id="redirect-icon" class="redirect-icon loading">
+                <div class="spinner-large"></div>
+              </div>
+              <h1 id="redirect-title" class="redirect-title">Loading Transaction...</h1>
+              <p id="redirect-message" class="redirect-message">Fetching transaction details from Spreedly...</p>
+            </div>
+            
+            <div id="transaction-details" class="transaction-details hidden">
+              <div class="transaction-details-title">Transaction Details</div>
+              <div id="details-content"></div>
+            </div>
+            
+            <div id="error-message" class="error-message hidden"></div>
+            
+            <div class="btn-group">
+              <a href="./offsite-payments/index.html" class="btn btn-secondary">New Payment</a>
+              <a href="./index.html" class="btn btn-primary">Back to Home</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container footer-inner">
+        <span>Spreedly Web SDK Demo</span>
+        <div class="footer-links">
+          <a href="https://spreedly.com" target="_blank">Spreedly</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', async function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const transactionToken = urlParams.get('transaction_token');
+      
+      console.log('Redirect received with transaction_token:', transactionToken);
+      
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+      
+      if (!transactionToken) {
+        showResult('error', {
+          title: 'No Transaction Token',
+          message: 'No transaction token was received in the redirect.',
+          errorDetail: 'The redirect URL should contain a transaction_token parameter.'
+        });
+        return;
+      }
+      
+      try {
+        // Fetch transaction status from Spreedly via our backend
+        const response = await SpreedlyUtils.getTransactionStatus(transactionToken);
+        console.log('Transaction details:', response);
+        
+        const transaction = response.transaction;
+        
+        if (!transaction) {
+          showResult('error', {
+            title: 'Transaction Not Found',
+            message: 'Could not retrieve transaction details.',
+            errorDetail: 'The transaction may not exist or there was an API error.'
+          });
+          return;
+        }
+        
+        const state = transaction.state || 'unknown';
+        const succeeded = transaction.succeeded;
+        
+        // Determine result type based on state
+        let resultType = 'error';
+        if (succeeded || state === 'succeeded') {
+          resultType = 'success';
+        } else if (state === 'pending') {
+          resultType = 'pending';
+        }
+        
+        showResult(resultType, {
+          title: getResultTitle(resultType, state),
+          message: getResultMessage(resultType, transaction),
+          transaction: transaction,
+          transactionToken: transactionToken
+        });
+        
+      } catch (error) {
+        console.error('Error fetching transaction:', error);
+        showResult('error', {
+          title: 'Error Fetching Transaction',
+          message: 'Could not retrieve transaction status from Spreedly.',
+          errorDetail: error.response?.data?.error || error.message || 'Unknown error occurred'
+        });
+      }
+    });
+    
+    function getResultTitle(resultType, state) {
+      if (resultType === 'success') return 'Payment Successful';
+      if (resultType === 'pending') return 'Payment Pending';
+      return 'Payment Failed';
+    }
+    
+    function getResultMessage(resultType, transaction) {
+      if (resultType === 'success') {
+        return 'Your payment has been processed successfully.';
+      }
+      if (resultType === 'pending') {
+        return 'Your payment is being processed. This may take a few moments.';
+      }
+      return transaction?.message || 'Your payment could not be completed.';
+    }
+    
+    function showResult(type, data) {
+      const card = document.getElementById('redirect-card');
+      const icon = document.getElementById('redirect-icon');
+      const title = document.getElementById('redirect-title');
+      const message = document.getElementById('redirect-message');
+      const detailsSection = document.getElementById('transaction-details');
+      const detailsContent = document.getElementById('details-content');
+      const errorMessage = document.getElementById('error-message');
+      
+      // Update card styling
+      card.classList.add(type);
+      
+      // Update icon
+      icon.classList.remove('loading');
+      icon.classList.add(type);
+      icon.innerHTML = getIconSvg(type);
+      
+      // Update title and message
+      title.classList.add(type);
+      title.textContent = data.title;
+      message.textContent = data.message;
+      
+      // Show error detail if present
+      if (data.errorDetail) {
+        errorMessage.textContent = data.errorDetail;
+        errorMessage.classList.remove('hidden');
+      }
+      
+      // Build transaction details if available
+      if (data.transaction) {
+        const tx = data.transaction;
+        let detailsHTML = '';
+        
+        // Transaction Token
+        if (data.transactionToken) {
+          detailsHTML += buildDetailRow('Transaction ID', data.transactionToken);
+        }
+        
+        // State
+        if (tx.state) {
+          const stateClass = tx.succeeded ? 'succeeded' : (tx.state === 'pending' ? 'pending' : 'failed');
+          detailsHTML += `
+            <div class="detail-row">
+              <span class="detail-label">Status</span>
+              <span class="status-badge ${stateClass}">${tx.state}</span>
+            </div>
+          `;
+        }
+        
+        // Amount
+        if (tx.amount) {
+          const formattedAmount = (tx.amount / 100).toFixed(2);
+          detailsHTML += buildDetailRow('Amount', `${formattedAmount} ${tx.currency_code || 'USD'}`);
+        }
+        
+        // Payment Method Type
+        if (tx.payment_method?.payment_method_type) {
+          const pmType = tx.payment_method.payment_method_type;
+          const displayName = {
+            'paypal': 'PayPal',
+            'stripe_payment_intent': 'Stripe APM',
+            'sprel': 'Test Offsite (Sprel)'
+          }[pmType] || pmType;
+          detailsHTML += buildDetailRow('Payment Method', displayName);
+        }
+        
+        // Gateway
+        if (tx.gateway_type) {
+          detailsHTML += buildDetailRow('Gateway', tx.gateway_type);
+        }
+        
+        // Created At
+        if (tx.created_at) {
+          const date = new Date(tx.created_at);
+          detailsHTML += buildDetailRow('Date', date.toLocaleString());
+        }
+        
+        // Gateway Message (for errors)
+        if (tx.response?.message && type === 'error') {
+          detailsHTML += buildDetailRow('Gateway Message', tx.response.message);
+        }
+        
+        if (detailsHTML) {
+          detailsContent.innerHTML = detailsHTML;
+          detailsSection.classList.remove('hidden');
+        }
+      }
+    }
+    
+    function buildDetailRow(label, value) {
+      return `
+        <div class="detail-row">
+          <span class="detail-label">${label}</span>
+          <span class="detail-value">${value}</span>
+        </div>
+      `;
+    }
+    
+    function getIconSvg(type) {
+      if (type === 'success') {
+        return `
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+          </svg>
+        `;
+      }
+      if (type === 'pending') {
+        return `
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+          </svg>
+        `;
+      }
+      return `
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+        </svg>
+      `;
+    }
+  </script>
+</body>
+</html>

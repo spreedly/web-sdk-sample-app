@@ -1,6 +1,19 @@
 import { Router } from 'express';
 import { getAuthParams } from './controllers/auth';
-import { createPaymentMethod, getPaymentMethods, retainPaymentMethod, recachePaymentMethod, createPurchaseTransaction, createPurchaseWith3DS, createPurchaseWith3DSGatewaySpecific, createSimplePurchase, completeTransaction } from './controllers/payments';
+import { 
+  createPaymentMethod, 
+  getPaymentMethods, 
+  retainPaymentMethod, 
+  recachePaymentMethod, 
+  createPurchaseTransaction, 
+  createPurchaseWith3DS, 
+  createPurchaseWith3DSGatewaySpecific, 
+  createSimplePurchase, 
+  completeTransaction,
+  createOffsitePurchase,
+  getTransaction,
+  handleOffsiteCallback
+} from './controllers/payments';
 
 const router = Router();
 
@@ -277,5 +290,89 @@ router.post('/simple-purchase', createSimplePurchase);
  *         description: Error completing transaction
  */
 router.post('/transactions/:transactionToken/complete', completeTransaction);
+
+/**
+ * @swagger
+ * /api/v1/transactions/{transactionToken}:
+ *   get:
+ *     description: Get transaction details by token
+ *     tags: [Transactions]
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: transactionToken
+ *         description: The unique token identifying the transaction
+ *         in: path
+ *         required: true
+ *         type: string
+ *     responses:
+ *       200:
+ *         description: Transaction details retrieved successfully
+ *       400:
+ *         description: Invalid transaction token format
+ *       500:
+ *         description: Error retrieving transaction
+ */
+router.get('/transactions/:transactionToken', getTransaction);
+
+/**
+ * @swagger
+ * /api/v1/offsite-purchase:
+ *   post:
+ *     description: Create an offsite purchase that redirects customer to payment provider
+ *     tags: [Offsite Payments]
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: body
+ *         description: Purchase details
+ *         in: body
+ *         required: true
+ *         schema:
+ *           type: object
+ *           required:
+ *             - payment_method_token
+ *             - amount
+ *             - redirect_url
+ *             - callback_url
+ *           properties:
+ *             payment_method_token:
+ *               type: string
+ *               description: Token of the offsite payment method
+ *             amount:
+ *               type: number
+ *               description: Transaction amount in cents
+ *             currency_code:
+ *               type: string
+ *               description: ISO 4217 currency code (default USD)
+ *             redirect_url:
+ *               type: string
+ *               description: URL to redirect customer after payment
+ *             callback_url:
+ *               type: string
+ *               description: URL for Spreedly callbacks
+ *     responses:
+ *       200:
+ *         description: Purchase initiated, includes checkout_url for redirect
+ *       400:
+ *         description: Missing required parameters
+ *       500:
+ *         description: Error creating purchase
+ */
+router.post('/offsite-purchase', createOffsitePurchase);
+
+/**
+ * @swagger
+ * /api/v1/offsite-callback:
+ *   post:
+ *     description: Webhook endpoint for receiving offsite payment callbacks from Spreedly
+ *     tags: [Offsite Payments]
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: Callback received and acknowledged
+ */
+router.post('/offsite-callback', handleOffsiteCallback);
 
 export default router;

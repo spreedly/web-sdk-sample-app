@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Callback Handler | Spreedly Web SDK Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./shared/styles.css">
+  <style>
+    .callback-container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    
+    .callback-card {
+      background: white;
+      border-radius: 16px;
+      padding: 2.5rem 2rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+    
+    .callback-icon {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.5rem;
+      background: var(--color-primary-light, #e0e7ff);
+      color: var(--color-primary, #0a0a0a);
+    }
+    
+    .callback-icon svg {
+      width: 40px;
+      height: 40px;
+    }
+    
+    .callback-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      color: var(--color-gray-900);
+    }
+    
+    .callback-message {
+      color: var(--color-gray-500);
+      margin-bottom: 1.5rem;
+      line-height: 1.6;
+    }
+    
+    .info-box {
+      background: var(--color-gray-50);
+      border-radius: 8px;
+      padding: 1rem;
+      text-align: left;
+      margin-bottom: 1.5rem;
+    }
+    
+    .info-box-title {
+      font-weight: 600;
+      color: var(--color-gray-700);
+      margin-bottom: 0.5rem;
+      font-size: 0.875rem;
+    }
+    
+    .info-box p {
+      font-size: 0.875rem;
+      color: var(--color-gray-600);
+      margin: 0;
+      line-height: 1.6;
+    }
+    
+    .btn {
+      padding: 0.875rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      background: var(--color-primary, #0a0a0a);
+      color: white;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="page-wrapper">
+    <!-- Header -->
+    <header class="header">
+      <div class="container header-inner">
+        <a href="index.html" class="logo">
+          <span class="logo-icon">S</span>
+          Spreedly Web SDK
+        </a>
+        <span class="nav-badge">Callback Handler</span>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+      <div class="container">
+        <div class="callback-container">
+          <div class="callback-card">
+            <div class="callback-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" />
+              </svg>
+            </div>
+            
+            <h1 class="callback-title">Callback Handler</h1>
+            <p class="callback-message">
+              This endpoint is designed to receive server-to-server callbacks from Spreedly
+              when a transaction status changes.
+            </p>
+            
+            <div class="info-box">
+              <div class="info-box-title">Note:</div>
+              <p>
+                In a production environment, this would be a backend API endpoint (not an HTML page)
+                that receives POST requests from Spreedly with transaction updates.
+                The callback contains the full transaction details including the final status.
+              </p>
+            </div>
+            
+            <div class="info-box">
+              <div class="info-box-title">Expected Callback Data:</div>
+              <p>
+                Spreedly sends a POST request with XML/JSON containing transaction details,
+                including the transaction token, state (succeeded/failed), and payment method information.
+              </p>
+            </div>
+            
+            <a href="./index.html" class="btn">Back to Home</a>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container footer-inner">
+        <span>Spreedly Web SDK Demo</span>
+        <div class="footer-links">
+          <a href="https://spreedly.com" target="_blank">Spreedly</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

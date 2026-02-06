@@ -302,3 +302,126 @@ export const createSimplePurchase = async (req: Request, res: Response): Promise
     }
   }
 };
+
+// =====================================================
+// OFFSITE PAYMENTS
+// =====================================================
+
+/**
+ * Create an offsite purchase
+ * This initiates the purchase and returns a checkout_url for redirect
+ */
+export const createOffsitePurchase = async (req: Request, res: Response): Promise<void> => {
+  const gateway_key = config.spreedlyGatewayToken;
+  
+  const payment_method_token = req.body.payment_method_token;
+  const amount = req.body.amount;
+  const currency_code = req.body.currency_code || 'USD';
+  const redirect_url = req.body.redirect_url;
+  const callback_url = req.body.callback_url;
+  
+  if (!payment_method_token || !amount) {
+    res.status(400).json({ error: 'payment_method_token and amount are required' });
+    return;
+  }
+  
+  if (!redirect_url || !callback_url) {
+    res.status(400).json({ error: 'redirect_url and callback_url are required for offsite payments' });
+    return;
+  }
+  
+  const body = {
+    transaction: {
+      payment_method_token,
+      amount,
+      currency_code,
+      redirect_url,
+      callback_url,
+    },
+  };
+  
+  try {
+    const response = await axios.post(
+      `${config.spreedlyUrl}/v1/gateways/${gateway_key}/purchase.json`,
+      body,
+      {
+        headers: {
+          Authorization: getAuthorizationHeader(),
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    
+    const transaction = response.data?.transaction;
+    
+    // For offsite transactions, the response includes checkout_url
+    res.json({
+      success: transaction?.succeeded || false,
+      transaction: transaction,
+      checkout_url: transaction?.checkout_url,
+      state: transaction?.state,
+    });
+  } catch (error) {
+    if (error instanceof AxiosError) {
+      console.error('Create offsite purchase error:', error.response?.data);
+      res.status(error.response?.status || 500).json({ 
+        error: error.message,
+        details: error.response?.data 
+      }); 
+    } else {
+      res.status(500).json({ error: 'An unknown error occurred' });
+    }
+  }
+};
+
+/**
+ * Get transaction status
+ * Used to check the status of a transaction after redirect
+ */
+export const getTransaction = async (req: Request, res: Response): Promise<void> => {
+  const transactionToken = req.params.transactionToken || '';
+  
+  // Validate token format
+  if (!/^[a-zA-Z0-9_\-]+$/.test(transactionToken)) {
+    res.status(400).json({ error: 'Invalid transaction token format' });
+    return;
+  }
+  
+  try {
+    const response = await axios.get(
+      `${config.spreedlyUrl}/v1/transactions/${transactionToken}.json`,
+      {
+        headers: {
+          Authorization: getAuthorizationHeader(),
+        },
+      }
+    );
+    
+    res.json(response.data);
+  } catch (error) {
+    if (error instanceof AxiosError) {
+      res.status(error.response?.status || 500).json({ 
+        error: error.message,
+        details: error.response?.data 
+      }); 
+    } else {
+      res.status(500).json({ error: 'An unknown error occurred' });
+    }
+  }
+};
+
+/**
+ * Handle offsite callback
+ * This endpoint receives callbacks from Spreedly when offsite transactions complete
+ */
+export const handleOffsiteCallback = async (req: Request, res: Response): Promise<void> => {
+  console.log('Offsite callback received:', JSON.stringify(req.body, null, 2));
+  
+  // In a production app, you would:
+  // 1. Verify the callback authenticity
+  // 2. Update your database with the transaction status
+  // 3. Send notifications to the user
+  
+  // For the demo, we just acknowledge receipt
+  res.status(200).json({ received: true });
+};
