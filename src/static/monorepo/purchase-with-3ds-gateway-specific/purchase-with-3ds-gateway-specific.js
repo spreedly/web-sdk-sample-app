@@ -626,7 +626,7 @@ async function processPurchaseWithGatewaySpecific3DS() {
 // API call for Gateway Specific 3DS
 async function createPurchaseWithGatewaySpecific3DS(paymentMethodToken, amount, browserInfo, currencyCode) {
   try {
-    const response = await axios.post(`${SpreedlyUtils.LOCAL_API_URL}/create-purchase-with-3ds-gateway-specific`, {
+    const response = await axios.post(`${SpreedlyUtils.API_BASE_URL}/create-purchase-with-3ds-gateway-specific`, {
       payment_method_token: paymentMethodToken,
       amount: amount,
       currency_code: currencyCode,
@@ -694,7 +694,7 @@ function start3DSLifecycle(transactionToken) {
           // Call the backend completion endpoint
           console.log('Calling completion endpoint...');
           const response = await axios.post(
-            `${SpreedlyUtils.LOCAL_API_URL}/transactions/${event.token}/complete`
+            `${SpreedlyUtils.API_BASE_URL}/transactions/${event.token}/complete`
           );
           
           const transaction = response.data.transaction;
