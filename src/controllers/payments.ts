@@ -303,10 +303,6 @@ export const createSimplePurchase = async (req: Request, res: Response): Promise
   }
 };
 
-// =====================================================
-// OFFSITE PAYMENTS
-// =====================================================
-
 /**
  * Create an offsite purchase
  * This initiates the purchase and returns a checkout_url for redirect
@@ -362,15 +358,8 @@ export const createOffsitePurchase = async (req: Request, res: Response): Promis
       state: transaction?.state,
     });
   } catch (error) {
-    if (error instanceof AxiosError) {
-      console.error('Create offsite purchase error:', error.response?.data);
-      res.status(error.response?.status || 500).json({ 
-        error: error.message,
-        details: error.response?.data 
-      }); 
-    } else {
-      res.status(500).json({ error: 'An unknown error occurred' });
-    }
+    const apiError = error as AxiosError;
+    res.status(apiError.response?.status || 500).json(apiError.response?.data);
   }
 };
 

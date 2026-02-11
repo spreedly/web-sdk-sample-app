@@ -279,20 +279,27 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
                   </svg>
                   <div class="redirect-info-text">
-                    <strong>Note:</strong> You will be redirected to Spreedly to create a payment method placeholder, then redirected back. The payment method token will be used for subsequent purchase.
+                    <strong>Note:</strong> Using SDK's <code>setupOffsitePayment()</code> and <code>submitOffsitePayment()</code> methods. You will be redirected to complete the payment.
                   </div>
                 </div>
 
-                <!-- Transparent Redirect Form -->
-                <form id="offsite-form" class="offsite-form" accept-charset="UTF-8" action="https://core.spreedly.com/v1/payment_methods" method="POST">
-                  <!-- Auth Parameters (populated by JavaScript) -->
-                  <input name="redirect_url" type="hidden" id="form-redirect-url" value="">
-                  <input name="environment_key" type="hidden" id="form-environment-key" value="">
-                  <input name="nonce" type="hidden" id="form-nonce" value="">
-                  <input name="timestamp" type="hidden" id="form-timestamp" value="">
-                  <input name="certificate_token" type="hidden" id="form-certificate-token" value="">
-                  <input name="signature" type="hidden" id="form-signature" value="">
-                  <input name="utf8" type="hidden" value="✓">
+                <!-- SDK-based submission (form is just for styling) -->
+                <form id="offsite-form" class="offsite-form">
+                  <!-- 
+                    OLD: Transparent Redirect Form - commented out
+                    The form below was used to POST directly to Spreedly.
+                    Now we use the SDK's setupOffsitePayment() and submitOffsitePayment() methods.
+                    
+                    <form accept-charset="UTF-8" action="https://core.spreedly.com/v1/payment_methods" method="POST">
+                      <input name="redirect_url" type="hidden" id="form-redirect-url" value="">
+                      <input name="environment_key" type="hidden" id="form-environment-key" value="">
+                      <input name="nonce" type="hidden" id="form-nonce" value="">
+                      <input name="timestamp" type="hidden" id="form-timestamp" value="">
+                      <input name="certificate_token" type="hidden" id="form-certificate-token" value="">
+                      <input name="signature" type="hidden" id="form-signature" value="">
+                      <input name="utf8" type="hidden" value="✓">
+                    </form>
+                  -->
                   
                   <fieldset>
                     <button type="submit" id="submit-btn" name="payment_method_type" value="paypal" disabled>
@@ -356,10 +363,11 @@
                 Flow Steps
               </div>
               <ol style="font-size: 0.875rem; color: var(--color-gray-600); padding-left: 1.25rem; line-height: 1.8;">
+                <li>Load SDK and initialize with auth params</li>
                 <li>Select offsite payment gateway</li>
-                <li>Form POSTs to Spreedly with auth params</li>
-                <li>Spreedly creates payment method placeholder</li>
-                <li>Redirect back with payment method token</li>
+                <li>Call <code>setupOffsitePayment()</code> with config</li>
+                <li>Call <code>submitOffsitePayment()</code></li>
+                <li>SDK creates payment method and redirects</li>
                 <li>Use token for purchase API call</li>
               </ol>
             </div>

@@ -270,12 +270,10 @@
       
       try {
         // Configure redirect and callback URLs
-        const baseUrl = window.location.origin;
+        const baseUrl =  'https://checkout-web-sample-app-049a3c617015.herokuapp.com'
         const redirectUrl = `${baseUrl}/monorepo/offsite-payments/handle_redirect.html`;
         const callbackUrl = `${baseUrl}/monorepo/offsite-payments/handle_callback.html`;
 
-        // const redirectUrl = 'https://example.com/handle_redirect'
-        // const callbackUrl = 'https://example.com/handle_callback'
         
         // Store transaction info for the final redirect page
         sessionStorage.setItem('offsite_redirect_url', redirectUrl);

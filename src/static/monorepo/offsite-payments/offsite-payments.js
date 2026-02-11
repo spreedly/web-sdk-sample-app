@@ -2,18 +2,23 @@
  * Offsite Payments Flow - Spreedly Web SDK Demo
  * 
  * This flow demonstrates offsite payment methods (PayPal, Stripe APM, test sprel)
- * using Spreedly's transparent redirect form.
+ * using the SDK's setupOffsitePayment and submitOffsitePayment methods.
  * 
  * Flow:
- * 1. Fetch auth params from backend
- * 2. User selects payment method and submits form
- * 3. Form POSTs directly to Spreedly with auth params
- * 4. Spreedly creates payment method and redirects back with token
- * 5. Token can be used for purchase API call
+ * 1. Load SDK and fetch auth params from backend
+ * 2. Initialize SDK with auth params
+ * 3. User selects payment method
+ * 4. Call setupOffsitePayment with payment method type
+ * 5. Call submitOffsitePayment - SDK makes API call
+ * 6. Listen for offsiteTokenGenerated event to get the payment method token
+ * 7. Use token for purchase API call
  */
 
 // State
+let sdk = null;
+let sdkType = null;
 let storedAuthParams = null;
+let selectedPaymentMethodType = 'paypal';
 
 // Payment method display names
 const PAYMENT_METHOD_NAMES = {
@@ -42,57 +47,85 @@ async function init() {
   // Set up payment method option listeners
   setupPaymentMethodListeners();
   
-   // Set up form submit handler to store amount before submission
-  setupFormSubmitHandler();
-  
   try {
-    await fetchAndPopulateAuthParams();
+    // Load SDK script first
+    updateDebugStatus('Loading SDK...');
+    await loadSDKAsync();
+    
+    // Fetch auth params and initialize SDK
+    await fetchAuthParamsAndInitSDK();
+    
+    // Set up submit button click handler
+    setupSubmitHandler();
     
     hideLoading();
     elements.paymentSection().classList.remove('hidden');
     updateDebugStatus('Ready');
   } catch (error) {
     console.error('Failed to initialize:', error);
-    showError('Failed to load auth parameters. Please refresh the page.');
+    showError('Failed to initialize. Please refresh the page.');
   }
 }
 
-function setupFormSubmitHandler() {
-  const form = elements.offsiteForm();
-  form.addEventListener('submit', function() {
-    // Store amount and currency in sessionStorage for the redirect page
-    const amountInput = document.getElementById('amount-input');
-    const currencySelector = document.getElementById('currency-selector');
-    
-    const amount = parseFloat(amountInput.value) * 100; // Convert to cents
-    const currency = currencySelector.value;
-    const paymentMethodType = elements.submitBtn().value;
-    
-    sessionStorage.setItem('offsite_payment_amount', amount.toString());
-    sessionStorage.setItem('offsite_payment_currency', currency);
-    sessionStorage.setItem('offsite_payment_method_type', paymentMethodType);
-    
-    console.log('Stored payment details in sessionStorage:', { amount, currency, paymentMethodType });
+// Load SDK script as a promise
+function loadSDKAsync() {
+  return new Promise((resolve, reject) => {
+    SpreedlyUtils.loadSDKScript((error) => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve();
+      }
+    });
   });
 }
 
-async function fetchAndPopulateAuthParams() {
+async function fetchAuthParamsAndInitSDK() {
   updateDebugStatus('Fetching auth params...');
   
   const authParams = await SpreedlyUtils.fetchAuthParams();
   storedAuthParams = authParams;
   
-  // Populate form hidden fields
-  // Redirect to transparent_redirect_complete.html after Spreedly processes the form
-  const baseUrl = window.location.origin;
-  const redirectUrl = `${baseUrl}/monorepo/offsite-payments/transparent_redirect_complete.html`;
+  // Determine SDK type from URL parameter
+  sdkType = SpreedlyUtils.getSDKType();
   
-  document.getElementById('form-redirect-url').value = redirectUrl;
-  document.getElementById('form-environment-key').value = authParams.environmentKey;
-  document.getElementById('form-nonce').value = authParams.nonce;
-  document.getElementById('form-timestamp').value = authParams.timestamp;
-  document.getElementById('form-certificate-token').value = authParams.certificateToken;
-  document.getElementById('form-signature').value = authParams.signature;
+  // Initialize SDK based on type
+  const authConfig = {
+    environment_key: authParams.environmentKey,
+    nonce: authParams.nonce,
+    timestamp: authParams.timestamp,
+    certificate_token: authParams.certificateToken,
+    signature: authParams.signature,
+  };
+  
+  if (sdkType === 'express-checkout') {
+    sdk = new SpreedlyExpressCheckout(authConfig);
+  } else {
+    sdk = new SpreedlyHostedFields(authConfig);
+  }
+  
+  // Listen for offsite payment events
+  sdk.on('offsiteTokenGenerated', (data) => {
+    console.log('Offsite payment method created:', data);
+    updateDebugStatus('Token generated!');
+    
+    // Store token and proceed to purchase
+    sessionStorage.setItem('offsite_payment_token', data.token);
+    
+    // Redirect to the completion page to create purchase
+    window.location.href = `${window.location.origin}/monorepo/offsite-payments/transparent_redirect_complete.html?token=${data.token}`;
+  });
+  
+  sdk.on('offsitePaymentError', (error) => {
+    console.error('Offsite payment error:', error);
+    showError(error.message || 'Failed to create payment method');
+    
+    // Re-enable button
+    const submitBtn = elements.submitBtn();
+    submitBtn.disabled = false;
+    updateSubmitButton(selectedPaymentMethodType);
+    updateDebugStatus('Error');
+  });
   
   // Update debug panel
   elements.debugEnvKey().textContent = authParams.environmentKey;
@@ -102,8 +135,69 @@ async function fetchAndPopulateAuthParams() {
   // Enable submit button
   elements.submitBtn().disabled = false;
   
-  updateDebugStatus('Auth params loaded');
-  console.log('Auth params populated in form');
+  updateDebugStatus(`SDK initialized (${SpreedlyUtils.getSDKDisplayName()})`);
+  console.log(`${SpreedlyUtils.getSDKDisplayName()} SDK initialized with auth params`);
+}
+
+function setupSubmitHandler() {
+  const submitBtn = elements.submitBtn();
+  
+  // Prevent form submission (we handle it via SDK)
+  const form = elements.offsiteForm();
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    handleSubmit();
+  });
+  
+  // Also handle direct button click
+  submitBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    handleSubmit();
+  });
+}
+
+function handleSubmit() {
+  if (!sdk) {
+    showError('SDK not initialized');
+    return;
+  }
+  
+  const submitBtn = elements.submitBtn();
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Processing...';
+  updateDebugStatus('Creating payment method...');
+  
+  // Store amount and currency in sessionStorage for the completion page
+  const amountInput = document.getElementById('amount-input');
+  const currencySelector = document.getElementById('currency-selector');
+  const amount = parseFloat(amountInput.value) * 100; // Convert to cents
+  const currency = currencySelector.value;
+  
+  sessionStorage.setItem('offsite_payment_amount', amount.toString());
+  sessionStorage.setItem('offsite_payment_currency', currency);
+  sessionStorage.setItem('offsite_payment_method_type', selectedPaymentMethodType);
+  
+  console.log('Stored payment details in sessionStorage:', { amount, currency, paymentMethodType: selectedPaymentMethodType });
+  
+  try {
+    // Setup offsite payment configuration
+    sdk.setupOffsitePayment({
+      paymentMethodType: selectedPaymentMethodType,
+    });
+    
+    // Submit - SDK makes API call and emits offsiteTokenGenerated event on success
+    sdk.submitOffsitePayment();
+    
+    console.log('Waiting for offsiteTokenGenerated event...');
+  } catch (error) {
+    console.error('Submit failed:', error);
+    showError(error.message || 'Failed to create payment method');
+    
+    // Re-enable button
+    submitBtn.disabled = false;
+    updateSubmitButton(selectedPaymentMethodType);
+    updateDebugStatus('Error');
+  }
 }
 
 function setupPaymentMethodListeners() {
@@ -117,6 +211,9 @@ function setupPaymentMethodListeners() {
         opt.classList.remove('selected');
       });
       option.classList.add('selected');
+      
+      // Update selected payment method type
+      selectedPaymentMethodType = radio.value;
       
       // Update form submit button
       updateSubmitButton(radio.value);
@@ -147,6 +244,7 @@ function showError(message) {
   hideLoading();
   elements.paymentSection().classList.remove('hidden');
   SpreedlyUtils.showStatus('status-message', message, 'error');
+  updateDebugStatus('Error');
 }
 
 function updateDebugStatus(status) {
