@@ -201,7 +201,7 @@ function loadSDKScript(callback) {
 }
 
 // Offsite Payments
-async function createOffsitePurchase(paymentMethodToken, amount, redirectUrl, callbackUrl, currencyCode = 'USD') {
+async function createOffsitePurchase(paymentMethodToken, amount, redirectUrl, callbackUrl, currencyCode = 'USD', gateway = 'spreedly') {
   try {
     const response = await axios.post(`${API_BASE_URL}/offsite-purchase`, {
       payment_method_token: paymentMethodToken,
@@ -209,6 +209,7 @@ async function createOffsitePurchase(paymentMethodToken, amount, redirectUrl, ca
       currency_code: currencyCode,
       redirect_url: redirectUrl,
       callback_url: callbackUrl,
+      gateway: gateway,
     });
     return response.data;
   } catch (error) {

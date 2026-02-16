@@ -109,13 +109,17 @@ async function fetchAuthParamsAndInitSDK() {
     console.log('Offsite payment method created:', data);
     updateDebugStatus('Token generated!');
     
-    // Store token and proceed to purchase
-    sessionStorage.setItem('offsite_payment_token', data.token);
-    
+    let gateway = '';
+    if (selectedPaymentMethodType === 'sprel') {
+      gateway = 'spreedly';
+    } else if (selectedPaymentMethodType === 'paypal') {
+      gateway = 'paypal';
+    }
+   
     // Redirect to the completion page to create purchase
-    window.location.href = `${window.location.origin}/monorepo/offsite-payments/transparent_redirect_complete.html?token=${data.token}`;
+    window.location.href = `${window.location.origin}/monorepo/offsite-payments/transparent_redirect_complete.html?token=${data.token}&gateway=${gateway}`;
   });
-  
+
   sdk.on('offsitePaymentError', (error) => {
     console.error('Offsite payment error:', error);
     showError(error.message || 'Failed to create payment method');

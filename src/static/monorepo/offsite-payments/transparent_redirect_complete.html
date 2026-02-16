@@ -41,6 +41,7 @@
     
     .processing-icon.loading {
       background: var(--color-primary-light, #e0e7ff);
+      padding: 0;
     }
     
     .processing-icon.error {
@@ -243,7 +244,7 @@
     document.addEventListener('DOMContentLoaded', async function() {
       const urlParams = new URLSearchParams(window.location.search);
       const token = urlParams.get('token');
-      
+      const gateway = urlParams.get('gateway');
       // Get stored payment details from sessionStorage
       const amount = sessionStorage.getItem('offsite_payment_amount');
       const currency = sessionStorage.getItem('offsite_payment_currency') || 'USD';
@@ -286,7 +287,8 @@
           parseInt(amount),
           redirectUrl,
           callbackUrl,
-          currency
+          currency,
+          gateway
         );
         
         console.log('Purchase response:', response);
@@ -303,7 +305,6 @@
         // Check if we have a checkout URL
         if (response.checkout_url) {
           document.getElementById('processing-message').textContent = 'Redirecting you to complete payment...';
-          
           // Brief delay to show the message, then redirect
           setTimeout(() => {
             window.location.href = response.checkout_url;

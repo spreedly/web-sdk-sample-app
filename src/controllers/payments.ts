@@ -17,6 +17,17 @@ const getAuthorizationHeader = () => {
   return `Basic ${credentials}`;
 };
 
+const getGatewayKey = (gateway: string = 'spreedly') => {
+  switch (gateway) {
+    case 'paypal':
+      return config.paypalGatewayToken;
+    case 'spreedly':
+      return config.spreedlyGatewayToken;
+    default:
+      return config.spreedlyGatewayToken;
+  }
+};
+
 export const createPaymentMethod = async (req: Request, res: Response): Promise<void> => {
   try {
     const response = await axios.post(
@@ -202,7 +213,7 @@ export const createPurchaseWith3DS = async (req: Request, res: Response): Promis
 // Web SDK endpoint for Gateway Specific 3DS purchase
 // Uses three_ds_version=2 and attempt_3dsecure=true instead of sca_provider_key
 export const createPurchaseWith3DSGatewaySpecific = async (req: Request, res: Response): Promise<void> => {
-  const gateway_key = config.spreedlyGatewayToken;
+  const gateway_key = getGatewayKey(req.body.gateway || 'spreedly');
 
   const payment_method_token = req.body.payment_method_token;
   const amount = req.body.amount;
@@ -308,7 +319,7 @@ export const createSimplePurchase = async (req: Request, res: Response): Promise
  * This initiates the purchase and returns a checkout_url for redirect
  */
 export const createOffsitePurchase = async (req: Request, res: Response): Promise<void> => {
-  const gateway_key = config.spreedlyGatewayToken;
+  const gateway_key = getGatewayKey(req.body.gateway || 'spreedly');
   
   const payment_method_token = req.body.payment_method_token;
   const amount = req.body.amount;

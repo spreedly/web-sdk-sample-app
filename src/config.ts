@@ -12,6 +12,7 @@ interface Config {
   spreedlyAccessSecret: string;
   spreedlyGatewayToken: string;
   spreedlySCAProviderKey: string;
+  paypalGatewayToken: string;
 }
 
 const config: Config = {
@@ -24,6 +25,7 @@ const config: Config = {
   spreedlyAccessSecret: process.env.SPREEDLY_ACCESS_SECRET || '',
   spreedlyGatewayToken: process.env.SPREEDLY_GATEWAY_TOKEN || '',
   spreedlySCAProviderKey: process.env.SPREEDLY_SCA_PROVIDER_KEY || '',
+  paypalGatewayToken: process.env.PAYPAL_GATEWAY_TOKEN || '',
 };
 
 export default config;
