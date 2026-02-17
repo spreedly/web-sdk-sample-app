@@ -1,6 +1,6 @@
 import { Page } from "@playwright/test";
 import { expect } from "../util/fixtures";
-import { getMaskedCardNumber, LABELS, ERROR_MESSAGES } from "../util/test-constants";
+import { getMaskedCardNumber, LABELS, ERROR_MESSAGES, getValidYearString } from "../util/test-constants";
 import { SELECTORS, TEST_DATA } from "../util/test-constants";
 
 export const TEST_ID = {
@@ -72,6 +72,17 @@ export const PLACEHOLDERS = {
     getTokenizationFailedMessage: async (page: Page) => {
         return await page.locator(SELECTORS.tokenizationFailedMessage);
     },
+
+    clickOnNewCardButton: async (page: Page) => {
+        const newCardButton = page.locator(SELECTORS.NEW_CARD_BUTTON);
+        await expect(newCardButton).toBeVisible();
+        await newCardButton.click();
+    },
+    clickOnSavedCardButton: async (page: Page) => {
+        const savedCardButton = page.locator(SELECTORS.SAVED_CARD_BUTTON);
+        await expect(savedCardButton).toBeVisible();
+        await savedCardButton.click();
+    },
    
     clickOnExpressCheckoutSubmitButton: async (page: Page) => {
         const expressCheckoutIframe = page.frameLocator(SELECTORS.EXPRESS_IFRAME);
@@ -79,10 +90,17 @@ export const PLACEHOLDERS = {
         await expect(payButton).toBeEnabled();
         await payButton.click();
     },
+
     clickOnHostedFieldsSubmitButton: async (page: Page) => {
         const submitButton = page.locator(SELECTORS.HOSTED_SUBMIT_BUTTON);
         await expect(submitButton).toBeEnabled();
         await submitButton.click();
+    },
+
+    clickOnThreeDS2PayButton: async (page: Page) => {
+        const payButton = page.locator(SELECTORS.THREE_DS2_PAY_BUTTON);
+        await expect(payButton).toBeEnabled();
+        await payButton.click();
     },
 
     getExpressCheckoutCardNumberField: async (page: Page) => {
@@ -195,7 +213,7 @@ export const PLACEHOLDERS = {
     const expiryYearField = await helperFunctions.getHostedFieldsExpiryYearField(page);
     const cardNumberField = await helperFunctions.getHostedFieldsCardNumberField(page);
     const cvvField = await helperFunctions.getHostedFieldsCvvField(page);
-    
+    await cardNumberField.type(cardNumber, { delay: 50 });
     if (options?.firstName) {
         await firstNameField.fill(options.firstName);
     }
@@ -211,7 +229,6 @@ export const PLACEHOLDERS = {
     if (options?.cvv) {
         await cvvField.fill(options.cvv);
     }
-    await cardNumberField.fill(cardNumber);
     },
 
     formatExpiryYear: (year: string, month: string) => {
@@ -240,27 +257,79 @@ export const PLACEHOLDERS = {
         }
     },
 
-    captureApiResponse: async (page: Page, url1: string, options?: { url2?: string }): Promise<{ apiResponse: any; responseStatus: number | null }> => {
-        return new Promise((resolve) => {
-            page.on('response', async (response) => {
-                const url = response.url();
-                if (url.includes(url1) || (options?.url2 && url.includes(options?.url2))) {
-                    const responseStatus = response.status();
-                    let apiResponse: any = null;
-                    try {
-                        apiResponse = await response.json();
-                    } catch (error) {
-                        console.log('Response is not JSON or empty');
-                    }
-                    resolve({ apiResponse, responseStatus });
-                }
-            });
-        });
-    },
-   
-    verifyApiResponse: async (page: Page, apiResponse: any, responseStatus: number) => {
-        await expect(apiResponse).toBeDefined();
-        await expect(responseStatus).toBeDefined();
-        await expect(responseStatus).toBe(200);
-    }
+    verifyRequestPayloadData: async (apiRequestPayload: any, firstName: string, lastName: string, cardNumber: string, cvv: string, month: string, year: string) => {
+     const { firstNameInRequest, lastNameInRequest, cardNumberInRequest, cvvInRequest, monthInRequest, yearInRequest } = helperFunctions.requestPayloadData(apiRequestPayload);
+      await expect(firstNameInRequest).toBe(firstName);
+      await expect(lastNameInRequest).toBe(lastName);
+      await expect(cardNumberInRequest).toBe(cardNumber);
+      await expect(cvvInRequest).toBe(cvv);
+      await expect(monthInRequest).toBe(month);
+      await expect(yearInRequest).toBe(year); 
+
+      },
+
+    async tokenGenerationScenarioToHave(page: Page, apiResponse: any) {
+        expect(apiResponse).toHaveProperty('transaction');
+        const paymentMethod = apiResponse.transaction.payment_method;
+            expect(apiResponse.transaction).toHaveProperty('token');
+            expect(apiResponse.transaction).toHaveProperty('succeeded');
+            expect(apiResponse.transaction).toHaveProperty('state');
+            expect(apiResponse.transaction).toHaveProperty('message');
+            expect(apiResponse.transaction).toHaveProperty('transaction_type');
+            expect(apiResponse.transaction).toHaveProperty('payment_method');
+            expect(paymentMethod).toHaveProperty('token');
+            expect(paymentMethod).toHaveProperty('last_four_digits');
+            expect(paymentMethod).toHaveProperty('first_six_digits');
+            expect(paymentMethod).toHaveProperty('card_type');
+            expect(paymentMethod).toHaveProperty('first_name');
+            expect(paymentMethod).toHaveProperty('last_name');
+            expect(paymentMethod).toHaveProperty('month');
+            expect(paymentMethod).toHaveProperty('year');
+            expect(paymentMethod).toHaveProperty('test');
+            expect(paymentMethod).toHaveProperty('payment_method_type');
+            expect(paymentMethod).toHaveProperty('storage_state');
+            expect(paymentMethod).toHaveProperty('eligible_for_card_updater');
+            expect(paymentMethod).toHaveProperty('issuer_identification_number');
+            expect(paymentMethod).toHaveProperty('managed');
+            expect(paymentMethod).toHaveProperty('fingerprint');
+            expect(paymentMethod).toHaveProperty('verification_value');
+            expect(paymentMethod).toHaveProperty('number');
+            expect(paymentMethod).toHaveProperty('created_at');
+            expect(paymentMethod).toHaveProperty('updated_at');
+            expect(paymentMethod.bin_metadata).toHaveProperty('card_brand');
+            expect(paymentMethod.bin_metadata).toHaveProperty('issuing_bank');
+            expect(paymentMethod.bin_metadata).toHaveProperty('card_type');
+            expect(paymentMethod.bin_metadata.card_brand).toBe('VISA');
+        return paymentMethod;
+      },
+
+      requestPayloadData: (apiRequestPayload: any) => {
+        const firstNameInRequest = apiRequestPayload.payment_method.credit_card.first_name;
+        const lastNameInRequest = apiRequestPayload.payment_method.credit_card.last_name;
+        const cardNumberInRequest = apiRequestPayload.payment_method.credit_card.number;
+        const cvvInRequest = apiRequestPayload.payment_method.credit_card.verification_value;
+        const monthInRequest = apiRequestPayload.payment_method.credit_card.month;
+        const yearInRequest = apiRequestPayload.payment_method.credit_card.year;
+        return { firstNameInRequest, lastNameInRequest, cardNumberInRequest, cvvInRequest, monthInRequest, yearInRequest };
+      },
+
+      verifyApiResponse: async (page: Page, apiResponse: any,succeeded: boolean,state: string, message: string, transactionType: string, lastFourDigits: string, firstSixDigits: string, cardType: string, firstName: string, lastName: string, month: number, year: number, paymentMethodType: string, issuerIdentificationNumber: string, eligibleForCardUpdater: boolean, managed: boolean, number: string) => {
+        const paymentMethod = await helperFunctions.tokenGenerationScenarioToHave(page, apiResponse);
+        expect(apiResponse.transaction.succeeded).toBe(succeeded);
+        expect(apiResponse.transaction.state).toBe(state);
+        expect(apiResponse.transaction.message).toMatch(message);
+        expect(apiResponse.transaction.transaction_type).toBe(transactionType);
+        expect(paymentMethod.last_four_digits).toBe(lastFourDigits);
+        expect(paymentMethod.first_six_digits).toBe(firstSixDigits);
+        expect(paymentMethod.card_type).toBe(cardType);
+        expect(paymentMethod.first_name).toBe(firstName);
+        expect(paymentMethod.last_name).toBe(lastName);
+        expect(paymentMethod.month).toBe(month);
+        expect(paymentMethod.year).toBe(year);
+        expect(paymentMethod.payment_method_type).toBe(paymentMethodType);
+        expect(paymentMethod.issuer_identification_number).toBe(issuerIdentificationNumber);
+        expect(paymentMethod.eligible_for_card_updater).toBe(eligibleForCardUpdater);
+        expect(paymentMethod.managed).toBe(managed);
+        expect(paymentMethod.number).toMatch(new RegExp(`XXXX-XXXX-XXXX-${number.slice(-4)}`));
+      },
 }

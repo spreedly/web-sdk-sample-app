@@ -43,8 +43,8 @@ export const SELECTORS = {
   HOSTED_SHIPPING_ADDRESS_FIELD: "input-shipping-address",
 
   // Form Fields(hosted fields data-testid)
-  EXPIRY_MONTH: "#expiry_month",
-  EXPIRY_YEAR: "#expiry_year",
+  EXPIRY_MONTH: "#expiry_month, #month",
+  EXPIRY_YEAR: "#expiry_year, #year",
 
   EXPIRY_FIELDS: ".expiry-fields",
   EXPIRY_SINGLE: "#expiry-single",
@@ -62,8 +62,56 @@ export const SELECTORS = {
   SAVE_CARD_CONTENT:".saved-card-content",
   USE_CARD_BUTTON:".saved-card-use-button",
   SAVED_CARD_CHECKMARK:".saved-card-checkmark",
-  RECACHE_TILE:"#payment-form-title"
+  RECACHE_TILE:"#payment-form-title",
+  THREE_DS_BUTTON: "[data-flow='purchase-with-3ds']",
+  EXPRESS_CHECKOUT_BUTTON: '.sdk-option-title:has-text("Express Checkout")',
+  TOKENIZE_BUTTON: '[data-flow="tokenize"]',
+  ADD_PRODUCT: '.product-card[data-product-id="prod_1"] .quantity-btn.increase-qty',
+  NEW_CARD_BUTTON: '[data-tab="new"]',
+  SAVED_CARD_BUTTON: '[data-tab="saved"]',
+  THREE_DS2_PAY_BUTTON: ".btn-text",
+  THREE_DS2_AUTHENTICATING_TEXT: '.btn-text:has-text("Authenticating...")',
+  THREE_DS2_BUTTON_TEXT: '.btn-text',
 } as const;
+
+export const THREE_DS_SELECTORS = {
+  productsGrid: '#products-grid',
+  wirelessHeadphoneCard: '.product-card[data-product-id="prod_1"]',
+  wirelessHeadphoneIncreaseButton: '.product-card[data-product-id="prod_1"] .quantity-btn.increase-qty',
+  smartWatchCard: '.product-card[data-product-id="prod_2"]',
+  laptopStandCard: '.product-card[data-product-id="prod_3"]',
+  quantityControl: '.quantity-control',
+  increaseQtyButton: '.quantity-btn.increase-qty',
+  decreaseQtyButton: '.quantity-btn.decrease-qty',
+  quantityInput: '.quantity-input',
+  PROCEED_TO_PAYMENT_BUTTON: '#proceed-to-payment',
+  // 3DS Challenge Form Selectors
+  CHALLENGE_IFRAME: 'iframe.challenge-iframe, iframe#challenge-iframe',
+  CHALLENGE_FORM: 'form#mainForm',
+  CHALLENGE_CODE_SECTION: '.code-section',
+  CHALLENGE_OTP_INPUT: 'input[type="text"], input[type="number"], input[name*="code"], input[name*="otp"], input[name*="pin"]',
+  CHALLENGE_OTP_LABEL: 'label:has-text("Enter the code")',
+  CHALLENGE_ACTIONS_FOOTER: '.actions-footer',
+  CHALLENGE_PAY_BUTTON: 'button:has-text("Pay"), button[type="submit"]:has-text("Pay")',
+  CHALLENGE_CANCEL_BUTTON: 'button:has-text("Cancel")',
+  CHALLENGE_WHITELIST_CHECKBOX: 'input[type="checkbox"]',
+  CHALLENGE_OVERLAY: '#challenge-overlay',
+  // 3DS Success Page Selectors
+  RESULT_SECTION: '#result-section',
+  RESULT_TITLE: '.result-title',
+  RESULT_TITLE_SUCCESS: '.result-title:has-text("3DS Payment Successful!")',
+  RESULT_MESSAGE: '.result-message',
+  RESULT_DETAILS: '.result-details',
+  RESULT_DETAIL_ROW: '.result-detail-row',
+  RESULT_DETAIL_LABEL: '.result-detail-label',
+  RESULT_DETAIL_VALUE: '.result-detail-value',
+  RESULT_ICON_SUCCESS: '.result-icon.success',
+  RESULT_ICON_ERROR: '.result-icon.error',
+  RESULT_TITLE_ERROR: '.result-title:has-text("Payment Failed")',
+  MAKE_ANOTHER_PURCHASE_BUTTON: 'button:has-text("Make Another Purchase")',
+  TRY_AGAIN_BUTTON: 'button:has-text("Try Again")',
+  START_OVER_BUTTON: 'button:has-text("Start Over")',
+}
 
 export const PLACEHOLDERS = {
   // Express Checkout
@@ -120,6 +168,14 @@ export const TEST_DATA = {
   CARD_FIRST_SIX_DIGITS_VISA: "411111",
   CACHED_STORAGE_STATE: "cached",
   BLANK_DATE_RESULT_CARD: "00/",
+  PRODUCT_ID_WIRELESS_HEADPHONE: "prod_1",
+  PRODUCT_ID_SMART_WATCH: "prod_2",
+  PRODUCT_ID_LAPTOP_STAND: "prod_3",
+  THREE_DS2_CHALLENGE_FLOW_CARD_NUMBER: "5111 2200 0000 0009",
+  THREE_DS2_FRUCTIONLESS_SUCCESS_CARD_NUMBER: "5222 2200 0000 0005",
+  THREE_DS2_FRUCTIONLESS_FAILURE_CARD_NUMBER: "5248 4811 1120 0179",
+  THREE_DS2_CHALLENGE_FLOW_SUCCESS_PIN: "1234",
+  THREE_DS2_CHALLENGE_FLOW_FAILED_PIN: "4567",
 };
 
 export const HEADINGS = {

@@ -4,13 +4,13 @@ import { Page } from "@playwright/test";
 
 export const SELECTORS = {
     openPaymentFormButtonHostedFields: '#open-hosted-fields-btn',
-    openPaymentFormButtonExpressCheckout: '#open-payment-form-btn',
+    openPaymentFormButtonExpressCheckout: '#open-payment-form-btn, #open-express-checkout-btn',
     allowBlankNameCheckbox: '#config-allow-blank-name',
     allowExpiredDateCheckbox: '#config-allow-expired-date',
     allowBlankDateCheckbox: '#config-allow-blank-date',
     twoDigitExpiryCheckbox: '#config-two-digit-expiry',
     hostedFieldsForm: '#hosted-fields-form',
-    expressCheckoutForm: '#express-checkout-form',
+    expressCheckoutForm: '#express-checkout-form, #express-checkout-dialog',
     resultCard: '#result-card',
     resultTitle: '#result-title',
     resultTokenLabel:'#result-label:has-text("Token")',
@@ -60,7 +60,7 @@ export const tokenizePage={
     await expect(twoDigitExpiryCheckbox).toBeChecked();
 },
     getResultCardTitle: async (page: Page) => {
-    await expect(page.locator(SELECTORS.resultCard)).toBeVisible();
+    await expect(page.locator(SELECTORS.resultCard)).toBeVisible({ timeout: 10000 });
     await expect(page.locator(SELECTORS.resultTitle)).toBeVisible();
     return await page.locator(SELECTORS.resultTitle).textContent();
 },
