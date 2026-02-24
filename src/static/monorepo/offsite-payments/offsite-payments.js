@@ -23,8 +23,40 @@ let selectedPaymentMethodType = 'paypal';
 // Payment method display names
 const PAYMENT_METHOD_NAMES = {
   'paypal': 'PayPal',
-  'stripe_payment_intent': 'Stripe APM',
-  'sprel': 'Test Offsite (sprel)',
+  'stripe_apm': 'Stripe APM',
+  'ebanx': 'EBANX',
+  'braintree': 'Braintree (PayPal/Venmo)',
+  'sprel': 'Test Gateway (sprel)',
+};
+
+// Flow steps for different gateways
+const FLOW_STEPS = {
+  default: [
+    'Load SDK and initialize with auth params',
+    'Select offsite payment gateway',
+    'Call <code>setupOffsitePayment()</code> with config',
+    'Call <code>submitOffsitePayment()</code>',
+    'SDK creates payment method and redirects',
+    'Use token for purchase API call',
+  ],
+  stripe_apm: [
+    'Create pending purchase on Spreedly',
+    'Get <code>client_secret</code> from response',
+    'Initialize <code>SpreedlyStripeAPM</code>',
+    'Mount Stripe Payment Element',
+    'User selects payment method',
+    'Confirm payment - redirect to provider',
+    'Complete payment and return',
+  ],
+  braintree: [
+    'Create pending purchase on Spreedly',
+    'Get <code>client_token</code> from response',
+    'Initialize <code>SpreedlyBraintree</code>',
+    'Mount PayPal and/or Venmo buttons',
+    'User clicks button and authorizes',
+    'Receive nonce in callback',
+    'Confirm transaction with nonce',
+  ],
 };
 
 // DOM Elements
@@ -34,10 +66,7 @@ const elements = {
   offsiteForm: () => document.getElementById('offsite-form'),
   submitBtn: () => document.getElementById('submit-btn'),
   statusMessage: () => document.getElementById('status-message'),
-  debugEnvKey: () => document.getElementById('debug-env-key'),
-  debugNonce: () => document.getElementById('debug-nonce'),
-  debugTimestamp: () => document.getElementById('debug-timestamp'),
-  debugStatus: () => document.getElementById('debug-status'),
+  flowStepsList: () => document.getElementById('flow-steps-list'),
 };
 
 // Initialization
@@ -49,7 +78,6 @@ async function init() {
   
   try {
     // Load SDK script first
-    updateDebugStatus('Loading SDK...');
     await loadSDKAsync();
     
     // Fetch auth params and initialize SDK
@@ -60,7 +88,6 @@ async function init() {
     
     hideLoading();
     elements.paymentSection().classList.remove('hidden');
-    updateDebugStatus('Ready');
   } catch (error) {
     console.error('Failed to initialize:', error);
     showError('Failed to initialize. Please refresh the page.');
@@ -81,8 +108,6 @@ function loadSDKAsync() {
 }
 
 async function fetchAuthParamsAndInitSDK() {
-  updateDebugStatus('Fetching auth params...');
-  
   const authParams = await SpreedlyUtils.fetchAuthParams();
   storedAuthParams = authParams;
   
@@ -107,7 +132,6 @@ async function fetchAuthParamsAndInitSDK() {
   // Listen for offsite payment events
   sdk.on('offsiteTokenGenerated', (data) => {
     console.log('Offsite payment method created:', data);
-    updateDebugStatus('Token generated!');
     
     let gateway = '';
     if (selectedPaymentMethodType === 'sprel') {
@@ -128,18 +152,11 @@ async function fetchAuthParamsAndInitSDK() {
     const submitBtn = elements.submitBtn();
     submitBtn.disabled = false;
     updateSubmitButton(selectedPaymentMethodType);
-    updateDebugStatus('Error');
   });
-  
-  // Update debug panel
-  elements.debugEnvKey().textContent = authParams.environmentKey;
-  elements.debugNonce().textContent = (authParams.nonce || '').substring(0, 20) + '...';
-  elements.debugTimestamp().textContent = authParams.timestamp;
   
   // Enable submit button
   elements.submitBtn().disabled = false;
   
-  updateDebugStatus(`SDK initialized (${SpreedlyUtils.getSDKDisplayName()})`);
   console.log(`${SpreedlyUtils.getSDKDisplayName()} SDK initialized with auth params`);
 }
 
@@ -169,14 +186,30 @@ function handleSubmit() {
   const submitBtn = elements.submitBtn();
   submitBtn.disabled = true;
   submitBtn.textContent = 'Processing...';
-  updateDebugStatus('Creating payment method...');
+  
+  // For Stripe APM, redirect to the dedicated stripe-apm page with Payment Element
+  if (selectedPaymentMethodType === 'stripe_apm') {
+    window.location.href = `./stripe-apm/index.html`;
+    return;
+  }
+  
+  // For EBANX, redirect to the dedicated ebanx page with local payment methods
+  if (selectedPaymentMethodType === 'ebanx') {
+    window.location.href = `./ebanx/index.html`;
+    return;
+  }
+  
+  // For Braintree, redirect to the dedicated braintree page with PayPal/Venmo
+  if (selectedPaymentMethodType === 'braintree') {
+    window.location.href = `./braintree/index.html`;
+    return;
+  }
+  
+  // For PayPal and Sprel, use fixed $10 USD
+  const amount = 1000; // $10.00 in cents
+  const currency = 'USD';
   
   // Store amount and currency in sessionStorage for the completion page
-  const amountInput = document.getElementById('amount-input');
-  const currencySelector = document.getElementById('currency-selector');
-  const amount = parseFloat(amountInput.value) * 100; // Convert to cents
-  const currency = currencySelector.value;
-  
   sessionStorage.setItem('offsite_payment_amount', amount.toString());
   sessionStorage.setItem('offsite_payment_currency', currency);
   sessionStorage.setItem('offsite_payment_method_type', selectedPaymentMethodType);
@@ -200,7 +233,6 @@ function handleSubmit() {
     // Re-enable button
     submitBtn.disabled = false;
     updateSubmitButton(selectedPaymentMethodType);
-    updateDebugStatus('Error');
   }
 }
 
@@ -221,6 +253,9 @@ function setupPaymentMethodListeners() {
       
       // Update form submit button
       updateSubmitButton(radio.value);
+      
+      // Update flow steps
+      updateFlowSteps(radio.value);
     });
   });
 }
@@ -232,6 +267,24 @@ function updateSubmitButton(paymentMethodType) {
   // Update button text and value
   submitBtn.textContent = `Continue with ${displayName}`;
   submitBtn.value = paymentMethodType;
+}
+
+function updateFlowSteps(paymentMethodType) {
+  const flowStepsList = elements.flowStepsList();
+  if (!flowStepsList) return;
+  
+  // Get the appropriate flow steps
+  let steps;
+  if (paymentMethodType === 'stripe_apm') {
+    steps = FLOW_STEPS.stripe_apm;
+  } else if (paymentMethodType === 'braintree') {
+    steps = FLOW_STEPS.braintree;
+  } else {
+    steps = FLOW_STEPS.default;
+  }
+  
+  // Update the list
+  flowStepsList.innerHTML = steps.map(step => `<li>${step}</li>`).join('');
 }
 
 // Reset payment
@@ -248,9 +301,4 @@ function showError(message) {
   hideLoading();
   elements.paymentSection().classList.remove('hidden');
   SpreedlyUtils.showStatus('status-message', message, 'error');
-  updateDebugStatus('Error');
-}
-
-function updateDebugStatus(status) {
-  elements.debugStatus().textContent = status;
 }

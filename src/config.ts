@@ -12,7 +12,10 @@ interface Config {
   spreedlyAccessSecret: string;
   spreedlyGatewayToken: string;
   spreedlySCAProviderKey: string;
+  stripeGatewayToken: string;
   paypalGatewayToken: string;
+  ebanxGatewayToken: string;
+  braintreeGatewayToken: string;
 }
 
 const config: Config = {
@@ -25,7 +28,10 @@ const config: Config = {
   spreedlyAccessSecret: process.env.SPREEDLY_ACCESS_SECRET || '',
   spreedlyGatewayToken: process.env.SPREEDLY_GATEWAY_TOKEN || '',
   spreedlySCAProviderKey: process.env.SPREEDLY_SCA_PROVIDER_KEY || '',
+  stripeGatewayToken: process.env.STRIPE_GATEWAY_TOKEN || '',
   paypalGatewayToken: process.env.PAYPAL_GATEWAY_TOKEN || '',
+  ebanxGatewayToken: process.env.EBANX_GATEWAY_TOKEN || '',
+  braintreeGatewayToken: process.env.BRAINTREE_GATEWAY_TOKEN || '',
 };
 
 export default config;

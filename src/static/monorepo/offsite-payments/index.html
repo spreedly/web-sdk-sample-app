@@ -76,61 +76,6 @@
       color: var(--color-gray-500);
     }
 
-    .amount-input-section {
-      margin-bottom: 1.5rem;
-    }
-
-    .amount-display {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 1.5rem;
-      font-weight: 600;
-      color: var(--color-gray-900);
-    }
-
-    .amount-input {
-      font-size: 1.5rem;
-      font-weight: 600;
-      border: none;
-      background: transparent;
-      width: 120px;
-      color: var(--color-gray-900);
-    }
-
-    .amount-input:focus {
-      outline: none;
-    }
-
-    .currency-selector {
-      padding: 0.5rem;
-      border: 1px solid var(--color-gray-300);
-      border-radius: 6px;
-      font-size: 0.875rem;
-      background: white;
-    }
-
-    .redirect-info {
-      background: var(--color-warning-light, #fffbeb);
-      border: 1px solid var(--color-warning, #f59e0b);
-      border-radius: 8px;
-      padding: 1rem;
-      margin-top: 1rem;
-      display: flex;
-      align-items: flex-start;
-      gap: 0.75rem;
-    }
-
-    .redirect-info-icon {
-      color: var(--color-warning, #f59e0b);
-      flex-shrink: 0;
-    }
-
-    .redirect-info-text {
-      font-size: 0.875rem;
-      color: var(--color-gray-700);
-    }
-
     .section-title {
       font-size: 1rem;
       font-weight: 600;
@@ -168,6 +113,13 @@
       border: none;
       padding: 0;
       margin: 0;
+    }
+
+    #flow-steps-list {
+      font-size: 0.875rem;
+      color: var(--color-gray-600);
+      padding-left: 1.25rem;
+      line-height: 1.8;
     }
   </style>
 </head>
@@ -212,23 +164,8 @@
 
             <!-- Main Payment Section -->
             <div id="payment-section" class="hidden">
-              <!-- Amount Input -->
-              <div class="card amount-input-section">
-                <label class="form-label" style="margin-bottom: 0.75rem;">Purchase Amount</label>
-                <div class="amount-display">
-                  <span>$</span>
-                  <input type="number" id="amount-input" class="amount-input" value="10.00" step="0.01" min="0.01">
-                  <select id="currency-selector" class="currency-selector">
-                    <option value="USD">USD</option>
-                    <option value="EUR">EUR</option>
-                    <option value="GBP">GBP</option>
-                    <option value="CAD">CAD</option>
-                  </select>
-                </div>
-              </div>
-
               <!-- Offsite Payment Gateway Selection -->
-              <div class="card" style="margin-top: 1.5rem;">
+              <div class="card">
                 <div class="section-title">Select Offsite Payment Gateway</div>
                 
                 <div class="payment-method-selector">
@@ -247,8 +184,8 @@
                   </label>
 
                   <!-- Stripe APM Option -->
-                  <label class="payment-method-option" data-method="stripe_payment_intent">
-                    <input type="radio" name="offsite-method" value="stripe_payment_intent">
+                  <label class="payment-method-option" data-method="stripe_apm">
+                    <input type="radio" name="offsite-method" value="stripe_apm">
                     <div class="payment-method-icon">
                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" style="width: 28px; height: 28px; fill: #635bff;">
                         <path d="M165 144.7l-43.3 9.2-.2 142.4c0 26.3 19.8 43.3 46.1 43.3 14.6 0 25.3-2.7 31.2-5.9v-33.8c-5.7 2.3-33.7 10.5-33.7-15.7V221h33.7v-37.8h-33.7zm89.1 51.6l-2.7-13.1H213v153.2h44.3V233.3c10.5-13.8 28.2-11.1 33.9-9.3v-40.8c-6-2.1-26.7-6-37.1 13.1zm92.3-72.3l-44.6 9.5v36.2l44.6-9.5zM44.9 228.3c0-6.9 5.8-9.6 15.1-9.7 13.5 0 30.7 4.1 44.2 11.4v-41.8c-14.7-5.8-29.4-8.1-44.1-8.1-36 0-60 18.8-60 50.2 0 49.2 67.5 41.2 67.5 62.4 0 8.2-7.1 10.9-17 10.9-14.7 0-33.7-6.1-48.6-14.2v40c16.5 7.1 33.2 10.1 48.5 10.1 36.9 0 62.3-15.8 62.3-47.8 0-52.9-67.9-43.4-67.9-63.4zM640 261.6c0-45.5-22-81.4-64.2-81.4s-67.9 35.9-67.9 81.1c0 53.5 30.3 78.2 73.5 78.2 21.2 0 37.1-4.8 49.2-11.5v-33.4c-12.1 6.1-26 9.8-43.6 9.8-17.3 0-32.5-6.1-34.5-26.9h86.9c.2-2.3.6-11.6.6-15.9zm-87.9-16.8c0-20 12.3-28.4 23.4-28.4 10.9 0 22.5 8.4 22.5 28.4zm-112.9-64.6c-17.4 0-28.6 8.2-34.8 13.9l-2.3-11H363v204.8l44.4-9.4.1-50.2c6.4 4.7 15.9 11.2 31.4 11.2 31.8 0 60.8-23.2 60.8-79.6.1-51.6-29.3-79.7-60.5-79.7zm-10.6 122.5c-10.4 0-16.6-3.8-20.9-8.4l-.3-66c4.6-5.1 11-8.8 21.2-8.8 16.2 0 27.4 18.2 27.4 41.4.1 23.9-10.9 41.8-27.4 41.8zm-126.7 33.7h44.6V183.2h-44.6z"/>
@@ -260,6 +197,34 @@
                     </div>
                   </label>
 
+                  <!-- EBANX Option -->
+                  <label class="payment-method-option" data-method="ebanx">
+                    <input type="radio" name="offsite-method" value="ebanx">
+                    <div class="payment-method-icon">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width: 28px; height: 28px; fill: #003366;">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                      </svg>
+                    </div>
+                    <div class="payment-method-details">
+                      <div class="payment-method-name">EBANX</div>
+                      <div class="payment-method-desc">Latin American local payment methods (Oxxo, Pix, Boleto, etc.)</div>
+                    </div>
+                  </label>
+
+                  <!-- Braintree PayPal/Venmo Option -->
+                  <label class="payment-method-option" data-method="braintree">
+                    <input type="radio" name="offsite-method" value="braintree">
+                    <div class="payment-method-icon">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512" style="width: 28px; height: 28px; fill: #2980b9;">
+                        <path d="M576 240c0 2.6-.1 5.2-.3 7.8-3.7 83.7-57.3 156.2-133.7 190.3-11.8 5.3-24.2 9.5-37.1 12.6-5.8 1.4-11.6 2.5-17.6 3.4-20.3 3-41.4 2.8-61.6-.6-80.2-13.3-146.4-73.3-168.5-150.5-3.4-11.8-5.8-24.1-7.1-36.6-.6-5.4-1-11-1.1-16.5-.1-2.6-.1-5.3-.1-7.9 0-132.5 107.5-240 240-240S576 107.5 576 240z"/>
+                      </svg>
+                    </div>
+                    <div class="payment-method-details">
+                      <div class="payment-method-name">Braintree (PayPal/Venmo)</div>
+                      <div class="payment-method-desc">PayPal and Venmo payments via Braintree gateway</div>
+                    </div>
+                  </label>
+
                   <!-- Test Offsite (sprel) Option -->
                   <label class="payment-method-option" data-method="sprel">
                     <input type="radio" name="offsite-method" value="sprel">
@@ -267,40 +232,14 @@
                       <span style="font-size: 1.5rem;">🧪</span>
                     </div>
                     <div class="payment-method-details">
-                      <div class="payment-method-name">Test Offsite (sprel)</div>
+                      <div class="payment-method-name">Spreedly's Test Offsite Gateway (sprel)</div>
                       <div class="payment-method-desc">Simulated offsite flow for testing</div>
                     </div>
                   </label>
                 </div>
 
-                <!-- Redirect Info -->
-                <div class="redirect-info">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="redirect-info-icon" style="width: 20px; height: 20px;">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
-                  </svg>
-                  <div class="redirect-info-text">
-                    <strong>Note:</strong> Using SDK's <code>setupOffsitePayment()</code> and <code>submitOffsitePayment()</code> methods. You will be redirected to complete the payment.
-                  </div>
-                </div>
-
                 <!-- SDK-based submission (form is just for styling) -->
                 <form id="offsite-form" class="offsite-form">
-                  <!-- 
-                    OLD: Transparent Redirect Form - commented out
-                    The form below was used to POST directly to Spreedly.
-                    Now we use the SDK's setupOffsitePayment() and submitOffsitePayment() methods.
-                    
-                    <form accept-charset="UTF-8" action="https://core.spreedly.com/v1/payment_methods" method="POST">
-                      <input name="redirect_url" type="hidden" id="form-redirect-url" value="">
-                      <input name="environment_key" type="hidden" id="form-environment-key" value="">
-                      <input name="nonce" type="hidden" id="form-nonce" value="">
-                      <input name="timestamp" type="hidden" id="form-timestamp" value="">
-                      <input name="certificate_token" type="hidden" id="form-certificate-token" value="">
-                      <input name="signature" type="hidden" id="form-signature" value="">
-                      <input name="utf8" type="hidden" value="✓">
-                    </form>
-                  -->
-                  
                   <fieldset>
                     <button type="submit" id="submit-btn" name="payment_method_type" value="paypal" disabled>
                       Continue with PayPal
@@ -362,7 +301,7 @@
                 </svg>
                 Flow Steps
               </div>
-              <ol style="font-size: 0.875rem; color: var(--color-gray-600); padding-left: 1.25rem; line-height: 1.8;">
+              <ol id="flow-steps-list">
                 <li>Load SDK and initialize with auth params</li>
                 <li>Select offsite payment gateway</li>
                 <li>Call <code>setupOffsitePayment()</code> with config</li>
@@ -371,19 +310,6 @@
                 <li>Use token for purchase API call</li>
               </ol>
             </div>
-
-            <!-- Debug Panel -->
-            <details class="config-section" style="font-size: 0.75rem;">
-              <summary style="cursor: pointer; font-weight: 500; color: var(--color-gray-600);">
-                Debug Information
-              </summary>
-              <div class="mt-3" style="font-family: var(--font-mono); color: var(--color-gray-500); word-break: break-all;">
-                <div class="mb-2"><strong>Env Key:</strong> <span id="debug-env-key">—</span></div>
-                <div class="mb-2"><strong>Nonce:</strong> <span id="debug-nonce">—</span></div>
-                <div class="mb-2"><strong>Timestamp:</strong> <span id="debug-timestamp">—</span></div>
-                <div class="mb-2"><strong>Status:</strong> <span id="debug-status">Initializing...</span></div>
-              </div>
-            </details>
           </div>
         </div>
       </div>

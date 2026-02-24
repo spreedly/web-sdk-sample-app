@@ -7,35 +7,31 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../shared/styles.css">
+  <link rel="stylesheet" href="../../shared/styles.css">
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-  <script src="../shared/utils.js"></script>
+  <script src="../../shared/utils.js"></script>
   <style>
-    .redirect-container {
+    .result-container {
       max-width: 600px;
       margin: 0 auto;
     }
     
-    .redirect-card {
+    .result-card {
       background: white;
       border-radius: 16px;
       padding: 2.5rem 2rem;
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
     
-    .redirect-card.success {
+    .result-card.success {
       border-top: 4px solid var(--color-success, #10b981);
     }
     
-    .redirect-card.pending {
-      border-top: 4px solid var(--color-warning, #f59e0b);
-    }
-
-    .redirect-card.processing {
+    .result-card.pending {
       border-top: 4px solid var(--color-warning, #f59e0b);
     }
     
-    .redirect-card.error {
+    .result-card.error {
       border-top: 4px solid var(--color-error, #ef4444);
     }
     
@@ -44,7 +40,7 @@
       margin-bottom: 2rem;
     }
     
-    .redirect-icon {
+    .result-icon {
       width: 80px;
       height: 80px;
       border-radius: 50%;
@@ -54,59 +50,50 @@
       margin: 0 auto 1.5rem;
     }
     
-    .redirect-icon.success {
+    .result-icon.success {
       background: var(--color-success-light, #d1fae5);
       color: var(--color-success, #10b981);
     }
     
-    .redirect-icon.pending {
-      background: var(--color-warning-light, #fef3c7);
-      color: var(--color-warning, #f59e0b);
-    }
-
-    .redirect-icon.processing {
+    .result-icon.pending {
       background: var(--color-warning-light, #fef3c7);
       color: var(--color-warning, #f59e0b);
     }
     
-    .redirect-icon.error {
+    .result-icon.error {
       background: var(--color-error-light, #fee2e2);
       color: var(--color-error, #ef4444);
     }
     
-    .redirect-icon.loading {
+    .result-icon.loading {
       background: var(--color-gray-100);
       padding: 0;
     }
     
-    .redirect-icon svg {
+    .result-icon svg {
       width: 40px;
       height: 40px;
     }
     
-    .redirect-title {
+    .result-title {
       font-size: 1.5rem;
       font-weight: 600;
       margin-bottom: 0.5rem;
     }
     
-    .redirect-title.success {
+    .result-title.success {
       color: var(--color-success, #10b981);
     }
     
-    .redirect-title.pending {
-      color: var(--color-warning, #f59e0b);
-    }
-
-    .redirect-title.processing {
+    .result-title.pending {
       color: var(--color-warning, #f59e0b);
     }
     
-    .redirect-title.error {
+    .result-title.error {
       color: var(--color-error, #ef4444);
     }
     
-    .redirect-message {
+    .result-message {
       color: var(--color-gray-500);
       line-height: 1.6;
     }
@@ -166,12 +153,7 @@
       color: var(--color-success, #10b981);
     }
     
-    .status-badge.pending {
-      background: var(--color-warning-light, #fef3c7);
-      color: var(--color-warning, #f59e0b);
-    }
-    
-    .status-badge.processing {
+    .status-badge.pending, .status-badge.processing {
       background: var(--color-warning-light, #fef3c7);
       color: var(--color-warning, #f59e0b);
     }
@@ -204,18 +186,10 @@
       border: none;
     }
     
-    .btn-primary:hover {
-      opacity: 0.9;
-    }
-    
     .btn-secondary {
       background: white;
       color: var(--color-gray-700);
       border: 1px solid var(--color-gray-300);
-    }
-    
-    .btn-secondary:hover {
-      background: var(--color-gray-50);
     }
     
     .spinner-large {
@@ -229,15 +203,6 @@
     
     @keyframes spin {
       to { transform: rotate(360deg); }
-    }
-    
-    .error-message {
-      margin-top: 1rem;
-      padding: 1rem;
-      background: var(--color-error-light, #fee2e2);
-      border-radius: 8px;
-      color: var(--color-error, #ef4444);
-      font-size: 0.875rem;
     }
   </style>
 </head>
@@ -257,14 +222,14 @@
     <!-- Main Content -->
     <main class="main">
       <div class="container">
-        <div class="redirect-container">
-          <div id="redirect-card" class="redirect-card">
+        <div class="result-container">
+          <div id="result-card" class="result-card">
             <div class="result-header">
-              <div id="redirect-icon" class="redirect-icon loading">
+              <div id="result-icon" class="result-icon loading">
                 <div class="spinner-large"></div>
               </div>
-              <h1 id="redirect-title" class="redirect-title">Loading Transaction...</h1>
-              <p id="redirect-message" class="redirect-message">Fetching transaction details from Spreedly...</p>
+              <h1 id="result-title" class="result-title">Loading...</h1>
+              <p id="result-message" class="result-message">Fetching transaction details...</p>
             </div>
             
             <div id="transaction-details" class="transaction-details hidden">
@@ -272,11 +237,9 @@
               <div id="details-content"></div>
             </div>
             
-            <div id="error-message" class="error-message hidden"></div>
-            
             <div class="btn-group">
-              <a href="./offsite-payments/index.html" class="btn btn-secondary">New Payment</a>
-              <a href="./index.html" class="btn btn-primary">Back to Home</a>
+              <a href="./index.html" class="btn btn-secondary">New Payment</a>
+              <a href="../../index.html" class="btn btn-primary">Back to Home</a>
             </div>
           </div>
         </div>
@@ -308,7 +271,6 @@
         showResult('error', {
           title: 'No Transaction Token',
           message: 'No transaction token was received in the redirect.',
-          errorDetail: 'The redirect URL should contain a transaction_token parameter.'
         });
         return;
       }
@@ -324,7 +286,6 @@
           showResult('error', {
             title: 'Transaction Not Found',
             message: 'Could not retrieve transaction details.',
-            errorDetail: 'The transaction may not exist or there was an API error.'
           });
           return;
         }
@@ -336,10 +297,8 @@
         let resultType = 'error';
         if (succeeded || state === 'succeeded') {
           resultType = 'success';
-        } else if (state === 'pending') {
+        } else if (state === 'pending' || state === 'processing') {
           resultType = 'pending';
-        } else if (state === 'processing') {
-          resultType = 'processing';
         }
         
         showResult(resultType, {
@@ -353,16 +312,14 @@
         console.error('Error fetching transaction:', error);
         showResult('error', {
           title: 'Error Fetching Transaction',
-          message: 'Could not retrieve transaction status from Spreedly.',
-          errorDetail: error.response?.data?.error || error.message || 'Unknown error occurred'
+          message: error.response?.data?.error || error.message || 'Unknown error occurred',
         });
       }
     });
     
     function getResultTitle(resultType, state) {
       if (resultType === 'success') return 'Payment Successful';
-      if (resultType === 'pending') return 'Payment Pending';
-      if (resultType === 'processing') return 'Payment Processing';
+      if (resultType === 'pending') return 'Payment Processing';
       return 'Payment Failed';
     }
     
@@ -370,20 +327,19 @@
       if (resultType === 'success') {
         return 'Your payment has been processed successfully.';
       }
-      if (resultType === 'pending' || resultType === 'processing') {
+      if (resultType === 'pending') {
         return 'Your payment is being processed. This may take a few moments.';
       }
       return transaction?.message || 'Your payment could not be completed.';
     }
     
     function showResult(type, data) {
-      const card = document.getElementById('redirect-card');
-      const icon = document.getElementById('redirect-icon');
-      const title = document.getElementById('redirect-title');
-      const message = document.getElementById('redirect-message');
+      const card = document.getElementById('result-card');
+      const icon = document.getElementById('result-icon');
+      const title = document.getElementById('result-title');
+      const message = document.getElementById('result-message');
       const detailsSection = document.getElementById('transaction-details');
       const detailsContent = document.getElementById('details-content');
-      const errorMessage = document.getElementById('error-message');
       
       // Update card styling
       card.classList.add(type);
@@ -397,12 +353,6 @@
       title.classList.add(type);
       title.textContent = data.title;
       message.textContent = data.message;
-      
-      // Show error detail if present
-      if (data.errorDetail) {
-        errorMessage.textContent = data.errorDetail;
-        errorMessage.classList.remove('hidden');
-      }
       
       // Build transaction details if available
       if (data.transaction) {
@@ -428,27 +378,13 @@
         // Amount
         if (tx.amount) {
           const formattedAmount = (tx.amount / 100).toFixed(2);
-          detailsHTML += buildDetailRow('Amount', `${formattedAmount} ${tx.currency_code || 'USD'}`);
+          detailsHTML += buildDetailRow('Amount', `${formattedAmount} ${tx.currency_code || 'EUR'}`);
         }
         
         // Payment Method Type
         if (tx.payment_method?.payment_method_type) {
           const pmType = tx.payment_method.payment_method_type;
-          const displayName = {
-            'paypal': 'PayPal',
-            'stripe_apm': 'Stripe APM',
-            'sprel': 'Test Offsite (Sprel)',
-            // EBANX payment methods
-            'oxxo': 'Oxxo (EBANX)',
-            'boleto_bancario': 'Boleto Bancário (EBANX)',
-            'pix': 'Pix (EBANX)',
-            'pix_automatico': 'Pix Automático (EBANX)',
-            'nupay': 'NuPay (EBANX)',
-            'mercado_pago': 'Mercado Pago (EBANX)',
-            // Braintree payment methods
-            'venmo': 'Venmo (Braintree)',
-          }[pmType] || pmType;
-          detailsHTML += buildDetailRow('Payment Method', displayName);
+          detailsHTML += buildDetailRow('Payment Method', pmType);
         }
         
         // Gateway
@@ -460,11 +396,6 @@
         if (tx.created_at) {
           const date = new Date(tx.created_at);
           detailsHTML += buildDetailRow('Date', date.toLocaleString());
-        }
-        
-        // Gateway Message (for errors)
-        if (tx.response?.message && type === 'error') {
-          detailsHTML += buildDetailRow('Gateway Message', tx.response.message);
         }
         
         if (detailsHTML) {
@@ -491,7 +422,7 @@
           </svg>
         `;
       }
-      if (type === 'pending' || type === 'processing') {
+      if (type === 'pending') {
         return `
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />

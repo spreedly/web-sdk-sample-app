@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EBANX Local Payment Methods | Spreedly Web SDK Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../shared/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <style>
+    .payment-method-selector {
+      margin-bottom: 1.5rem;
+    }
+
+    .payment-method-selector select {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--color-gray-300);
+      border-radius: 8px;
+      font-size: 1rem;
+      background: white;
+      cursor: pointer;
+    }
+
+    .payment-method-selector select:focus {
+      outline: none;
+      border-color: var(--color-primary);
+    }
+
+    .amount-input-section {
+      margin-bottom: 1.5rem;
+    }
+
+    .amount-display {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--color-gray-900);
+    }
+
+    .amount-input {
+      font-size: 1.5rem;
+      font-weight: 600;
+      border: none;
+      background: transparent;
+      width: 120px;
+      color: var(--color-gray-900);
+    }
+
+    .amount-input:focus {
+      outline: none;
+    }
+
+    .currency-selector {
+      padding: 0.5rem;
+      border: 1px solid var(--color-gray-300);
+      border-radius: 6px;
+      font-size: 0.875rem;
+      background: white;
+    }
+
+    .json-preview {
+      background: var(--color-gray-900);
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      overflow-x: auto;
+    }
+
+    .json-preview pre {
+      margin: 0;
+      color: #e2e8f0;
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    .json-preview .json-key {
+      color: #7dd3fc;
+    }
+
+    .json-preview .json-string {
+      color: #86efac;
+    }
+
+    .json-preview .json-number {
+      color: #fde68a;
+    }
+
+    .section-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--color-gray-700);
+      margin-bottom: 1rem;
+    }
+
+    .ebanx-info {
+      background: var(--color-primary-light, #f0f7ff);
+      border: 1px solid var(--color-primary, #0a0a0a);
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+
+    .ebanx-info-icon {
+      color: var(--color-primary, #0a0a0a);
+      flex-shrink: 0;
+    }
+
+    .ebanx-info-text {
+      font-size: 0.875rem;
+      color: var(--color-gray-700);
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 1rem 1.5rem;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: none;
+      background: var(--color-primary, #0a0a0a);
+      color: white;
+    }
+
+    .submit-btn:hover {
+      opacity: 0.9;
+    }
+
+    .submit-btn:disabled {
+      background: var(--color-gray-300);
+      cursor: not-allowed;
+    }
+
+    .spinner-inline {
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--color-gray-200);
+      border-top-color: var(--color-primary, #0a0a0a);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      display: inline-block;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .payment-method-badge {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      background: var(--color-gray-100);
+      color: var(--color-gray-600);
+      margin-left: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="page-wrapper">
+    <!-- Header -->
+    <header class="header">
+      <div class="container header-inner">
+        <a href="../../index.html" class="logo">
+          <span class="logo-icon">S</span>
+          Spreedly Web SDK
+        </a>
+        <span class="nav-badge">EBANX</span>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+      <div class="container">
+        <div class="tokenize-layout">
+          <!-- Left Column - Payment Flow -->
+          <div class="tokenize-form">
+            <a href="../index.html" class="back-link">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+              </svg>
+              Back to Offsite Payments
+            </a>
+
+            <h1 class="mb-2">EBANX Local Payment Methods</h1>
+            <p class="mb-6" style="color: var(--color-gray-500);">
+              Pay with Latin American local payment methods: Oxxo, Boleto, Pix, and more
+            </p>
+
+            <!-- Loading State -->
+            <div id="loading-state" class="card" style="text-align: center; padding: 3rem;">
+              <div class="loading">
+                <span class="spinner"></span>
+                <span>Loading SDK...</span>
+              </div>
+            </div>
+
+            <!-- Main Payment Section -->
+            <div id="payment-section" class="hidden">
+              <!-- Payment Method Selector -->
+              <div class="card payment-method-selector">
+                <label class="form-label" style="margin-bottom: 0.75rem;">Select Payment Method</label>
+                <select id="payment-method-select">
+                  <option value="oxxo" selected>Oxxo (Mexico)</option>
+                  <option value="boleto_bancario">Boleto Bancário (Brazil)</option>
+                  <option value="pix">Pix (Brazil)</option>
+                  <option value="nupay">NuPay (Brazil)</option>
+                </select>
+              </div>
+
+              <!-- Amount Input -->
+              <div class="card amount-input-section">
+                <label class="form-label" style="margin-bottom: 0.75rem;">Purchase Amount</label>
+                <div class="amount-display">
+                  <span id="currency-symbol">$</span>
+                  <input type="number" id="amount-input" class="amount-input" value="100.00" step="0.01" min="0.01">
+                  <select id="currency-selector" class="currency-selector">
+                    <option value="MXN" selected>MXN</option>
+                    <option value="BRL">BRL</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- EBANX Info -->
+              <div class="card" style="margin-top: 1.5rem;">
+              <div class="section-title">Sample Payment Method Payload</div>
+                
+                <!-- JSON Preview -->
+                <div class="json-preview">
+                  <pre id="json-preview-content">{
+  <span class="json-key">"payment_method"</span>: {
+    <span class="json-key">"email"</span>: <span class="json-string">"test@test.com"</span>,
+    <span class="json-key">"payment_method_type"</span>: <span class="json-string">"oxxo"</span>,
+    <span class="json-key">"full_name"</span>: <span class="json-string">"Manuela E. Beyer Rocabado"</span>,
+    <span class="json-key">"country"</span>: <span class="json-string">"MX"</span>,
+    <span class="json-key">"zip"</span>: <span class="json-string">"48822"</span>,
+    <span class="json-key">"address1"</span>: <span class="json-string">"Oyono, 882"</span>,
+    <span class="json-key">"city"</span>: <span class="json-string">"Hermosillo"</span>,
+    <span class="json-key">"state"</span>: <span class="json-string">"Sonora"</span>,
+    <span class="json-key">"phone_number"</span>: <span class="json-string">"(040) 577-7687"</span>
+  }
+}</pre>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="button" id="submit-btn" class="submit-btn" disabled>
+                  Pay with Oxxo
+                </button>
+
+                <!-- Status Message -->
+                <div id="status-message" class="status-message hidden"></div>
+              </div>
+            </div>
+
+            <!-- Error State -->
+            <div id="error-state" class="card hidden" style="border-top: 4px solid var(--color-error);">
+              <h3 style="color: var(--color-error); margin-bottom: 1rem;">Error</h3>
+              <p id="error-message" style="color: var(--color-gray-600);"></p>
+              <button onclick="window.location.reload()" class="btn btn-secondary" style="margin-top: 1rem;">
+                Try Again
+              </button>
+            </div>
+          </div>
+
+          <!-- Right Column - Information -->
+          <div class="config-panel" id="config-panel">
+            <div class="config-section">
+              <div class="config-section-title">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                </svg>
+                About EBANX
+              </div>
+              <p style="font-size: 0.875rem; color: var(--color-gray-600); line-height: 1.6;">
+                EBANX enables Latin American local payment methods for global merchants. 
+                Supports Oxxo (Mexico), Boleto Bancário (Brazil), Pix, and more.
+              </p>
+            </div>
+
+            <div class="config-section">
+              <div class="config-section-title">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 0 1 0 3.75H5.625a1.875 1.875 0 0 1 0-3.75Z" />
+                </svg>
+                Flow Steps
+              </div>
+              <ol style="font-size: 0.875rem; color: var(--color-gray-600); padding-left: 1.25rem; line-height: 1.8;">
+                <li>Load SDK and fetch auth params</li>
+                <li>Select payment method (e.g., Oxxo)</li>
+                <li>Call <code>setupOffsitePayment()</code></li>
+                <li>Call <code>submitOffsitePayment()</code></li>
+                <li>Receive payment method token</li>
+                <li>Create purchase transaction</li>
+                <li>Redirect to payment provider</li>
+                <li>Complete payment and return</li>
+              </ol>
+            </div>
+
+            <!-- Debug Panel -->
+            <details class="config-section" style="font-size: 0.75rem;">
+              <summary style="cursor: pointer; font-weight: 500; color: var(--color-gray-600);">
+                Debug Information
+              </summary>
+              <div class="mt-3" style="font-family: var(--font-mono); color: var(--color-gray-500); word-break: break-all;">
+                <div class="mb-2"><strong>Environment Key:</strong> <span id="debug-env-key">—</span></div>
+                <div class="mb-2"><strong>Payment Method:</strong> <span id="debug-payment-method">oxxo</span></div>
+                <div class="mb-2"><strong>Status:</strong> <span id="debug-status">Initializing...</span></div>
+              </div>
+            </details>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container footer-inner">
+        <span>Spreedly Web SDK Demo</span>
+        <div class="footer-links">
+          <a href="https://spreedly.com" target="_blank">Spreedly</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Scripts -->
+  <script src="../../shared/utils.js"></script>
+  <script src="./ebanx.js"></script>
+</body>
+</html>

@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stripe APM | Spreedly Web SDK Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../shared/styles.css">
+  <!-- Stripe.js - Required for Payment Element -->
+  <script src="https://js.stripe.com/v3/"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <style>
+    .amount-input-section {
+      margin-bottom: 1.5rem;
+    }
+
+    .amount-display {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--color-gray-900);
+    }
+
+    .amount-input {
+      font-size: 1.5rem;
+      font-weight: 600;
+      border: none;
+      background: transparent;
+      width: 120px;
+      color: var(--color-gray-900);
+    }
+
+    .amount-input:focus {
+      outline: none;
+    }
+
+    .currency-selector {
+      padding: 0.5rem;
+      border: 1px solid var(--color-gray-300);
+      border-radius: 6px;
+      font-size: 0.875rem;
+      background: white;
+    }
+
+    .payment-element-container {
+      min-height: 200px;
+      padding: 1rem;
+      border: 1px solid var(--color-gray-200);
+      border-radius: 8px;
+      background: white;
+      margin-bottom: 1.5rem;
+    }
+
+    .payment-element-container.loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-gray-500);
+    }
+
+    .apm-info {
+      background: var(--color-primary-light, #f0f7ff);
+      border: 1px solid var(--color-primary, #0a0a0a);
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+
+    .apm-info-icon {
+      color: var(--color-primary, #0a0a0a);
+      flex-shrink: 0;
+    }
+
+    .apm-info-text {
+      font-size: 0.875rem;
+      color: var(--color-gray-700);
+    }
+
+    .section-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--color-gray-700);
+      margin-bottom: 1rem;
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 1rem 1.5rem;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: none;
+      background: var(--color-primary, #0a0a0a);
+      color: white;
+    }
+
+    .submit-btn:hover {
+      opacity: 0.9;
+    }
+
+    .submit-btn:disabled {
+      background: var(--color-gray-300);
+      cursor: not-allowed;
+    }
+
+    .spinner-inline {
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--color-gray-200);
+      border-top-color: var(--color-primary, #0a0a0a);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      display: inline-block;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-wrapper">
+    <!-- Header -->
+    <header class="header">
+      <div class="container header-inner">
+        <a href="../../index.html" class="logo">
+          <span class="logo-icon">S</span>
+          Spreedly Web SDK
+        </a>
+        <span class="nav-badge">Stripe APM</span>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+      <div class="container">
+        <div class="tokenize-layout">
+          <!-- Left Column - Payment Flow -->
+          <div class="tokenize-form">
+            <a href="../../index.html" class="back-link">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+              </svg>
+              Back to flows
+            </a>
+
+            <h1 class="mb-2">Stripe Alternative Payment Methods</h1>
+            <p class="mb-6" style="color: var(--color-gray-500);">
+              Pay with iDEAL, Bancontact, SEPA, and other European payment methods via Stripe
+            </p>
+
+            <!-- Loading State -->
+            <div id="loading-state" class="card" style="text-align: center; padding: 3rem;">
+              <div class="loading">
+                <span class="spinner"></span>
+                <span>Creating pending transaction...</span>
+              </div>
+            </div>
+
+            <!-- Main Payment Section -->
+            <div id="payment-section" class="hidden">
+              <!-- Amount Input -->
+              <div class="card amount-input-section">
+                <label class="form-label" style="margin-bottom: 0.75rem;">Purchase Amount</label>
+                <div class="amount-display">
+                  <span>€</span>
+                  <input type="number" id="amount-input" class="amount-input" value="10.00" step="0.01" min="0.01">
+                  <select id="currency-selector" class="currency-selector">
+                    <option value="EUR" selected>EUR</option>
+                    <option value="USD">USD</option>
+                    <option value="GBP">GBP</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Stripe APM Info -->
+              <div class="card" style="margin-top: 1.5rem;">
+                <div class="apm-info">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="apm-info-icon" style="width: 20px; height: 20px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+                  </svg>
+                  <div class="apm-info-text">
+                    <strong>Stripe Payment Element:</strong> Using the SDK's <code>SpreedlyStripeAPM</code> class to display Stripe's Payment Element for alternative payment methods.
+                  </div>
+                </div>
+
+                <div class="section-title">Select Payment Method</div>
+                
+                <!-- Stripe Payment Element Container -->
+                <div id="payment-element-container" class="payment-element-container loading">
+                  <span class="spinner-inline"></span>
+                  <span style="margin-left: 0.5rem;">Loading payment methods...</span>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="button" id="submit-btn" class="submit-btn" disabled>
+                  Pay Now
+                </button>
+
+                <!-- Status Message -->
+                <div id="status-message" class="status-message"></div>
+              </div>
+            </div>
+
+            <!-- Error State -->
+            <div id="error-state" class="card hidden" style="border-top: 4px solid var(--color-error);">
+              <h3 style="color: var(--color-error); margin-bottom: 1rem;">Error</h3>
+              <p id="error-message" style="color: var(--color-gray-600);"></p>
+              <button onclick="window.location.reload()" class="btn btn-secondary" style="margin-top: 1rem;">
+                Try Again
+              </button>
+            </div>
+          </div>
+
+          <!-- Right Column - Information -->
+          <div class="config-panel" id="config-panel">
+            <div class="config-section">
+              <div class="config-section-title">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                </svg>
+                About Stripe APM
+              </div>
+              <p style="font-size: 0.875rem; color: var(--color-gray-600); line-height: 1.6;">
+                Stripe Alternative Payment Methods (APMs) allow customers to pay using local payment methods 
+                like iDEAL (Netherlands), Bancontact (Belgium), SEPA Direct Debit, and more.
+              </p>
+            </div>
+
+            <div class="config-section">
+              <div class="config-section-title">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 0 1 0 3.75H5.625a1.875 1.875 0 0 1 0-3.75Z" />
+                </svg>
+                Flow Steps
+              </div>
+              <ol style="font-size: 0.875rem; color: var(--color-gray-600); padding-left: 1.25rem; line-height: 1.8;">
+                <li>Create pending purchase on Spreedly</li>
+                <li>Get <code>client_secret</code> from response</li>
+                <li>Initialize <code>SpreedlyStripeAPM</code></li>
+                <li>Mount Stripe Payment Element</li>
+                <li>User selects payment method</li>
+                <li>Confirm payment - redirect to provider</li>
+                <li>Complete payment and return</li>
+              </ol>
+            </div>
+
+            <!-- Debug Panel -->
+            <details class="config-section" style="font-size: 0.75rem;">
+              <summary style="cursor: pointer; font-weight: 500; color: var(--color-gray-600);">
+                Debug Information
+              </summary>
+              <div class="mt-3" style="font-family: var(--font-mono); color: var(--color-gray-500); word-break: break-all;">
+                <div class="mb-2"><strong>Transaction Token:</strong> <span id="debug-transaction-token">—</span></div>
+                <div class="mb-2"><strong>State:</strong> <span id="debug-state">—</span></div>
+                <div class="mb-2"><strong>Status:</strong> <span id="debug-status">Initializing...</span></div>
+              </div>
+            </details>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container footer-inner">
+        <span>Spreedly Web SDK Demo</span>
+        <div class="footer-links">
+          <a href="https://spreedly.com" target="_blank">Spreedly</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Scripts -->
+  <script src="../../shared/utils.js"></script>
+  <script src="./stripe-apm.js"></script>
+</body>
+</html>
