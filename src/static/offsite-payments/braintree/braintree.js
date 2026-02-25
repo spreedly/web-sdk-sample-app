@@ -121,7 +121,7 @@ async function createPendingPurchase() {
     currency_code: currencyCode,
     payment_method_type: 'paypal',
     paypal_flow: 'checkout',
-    redirect_url: `${baseUrl}/monorepo/offsite-payments/handle_redirect.html`,
+    redirect_url: `${baseUrl}/offsite-payments/handle_redirect.html`,
     callback_url: `${baseUrl}/api/v1/offsite-callback`,
   });
 

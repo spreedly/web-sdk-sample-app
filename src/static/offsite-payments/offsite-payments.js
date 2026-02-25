@@ -141,7 +141,7 @@ async function fetchAuthParamsAndInitSDK() {
     }
    
     // Redirect to the completion page to create purchase
-    window.location.href = `${window.location.origin}/monorepo/offsite-payments/transparent_redirect_complete.html?token=${data.token}&gateway=${gateway}`;
+    window.location.href = `${window.location.origin}/offsite-payments/transparent_redirect_complete.html?token=${data.token}&gateway=${gateway}`;
   });
 
   sdk.on('offsitePaymentError', (error) => {

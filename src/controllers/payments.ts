@@ -314,11 +314,7 @@ export const createSimplePurchase = async (req: Request, res: Response): Promise
 export const createOffsitePurchase = async (req: Request, res: Response): Promise<void> => {
   const gateway_key = getGatewayKey(req.body.gateway || 'spreedly');
   
-  const payment_method_token = req.body.payment_method_token;
-  const amount = req.body.amount;
-  const currency_code = req.body.currency_code || 'USD';
-  const redirect_url = req.body.redirect_url;
-  const callback_url = req.body.callback_url;
+  const {payment_method_token, amount, currency_code = 'USD', redirect_url, callback_url, ...rest} = req.body;
   
   const body = {
     transaction: {
@@ -327,6 +323,7 @@ export const createOffsitePurchase = async (req: Request, res: Response): Promis
       currency_code,
       redirect_url,
       callback_url,
+      ...rest,
     },
   };
   
