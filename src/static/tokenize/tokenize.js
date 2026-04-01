@@ -161,12 +161,7 @@ window.openHostedFieldsForm = function() {
   }
   
   SpreedlyUtils.setButtonLoading('open-hosted-fields-btn', true, 'Loading...');
-  
-  sdk.inAppElements({
-    number: { containerId: 'card-number-field' },
-    cvv: { containerId: 'cvv-field' },
-  });
-  
+
   // Set up event handlers
   sdk.on('ready', () => {
     isReady = true;
@@ -190,6 +185,11 @@ window.openHostedFieldsForm = function() {
     console.error('SDK error:', error);
     SpreedlyUtils.setButtonLoading('open-hosted-fields-btn', false);
     handleTokenError(error);
+  });
+
+  sdk.inAppElements({
+    number: { containerId: 'card-number-field' },
+    cvv: { containerId: 'cvv-field' },
   });
 }
 

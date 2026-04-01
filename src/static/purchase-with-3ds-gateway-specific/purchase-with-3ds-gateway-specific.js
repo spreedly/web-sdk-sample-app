@@ -649,6 +649,7 @@ function start3DSLifecycle(transactionToken) {
     hiddenIframeLocation: 'device-fingerprint',
     challengeIframeLocation: 'challenge-container',
     challengeIframeClasses: 'challenge-iframe',
+    environmentKey: storedAuthParams?.environmentKey,
     
     callbacks: {
       // All callbacks receive consistent event structure: { action, context, token, finalize, response }
