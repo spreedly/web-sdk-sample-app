@@ -10,12 +10,12 @@ function getSDKType() {
 function getSDKScriptUrl() {
   const sdkType = getSDKType();
   // uncomment this to use local sdk
-  // if(window.location.hostname === 'localhost') {
-  //   if (sdkType === 'express-checkout') {
-  //     return 'http://localhost:5173/express-checkout.js';
-  //   }
-  //   return 'http://localhost:5000/index.js';
-  // }
+  if(window.location.hostname === 'localhost') {
+    if (sdkType === 'express-checkout') {
+      return 'http://localhost:5173/express-checkout.js';
+    }
+    return 'http://localhost:5000/index.js';
+  }
 
   if (sdkType === 'express-checkout') {
     return 'https://core-test.spreedly.com/checkout/elements/rc/express-checkout.js';
@@ -35,7 +35,7 @@ function getDisplayMode() {
 
 async function fetchAuthParams() {
   try {
-    const response = await axios.get(`${API_BASE_URL}/auth/params`);
+    const response = await axios.get(`${LOCAL_API_URL}/auth/params`);
     const authParams = response.data;
     return authParams;    
   } catch (error) {
@@ -47,7 +47,7 @@ async function fetchAuthParams() {
 // Payment Methods
 async function fetchPaymentMethods() {
   try {
-    const response = await axios.get(`${API_BASE_URL}/payment_methods`);
+    const response = await axios.get(`${LOCAL_API_URL}/payment_methods`);
     const paymentMethods = response.data?.payment_methods || [];
     
     // Filter to only credit cards
@@ -60,7 +60,7 @@ async function fetchPaymentMethods() {
 
 async function retainPaymentMethod(paymentMethodToken) {
   try {
-    const response = await axios.put(`${API_BASE_URL}/payment_methods/${paymentMethodToken}/retain`);
+    const response = await axios.put(`${LOCAL_API_URL}/payment_methods/${paymentMethodToken}/retain`);
     return response.data;
   } catch (error) {
     console.error('Error retaining payment method:', error);
@@ -71,7 +71,7 @@ async function retainPaymentMethod(paymentMethodToken) {
 // API Calls
 async function createPurchase(paymentMethodToken, amount, currencyCode = 'USD') {
   try {
-    const response = await axios.post(`${API_BASE_URL}/simple-purchase`, {
+    const response = await axios.post(`${LOCAL_API_URL}/simple-purchase`, {
       payment_method_token: paymentMethodToken,
       amount: amount,
       currency_code: currencyCode,
@@ -85,7 +85,7 @@ async function createPurchase(paymentMethodToken, amount, currencyCode = 'USD') 
 
 async function createPurchaseWith3DS(paymentMethodToken, amount, browserInfo, currencyCode = 'USD') {
   try {
-    const response = await axios.post(`${API_BASE_URL}/create-purchase-with-3ds`, {
+    const response = await axios.post(`${LOCAL_API_URL}/create-purchase-with-3ds`, {
       payment_method_token: paymentMethodToken,
       amount: amount,
       currency_code: currencyCode,
@@ -203,7 +203,7 @@ function loadSDKScript(callback) {
 // Offsite Payments
 async function createOffsitePurchase(paymentMethodToken, amount, redirectUrl, callbackUrl, currencyCode = 'USD', gateway = 'spreedly') {
   try {
-    const response = await axios.post(`${API_BASE_URL}/offsite-purchase`, {
+    const response = await axios.post(`${LOCAL_API_URL}/offsite-purchase`, {
       payment_method_token: paymentMethodToken,
       amount: amount,
       currency_code: currencyCode,
@@ -220,7 +220,7 @@ async function createOffsitePurchase(paymentMethodToken, amount, redirectUrl, ca
 
 async function getTransactionStatus(transactionToken) {
   try {
-    const response = await axios.get(`${API_BASE_URL}/transactions/${transactionToken}`);
+    const response = await axios.get(`${LOCAL_API_URL}/transactions/${transactionToken}`);
     return response.data;
   } catch (error) {
     console.error('Error getting transaction status:', error);

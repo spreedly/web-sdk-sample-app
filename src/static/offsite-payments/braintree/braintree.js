@@ -116,7 +116,7 @@ async function createPendingPurchase() {
   // Get base URL for redirects
   const baseUrl = 'https://checkout-web-sample-app-049a3c617015.herokuapp.com';
 
-  const response = await axios.post(`${API_BASE_URL}/braintree-purchase`, {
+  const response = await axios.post(`${LOCAL_API_URL}/braintree-purchase`, {
     amount,
     currency_code: currencyCode,
     payment_method_type: 'paypal',
@@ -133,7 +133,7 @@ async function createPendingPurchase() {
  */
 async function confirmTransaction(state, nonce, payment_method_type) {
   const response = await axios.post(
-    `${API_BASE_URL}/transactions/${transactionToken}/confirm`,
+    `${LOCAL_API_URL}/transactions/${transactionToken}/confirm`,
     {
       // For test purposes, to simulate a successful transaction,
       // If a nonce is not provided, we will set the state to Successful.

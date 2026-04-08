@@ -101,7 +101,7 @@ async function createPendingPurchase() {
   const redirectUrl = `${baseUrl}/offsite-payments/handle_redirect.html`;
   const callbackUrl = `${baseUrl}/api/v1/offsite-callback`;
   
-  const response = await axios.post(`${API_BASE_URL}/stripe-apm-purchase`, {
+  const response = await axios.post(`${LOCAL_API_URL}/stripe-apm-purchase`, {
     amount,
     currency_code: currency,
     apm_types: ['ideal', 'bancontact', 'eps', 'p24', 'sepa_debit'],
