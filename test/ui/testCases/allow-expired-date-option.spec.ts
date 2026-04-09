@@ -100,7 +100,7 @@ test.describe("Allow Expired Date Option", () => {
           expiryMonth: TEST_DATA.EXPIRY_MONTH,
           expiryYear: getExpiredYearString(),
         });
-        await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.CARD_NUMBER, {
+        await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.CARD_NUMBER_FORMATTED, {
             cvv: TEST_DATA.CVV,
             firstName: TEST_DATA.FIRST_NAME,
             lastName: TEST_DATA.LAST_NAME,
@@ -132,7 +132,7 @@ test.describe("Allow Expired Date Option", () => {
           expiryMonth: TEST_DATA.EXPIRY_MONTH,
           expiryYear: getExpiredYearString(),
         });
-        await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.CARD_NUMBER, {
+        await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.CARD_NUMBER_FORMATTED, {
             cvv: TEST_DATA.CVV,
             firstName: TEST_DATA.FIRST_NAME,
             lastName: TEST_DATA.LAST_NAME,
@@ -191,7 +191,7 @@ test.describe("Allow Expired Date Option", () => {
           expiryMonth: TEST_DATA.EXPIRY_MONTH,
           expiryYear: getExpiredYearString(),
         });
-        await helperFunctions.verifyFormFieldsExpressCheckout(page, TEST_DATA.CARD_NUMBER, {
+        await helperFunctions.verifyFormFieldsExpressCheckout(page, TEST_DATA.CARD_NUMBER_FORMATTED, {
             cvv: TEST_DATA.CVV,
             firstName: TEST_DATA.FIRST_NAME,
             lastName: TEST_DATA.LAST_NAME,
@@ -202,6 +202,7 @@ test.describe("Allow Expired Date Option", () => {
         await expect(await helperFunctions.getExpiredYearErrorMessage(page)).not.toBeVisible()
         await expect(await helperFunctions.getExpressCheckoutMonthField(page)).toHaveAttribute('aria-invalid', 'false');
         await expect(await helperFunctions.getExpressCheckoutYearField(page)).toHaveAttribute('aria-invalid', 'false');
+        
         const resultTitle = await tokenizePage.getResultCardTitle(page);
         await expect(resultTitle).toBe(HEADINGS.RESULT_TITLE_SUCCESS);
         await helperFunctions.verifyResultCard(page, TEST_DATA.CARD_FIRST_SIX_DIGITS_VISA, TEST_DATA.CARD_LAST_FOUR_DIGITS_VISA, TEST_DATA.CACHED_STORAGE_STATE,{
