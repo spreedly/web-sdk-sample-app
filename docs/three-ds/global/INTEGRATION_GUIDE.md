@@ -4,9 +4,10 @@ This guide covers integrating Spreedly's Forter-managed 3DS2 authentication.
 
 ## Prerequisites
 
-- Spreedly account with 3DS enabled
-- **SCA Provider Key** from Spreedly dashboard
-- Gateway that supports 3DS
+- Complete Merchant Profile and Sca Provider Setup
+- Gateway that supports 3DS. For testing, Obtain a Spreedly Test Gateway Token
+- Verify Gateway Connectivity (Non-3DS): Before implementing 3DS, confirm that your test gateway can successfully process a standard purchase without 3DS authentication. This initial verification will help ensure that any future troubleshooting is limited to 3DS-specific issues.
+- Generate or use an existing payment method token
 
 ---
 
@@ -92,7 +93,7 @@ const challengeWindowSize = '04';
 
 // Get the accept header from your server-rendered page
 // You'll need to inject this value into your page template
-const acceptHeader = 'text/html,application/xhtml+xml;q=0.9,*/*;q=0.8';
+const acceptHeader = 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8';
 
 // Capture browser data using Spreedly's helper function
 const browserInfo = serializeBrowserInfo(challengeWindowSize, acceptHeader);
@@ -252,9 +253,10 @@ All callbacks receive a consistent event object:
 ```javascript
 {
   action: string,      // 'challenge' | 'succeeded' | 'error'
-  context: object,     // Transaction status or error message
+  context: object,     // Transaction status object or error message string
   token: string,       // Transaction token
   finalize: function,  // Not used in Forter flow
+  response: object,
 }
 ```
 

@@ -92,7 +92,7 @@ app.post('/api/braintree-purchase', async (req, res) => {
     "token": "BraintreeTransactionToken",
     "state": "pending",
     "gateway_specific_response_fields": {
-      "client_token": "REDACTED_BRAINTREE_CLIENT_TOKEN_EXAMPLE"
+      "client_token": "your-braintree-client-token..."
     }
   }
 }

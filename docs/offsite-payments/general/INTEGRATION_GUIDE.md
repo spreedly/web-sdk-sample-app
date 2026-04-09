@@ -175,7 +175,7 @@ app.post('/api/offsite-purchase', async (req, res) => {
 ```json
 {
   "transaction": {
-    "token": "REDACTED_BRAINTREE_TOKEN",
+    "token": "ExampleTransactionToken123",
     "state": "pending",
     "succeeded": false,
     "amount": 1000,
@@ -208,7 +208,7 @@ After redirection, the customer completes payment authorization on the provider'
 After authorization, the customer is redirected to your `redirect_url` with the transaction token:
 
 ```
-https://yoursite.com/payment/complete?transaction_token=REDACTED_BRAINTREE_TOKEN
+https://yoursite.com/payment/complete?transaction_token=ExampleTransactionToken123
 ```
 
 ### Frontend: Check Transaction Status
@@ -262,7 +262,7 @@ app.get('/api/transaction/:transactionToken', async (req, res) => {
 ```json
 {
   "transaction": {
-    "token": "REDACTED_BRAINTREE_TOKEN",
+    "token": "ExampleTransactionToken123",
     "state": "succeeded",
     "succeeded": true,
     "amount": 1000,
@@ -286,7 +286,7 @@ The `callback_url` receives POST notifications when transaction state changes. T
 {
   "transactions": [
     {
-      "token": "REDACTED_BRAINTREE_TOKEN",
+      "token": "ExampleTransactionToken123",
       "state": "succeeded",
       "succeeded": true,
       "amount": 1000,

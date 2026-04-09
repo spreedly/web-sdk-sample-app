@@ -93,7 +93,7 @@ const challengeWindowSize = '04';
 
 // Get the accept header from your server-rendered page
 // You'll need to inject this value into your page template
-const acceptHeader = 'text/html,application/xhtml+xml;q=0.9,*/*;q=0.8';
+const acceptHeader = 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8';
 
 // Capture browser data using Spreedly's helper function
 const browserInfo = serializeBrowserInfo(challengeWindowSize, acceptHeader);
@@ -108,8 +108,7 @@ fetch('/api/process-payment', {
     payment_method_token: 'your-payment-method-token',
     amount: 3004, // Amount in cents (use test amounts for testing)
     browser_info: browserInfo,
-    // Note: Parameters must match exact casing with underscores
-    // browser_info will work, browserInfo will NOT
+    // Add any other parameters your backend needs
   })
 });
 ```
@@ -185,7 +184,11 @@ if (transaction.state === 'succeeded') {
 } else if (transaction.state === 'pending') {
   // 3DS authentication required - start the lifecycle
   start3DSLifecycle(transaction.token);
-} else if (transaction.state === 'failed') {
+} else if (
+  transaction.state === 'failed' ||
+  transaction.state === 'gateway_processing_failed' ||
+  transaction.state === 'gateway_setup_failed'
+) {
   // Transaction failed - cannot be retried, create a new transaction
   alert('Payment failed: ' + transaction.message);
 }
@@ -270,7 +273,7 @@ function start3DSLifecycle(transactionToken) {
 
       onFinalizationTimeout: (event) => {
         // Occurs 10-15 minutes after presenting a challenge without the transaction state changing
-        // It is recommended to attempt a manual completion here
+        // It is recommended to attempt a manual completion here by calling Spreedly's complete endpoint.
         document.getElementById('challenge-modal').classList.add('hidden');
         console.log('Challenge timed out - attempting manual completion');
         attemptManualCompletion(event.token);
@@ -294,7 +297,7 @@ This is the critical callback that differentiates Gateway Specific from Forter f
 Device Fingerprint
       │
       ▼
-  Polling (~10s)
+  Polling
       │
       ▼
 onTriggerCompletion  ←── You receive this callback
@@ -376,6 +379,22 @@ The callback URL will receive a POST of all transactions that have changed since
 | `onSuccess` | Transaction succeeded | Hide modal, show success |
 | `onError` | Transaction failed | Hide modal, show error |
 | `onFinalizationTimeout` | 10-15 min after challenge with no state change | Attempt manual completion |
+
+---
+
+## Event Structure
+
+All callbacks receive a consistent event object:
+
+```javascript
+{
+  action: string,      
+  context: object,        // Transaction status object or error message string
+  token: string,          // Transaction token
+  finalize: function,     // Call with transaction data to continue the flow (used in onTriggerCompletion)
+  response: object,       // Only present for onError: { state, message, error_code }
+}
+```
 
 ---
 

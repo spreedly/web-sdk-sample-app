@@ -84,7 +84,7 @@ app.post('/api/stripe-apm-purchase', async (req, res) => {
     "token": "StripeAPMTransactionToken",
     "state": "pending",
     "gateway_specific_response_fields": {
-      "client_secret": "REDACTED_STRIPE_EXAMPLE_SECRET"
+      "client_secret": "pi_example_secret_placeholder"
     }
     // ...other properties
   }
@@ -120,7 +120,7 @@ will be injected:
 ```javascript
 const stripeApm = new SpreedlyStripeAPM({
   publishableKey: 'pk_test_your_stripe_publishable_key',
-  clientSecret: 'REDACTED_STRIPE_EXAMPLE_SECRET',
+  clientSecret: 'pi_example_secret_placeholder',
   transactionToken: 'StripeAPMTransactionToken',
   paymentElement: 'stripe-payment-element', 
   appearance: {
