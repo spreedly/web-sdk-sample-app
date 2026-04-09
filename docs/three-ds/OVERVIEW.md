@@ -7,9 +7,9 @@ Spreedly supports multiple 3DS authentication approaches. This document helps yo
 | Aspect | 3DS2 Global (Forter) | 3DS2 Gateway Specific |
 |--------|---------------------|----------------------|
 | **Provider** | Forter (Spreedly partner) | Payment gateway |
-| **Portability** | ✅ Works across gateways | ❌ Gateway-specific |
+| **Portability** | Works across gateways | Gateway-specific |
 | **User Experience** | Iframe | Iframe (or redirect for fallback) |
-| **Trigger** | `sca_provider_key` in request | `three_ds_version: "2"` |
+| **Trigger** | `sca_provider_key` in request | `three_ds_version: "2"`, `attempt_3dsecure`: true |
 | **Identifier** | `managed_order_token` in response | `required_action` field |
 
 ## Decision Tree
@@ -89,31 +89,14 @@ Creating a purchase transaction?
 
 ---
 
-## SDK Detection Logic
-
-The SDK automatically routes to the correct flow:
-
-```typescript
-// In SpreedlyThreeDSLifecycle
-if (status.managed_order_token) {
-  // → 3DS2 Global (Forter)
-} else if (status.required_action === 'device_fingerprint' || status.required_action === 'challenge') {
-  // → 3DS2 Gateway Specific
-} else if (status.required_action === 'redirect' || status.required_action === 'fallback') {
-  // → Redirect/Fallback flow
-} 
-```
-
----
-
 ## Callbacks by Flow
 
 | Callback | 3DS2 Global | 3DS2 Gateway Specific |
 |----------|-------------|----------------------|
-| `onSuccess` | ✅ | ✅ |
-| `onError` | ✅ | ✅ |
-| `onChallenge` | ✅ | ✅ |
-| `onDeviceFingerprint` | ❌ | ✅ |
-| `onTriggerCompletion` | ❌ | ✅ |
-| `onFinalizationTimeout` | ❌ | ✅ |
+| `onSuccess` | Yes | Yes |
+| `onError` | Yes | Yes |
+| `onChallenge` | Yes | Yes |
+| `onDeviceFingerprint` | No | Yes |
+| `onTriggerCompletion` | No | Yes |
+| `onFinalizationTimeout` | No | Yes |
 
