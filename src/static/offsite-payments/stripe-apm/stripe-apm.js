@@ -17,7 +17,7 @@
 // State
 let stripeAPM = null;
 let transactionToken = null;
-const STRIPE_PUBLISHABLE_KEY = 'REDACTED_STRIPE_TEST_KEY';
+const STRIPE_PUBLISHABLE_KEY = 'pk_test_51T1N7JDWwvL2jfwiHgQ7xLqMHbLqhyQMLRwGpvHVsEHzKwbE75W4F5VcYNGQSfR9yIsjGdGm5oQnntSeQvW9lvfb00WkyYZctJ';
 
 // DOM Elements
 const elements = {

@@ -5,9 +5,9 @@ dotenv.config();
 interface Config {
   port: number;
   nodeEnv: string;
+  spreedlyUrl: string;
   privateKey: string;
   certificateToken: string;
-  spreedlyUrl: string;
   spreedlyEnvironmentKey: string;
   spreedlyAccessSecret: string;
   spreedlyGatewayToken: string;
@@ -21,17 +21,17 @@ interface Config {
 const config: Config = {
   port: Number(process.env.PORT) || 3000,
   nodeEnv: process.env.NODE_ENV || 'development',
-  privateKey: process.env.PRIVATE_KEY || '',
-  certificateToken: process.env.CERTIFICATE_TOKEN || '',
   spreedlyUrl: process.env.SPREEDLY_URL || 'https://core.spreedly.com',
-  spreedlyEnvironmentKey: process.env.SPREEDLY_ENVIRONMENT_KEY || '',
-  spreedlyAccessSecret: process.env.SPREEDLY_ACCESS_SECRET || '',
-  spreedlyGatewayToken: process.env.SPREEDLY_GATEWAY_TOKEN || '',
-  spreedlySCAProviderKey: process.env.SPREEDLY_SCA_PROVIDER_KEY || '',
-  stripeGatewayToken: process.env.STRIPE_GATEWAY_TOKEN || '',
-  paypalGatewayToken: process.env.PAYPAL_GATEWAY_TOKEN || '',
-  ebanxGatewayToken: process.env.EBANX_GATEWAY_TOKEN || '',
-  braintreeGatewayToken: process.env.BRAINTREE_GATEWAY_TOKEN || '',
+  privateKey: process.env.PRIVATE_KEY_NEW || '',
+  certificateToken: process.env.CERTIFICATE_TOKEN_NEW || '',
+  spreedlyEnvironmentKey: process.env.SPREEDLY_ENVIRONMENT_KEY_NEW || '',
+  spreedlyAccessSecret: process.env.SPREEDLY_ACCESS_SECRET_NEW || '',
+  spreedlyGatewayToken: process.env.SPREEDLY_GATEWAY_TOKEN_NEW || '',
+  spreedlySCAProviderKey: process.env.SPREEDLY_SCA_PROVIDER_KEY_NEW || '',
+  stripeGatewayToken: process.env.STRIPE_GATEWAY_TOKEN_NEW || '',
+  paypalGatewayToken: process.env.PAYPAL_GATEWAY_TOKEN_NEW || '',
+  ebanxGatewayToken: process.env.EBANX_GATEWAY_TOKEN_NEW || '',
+  braintreeGatewayToken: process.env.BRAINTREE_GATEWAY_TOKEN_NEW || '',
 };
 
 export default config;
