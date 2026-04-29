@@ -2,6 +2,7 @@
   "name": "spreedly-sdk-sample-app",
   "version": "0.0.0",
   "description": "Spreedly SDK Sample App",
+  "license": "Apache-2.0",
   "scripts": {
     "build": "scripts/build.sh",
     "build:watch": "tsc --watch",

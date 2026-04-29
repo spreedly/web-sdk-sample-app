@@ -266,6 +266,8 @@ When integrating the SDK into your production application:
 ></script>
 ```
 
+[See Security Guide](./SECURITY.md)
+
 ---
 
 ## Documentation
@@ -322,3 +324,9 @@ npm run start
 | American Express | 378282246310005 | 1234 | Any future date |
 
 For a complete list of test data, see [Spreedly Test Data](https://developer.spreedly.com/docs/test-data).
+
+---
+## Support
+- **Support Home:** [Troubleshoot](https://support.spreedly.com/hc/en-us)
+- **Help Center:** [Submit a request](https://support.spreedly.com/hc/en-us/requests/new)
+- **Security Issues:** [See Security Document](./SECURITY.md)
