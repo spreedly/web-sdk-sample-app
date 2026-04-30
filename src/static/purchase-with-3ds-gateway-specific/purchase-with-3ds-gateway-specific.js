@@ -777,7 +777,7 @@ function showResult(type, data) {
       <div class="result-details">
         <div class="result-detail-row">
           <span class="result-detail-label">Transaction ID</span>
-          <span class="result-detail-value">${data?.token || data?.response?.token || 'N/A'}</span>
+          <span class="result-detail-value">${SpreedlyUtils.escapeHtml(data?.token || data?.response?.token || 'N/A')}</span>
         </div>
         <div class="result-detail-row">
           <span class="result-detail-label">Amount</span>
@@ -803,7 +803,7 @@ function showResult(type, data) {
         </svg>
       </div>
       <h2 class="result-title" style="color: var(--color-error);">Payment Failed</h2>
-      <p class="result-message">${errorMessage}</p>
+      <p class="result-message">${SpreedlyUtils.escapeHtml(errorMessage)}</p>
       <div style="display: flex; gap: 1rem; justify-content: center;">
         <button class="btn btn-back" onclick="window.location.reload()">← Try Again</button>
         <button class="btn btn-primary" onclick="resetPurchase()">Start Over</button>

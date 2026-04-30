@@ -464,26 +464,28 @@ function handleRecacheSuccess(response) {
   elements.resultIconError().classList.add('hidden');
   elements.resultTitle().textContent = 'CVV Updated Successfully';
   
+  // All values below are interpolated into innerHTML and may originate from
+  // gateway-controlled API responses; HTML-escape every value to prevent XSS.
   const details = `
     <div class="result-row">
       <span class="result-label">Token</span>
-      <span class="result-value">${token}</span>
+      <span class="result-value">${SpreedlyUtils.escapeHtml(token)}</span>
     </div>
     <div class="result-row">
       <span class="result-label">Card Type</span>
-      <span class="result-value">${SpreedlyUtils.capitalizeFirst(paymentMethod.card_type || selectedCard.card_type)}</span>
+      <span class="result-value">${SpreedlyUtils.escapeHtml(SpreedlyUtils.capitalizeFirst(paymentMethod.card_type || selectedCard.card_type))}</span>
     </div>
     <div class="result-row">
       <span class="result-label">Last Four</span>
-      <span class="result-value">${paymentMethod.last_four_digits || selectedCard.last_four_digits}</span>
+      <span class="result-value">${SpreedlyUtils.escapeHtml(paymentMethod.last_four_digits || selectedCard.last_four_digits)}</span>
     </div>
     <div class="result-row">
       <span class="result-label">Storage State</span>
-      <span class="result-value">${paymentMethod.storage_state || 'cached'}</span>
+      <span class="result-value">${SpreedlyUtils.escapeHtml(paymentMethod.storage_state || 'cached')}</span>
     </div>
     <div class="result-row">
       <span class="result-label">Message</span>
-      <span class="result-value">${response.message || 'CVV recached successfully'}</span>
+      <span class="result-value">${SpreedlyUtils.escapeHtml(response.message || 'CVV recached successfully')}</span>
     </div>
   `;
   

@@ -228,6 +228,14 @@ async function getTransactionStatus(transactionToken) {
   }
 }
 
+// HTML-escape a value so it can be safely interpolated into innerHTML strings.
+// Use this on any value that originated from an API response (gateway-controlled
+// fields, error messages, transaction details) before it is templated into HTML.
+const HTML_ESCAPE_MAP = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, c => HTML_ESCAPE_MAP[c]);
+}
+
 window.SpreedlyUtils = {
   // Config
   API_BASE_URL,
@@ -271,5 +279,8 @@ window.SpreedlyUtils = {
   
   // Form
   getFormData,
+
+  // Security
+  escapeHtml,
 };
 

@@ -490,31 +490,32 @@ async function handleTokenSuccess(response) {
   elements.resultIconError().classList.add('hidden');
   elements.resultTitle().textContent = 'Payment Method Created';
   
-  // Build result details
+  // All values below are interpolated into innerHTML and may originate from
+  // API responses; HTML-escape every value to prevent XSS.
   const details = `
     <div class="result-row">
       <span class="result-label">Token</span>
-      <span class="result-value">${token}</span>
+      <span class="result-value">${SpreedlyUtils.escapeHtml(token)}</span>
     </div>
     <div class="result-row">
       <span class="result-label">Card Type</span>
-      <span class="result-value">${SpreedlyUtils.capitalizeFirst(paymentMethod.card_type) || '—'}</span>
+      <span class="result-value">${SpreedlyUtils.escapeHtml(SpreedlyUtils.capitalizeFirst(paymentMethod.card_type) || '—')}</span>
     </div>
     <div class="result-row">
       <span class="result-label">Last Four</span>
-      <span class="result-value">${paymentMethod.last_four_digits || '—'}</span>
+      <span class="result-value">${SpreedlyUtils.escapeHtml(paymentMethod.last_four_digits || '—')}</span>
     </div>
     <div class="result-row">
       <span class="result-label">First Six</span>
-      <span class="result-value">${paymentMethod.first_six_digits || '—'}</span>
+      <span class="result-value">${SpreedlyUtils.escapeHtml(paymentMethod.first_six_digits || '—')}</span>
     </div>
     <div class="result-row">
       <span class="result-label">Expiry</span>
-      <span class="result-value">${SpreedlyUtils.formatExpiry(paymentMethod.month, paymentMethod.year)}</span>
+      <span class="result-value">${SpreedlyUtils.escapeHtml(SpreedlyUtils.formatExpiry(paymentMethod.month, paymentMethod.year))}</span>
     </div>
     <div class="result-row">
       <span class="result-label">Storage State</span>
-      <span class="result-value">${paymentMethod.storage_state || '—'}</span>
+      <span class="result-value">${SpreedlyUtils.escapeHtml(paymentMethod.storage_state || '—')}</span>
     </div>
   `;
   
