@@ -406,10 +406,13 @@
     }
     
     function buildDetailRow(label, value) {
+      // Both label and value are interpolated into innerHTML below; values may
+      // originate from gateway-controlled fields, so HTML-escape them to
+      // prevent XSS via crafted gateway responses.
       return `
         <div class="detail-row">
-          <span class="detail-label">${label}</span>
-          <span class="detail-value">${value}</span>
+          <span class="detail-label">${SpreedlyUtils.escapeHtml(label)}</span>
+          <span class="detail-value">${SpreedlyUtils.escapeHtml(value)}</span>
         </div>
       `;
     }
