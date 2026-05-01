@@ -3,6 +3,14 @@
   "version": "0.0.0",
   "description": "Spreedly SDK Sample App",
   "license": "Apache-2.0",
+  "homepage": "https://github.com/spreedly/web-sdk-sample-app",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/spreedly/web-sdk-sample-app.git"
+  },
+  "bugs": {
+    "url": "https://github.com/spreedly/web-sdk-sample-app/issues"
+  },
   "scripts": {
     "build": "scripts/build.sh",
     "build:watch": "tsc --watch",

@@ -330,3 +330,10 @@ For a complete list of test data, see [Spreedly Test Data](https://developer.spr
 - **Support Home:** [Troubleshoot](https://support.spreedly.com/hc/en-us)
 - **Help Center:** [Submit a request](https://support.spreedly.com/hc/en-us/requests/new)
 - **Security Issues:** [See Security Document](./SECURITY.md)
+
+## Legal
+
+- [Terms of Service](https://legal.spreedly.com/#terms)
+- [Privacy Policy](https://legal.spreedly.com/#privacy-policy)
+- [License](LICENSE) (Apache 2.0)
+
