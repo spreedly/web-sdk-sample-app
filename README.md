@@ -335,5 +335,5 @@ For a complete list of test data, see [Spreedly Test Data](https://developer.spr
 
 - [Terms of Service](https://legal.spreedly.com/#terms)
 - [Privacy Policy](https://legal.spreedly.com/#privacy-policy)
-- [License](LICENSE) (Apache 2.0)
+- [License](./LICENSE) (Apache 2.0)
 
