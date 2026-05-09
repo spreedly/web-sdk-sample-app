@@ -10,17 +10,17 @@ function getSDKType() {
 function getSDKScriptUrl() {
   const sdkType = getSDKType();
   // uncomment this to use local sdk
-  // if(window.location.hostname === 'localhost') {
-  //   if (sdkType === 'express-checkout') {
-  //     return 'http://localhost:5173/express-checkout.js';
-  //   }
-  //   return 'http://localhost:5000/index.js';
-  // }
+  if(window.location.hostname === 'localhost') {
+    if (sdkType === 'express-checkout') {
+      return 'http://localhost:5173/express-checkout.js';
+    }
+    return 'http://localhost:5000/index.js';
+  }
 
   if (sdkType === 'express-checkout') {
-    return 'https://core-test.spreedly.com/checkout/elements/rc/express-checkout.js';
+    return 'https://core.spreedly.com/checkout/elements/1.0.1/express-checkout.js';
   }
-  return 'https://core-test.spreedly.com/checkout/sdk/rc/index.js';
+  return 'https://core.spreedly.com/checkout/sdk/1.0.1/index.js';
 }
 
 function getSDKDisplayName() {
@@ -218,6 +218,22 @@ async function createOffsitePurchase(paymentMethodToken, amount, redirectUrl, ca
   }
 }
 
+// ACH Payments — runs a server-side gateway purchase against an ACH
+// (bank_account) payment method token using the configured Spreedly Test gateway.
+async function createAchPurchase(paymentMethodToken, amount, currencyCode = 'USD') {
+  try {
+    const response = await axios.post(`${LOCAL_API_URL}/ach-purchase`, {
+      payment_method_token: paymentMethodToken,
+      amount,
+      currency_code: currencyCode,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error creating ACH purchase:', error);
+    throw error;
+  }
+}
+
 async function getTransactionStatus(transactionToken) {
   try {
     const response = await axios.get(`${API_BASE_URL}/transactions/${transactionToken}`);
@@ -262,6 +278,9 @@ window.SpreedlyUtils = {
   // Offsite Payments
   createOffsitePurchase,
   getTransactionStatus,
+
+  // ACH Payments
+  createAchPurchase,
   
   // UI helpers
   showStatus,

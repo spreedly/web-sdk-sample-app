@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ACH Payments | Spreedly Web SDK Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../shared/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <style>
+    .section-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--color-gray-700);
+      margin-bottom: 1rem;
+    }
+
+    .ach-form fieldset {
+      border: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .ach-form .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .ach-form .field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      margin-bottom: 1rem;
+    }
+
+    .ach-form label {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--color-gray-700);
+    }
+
+    .ach-form input,
+    .ach-form select {
+      padding: 0.6rem 0.75rem;
+      font-size: 0.95rem;
+      border: 1.5px solid var(--color-gray-200);
+      border-radius: 8px;
+      transition: border-color 0.15s ease;
+      background: white;
+      font-family: inherit;
+    }
+
+    .ach-form input:focus,
+    .ach-form select:focus {
+      outline: none;
+      border-color: var(--color-primary);
+    }
+
+    .ach-form .account-row {
+      position: relative;
+    }
+
+    .ach-form .toggle-account-visibility {
+      position: absolute;
+      right: 0.6rem;
+      top: 2rem;
+      background: none;
+      border: none;
+      color: var(--color-gray-500);
+      font-size: 0.85rem;
+      cursor: pointer;
+      padding: 0.25rem 0.4rem;
+    }
+
+    .ach-form button[type="submit"] {
+      width: 100%;
+      padding: 1rem 1.5rem;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      background: var(--color-primary, #0a0a0a);
+      color: white;
+      margin-top: 0.5rem;
+    }
+
+    .ach-form button[type="submit"]:hover { opacity: 0.9; }
+    .ach-form button[type="submit"]:disabled {
+      background: var(--color-gray-300);
+      cursor: not-allowed;
+    }
+
+    .field-hint {
+      font-size: 0.75rem;
+      color: var(--color-gray-500);
+    }
+
+    #flow-steps-list {
+      font-size: 0.875rem;
+      color: var(--color-gray-600);
+      padding-left: 1.25rem;
+      line-height: 1.8;
+    }
+
+    .info-box {
+      background: var(--color-gray-50);
+      border-left: 3px solid var(--color-primary);
+      padding: 0.75rem 1rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      color: var(--color-gray-700);
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="page-wrapper">
+    <header class="header">
+      <div class="container header-inner">
+        <a href="../index.html" class="logo">
+          <span class="logo-icon">S</span>
+          Spreedly Web SDK
+        </a>
+        <span class="nav-badge">ACH Payments</span>
+      </div>
+    </header>
+
+    <main class="main">
+      <div class="container">
+        <div class="tokenize-layout">
+          <!-- Left Column - Payment Form -->
+          <div class="tokenize-form">
+            <a href="../index.html" class="back-link">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+              </svg>
+              Back to flows
+            </a>
+
+            <h1 class="mb-2">ACH Bank Account Payment</h1>
+            <p class="mb-6" style="color: var(--color-gray-500);">
+              Tokenize a US/Canadian bank account using the SDK's <code>setupACHPayment</code> /
+              <code>submitACHPayment</code> methods, then run a purchase against the Spreedly Test gateway.
+            </p>
+
+            <!-- Loading State -->
+            <div id="loading-state" class="card" style="text-align: center; padding: 3rem;">
+              <div class="loading">
+                <span class="spinner"></span>
+                <span>Loading auth parameters...</span>
+              </div>
+            </div>
+
+            <!-- Main Payment Section -->
+            <div id="payment-section" class="hidden">
+              <div class="card">
+                <div class="section-title">Bank Account Details</div>
+
+                <div class="info-box">
+                  <strong>Test data:</strong> Routing <code>021000021</code>, Account <code>9876543210</code>,
+                  Name <code>Bob Smith</code>. The Spreedly Test gateway always succeeds.
+                </div>
+
+                <form id="ach-form" class="ach-form" autocomplete="off">
+                  <fieldset>
+                    <div class="form-row">
+                      <div class="field">
+                        <label for="ach-first-name">First name</label>
+                        <input type="text" id="ach-first-name" name="firstName" placeholder="Bob" required>
+                      </div>
+                      <div class="field">
+                        <label for="ach-last-name">Last name</label>
+                        <input type="text" id="ach-last-name" name="lastName" placeholder="Smith" required>
+                      </div>
+                    </div>
+
+                    <div class="field">
+                      <label for="ach-bank-name">Bank name <span class="field-hint">(optional)</span></label>
+                      <input type="text" id="ach-bank-name" name="bankName" placeholder="First Bank of Elbonia">
+                    </div>
+
+                    <div class="field">
+                      <label for="ach-routing">Routing number</label>
+                      <input
+                        type="text"
+                        id="ach-routing"
+                        name="bankRoutingNumber"
+                        placeholder="021000021"
+                        inputmode="numeric"
+                        autocomplete="off"
+                        maxlength="9"
+                        required
+                      >
+                      <span class="field-hint">9-digit US ABA number or Canadian electronic routing number.</span>
+                    </div>
+
+                    <div class="field account-row">
+                      <label for="ach-account">Account number</label>
+                      <input
+                        type="password"
+                        id="ach-account"
+                        name="bankAccountNumber"
+                        placeholder="••••••••••"
+                        inputmode="numeric"
+                        autocomplete="off"
+                        required
+                      >
+                      <button type="button" class="toggle-account-visibility" id="toggle-account-visibility">Show</button>
+                    </div>
+
+                    <div class="form-row">
+                      <div class="field">
+                        <label for="ach-account-type">Account type</label>
+                        <select id="ach-account-type" name="bankAccountType">
+                          <option value="checking">Checking</option>
+                          <option value="savings">Savings</option>
+                        </select>
+                      </div>
+                      <div class="field">
+                        <label for="ach-holder-type">Account holder</label>
+                        <select id="ach-holder-type" name="bankAccountHolderType">
+                          <option value="personal">Personal</option>
+                          <option value="business">Business</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <button type="submit" id="submit-btn" disabled>Create payment method &amp; run purchase</button>
+                  </fieldset>
+                </form>
+
+                <div id="status-message" class="status-message"></div>
+              </div>
+            </div>
+
+            <!-- Result Display -->
+            <div id="result-section" class="hidden">
+              <div id="result-card" class="result-card">
+                <div class="result-header">
+                  <div id="result-icon" class="result-icon">
+                    <svg id="result-icon-success" class="hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                    </svg>
+                    <svg id="result-icon-error" class="hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                    </svg>
+                  </div>
+                  <h3 id="result-title" class="result-title">Result</h3>
+                </div>
+                <div id="result-details" class="result-details"></div>
+                <button type="button" class="btn btn-secondary btn-block mt-4" onclick="resetAchFlow()">
+                  Try another payment
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column - Information -->
+          <div class="config-panel" id="config-panel">
+            <div class="config-section">
+              <div class="config-section-title">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                </svg>
+                About ACH Payments
+              </div>
+              <p style="font-size: 0.875rem; color: var(--color-gray-600); line-height: 1.6;">
+                ACH payments tokenize a US or Canadian bank account. The SDK posts the bank
+                details directly to Spreedly Core; the merchant page never sees the raw account
+                number outside this form. After the SDK emits <code>achTokenGenerated</code>,
+                the merchant backend runs a purchase on a gateway that supports ACH.
+              </p>
+            </div>
+
+            <div class="config-section">
+              <div class="config-section-title">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 0 1 0 3.75H5.625a1.875 1.875 0 0 1 0-3.75Z" />
+                </svg>
+                Flow Steps
+              </div>
+              <ol id="flow-steps-list">
+                <li>Load SDK and initialize with auth params</li>
+                <li>Collect bank-account details in your own form</li>
+                <li>Call <code>setupACHPayment(config)</code></li>
+                <li>Call <code>submitACHPayment()</code></li>
+                <li>Listen for <code>achTokenGenerated</code> → token + last4</li>
+                <li>Send token to backend → run gateway purchase</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="container footer-inner">
+        <span>Spreedly Web SDK Demo</span>
+        <div class="footer-links">
+          <a href="https://spreedly.com" target="_blank">Spreedly</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script src="../shared/utils.js"></script>
+  <script src="./ach-payments.js"></script>
+</body>
+</html>
