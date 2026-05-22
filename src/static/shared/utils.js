@@ -10,7 +10,7 @@ function getSDKType() {
 function getSDKScriptUrl() {
   const sdkType = getSDKType();
   // uncomment this to use local sdk
-  // if(window.location.hostname === 'localhost') {
+  // if (window.location.hostname === 'localhost') {
   //   if (sdkType === 'express-checkout') {
   //     return 'http://localhost:5173/express-checkout.js';
   //   }
@@ -37,7 +37,7 @@ async function fetchAuthParams() {
   try {
     const response = await axios.get(`${API_BASE_URL}/auth/params`);
     const authParams = response.data;
-    return authParams;    
+    return authParams;
   } catch (error) {
     console.error('Error fetching auth params:', error);
     throw new Error('Failed to fetch authentication parameters');
@@ -49,7 +49,7 @@ async function fetchPaymentMethods() {
   try {
     const response = await axios.get(`${API_BASE_URL}/payment_methods`);
     const paymentMethods = response.data?.payment_methods || [];
-    
+
     // Filter to only credit cards
     return paymentMethods.filter(pm => pm.payment_method_type === 'credit_card');
   } catch (error) {
@@ -90,7 +90,7 @@ async function createPurchaseWith3DS(paymentMethodToken, amount, browserInfo, cu
       amount: amount,
       currency_code: currencyCode,
       browser_info: browserInfo,
-    });  
+    });
     return response.data;
   } catch (error) {
     console.error('Error creating 3DS purchase:', error.response?.data ? error.response?.data : error);
@@ -102,7 +102,7 @@ async function createPurchaseWith3DS(paymentMethodToken, amount, browserInfo, cu
 function showStatus(elementId, message, type = 'info') {
   const statusEl = document.getElementById(elementId);
   if (!statusEl) return;
-  
+
   statusEl.textContent = message;
   statusEl.className = `status-message visible ${type}`;
 }
@@ -110,19 +110,19 @@ function showStatus(elementId, message, type = 'info') {
 function hideStatus(elementId) {
   const statusEl = document.getElementById(elementId);
   if (!statusEl) return;
-  
+
   statusEl.className = 'status-message';
 }
 
 function setButtonLoading(buttonId, loading, loadingText = 'Processing...') {
   const button = document.getElementById(buttonId);
   if (!button) return;
-  
+
   const textEl = button.querySelector('.btn-text');
   const loadingEl = button.querySelector('.btn-loading');
-  
+
   button.disabled = loading;
-  
+
   if (textEl) textEl.style.display = loading ? 'none' : 'inline';
   if (loadingEl) {
     loadingEl.style.display = loading ? 'inline-flex' : 'none';
@@ -173,14 +173,14 @@ function formatCurrency(amount, currencyCode = 'USD') {
 function getFormData(formId) {
   const form = document.getElementById(formId);
   if (!form) return {};
-  
+
   const formData = new FormData(form);
   const data = {};
-  
+
   formData.forEach((value, key) => {
     data[key] = value;
   });
-  
+
   return data;
 }
 
@@ -240,43 +240,43 @@ window.SpreedlyUtils = {
   // Config
   API_BASE_URL,
   LOCAL_API_URL,
-  
+
   // SDK helpers
   getSDKType,
   getSDKScriptUrl,
   getSDKDisplayName,
   getDisplayMode,
   loadSDKScript,
-  
+
   // Auth
   fetchAuthParams,
-  
+
   // Payment methods
   fetchPaymentMethods,
-  
+
   // API
   retainPaymentMethod,
   createPurchase,
   createPurchaseWith3DS,
-  
+
   // Offsite Payments
   createOffsitePurchase,
   getTransactionStatus,
-  
+
   // UI helpers
   showStatus,
   hideStatus,
   setButtonLoading,
-  
+
   // Card helpers
   getCardIcon,
   capitalizeFirst,
   formatCardNumber,
   formatExpiry,
-  
+
   // Currency
   formatCurrency,
-  
+
   // Form
   getFormData,
 
