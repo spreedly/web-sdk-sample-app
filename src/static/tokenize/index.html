@@ -158,7 +158,7 @@
                     </button>
                     <!-- Submit Button -->
                     <button type="submit" id="submit-btn" class="btn btn-primary btn-block btn-lg mt-4" disabled>
-                      <span class="btn-text">Create Payment Method</span>
+                      <span class="btn-text">Pay</span>
                       <span class="btn-loading" style="display: none;">
                         <span class="spinner"></span>
                         <span class="loading-text">Processing...</span>
@@ -318,8 +318,8 @@
                 </div>
               </div>
 
-              <!-- Hosted Fields Options -->
-              <div id="hosted-fields-config-options">
+              <!-- Hosted Fields only: validation options, demo controls, debug panel -->
+              <div class="config-option-row">
                 <div class="config-option">
                   <input type="checkbox" id="config-allow-blank-name" class="config-checkbox">
                   <div class="config-option-content">
@@ -335,7 +335,9 @@
                     <span class="config-option-desc">Accept past expiration dates</span>
                   </div>
                 </div>
+              </div>
 
+              <div class="config-option-row">
                 <div class="config-option">
                   <input type="checkbox" id="config-allow-blank-date" class="config-checkbox">
                   <div class="config-option-content">
@@ -351,27 +353,94 @@
                     <span class="config-option-desc">Use MM/YY format</span>
                   </div>
                 </div>
-                <div class="config-option">
-                  <input type="checkbox" id="hf-demo-include-iin" class="config-checkbox">
-                  <div class="config-option-content">
-                    <label for="hf-demo-include-iin" class="config-option-label">Include IIN</label>
-                    <span class="config-option-desc">Include IIN on field state</span>
+              </div>
+              <div id="hosted-fields-only-panel">
+                <div id="hosted-fields-config-options">
+                  <div class="config-option-row">
+                    <div class="config-option">
+                      <input type="checkbox" id="hf-demo-include-iin" class="config-checkbox">
+                      <div class="config-option-content">
+                        <label for="hf-demo-include-iin" class="config-option-label">Include IIN</label>
+                        <span class="config-option-desc">Include IIN on field state</span>
+                      </div>
+                    </div>
+
+                    <div class="config-option">
+                      <input type="checkbox" id="hf-demo-style-placeholders" class="config-checkbox">
+                      <div class="config-option-content">
+                        <label for="hf-demo-style-placeholders" class="config-option-label">Style placeholders</label>
+                        <span class="config-option-desc">Apply custom ::placeholder styles via
+                          setPlaceholderStyles</span>
+                      </div>
+                    </div>
                   </div>
+
+                  <div class="config-option-row">
+                    <div class="config-option">
+                      <input type="checkbox" id="hf-demo-mask-visible" class="config-checkbox">
+                      <div class="config-option-content">
+                        <label for="hf-demo-mask-visible" class="config-option-label">Mask visibility</label>
+                        <span class="config-option-desc">Show masked card number and CVV</span>
+                      </div>
+                    </div>
+
+                    <div class="config-option">
+                      <input type="checkbox" id="hf-demo-autocomplete" class="config-checkbox">
+                      <div class="config-option-content">
+                        <label for="hf-demo-autocomplete" class="config-option-label">Browser autofill</label>
+                        <span class="config-option-desc">Enable autofill on card number and CVV</span>
+                      </div>
+                    </div>
+                  </div>
+
+
+                  <div class="config-option-row">
+                    <div class="config-option">
+                      <div class="config-option-content">
+                        <label for="hf-demo-number-format" class="config-option-label">Number format</label>
+                        <span class="config-option-desc">Card number display: pretty, plain, or masked</span>
+                        <select id="hf-demo-number-format" class="form-input" style="margin-top: 0.5rem; width: 100%;">
+                          <option value="prettyFormat">Pretty (spaced)</option>
+                          <option value="plainFormat">Plain (digits only)</option>
+                          <option value="maskedFormat">Masked (asterisks)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div class="config-option">
+                      <div class="config-option-content">
+                        <span class="config-option-label">Remove event handlers</span>
+                        <span class="config-option-desc">Clears all on() callbacks — Destroy SDK and open the form again
+                          to continue</span>
+                        <button type="button" id="hf-demo-remove-handlers" class="btn btn-secondary"
+                          style="margin-top: 0.5rem;">Remove handlers</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="config-option">
+                    <div class="config-option-content">
+                      <span class="config-option-label">Destroy SDK instance</span>
+                      <span class="config-option-desc">Removes iframes and emits close — open the form again to
+                        continue</span>
+                      <button type="button" id="hf-demo-destroy" class="btn btn-secondary"
+                        style="margin-top: 0.5rem;">Destroy SDK</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Debug Panel -->
+                <div id="hosted-fields-debug-panel" class="config-section" style="font-size: 0.75rem;">
+                  <span style="font-weight: 500; color: var(--color-gray-600);">
+                    Last <code>validation</code> payload
+                  </span>
+                  <pre id="hf-demo-last-validation" class="hf-demo-pre"
+                    style="margin: 0; padding: 0.75rem; max-height: 12rem; overflow: auto; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.6875rem; background: var(--color-gray-50, #f9fafb); border: 1px solid var(--color-gray-100); border-radius: 6px; white-space: pre-wrap; word-break: break-word;">—</pre>
                 </div>
               </div>
             </div>
-
-            <!-- Debug Panel -->
-            <div class="config-section" style="font-size: 0.75rem;">
-              <span style="font-weight: 500; color: var(--color-gray-600);">
-                Last <code>validation</code> payload
-              </span>
-              <pre id="hf-demo-last-validation" class="hf-demo-pre"
-                style="margin: 0; padding: 0.75rem; max-height: 12rem; overflow: auto; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.6875rem; background: var(--color-gray-50, #f9fafb); border: 1px solid var(--color-gray-100); border-radius: 6px; white-space: pre-wrap; word-break: break-word;">—</pre>
-            </div>
           </div>
         </div>
-      </div>
     </main>
 
     <!-- Footer -->
