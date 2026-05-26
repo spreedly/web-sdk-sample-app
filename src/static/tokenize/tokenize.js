@@ -17,6 +17,23 @@ const config = {
   twoDigitExpiryYear: false,
 };
 
+/** SDK instance that already has `validation` / `fieldStateChange` listeners registered. */
+let hostedFieldsSdkDemoEventHandlersWiredFor = null;
+
+/** SDK instance that already has SDK Configuration panel controls wired. */
+let hostedFieldsConfigPanelWiredFor = null;
+
+/** Tracks mask visibility state for the demo checkbox. */
+let hostedFieldsMaskEnabled = false;
+
+/** Tracks browser autocomplete state for the demo checkbox. */
+let hostedFieldsAutocompleteEnabled = false;
+
+const HOSTED_FIELDS_PLACEHOLDER_STYLES = {
+  default: { color: '#9ca3af', fontWeight: '400', opacity: '1' },
+  styled: { color: 'red', fontWeight: '400', opacity: '1' },
+};
+
 // DOM Elements
 const elements = {
   sdkBadge: () => document.getElementById('sdk-badge'),
@@ -38,29 +55,19 @@ const elements = {
   resultIconError: () => document.getElementById('result-icon-error'),
   resultTitle: () => document.getElementById('result-title'),
   resultDetails: () => document.getElementById('result-details'),
-  debugEnvKey: () => document.getElementById('debug-env-key'),
-  debugNonce: () => document.getElementById('debug-nonce'),
-  debugTimestamp: () => document.getElementById('debug-timestamp'),
-  debugStatus: () => document.getElementById('debug-status'),
 };
 
 // Initialization
 async function init() {
   sdkType = SpreedlyUtils.getSDKType();
-  
+
   elements.sdkBadge().textContent = SpreedlyUtils.getSDKDisplayName();
-  
-  const displayModeConfig = document.getElementById('config-display-mode');
-  
-  if (sdkType === 'express-checkout') {
-    displayModeConfig?.classList.remove('hidden');
-  } else {
-    displayModeConfig?.classList.add('hidden');
-  }
-  
+
+  updateConfigPanelForSdkType();
+
   // Set up config checkbox listeners on page load (so they work before SDK is ready)
   setupConfigCheckboxListeners();
-  
+
   try {
     await loadAndInitializeSDK();
   } catch (error) {
@@ -69,33 +76,48 @@ async function init() {
   }
 }
 
+/** Shows hosted-fields config/debug or express-checkout display mode based on SDK type. */
+function updateConfigPanelForSdkType() {
+  const displayModeConfig = document.getElementById('config-display-mode');
+  const hostedFieldsOnlyPanel = document.getElementById('hosted-fields-only-panel');
+
+  if (sdkType === 'express-checkout') {
+    displayModeConfig?.classList.remove('hidden');
+    hostedFieldsOnlyPanel?.classList.add('hidden');
+    return;
+  }
+
+  displayModeConfig?.classList.add('hidden');
+  hostedFieldsOnlyPanel?.classList.remove('hidden');
+}
+
 // Set up config checkbox listeners (called on page load)
 function setupConfigCheckboxListeners() {
-  document.getElementById('config-two-digit-expiry')?.addEventListener('change', function() {
+  document.getElementById('config-two-digit-expiry')?.addEventListener('change', function () {
     config.twoDigitExpiryYear = this.checked;
     if (isReady && sdkType === 'hosted-fields') {
       updateExpiryFieldDisplay();
       updateFormState();
     }
   });
-  
-  document.getElementById('config-allow-blank-name')?.addEventListener('change', function() {
+
+  document.getElementById('config-allow-blank-name')?.addEventListener('change', function () {
     config.allowBlankName = this.checked;
     if (isReady && sdkType === 'hosted-fields') {
       updateNameFieldsRequired();
       updateFormState();
     }
   });
-  
-  document.getElementById('config-allow-blank-date')?.addEventListener('change', function() {
+
+  document.getElementById('config-allow-blank-date')?.addEventListener('change', function () {
     config.allowBlankDate = this.checked;
     if (isReady && sdkType === 'hosted-fields') {
       updateDateFieldsRequired();
       updateFormState();
     }
   });
-  
-  document.getElementById('config-allow-expired-date')?.addEventListener('change', function() {
+
+  document.getElementById('config-allow-expired-date')?.addEventListener('change', function () {
     config.allowExpiredDate = this.checked;
   });
 }
@@ -108,26 +130,235 @@ function syncConfigFromCheckboxes() {
   config.allowExpiredDate = document.getElementById('config-allow-expired-date')?.checked || false;
 }
 
+/** Clears demo panel output and resets SDK Configuration controls to defaults. */
+function clearHostedFieldsDemoPanelUi() {
+  const autocomplete = document.getElementById('hf-demo-autocomplete');
+  const iin = document.getElementById('hf-demo-include-iin');
+  const maskVisible = document.getElementById('hf-demo-mask-visible');
+  const numberFormat = document.getElementById('hf-demo-number-format');
+  const pre = document.getElementById('hf-demo-last-validation');
+  const stylePlaceholders = document.getElementById('hf-demo-style-placeholders');
+
+  if (pre) pre.textContent = '—';
+  if (iin) iin.checked = false;
+  if (maskVisible) maskVisible.checked = false;
+  if (autocomplete) autocomplete.checked = false;
+  if (numberFormat) numberFormat.value = 'prettyFormat';
+  if (stylePlaceholders) stylePlaceholders.checked = false;
+  hostedFieldsMaskEnabled = false;
+  hostedFieldsAutocompleteEnabled = false;
+}
+
+/** Writes the latest `validation` event payload as formatted JSON into the demo panel. */
+function updateHostedFieldsDemoLastValidation(payload) {
+  const pre = document.getElementById('hf-demo-last-validation');
+  if (!pre) return;
+  pre.textContent = JSON.stringify(payload, null, 2);
+}
+
+/**
+ * Registers `validation` / `fieldStateChange` once per SDK instance and binds demo panel controls.
+ */
+function setupHostedFieldsSdkDemoPanel(sdkInstance) {
+  const includeIin = document.getElementById('hf-demo-include-iin');
+  const validateBtn = document.getElementById('hf-demo-validate-btn');
+
+  if (hostedFieldsSdkDemoEventHandlersWiredFor !== sdkInstance) {
+    hostedFieldsSdkDemoEventHandlersWiredFor = sdkInstance;
+    sdkInstance.on('validation', updateHostedFieldsDemoLastValidation);
+    sdkInstance.on('fieldStateChange', console.log);
+    sdkInstance.setFieldStateReporting({ includeIin: false });
+    if (includeIin) {
+      includeIin.checked = false;
+    }
+  }
+
+  if (validateBtn) {
+    validateBtn.onclick = function handleHostedFieldsDemoValidateClick() {
+      if (!sdk || sdk !== sdkInstance) return;
+      syncConfigFromCheckboxes();
+      sdkInstance.validate({
+        allow_blank_name: config.allowBlankName,
+        allow_expired_date: config.allowExpiredDate,
+      });
+    };
+  }
+
+  if (includeIin) {
+    includeIin.onchange = function handleHostedFieldsDemoIncludeIinChange() {
+      if (!sdk || sdk !== sdkInstance) return;
+      sdkInstance.setFieldStateReporting({ includeIin: this.checked });
+    };
+  }
+
+  setupHostedFieldsConfigPanel(sdkInstance);
+}
+
+/** Configures hosted field display defaults when fields are ready. */
+function configureHostedFieldsOnReady(sdkInstance) {
+  sdkInstance.setTitle('number', 'Credit card number');
+  sdkInstance.setTitle('cvv', 'Security code');
+  sdkInstance.setPlaceholderStyles(HOSTED_FIELDS_PLACEHOLDER_STYLES.default);
+  sdkInstance.setNumberFormat('prettyFormat');
+}
+
+/** Wires SDK Configuration panel controls to hosted fields SDK methods. */
+function setupHostedFieldsConfigPanel(sdkInstance) {
+  if (hostedFieldsConfigPanelWiredFor === sdkInstance) {
+    return;
+  }
+  hostedFieldsConfigPanelWiredFor = sdkInstance;
+
+  const autocompleteCheckbox = document.getElementById('hf-demo-autocomplete');
+  const destroyBtn = document.getElementById('hf-demo-destroy');
+  const maskVisibleCheckbox = document.getElementById('hf-demo-mask-visible');
+  const numberFormat = document.getElementById('hf-demo-number-format');
+  const removeHandlersBtn = document.getElementById('hf-demo-remove-handlers');
+  const stylePlaceholders = document.getElementById('hf-demo-style-placeholders');
+
+  if (numberFormat) {
+    numberFormat.onchange = function handleHostedFieldsNumberFormatChange() {
+      if (!sdk || sdk !== sdkInstance || !isReady) return;
+      sdkInstance.setNumberFormat(this.value);
+    };
+  }
+
+  if (maskVisibleCheckbox) {
+    maskVisibleCheckbox.onchange = function handleHostedFieldsMaskVisibleChange() {
+      if (!sdk || sdk !== sdkInstance || !isReady) return;
+      if (this.checked === hostedFieldsMaskEnabled) return;
+      sdkInstance.toggleMask();
+      hostedFieldsMaskEnabled = this.checked;
+    };
+  }
+
+  if (stylePlaceholders) {
+    stylePlaceholders.onchange = function handleHostedFieldsStylePlaceholdersChange() {
+      if (!sdk || sdk !== sdkInstance || !isReady) return;
+      const styles = this.checked
+        ? HOSTED_FIELDS_PLACEHOLDER_STYLES.styled
+        : HOSTED_FIELDS_PLACEHOLDER_STYLES.default;
+      sdkInstance.setPlaceholderStyles(styles);
+    };
+  }
+
+  if (autocompleteCheckbox) {
+    autocompleteCheckbox.onchange = function handleHostedFieldsAutocompleteChange() {
+      if (!sdk || sdk !== sdkInstance || !isReady) return;
+      if (this.checked === hostedFieldsAutocompleteEnabled) return;
+      sdkInstance.toggleAutoComplete();
+      hostedFieldsAutocompleteEnabled = this.checked;
+    };
+  }
+
+  if (removeHandlersBtn) {
+    removeHandlersBtn.onclick = function handleHostedFieldsRemoveHandlersClick() {
+      if (!sdk || sdk !== sdkInstance || !isReady) return;
+      sdkInstance.removeHandlers();
+      showStatus(
+        'Event handlers removed. Use Tokenize Another Card or Destroy SDK to start a new session.',
+        'info',
+      );
+    };
+  }
+
+  if (destroyBtn) {
+    destroyBtn.onclick = function handleHostedFieldsDestroyClick() {
+      if (!sdk || sdk !== sdkInstance) return;
+      destroyHostedFieldsInstance();
+      elements.hostedFieldsForm().classList.add('hidden');
+      elements.hostedFieldsOpenSection().classList.remove('hidden');
+      hideStatus();
+      showGlobalStatus('SDK destroyed. Open the payment form again to continue.', 'info');
+    };
+  }
+}
+
+/** Registers core hosted fields SDK event handlers on a new instance. */
+function registerHostedFieldsSdkHandlers(sdkInstance) {
+  sdkInstance.on('close', (payload) => {
+    console.log('SDK closed:', payload);
+  });
+
+  sdkInstance.on('ready', () => {
+    isReady = true;
+
+    sdkInstance.setLabel('number', 'Card Number');
+    sdkInstance.setLabel('cvv', 'CVV');
+    configureHostedFieldsOnReady(sdkInstance);
+
+    const numberFormatSelect = document.getElementById('hf-demo-number-format');
+    if (numberFormatSelect) numberFormatSelect.value = 'prettyFormat';
+
+    setupHostedFieldsSdkDemoPanel(sdkInstance);
+    setupHostedFieldsEventListeners();
+    updateFormState();
+    hideStatus();
+    SpreedlyUtils.setButtonLoading('open-hosted-fields-btn', false);
+    elements.hostedFieldsOpenSection().classList.add('hidden');
+    elements.hostedFieldsForm().classList.remove('hidden');
+    console.log('Hosted fields ready');
+  });
+
+  sdkInstance.on('tokenGenerated', (response) => {
+    console.log('Token generated:', response);
+    handleTokenSuccess({
+      ...response,
+      shouldRetain: document.getElementById('retain-payment-method')?.checked || false,
+    });
+  });
+
+  sdkInstance.on('error', (error) => {
+    console.error('SDK error:', error);
+    SpreedlyUtils.setButtonLoading('open-hosted-fields-btn', false);
+    handleTokenError(error);
+  });
+}
+
+/** Creates a SpreedlyHostedFields instance and registers its event handlers. */
+function createHostedFieldsSdk(authParams) {
+  const sdkInstance = new SpreedlyHostedFields({
+    certificate_token: authParams.certificateToken,
+    environment_key: authParams.environmentKey,
+    nonce: authParams.nonce,
+    signature: authParams.signature,
+    timestamp: authParams.timestamp,
+  });
+
+  hostedFieldsConfigPanelWiredFor = null;
+  hostedFieldsSdkDemoEventHandlersWiredFor = null;
+  registerHostedFieldsSdkHandlers(sdkInstance);
+
+  return sdkInstance;
+}
+
+/** Removes handlers, destroys the SDK instance, and resets demo UI state. */
+function destroyHostedFieldsInstance() {
+  if (!sdk) {
+    return;
+  }
+
+  sdk.removeHandlers();
+  sdk.destroy();
+  sdk = null;
+  isReady = false;
+  hostedFieldsConfigPanelWiredFor = null;
+  hostedFieldsSdkDemoEventHandlersWiredFor = null;
+  clearHostedFieldsDemoPanelUi();
+}
+
 async function loadAndInitializeSDK() {
-  updateDebugStatus('Loading SDK...');
-  
+
+
   await new Promise((resolve, reject) => {
     SpreedlyUtils.loadSDKScript((error) => {
       if (error) reject(error);
       else resolve();
     });
   });
-  
-  updateDebugStatus('Fetching auth params...');
-  
+
   const authParams = await SpreedlyUtils.fetchAuthParams();
-  
-  elements.debugEnvKey().textContent = authParams.environmentKey;
-  elements.debugNonce().textContent = (authParams.nonce || '').substring(0, 20) + '...';
-  elements.debugTimestamp().textContent = authParams.timestamp;
-  
-  updateDebugStatus('Initializing SDK...');
-  
+
   if (sdkType === 'express-checkout') {
     await initializeExpressCheckout(authParams);
   } else {
@@ -138,65 +369,38 @@ async function loadAndInitializeSDK() {
 // Hosted Fields Initialization
 async function initializeHostedFields(authParams) {
   storedAuthParams = authParams;
-  
-  sdk = new SpreedlyHostedFields({
-    environment_key: authParams.environmentKey,
-    nonce: authParams.nonce,
-    timestamp: authParams.timestamp,
-    certificate_token: authParams.certificateToken,
-    signature: authParams.signature,
-  });
-  
+  sdk = createHostedFieldsSdk(authParams);
+
   hideLoading();
   elements.hostedFieldsOpenSection().classList.remove('hidden');
-  updateDebugStatus('Ready - Click to open form');
   console.log('Hosted Fields SDK initialized, waiting for user to open form');
 }
 
 // Open Hosted Fields Form (called when button is clicked)
-window.openHostedFieldsForm = function() {
-  if (!sdk || !storedAuthParams) {
+window.openHostedFieldsForm = function () {
+  hideStatus();
+
+  if (!storedAuthParams) {
     showError('SDK not initialized. Please refresh the page.');
     return;
   }
-  
+
+  if (!sdk) {
+    sdk = createHostedFieldsSdk(storedAuthParams);
+  }
+
   SpreedlyUtils.setButtonLoading('open-hosted-fields-btn', true, 'Loading...');
 
-  // Set up event handlers
-  sdk.on('ready', () => {
-    isReady = true;
-    
-    setupHostedFieldsEventListeners();
-    
-    updateFormState();
-    SpreedlyUtils.setButtonLoading('open-hosted-fields-btn', false);
-    elements.hostedFieldsOpenSection().classList.add('hidden');
-    elements.hostedFieldsForm().classList.remove('hidden');
-    updateDebugStatus('Ready');
-    console.log('Hosted fields ready');
-  });
-  
-  sdk.on('tokenGenerated', (response) => {
-    console.log('Token generated:', response);
-    handleTokenSuccess({...response, shouldRetain: document.getElementById('retain-payment-method')?.checked || false});
-  });
-  
-  sdk.on('error', (error) => {
-    console.error('SDK error:', error);
-    SpreedlyUtils.setButtonLoading('open-hosted-fields-btn', false);
-    handleTokenError(error);
-  });
-
   sdk.inAppElements({
-    number: { containerId: 'card-number-field' },
     cvv: { containerId: 'cvv-field' },
+    number: { containerId: 'card-number-field' },
   });
 }
 
 // Express Checkout Initialization
 async function initializeExpressCheckout(authParams) {
   storedAuthParams = authParams;
-  
+
   sdk = new SpreedlyExpressCheckout({
     environment_key: authParams.environmentKey,
     nonce: authParams.nonce,
@@ -204,47 +408,45 @@ async function initializeExpressCheckout(authParams) {
     certificate_token: authParams.certificateToken,
     signature: authParams.signature,
   });
-  
+
   hideLoading();
   elements.expressCheckoutOpenSection().classList.remove('hidden');
-  updateDebugStatus('Ready - Click to open form');
   console.log('Express checkout SDK initialized, waiting for user to open form');
 }
 
 // Open Express Checkout Form (called when button is clicked)
-window.openExpressCheckoutForm = function() {
+window.openExpressCheckoutForm = function () {
   if (!sdk || !storedAuthParams) {
     showError('SDK not initialized. Please refresh the page.');
     return;
   }
-  
+
   // Sync config state from checkboxes before building checkout config
   syncConfigFromCheckboxes();
-  
+
   const displayMode = document.querySelector('input[name="display-mode"]:checked')?.value || 'embedded';
-  
+
   SpreedlyUtils.setButtonLoading('open-payment-form-btn', true, 'Loading...');
-  
+
   sdk.on('ready', () => {
     isReady = true;
     SpreedlyUtils.setButtonLoading('open-payment-form-btn', false);
     elements.expressCheckoutOpenSection().classList.add('hidden');
     elements.expressCheckoutForm().classList.remove('hidden');
-    updateDebugStatus(`Ready (${displayMode} mode)`);
     console.log('Express checkout ready');
   });
-  
+
   sdk.on('tokenGenerated', (response) => {
     console.log('Token generated:', response);
     handleTokenSuccess(response);
   });
-  
+
   sdk.on('error', (error) => {
     console.error('SDK error:', error);
     SpreedlyUtils.setButtonLoading('open-payment-form-btn', false);
     handleTokenError(error);
   });
-  
+
   sdk.on('close', () => {
     console.log('Express checkout closed');
     if (displayMode === 'dialog') {
@@ -253,7 +455,7 @@ window.openExpressCheckoutForm = function() {
       showStatus('Checkout closed', 'info');
     }
   });
-  
+
   const checkoutConfig = {
     uiConfig: {
       twoDigitExpiry: config.twoDigitExpiryYear,
@@ -283,11 +485,11 @@ window.openExpressCheckoutForm = function() {
       allow_blank_name: config.allowBlankName,
     }
   };
-  
+
   if (displayMode === 'embedded') {
     checkoutConfig.parentContainerId = 'express-checkout-container';
   }
-  
+
   sdk.expressCheckout(checkoutConfig);
 }
 
@@ -297,7 +499,7 @@ function setupHostedFieldsEventListeners() {
   if (form) {
     form.addEventListener('submit', handleFormSubmit);
   }
-  
+
   const fieldIds = ['first_name', 'last_name', 'expiry_month', 'expiry_year', 'expiry_date'];
   fieldIds.forEach(id => {
     const el = document.getElementById(id);
@@ -306,18 +508,44 @@ function setupHostedFieldsEventListeners() {
       el.addEventListener('change', updateFormState);
     }
   });
-  
+
   const expiryDateInput = document.getElementById('expiry_date');
   if (expiryDateInput) {
-    expiryDateInput.addEventListener('input', function() {
+    expiryDateInput.addEventListener('input', function () {
       formatExpiryDate(this);
       updateFormState();
     });
   }
-  
+
+  const hostedCardNumberLabel = document.getElementById('hosted-field-label-card-number');
+  if (hostedCardNumberLabel && sdk) {
+    hostedCardNumberLabel.addEventListener('click', () => {
+      sdk.transferFocus('number');
+    });
+    hostedCardNumberLabel.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        sdk.transferFocus('number');
+      }
+    });
+  }
+
+  const hostedCvvLabel = document.getElementById('hosted-field-label-cvv');
+  if (hostedCvvLabel && sdk) {
+    hostedCvvLabel.addEventListener('click', () => {
+      sdk.transferFocus('cvv');
+    });
+    hostedCvvLabel.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        sdk.transferFocus('cvv');
+      }
+    });
+  }
+
   // Sync config state from checkboxes (in case user checked them before SDK was ready)
   syncConfigFromCheckboxes();
-  
+
   // Apply initial config state to UI
   updateNameFieldsRequired();
   updateDateFieldsRequired();
@@ -330,7 +558,7 @@ function updateNameFieldsRequired() {
   const lastNameInput = document.getElementById('last_name');
   const firstNameLabel = document.querySelector('label[for="first_name"]');
   const lastNameLabel = document.querySelector('label[for="last_name"]');
-  
+
   if (config.allowBlankName) {
     firstNameInput?.removeAttribute('required');
     lastNameInput?.removeAttribute('required');
@@ -352,7 +580,7 @@ function updateDateFieldsRequired() {
   const monthLabel = document.querySelector('label[for="expiry_month"]');
   const yearLabel = document.querySelector('label[for="expiry_year"]');
   const expiryDateLabel = document.querySelector('label[for="expiry_date"]');
-  
+
   if (config.allowBlankDate) {
     monthInput?.removeAttribute('required');
     yearInput?.removeAttribute('required');
@@ -371,15 +599,15 @@ function updateDateFieldsRequired() {
 // Form Handling (Hosted Fields Only)
 function handleFormSubmit(e) {
   e.preventDefault();
-  
+
   // This is only called for Hosted Fields flow
   if (!isReady || elements.submitBtn().disabled) return;
-  
+
   setLoading(true);
   showStatus('Creating payment method...', 'info');
-  
+
   const expiry = getExpiryData();
-  
+
   const formData = {
     first_name: document.getElementById('first_name')?.value.trim() || '',
     last_name: document.getElementById('last_name')?.value.trim() || '',
@@ -387,7 +615,7 @@ function handleFormSubmit(e) {
     year: expiry.year,
     email: document.getElementById('email')?.value.trim() || '',
   };
-  
+
   sdk.submit(formData, {
     metadata: {
       source: 'tokenize-flow-demo',
@@ -402,12 +630,12 @@ function handleFormSubmit(e) {
 function updateFormState() {
   // Only applies to Hosted Fields - Express Checkout handles its own form state
   if (!isReady || sdkType !== 'hosted-fields') return;
-  
+
   const firstName = document.getElementById('first_name')?.value.trim() || '';
   const lastName = document.getElementById('last_name')?.value.trim() || '';
-  
+
   let expiryValid = false;
-  
+
   if (config.allowBlankDate) {
     expiryValid = true;
   } else if (config.twoDigitExpiryYear) {
@@ -418,10 +646,10 @@ function updateFormState() {
     const year = document.getElementById('expiry_year')?.value.trim() || '';
     expiryValid = month.length >= 1 && year.length >= 2;
   }
-  
+
   const nameValid = config.allowBlankName || (firstName && lastName);
   const isValid = nameValid && expiryValid;
-  
+
   elements.submitBtn().disabled = !isValid;
 }
 
@@ -451,7 +679,7 @@ function formatExpiryDate(input) {
 function updateExpiryFieldDisplay() {
   const separateFields = document.getElementById('expiry-separate-fields');
   const combinedField = document.getElementById('expiry-combined-field');
-  
+
   if (config.twoDigitExpiryYear) {
     separateFields?.classList.add('hidden');
     combinedField?.classList.remove('hidden');
@@ -470,17 +698,17 @@ async function handleTokenSuccess(response) {
 
   setLoading(false);
   hideStatus();
-  
+
   const paymentMethod = retainedPaymentMethod?.transaction?.payment_method || response?.tokenResponse?.payment_method || {};
   const token = paymentMethod.token || 'Unknown';
-  
+
   // Hide form, show result
   elements.hostedFieldsOpenSection()?.classList.add('hidden');
   elements.hostedFieldsForm()?.classList.add('hidden');
   elements.expressCheckoutOpenSection()?.classList.add('hidden');
   elements.expressCheckoutForm()?.classList.add('hidden');
   elements.resultSection().classList.remove('hidden');
-  
+
   // Style result card
   elements.resultCard().classList.add('success');
   elements.resultCard().classList.remove('error');
@@ -489,7 +717,7 @@ async function handleTokenSuccess(response) {
   elements.resultIconSuccess().classList.remove('hidden');
   elements.resultIconError().classList.add('hidden');
   elements.resultTitle().textContent = 'Payment Method Created';
-  
+
   // All values below are interpolated into innerHTML and may originate from
   // API responses; HTML-escape every value to prevent XSS.
   const details = `
@@ -518,31 +746,31 @@ async function handleTokenSuccess(response) {
       <span class="result-value">${SpreedlyUtils.escapeHtml(paymentMethod.storage_state || '—')}</span>
     </div>
   `;
-  
+
   elements.resultDetails().innerHTML = details;
-  
+
   console.log('Payment method created:', paymentMethod);
 }
 
 function handleTokenError(error) {
   setLoading(false);
-  
+
   const message = error?.message || error?.errors?.[0]?.message || 'Tokenization failed. Please try again.';
   showStatus(message, 'error');
-  
+
   console.error('Token error:', error);
 }
 
 // Reset Form
-window.resetForm = function() {
+window.resetForm = function () {
   // Hide result, show appropriate form based on SDK type
   elements.resultSection().classList.add('hidden');
-  
+
   if (sdkType === 'express-checkout') {
     // For Express Checkout, show the "Open Payment Form" section again
     elements.expressCheckoutForm().classList.add('hidden');
     elements.expressCheckoutOpenSection().classList.remove('hidden');
-    
+
     // Re-create SDK instance for a fresh form
     if (storedAuthParams) {
       sdk = new SpreedlyExpressCheckout({
@@ -553,27 +781,19 @@ window.resetForm = function() {
         signature: storedAuthParams.signature,
       });
       isReady = false;
-      updateDebugStatus('Ready - Click to open form');
     }
   } else {
     // For Hosted Fields, show the "Open Payment Form" section again
     elements.hostedFieldsForm().classList.add('hidden');
     elements.hostedFieldsOpenSection().classList.remove('hidden');
-    
-    // Re-create SDK instance for a fresh form
+
+    destroyHostedFieldsInstance();
+
     if (storedAuthParams) {
-      sdk = new SpreedlyHostedFields({
-        environment_key: storedAuthParams.environmentKey,
-        nonce: storedAuthParams.nonce,
-        timestamp: storedAuthParams.timestamp,
-        certificate_token: storedAuthParams.certificateToken,
-        signature: storedAuthParams.signature,
-      });
-      isReady = false;
-      updateDebugStatus('Ready - Click to open form');
+      sdk = createHostedFieldsSdk(storedAuthParams);
     }
   }
-  
+
   hideStatus();
 }
 
@@ -590,39 +810,45 @@ function setLoading(loading) {
 }
 
 function showStatus(message, type) {
-  // Use form-specific status for Hosted Fields, global status otherwise
-  const statusEl = sdkType === 'hosted-fields' 
-    ? elements.statusMessage() 
+  const statusEl = sdkType === 'hosted-fields'
+    ? elements.statusMessage()
     : document.getElementById('global-status-message');
-  
-  if (statusEl) {
-    statusEl.textContent = message;
-    statusEl.className = `status-message visible ${type}`;
-  }
+  setStatusElement(statusEl, message, type);
+}
+
+/** Shows a status message outside the payment form (e.g. after SDK destroy). */
+function showGlobalStatus(message, type) {
+  setStatusElement(document.getElementById('global-status-message'), message, type);
+}
+
+/** Applies message and visibility classes to a status element. */
+function setStatusElement(statusEl, message, type) {
+  if (!statusEl) return;
+  statusEl.textContent = message;
+  statusEl.className = `status-message visible ${type}`;
 }
 
 function hideStatus() {
-  // Hide both status elements
-  const formStatus = elements.statusMessage();
-  const globalStatus = document.getElementById('global-status-message');
-  
-  if (formStatus) formStatus.className = 'status-message';
-  if (globalStatus) globalStatus.className = 'status-message';
+  clearStatusElement(elements.statusMessage());
+  clearStatusElement(document.getElementById('global-status-message'));
+}
+
+/** Hides a status element and clears any previous message. */
+function clearStatusElement(statusEl) {
+  if (!statusEl) return;
+  statusEl.textContent = '';
+  statusEl.className = 'status-message';
 }
 
 function showError(message) {
   hideLoading();
-  
+
   // Show error using global status (visible before forms are shown)
   const globalStatus = document.getElementById('global-status-message');
   if (globalStatus) {
     globalStatus.textContent = message;
     globalStatus.className = 'status-message visible error';
   }
-}
-
-function updateDebugStatus(status) {
-  elements.debugStatus().textContent = status;
 }
 
 // Start
