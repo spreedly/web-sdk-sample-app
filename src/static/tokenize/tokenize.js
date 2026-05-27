@@ -430,6 +430,7 @@ window.openExpressCheckoutForm = function () {
 
   sdk.on('ready', () => {
     isReady = true;
+    updateFormState()
     SpreedlyUtils.setButtonLoading('open-payment-form-btn', false);
     elements.expressCheckoutOpenSection().classList.add('hidden');
     elements.expressCheckoutForm().classList.remove('hidden');
