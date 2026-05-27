@@ -32,6 +32,13 @@ The SDK offers two integration options:
 
 Both options provide the same security guarantees — card data never touches your DOM.
 
+### Latest version
+
+The latest released version is **`1.0.1`**, available at:
+
+- Hosted Fields: [`https://core.spreedly.com/checkout/sdk/1.0.1/index.js`](https://core.spreedly.com/checkout/sdk/1.0.1/index.js)
+- Express Checkout: [`https://core.spreedly.com/checkout/elements/1.0.1/express-checkout.js`](https://core.spreedly.com/checkout/elements/1.0.1/express-checkout.js)
+
 ---
 
 ## Prerequisites
@@ -62,9 +69,8 @@ Replace `{version}` with:
 
 | Channel | Description | Example |
 |---------|-------------|---------|
-| A specific version | Pinned release (recommended for production) | `3.0.1` |
+| A specific version | Pinned release (recommended for production) | `1.0.1` |
 | `rc` | Latest release candidate | `rc` |
-| `stable` | Current stable release | `stable` |
 
 ---
 
