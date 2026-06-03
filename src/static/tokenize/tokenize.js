@@ -15,7 +15,29 @@ const config = {
   allowExpiredDate: false,
   allowBlankDate: false,
   twoDigitExpiryYear: false,
+  eligibleForCardUpdater: false,
+  ecExtraFields: [],
 };
+
+const EC_EXTRA_FIELD_KEYS = Object.freeze([
+  'full_name',
+  'email',
+  'company',
+  'phone_number',
+  'address1',
+  'address2',
+  'city',
+  'state',
+  'zip',
+  'country',
+  'shipping_address1',
+  'shipping_address2',
+  'shipping_city',
+  'shipping_state',
+  'shipping_zip',
+  'shipping_country',
+  'shipping_phone_number',
+]);
 
 /** SDK instance that already has `validation` / `fieldStateChange` listeners registered. */
 let hostedFieldsSdkDemoEventHandlersWiredFor = null;
@@ -59,6 +81,16 @@ const elements = {
 
 // Initialization
 async function init() {
+  // DEBUG: capture the SDK's window message listener so we can call it directly.
+  window.__capturedMessageListeners = [];
+  const __origAdd = window.addEventListener.bind(window);
+  window.addEventListener = function (type, listener, opts) {
+    if (type === 'message') {
+      window.__capturedMessageListeners.push({ listener, opts });
+    }
+    return __origAdd(type, listener, opts);
+  };
+
   sdkType = SpreedlyUtils.getSDKType();
 
   elements.sdkBadge().textContent = SpreedlyUtils.getSDKDisplayName();
@@ -80,15 +112,18 @@ async function init() {
 function updateConfigPanelForSdkType() {
   const displayModeConfig = document.getElementById('config-display-mode');
   const hostedFieldsOnlyPanel = document.getElementById('hosted-fields-only-panel');
+  const expressCheckoutOnlyPanel = document.getElementById('express-checkout-only-panel');
 
   if (sdkType === 'express-checkout') {
     displayModeConfig?.classList.remove('hidden');
     hostedFieldsOnlyPanel?.classList.add('hidden');
+    expressCheckoutOnlyPanel?.classList.remove('hidden');
     return;
   }
 
   displayModeConfig?.classList.add('hidden');
   hostedFieldsOnlyPanel?.classList.remove('hidden');
+  expressCheckoutOnlyPanel?.classList.add('hidden');
 }
 
 // Set up config checkbox listeners (called on page load)
@@ -120,6 +155,70 @@ function setupConfigCheckboxListeners() {
   document.getElementById('config-allow-expired-date')?.addEventListener('change', function () {
     config.allowExpiredDate = this.checked;
   });
+
+  document.getElementById('config-eligible-for-card-updater')?.addEventListener('change', function () {
+    config.eligibleForCardUpdater = this.checked;
+  });
+
+  document.querySelectorAll('input[data-ec-field]').forEach((checkbox) => {
+    checkbox.addEventListener('change', () => {
+      syncEcExtraFieldsFromCheckboxes();
+    });
+  });
+}
+
+/**
+ * Reads which of the legacy `setParam` parity fields are ticked in the Express
+ * Checkout config panel. Each ticked entry corresponds to a key on
+ * `uiConfig.cardPaymentFormFields`; the iframe will render an input for that field.
+ */
+function syncEcExtraFieldsFromCheckboxes() {
+  config.ecExtraFields = EC_EXTRA_FIELD_KEYS.filter(
+    (key) => document.getElementById(`ec-field-${key}`)?.checked
+  );
+}
+
+/**
+ * Default labels/placeholders for the legacy `setParam` parity fields, used to build
+ * `uiConfig.cardPaymentFormFields` entries when the merchant ticks a field in the
+ * Express Checkout config panel. Mirrors the SDK's own DEFAULT_LABELS / DEFAULT_PLACEHOLDERS.
+ */
+const EC_EXTRA_FIELD_DEFAULTS = Object.freeze({
+  full_name:               { label: 'Full Name',           placeholder: 'Joe Jones' },
+  email:                   { label: 'Email',               placeholder: 'joe@example.com' },
+  company:                 { label: 'Company',             placeholder: 'Acme Inc' },
+  phone_number:            { label: 'Phone',               placeholder: '5551234567' },
+  address1:                { label: 'Address 1',           placeholder: '123 Main St' },
+  address2:                { label: 'Address 2',           placeholder: 'Apt 4' },
+  city:                    { label: 'City',                placeholder: 'New York' },
+  state:                   { label: 'State',               placeholder: 'NY' },
+  zip:                     { label: 'Zip',                 placeholder: '10001' },
+  country:                 { label: 'Country',             placeholder: 'US' },
+  shipping_address1:       { label: 'Shipping Address 1',  placeholder: '456 Park Ave' },
+  shipping_address2:       { label: 'Shipping Address 2',  placeholder: 'Suite 9' },
+  shipping_city:           { label: 'Shipping City',       placeholder: 'Boston' },
+  shipping_state:          { label: 'Shipping State',      placeholder: 'MA' },
+  shipping_zip:            { label: 'Shipping Zip',        placeholder: '02101' },
+  shipping_country:        { label: 'Shipping Country',    placeholder: 'US' },
+  shipping_phone_number:   { label: 'Shipping Phone',      placeholder: '5559876543' },
+});
+
+function buildEcExtraFieldsConfig(fieldKeys) {
+  const out = {};
+  fieldKeys.forEach((fieldName) => {
+    const defaults = EC_EXTRA_FIELD_DEFAULTS[fieldName];
+    if (!defaults) return;
+    out[fieldName] = {
+      fieldName,
+      isRequired: false,
+      label: defaults.label,
+      placeholder: defaults.placeholder,
+      size: 6,
+      isMasked: false,
+      styles: {},
+    };
+  });
+  return out;
 }
 
 // Sync config state from checkbox values (called when SDK becomes ready)
@@ -128,6 +227,8 @@ function syncConfigFromCheckboxes() {
   config.allowBlankName = document.getElementById('config-allow-blank-name')?.checked || false;
   config.allowBlankDate = document.getElementById('config-allow-blank-date')?.checked || false;
   config.allowExpiredDate = document.getElementById('config-allow-expired-date')?.checked || false;
+  config.eligibleForCardUpdater = document.getElementById('config-eligible-for-card-updater')?.checked || false;
+  syncEcExtraFieldsFromCheckboxes();
 }
 
 /** Clears demo panel output and resets SDK Configuration controls to defaults. */
@@ -156,8 +257,15 @@ function updateHostedFieldsDemoLastValidation(payload) {
   pre.textContent = JSON.stringify(payload, null, 2);
 }
 
+/** Writes the latest `consoleError` event payload as formatted JSON into the demo panel. */
+function updateHostedFieldsDemoLastConsoleError(payload) {
+  const pre = document.getElementById('hf-demo-last-console-error');
+  if (!pre) return;
+  pre.textContent = JSON.stringify(payload, null, 2);
+}
+
 /**
- * Registers `validation` / `fieldStateChange` once per SDK instance and binds demo panel controls.
+ * Registers `validation` / `fieldStateChange` / `consoleError` once per SDK instance and binds demo panel controls.
  */
 function setupHostedFieldsSdkDemoPanel(sdkInstance) {
   const includeIin = document.getElementById('hf-demo-include-iin');
@@ -167,6 +275,10 @@ function setupHostedFieldsSdkDemoPanel(sdkInstance) {
     hostedFieldsSdkDemoEventHandlersWiredFor = sdkInstance;
     sdkInstance.on('validation', updateHostedFieldsDemoLastValidation);
     sdkInstance.on('fieldStateChange', console.log);
+    sdkInstance.on('consoleError', (payload) => {
+      console.warn('Hosted Fields consoleError:', payload);
+      updateHostedFieldsDemoLastConsoleError(payload);
+    });
     sdkInstance.setFieldStateReporting({ includeIin: false });
     if (includeIin) {
       includeIin.checked = false;
@@ -272,10 +384,73 @@ function setupHostedFieldsConfigPanel(sdkInstance) {
       showGlobalStatus('SDK destroyed. Open the payment form again to continue.', 'info');
     };
   }
+
+  const inputModeSelect = document.getElementById('hf-demo-input-mode');
+  if (inputModeSelect) {
+    inputModeSelect.onchange = function handleHostedFieldsInputModeChange() {
+      if (!sdk || sdk !== sdkInstance || !isReady) return;
+      const value = this.value;
+      if (!value) return;
+      sdkInstance.setInputMode('number', value);
+      sdkInstance.setInputMode('cvv', value);
+    };
+  }
+
+  const requiredCheckbox = document.getElementById('hf-demo-required');
+  if (requiredCheckbox) {
+    requiredCheckbox.onchange = function handleHostedFieldsRequiredChange() {
+      if (!sdk || sdk !== sdkInstance || !isReady) return;
+      sdkInstance.setRequiredAttribute('number', this.checked);
+      sdkInstance.setRequiredAttribute('cvv', this.checked);
+    };
+  }
+
+  const resetFieldsBtn = document.getElementById('hf-demo-reset-fields');
+  if (resetFieldsBtn) {
+    resetFieldsBtn.onclick = function handleHostedFieldsResetFieldsClick() {
+      if (!sdk || sdk !== sdkInstance || !isReady) return;
+      sdkInstance.resetFields();
+      showStatus('Fields reset.', 'info');
+    };
+  }
+
+  const reloadBtn = document.getElementById('hf-demo-reload');
+  if (reloadBtn) {
+    reloadBtn.onclick = function handleHostedFieldsReloadClick() {
+      if (!sdk || sdk !== sdkInstance || !isReady) return;
+      sdkInstance.reload();
+      showStatus('Reloading hosted field iframes…', 'info');
+    };
+  }
+
+  const focusIframeBtn = document.getElementById('hf-demo-focus-iframe');
+  if (focusIframeBtn) {
+    focusIframeBtn.onclick = function handleHostedFieldsFocusIframeClick() {
+      if (!sdk || sdk !== sdkInstance || !isReady) return;
+      sdkInstance.transferFocus('iframe');
+    };
+  }
+
+  const isLoadedBtn = document.getElementById('hf-demo-is-loaded');
+  const isLoadedResult = document.getElementById('hf-demo-is-loaded-result');
+  if (isLoadedBtn && isLoadedResult) {
+    isLoadedBtn.onclick = function handleHostedFieldsIsLoadedClick() {
+      // Probe the SDK instance this panel was wired against — even after destroy.
+      // (We intentionally do NOT short-circuit on `sdk` being null, so merchants can see
+      // isLoaded() flip to false post-destroy.)
+      if (!sdkInstance || typeof sdkInstance.isLoaded !== 'function') {
+        isLoadedResult.textContent = 'isLoaded() → SDK instance unavailable';
+        return;
+      }
+      const loaded = Boolean(sdkInstance.isLoaded());
+      isLoadedResult.textContent = `isLoaded() → ${loaded}`;
+    };
+  }
 }
 
 /** Registers core hosted fields SDK event handlers on a new instance. */
 function registerHostedFieldsSdkHandlers(sdkInstance) {
+  console.log('Process step 2: Registering event handlers');
   sdkInstance.on('close', (payload) => {
     console.log('SDK closed:', payload);
   });
@@ -294,6 +469,7 @@ function registerHostedFieldsSdkHandlers(sdkInstance) {
     setupHostedFieldsEventListeners();
     updateFormState();
     hideStatus();
+    console.log('Process step 3: Setting button loading to false');
     SpreedlyUtils.setButtonLoading('open-hosted-fields-btn', false);
     elements.hostedFieldsOpenSection().classList.add('hidden');
     elements.hostedFieldsForm().classList.remove('hidden');
@@ -386,11 +562,14 @@ window.openHostedFieldsForm = function () {
   }
 
   if (!sdk) {
+    console.log('Process step 1: Creating new hosted fields SDK');
     sdk = createHostedFieldsSdk(storedAuthParams);
   }
 
+  console.log('Process step 4: Setting button loading');
   SpreedlyUtils.setButtonLoading('open-hosted-fields-btn', true, 'Loading...');
 
+  console.log('Process step 5: Setting in-app elements');
   sdk.inAppElements({
     cvv: { containerId: 'cvv-field' },
     number: { containerId: 'card-number-field' },
@@ -474,6 +653,9 @@ window.openExpressCheckoutForm = function () {
           },
         },
       },
+      ...(config.ecExtraFields.length > 0
+        ? { cardPaymentFormFields: buildEcExtraFieldsConfig(config.ecExtraFields) }
+        : {}),
     },
     submitParams: {
       metadata: {
@@ -483,6 +665,7 @@ window.openExpressCheckoutForm = function () {
       allow_blank_date: config.allowBlankDate,
       allow_expired_date: config.allowExpiredDate,
       allow_blank_name: config.allowBlankName,
+      ...(config.eligibleForCardUpdater ? { eligible_for_card_updater: true } : {}),
     }
   };
 
@@ -596,6 +779,30 @@ function updateDateFieldsRequired() {
   }
 }
 
+/**
+ * Reads the optional billing/shipping/eligible_for_card_updater inputs from the demo form.
+ * Mirrors legacy `Spreedly.setParam(name, value)`: only includes fields the merchant actually filled in.
+ * Empty strings are omitted so the SDK's soft-validation warning won't list "noise" keys.
+ */
+function collectOptionalSetParamFields() {
+  const stringFieldIds = [
+    'full_name',
+    'company',
+    'address1', 'address2', 'city', 'state', 'zip', 'country', 'phone_number',
+    'shipping_address1', 'shipping_address2', 'shipping_city', 'shipping_state',
+    'shipping_zip', 'shipping_country', 'shipping_phone_number',
+  ];
+  const out = {};
+  stringFieldIds.forEach((id) => {
+    const value = document.getElementById(id)?.value.trim();
+    if (value) out[id] = value;
+  });
+  if (document.getElementById('eligible_for_card_updater')?.checked) {
+    out.eligible_for_card_updater = true;
+  }
+  return out;
+}
+
 // Form Handling (Hosted Fields Only)
 function handleFormSubmit(e) {
   e.preventDefault();
@@ -614,6 +821,7 @@ function handleFormSubmit(e) {
     month: expiry.month,
     year: expiry.year,
     email: document.getElementById('email')?.value.trim() || '',
+    ...collectOptionalSetParamFields(),
   };
 
   sdk.submit(formData, {
@@ -624,6 +832,7 @@ function handleFormSubmit(e) {
     allow_blank_date: config.allowBlankDate,
     allow_expired_date: config.allowExpiredDate,
     allow_blank_name: config.allowBlankName,
+    ...(config.eligibleForCardUpdater ? { eligible_for_card_updater: true } : {}),
   });
 }
 
