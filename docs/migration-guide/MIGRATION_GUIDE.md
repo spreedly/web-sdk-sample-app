@@ -11,9 +11,6 @@ library to the new Checkout Web SDK (`SpreedlyHostedFields` /
 - 🆕 — new in Checkout Web SDK (no legacy counterpart)
 - ❌ TODO — exists in legacy, not yet in Checkout Web SDK
 
-> Click to Pay (legacy `c2p*`) and Stripe Radar (legacy `Spreedly.stripeRadar`)
-> are **out of scope** for this guide.
-
 ---
 
 ## TL;DR — minimum changes to migrate

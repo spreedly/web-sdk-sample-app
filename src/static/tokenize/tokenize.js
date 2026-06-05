@@ -450,7 +450,6 @@ function setupHostedFieldsConfigPanel(sdkInstance) {
 
 /** Registers core hosted fields SDK event handlers on a new instance. */
 function registerHostedFieldsSdkHandlers(sdkInstance) {
-  console.log('Process step 2: Registering event handlers');
   sdkInstance.on('close', (payload) => {
     console.log('SDK closed:', payload);
   });
@@ -469,7 +468,6 @@ function registerHostedFieldsSdkHandlers(sdkInstance) {
     setupHostedFieldsEventListeners();
     updateFormState();
     hideStatus();
-    console.log('Process step 3: Setting button loading to false');
     SpreedlyUtils.setButtonLoading('open-hosted-fields-btn', false);
     elements.hostedFieldsOpenSection().classList.add('hidden');
     elements.hostedFieldsForm().classList.remove('hidden');
@@ -562,14 +560,11 @@ window.openHostedFieldsForm = function () {
   }
 
   if (!sdk) {
-    console.log('Process step 1: Creating new hosted fields SDK');
     sdk = createHostedFieldsSdk(storedAuthParams);
   }
 
-  console.log('Process step 4: Setting button loading');
   SpreedlyUtils.setButtonLoading('open-hosted-fields-btn', true, 'Loading...');
 
-  console.log('Process step 5: Setting in-app elements');
   sdk.inAppElements({
     cvv: { containerId: 'cvv-field' },
     number: { containerId: 'card-number-field' },
