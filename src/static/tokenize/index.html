@@ -147,6 +147,103 @@
                     <input type="email" id="email" name="email" class="form-input" placeholder="john@example.com">
                   </div>
 
+                  <details id="optional-fields-section" class="form-group" style="border:1px solid var(--color-gray-200); border-radius:6px; padding: .5rem .75rem;">
+                    <summary style="cursor:pointer; font-weight:600;">Optional billing &amp; shipping</summary>
+                    <p style="font-size:.85rem; color: var(--color-gray-500); margin-top:.5rem;">
+                      Every legacy <code>Spreedly.setParam(name, value)</code> field has a typed slot on
+                      <code>sdk.submit(formData)</code>. Fill any of these and they flow through to
+                      <code>payment_method.credit_card.{...}</code>.
+                    </p>
+
+                    <div class="form-row">
+                      <div class="form-group">
+                        <label class="form-label" for="full_name">Full Name</label>
+                        <input type="text" id="full_name" name="full_name" class="form-input" placeholder="John Doe">
+                      </div>
+                      <div class="form-group">
+                        <label class="form-label" for="company">Company</label>
+                        <input type="text" id="company" name="company" class="form-input" placeholder="Acme Inc">
+                      </div>
+                    </div>
+
+                    <h4 style="margin-top:.75rem; margin-bottom:.25rem;">Billing address</h4>
+                    <div class="form-row">
+                      <div class="form-group">
+                        <label class="form-label" for="address1">Address 1</label>
+                        <input type="text" id="address1" name="address1" class="form-input" placeholder="123 Main St">
+                      </div>
+                      <div class="form-group">
+                        <label class="form-label" for="address2">Address 2</label>
+                        <input type="text" id="address2" name="address2" class="form-input" placeholder="Apt 4">
+                      </div>
+                    </div>
+                    <div class="form-row">
+                      <div class="form-group">
+                        <label class="form-label" for="city">City</label>
+                        <input type="text" id="city" name="city" class="form-input" placeholder="New York">
+                      </div>
+                      <div class="form-group">
+                        <label class="form-label" for="state">State</label>
+                        <input type="text" id="state" name="state" class="form-input" placeholder="NY">
+                      </div>
+                    </div>
+                    <div class="form-row">
+                      <div class="form-group">
+                        <label class="form-label" for="zip">Zip</label>
+                        <input type="text" id="zip" name="zip" class="form-input" placeholder="10001">
+                      </div>
+                      <div class="form-group">
+                        <label class="form-label" for="country">Country</label>
+                        <input type="text" id="country" name="country" class="form-input" placeholder="US" maxlength="2">
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label" for="phone_number">Phone</label>
+                      <input type="text" id="phone_number" name="phone_number" class="form-input" placeholder="5551234567">
+                    </div>
+
+                    <h4 style="margin-top:.75rem; margin-bottom:.25rem;">Shipping address</h4>
+                    <div class="form-row">
+                      <div class="form-group">
+                        <label class="form-label" for="shipping_address1">Address 1</label>
+                        <input type="text" id="shipping_address1" name="shipping_address1" class="form-input" placeholder="456 Park Ave">
+                      </div>
+                      <div class="form-group">
+                        <label class="form-label" for="shipping_address2">Address 2</label>
+                        <input type="text" id="shipping_address2" name="shipping_address2" class="form-input" placeholder="Suite 9">
+                      </div>
+                    </div>
+                    <div class="form-row">
+                      <div class="form-group">
+                        <label class="form-label" for="shipping_city">City</label>
+                        <input type="text" id="shipping_city" name="shipping_city" class="form-input" placeholder="Boston">
+                      </div>
+                      <div class="form-group">
+                        <label class="form-label" for="shipping_state">State</label>
+                        <input type="text" id="shipping_state" name="shipping_state" class="form-input" placeholder="MA">
+                      </div>
+                    </div>
+                    <div class="form-row">
+                      <div class="form-group">
+                        <label class="form-label" for="shipping_zip">Zip</label>
+                        <input type="text" id="shipping_zip" name="shipping_zip" class="form-input" placeholder="02101">
+                      </div>
+                      <div class="form-group">
+                        <label class="form-label" for="shipping_country">Country</label>
+                        <input type="text" id="shipping_country" name="shipping_country" class="form-input" placeholder="US" maxlength="2">
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label" for="shipping_phone_number">Phone</label>
+                      <input type="text" id="shipping_phone_number" name="shipping_phone_number" class="form-input" placeholder="5559876543">
+                    </div>
+
+                    <div class="form-group" style="margin-top:.5rem;">
+                      <input type="checkbox" id="eligible_for_card_updater" name="eligible_for_card_updater">
+                      <label for="eligible_for_card_updater"><code>eligible_for_card_updater</code></label>
+                    </div>
+                  </details>
+
                   <input type="checkbox" id="retain-payment-method" name="retain-payment-method">
                   <label for="retain-payment-method">Save this card.</label>
                   <!-- Status Message -->
@@ -354,6 +451,160 @@
                   </div>
                 </div>
               </div>
+
+              <!-- Legacy setParam parity: applies to both Hosted Fields and Express Checkout -->
+              <div class="config-option-row">
+                <div class="config-option">
+                  <input type="checkbox" id="config-eligible-for-card-updater" class="config-checkbox">
+                  <div class="config-option-content">
+                    <label for="config-eligible-for-card-updater" class="config-option-label">
+                      <code>eligible_for_card_updater</code>
+                    </label>
+                    <span class="config-option-desc">Tokenize as eligible for the gateway-driven Card Updater</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Express Checkout only: extra fields rendered inside the iframe -->
+              <div id="express-checkout-only-panel" class="hidden">
+                <details id="ec-extra-fields-section" style="border:1px solid var(--color-gray-200); border-radius:6px; padding:.5rem .75rem; margin-bottom:.75rem;">
+                  <summary style="cursor:pointer; font-weight:600;">Extra fields in Express Checkout</summary>
+                  <p style="font-size:.85rem; color: var(--color-gray-500); margin-top:.5rem;">
+                    Tick any field below to add it to <code>uiConfig.cardPaymentFormFields</code>. The iframe will render an
+                    input for each ticked field; the value is included in the tokenization request.
+                  </p>
+
+                  <h4 style="margin-top:.5rem; margin-bottom:.25rem;">Cardholder</h4>
+                  <div class="config-option-row">
+                    <div class="config-option">
+                      <input type="checkbox" id="ec-field-full_name" class="config-checkbox" data-ec-field="full_name">
+                      <div class="config-option-content">
+                        <label for="ec-field-full_name" class="config-option-label"><code>full_name</code></label>
+                      </div>
+                    </div>
+                    <div class="config-option">
+                      <input type="checkbox" id="ec-field-email" class="config-checkbox" data-ec-field="email">
+                      <div class="config-option-content">
+                        <label for="ec-field-email" class="config-option-label"><code>email</code></label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="config-option-row">
+                    <div class="config-option">
+                      <input type="checkbox" id="ec-field-company" class="config-checkbox" data-ec-field="company">
+                      <div class="config-option-content">
+                        <label for="ec-field-company" class="config-option-label"><code>company</code></label>
+                      </div>
+                    </div>
+                    <div class="config-option">
+                      <input type="checkbox" id="ec-field-phone_number" class="config-checkbox" data-ec-field="phone_number">
+                      <div class="config-option-content">
+                        <label for="ec-field-phone_number" class="config-option-label"><code>phone_number</code></label>
+                      </div>
+                    </div>
+                  </div>
+
+                  <h4 style="margin-top:.5rem; margin-bottom:.25rem;">Billing address</h4>
+                  <div class="config-option-row">
+                    <div class="config-option">
+                      <input type="checkbox" id="ec-field-address1" class="config-checkbox" data-ec-field="address1">
+                      <div class="config-option-content">
+                        <label for="ec-field-address1" class="config-option-label"><code>address1</code></label>
+                      </div>
+                    </div>
+                    <div class="config-option">
+                      <input type="checkbox" id="ec-field-address2" class="config-checkbox" data-ec-field="address2">
+                      <div class="config-option-content">
+                        <label for="ec-field-address2" class="config-option-label"><code>address2</code></label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="config-option-row">
+                    <div class="config-option">
+                      <input type="checkbox" id="ec-field-city" class="config-checkbox" data-ec-field="city">
+                      <div class="config-option-content">
+                        <label for="ec-field-city" class="config-option-label"><code>city</code></label>
+                      </div>
+                    </div>
+                    <div class="config-option">
+                      <input type="checkbox" id="ec-field-state" class="config-checkbox" data-ec-field="state">
+                      <div class="config-option-content">
+                        <label for="ec-field-state" class="config-option-label"><code>state</code></label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="config-option-row">
+                    <div class="config-option">
+                      <input type="checkbox" id="ec-field-zip" class="config-checkbox" data-ec-field="zip">
+                      <div class="config-option-content">
+                        <label for="ec-field-zip" class="config-option-label"><code>zip</code></label>
+                      </div>
+                    </div>
+                    <div class="config-option">
+                      <input type="checkbox" id="ec-field-country" class="config-checkbox" data-ec-field="country">
+                      <div class="config-option-content">
+                        <label for="ec-field-country" class="config-option-label"><code>country</code></label>
+                      </div>
+                    </div>
+                  </div>
+
+                  <h4 style="margin-top:.5rem; margin-bottom:.25rem;">Shipping address</h4>
+                  <div class="config-option-row">
+                    <div class="config-option">
+                      <input type="checkbox" id="ec-field-shipping_address1" class="config-checkbox" data-ec-field="shipping_address1">
+                      <div class="config-option-content">
+                        <label for="ec-field-shipping_address1" class="config-option-label"><code>shipping_address1</code></label>
+                      </div>
+                    </div>
+                    <div class="config-option">
+                      <input type="checkbox" id="ec-field-shipping_address2" class="config-checkbox" data-ec-field="shipping_address2">
+                      <div class="config-option-content">
+                        <label for="ec-field-shipping_address2" class="config-option-label"><code>shipping_address2</code></label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="config-option-row">
+                    <div class="config-option">
+                      <input type="checkbox" id="ec-field-shipping_city" class="config-checkbox" data-ec-field="shipping_city">
+                      <div class="config-option-content">
+                        <label for="ec-field-shipping_city" class="config-option-label"><code>shipping_city</code></label>
+                      </div>
+                    </div>
+                    <div class="config-option">
+                      <input type="checkbox" id="ec-field-shipping_state" class="config-checkbox" data-ec-field="shipping_state">
+                      <div class="config-option-content">
+                        <label for="ec-field-shipping_state" class="config-option-label"><code>shipping_state</code></label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="config-option-row">
+                    <div class="config-option">
+                      <input type="checkbox" id="ec-field-shipping_zip" class="config-checkbox" data-ec-field="shipping_zip">
+                      <div class="config-option-content">
+                        <label for="ec-field-shipping_zip" class="config-option-label"><code>shipping_zip</code></label>
+                      </div>
+                    </div>
+                    <div class="config-option">
+                      <input type="checkbox" id="ec-field-shipping_country" class="config-checkbox" data-ec-field="shipping_country">
+                      <div class="config-option-content">
+                        <label for="ec-field-shipping_country" class="config-option-label"><code>shipping_country</code></label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="config-option-row">
+                    <div class="config-option">
+                      <input type="checkbox" id="ec-field-shipping_phone_number" class="config-checkbox" data-ec-field="shipping_phone_number">
+                      <div class="config-option-content">
+                        <label for="ec-field-shipping_phone_number" class="config-option-label"><code>shipping_phone_number</code></label>
+                      </div>
+                    </div>
+                  </div>
+
+                  <p style="font-size:.8rem; color: var(--color-gray-500); margin-top:.5rem;">
+                    Settings are read when you click <strong>Open Payment Form</strong>; reopen the form to apply changes.
+                  </p>
+                </details>
+              </div>
               <div id="hosted-fields-only-panel">
                 <div id="hosted-fields-config-options">
                   <div class="config-option-row">
@@ -418,6 +669,80 @@
                     </div>
                   </div>
 
+                  <!-- Tier 1 parity controls -->
+                  <div class="config-option-row">
+                    <div class="config-option">
+                      <div class="config-option-content">
+                        <label for="hf-demo-input-mode" class="config-option-label">Input mode</label>
+                        <span class="config-option-desc">HTML <code>inputmode</code> on both fields — affects mobile
+                          virtual keyboards</span>
+                        <select id="hf-demo-input-mode" class="form-input" style="margin-top: 0.5rem; width: 100%;">
+                          <option value="">— default —</option>
+                          <option value="numeric">numeric</option>
+                          <option value="tel">tel</option>
+                          <option value="text">text</option>
+                          <option value="decimal">decimal</option>
+                          <option value="search">search</option>
+                          <option value="email">email</option>
+                          <option value="url">url</option>
+                          <option value="none">none</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div class="config-option">
+                      <input type="checkbox" id="hf-demo-required" class="config-checkbox" checked>
+                      <div class="config-option-content">
+                        <label for="hf-demo-required" class="config-option-label">Required attribute</label>
+                        <span class="config-option-desc">Toggles the HTML5 <code>required</code> attribute on both
+                          hosted inputs</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="config-option-row">
+                    <div class="config-option">
+                      <div class="config-option-content">
+                        <span class="config-option-label">Reset fields</span>
+                        <span class="config-option-desc">Clears card number and CVV</span>
+                        <button type="button" id="hf-demo-reset-fields" class="btn btn-secondary"
+                          style="margin-top: 0.5rem;">Reset fields</button>
+                      </div>
+                    </div>
+
+                    <div class="config-option">
+                      <div class="config-option-content">
+                        <span class="config-option-label">Reload SDK</span>
+                        <span class="config-option-desc">Unmounts and remounts the iframes</span>
+                        <button type="button" id="hf-demo-reload" class="btn btn-secondary"
+                          style="margin-top: 0.5rem;">Reload</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="config-option-row">
+                    <div class="config-option">
+                      <div class="config-option-content">
+                        <span class="config-option-label">Transfer focus to iframe</span>
+                        <span class="config-option-desc">Calls <code>transferFocus('iframe')</code> — parks focus on
+                          the iframe</span>
+                        <button type="button" id="hf-demo-focus-iframe" class="btn btn-secondary"
+                          style="margin-top: 0.5rem;">Focus iframe</button>
+                      </div>
+                    </div>
+
+                    <div class="config-option">
+                      <div class="config-option-content">
+                        <span class="config-option-label">isLoaded() probe</span>
+                        <span class="config-option-desc">Calls <code>sdk.isLoaded()</code> and shows the result</span>
+                        <button type="button" id="hf-demo-is-loaded" class="btn btn-secondary"
+                          style="margin-top: 0.5rem;">Probe isLoaded</button>
+                        <span id="hf-demo-is-loaded-result" class="config-option-desc"
+                          style="margin-top: 0.25rem;"></span>
+                      </div>
+                    </div>
+                  </div>
+
                   <div class="config-option">
                     <div class="config-option-content">
                       <span class="config-option-label">Destroy SDK instance</span>
@@ -435,6 +760,12 @@
                     Last <code>validation</code> payload
                   </span>
                   <pre id="hf-demo-last-validation" class="hf-demo-pre"
+                    style="margin: 0; padding: 0.75rem; max-height: 12rem; overflow: auto; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.6875rem; background: var(--color-gray-50, #f9fafb); border: 1px solid var(--color-gray-100); border-radius: 6px; white-space: pre-wrap; word-break: break-word;">—</pre>
+
+                  <span style="font-weight: 500; color: var(--color-gray-600); margin-top: 0.75rem; display: block;">
+                    Last <code>consoleError</code> payload
+                  </span>
+                  <pre id="hf-demo-last-console-error" class="hf-demo-pre"
                     style="margin: 0; padding: 0.75rem; max-height: 12rem; overflow: auto; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.6875rem; background: var(--color-gray-50, #f9fafb); border: 1px solid var(--color-gray-100); border-radius: 6px; white-space: pre-wrap; word-break: break-word;">—</pre>
                 </div>
               </div>
