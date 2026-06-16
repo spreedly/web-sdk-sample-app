@@ -3,6 +3,14 @@
   "version": "0.0.0",
   "description": "Spreedly SDK Sample App",
   "license": "Apache-2.0",
+  "homepage": "https://github.com/spreedly/web-sdk-sample-app",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/spreedly/web-sdk-sample-app.git"
+  },
+  "bugs": {
+    "url": "https://github.com/spreedly/web-sdk-sample-app/issues"
+  },
   "scripts": {
     "build": "scripts/build.sh",
     "build:watch": "tsc --watch",
@@ -54,9 +62,13 @@
   },
   "overrides": {
     "path-to-regexp": "^8.4.0",
-    "qs": "^6.14.2",
+    "qs": "^6.15.2",
     "follow-redirects": "^1.16.0",
     "minimatch": "^10.2.3",
-    "brace-expansion": "^5.0.5"
+    "brace-expansion": "^5.0.6",
+    "flatted": "^3.4.2",
+    "picomatch": "^2.3.2",
+    "ajv": "^6.14.0",
+    "diff": "^4.0.4"
   }
 }
