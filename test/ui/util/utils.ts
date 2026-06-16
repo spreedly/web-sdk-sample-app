@@ -235,7 +235,7 @@ export const PLACEHOLDERS = {
         return `${month}/${year.slice(-2)}`;
     },
 
-    verifyResultCard: async (page: Page, cardFirstSixDigits, cardLastFourDigits, storageState: string, options?: {
+    verifyResultCard: async (page: Page, cardFirstSixDigits: string, cardLastFourDigits: string, storageState: string, options?: {
         expiryDate?: { year: string, month: string };
     }) => {
         await expect(page.locator('.result-card')).toBeVisible();

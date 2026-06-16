@@ -20,4 +20,15 @@ export const landingPage = {
         await expect(threeDSButton).toBeVisible();
         await threeDSButton.click();
 },
+
+    clickOn3DSGatewaySpecificButton: async (page: Page) => {
+        const threeDSGatewaySpecificButton = page.locator(SELECTORS.THREE_DS_GATEWAY_SPECIFIC_BUTTON);
+        await expect(threeDSGatewaySpecificButton).toBeVisible();
+        await threeDSGatewaySpecificButton.click();
+},
+    clickOnOffsitePaymentsButton: async (page: Page) => {
+        const offsitePaymentsButton = page.locator(SELECTORS.OFFSITE_PAYMENTS_BUTTON);
+        await expect(offsitePaymentsButton).toBeVisible();
+        await offsitePaymentsButton.click();
+},
 }

@@ -72,6 +72,36 @@ export const SELECTORS = {
   THREE_DS2_PAY_BUTTON: ".btn-text",
   THREE_DS2_AUTHENTICATING_TEXT: '.btn-text:has-text("Authenticating...")',
   THREE_DS2_BUTTON_TEXT: '.btn-text',
+  THREE_DS_GATEWAY_SPECIFIC_ACS_SIMULATOR_IFRAME: 'iframe.challenge-iframe',
+  THREE_DS_GATEWAY_SPECIFIC_BUTTON: '[data-flow="purchase-with-3ds-gateway-specific"]',
+  THREE_DS_GATEWAY_SPECIFIC_ACS_SIMULATOR_FORM: 'h2:has-text("Spreedly ACS Simulator")',
+  THREE_DS_GATEWAY_SPECIFIC_ACS_SIMULATOR_ALLOW_BUTTON: 'input[value="Allow"]',
+  THREE_DS_GATEWAY_SPECIFIC_ACS_SIMULATOR_DENY_BUTTON: 'input[value="Deny"]',
+  STRIPE_APM_FRAME_LOCATOR: '.__PrivateStripeElement iframe',
+  OFFSITE_PAYMENTS_BUTTON: '[data-flow="offsite-payments"]',
+  PAYPAL_BUTTON: '.payment-method-name:has-text("PayPal")',
+  STRIPE_APM_BUTTON: '.payment-method-name:has-text("Stripe APM")',
+  STRIPE_APM_ADDRESS_FIELD: '#payment-addressLine1Input',
+  STRIPE_APM_CITY_FIELD: '#payment-localityInput',
+  STRIPE_APM_ZIP_FIELD: '#payment-postalCodeInput',
+  STRIPE_APM_COUNTRY_SELECTOR: '#payment-countryInput',
+  STRIPE_APM_COUNTRY_STATE_FIELD: '#payment-administrativeAreaInput',
+  STRIPE_APM_BANK_FIELD: '#payment-bankInput',
+  AUTHORIZE_BUTTON: 'a[data-testid="authorize-test-payment-button"]',
+  DENY_BUTTON: 'a[data-testid="fail-test-payment-button"]',
+  REDIRECT_TITLE: '#redirect-title',
+  ADDITIONAL_PAYMENT_METHOD_DROP_DOWN: '.p-AdditionalPaymentMethods-menu',
+  STRIPE_APM_EMAIL_FIELD: '#payment-emailInput',
+  EBANX_PAYMENT_METHOD_DROP_DOWN: '#payment-method-select',
+  EBANX_OXXO_REDIRECT_PAGE_IMAGE: '.oxxo-logo-img',
+  EBANX_BOLETO_BANCARIO_REDIRECT_PAGE_IMAGE: 'img[src*="logo_ebanx"]',
+  EBANX_PIX_REDIRECT_PAGE_IMAGE: 'img.voucher-header__logo[alt="Pix"]',
+  EBANX_PIX_REDIRECT_QR_CODE_IMAGE: 'img.qrc-code-img[alt="QR Code"]',
+  EBANX_NUPAY_REDIRECT_PAGE_IMAGE: 'p.nupay img[alt="NuPay"]',
+  NUPAY_TEST_ENVIRONMENT_SIMULATOR: 'h2:has-text("Test Environment Simulator")',
+  NUPAY_AUTHORIZE_YES_BUTTON: 'a:has-text("Authorized = YES")',
+  NUPAY_AUTHORIZE_NO_BUTTON: 'a:has-text("Authorized = NO")',
+  NUPAY_AUTHORIZE_PENDING_BUTTON: 'a:has-text("Leave Pending")',
 } as const;
 
 export const THREE_DS_SELECTORS = {
@@ -108,6 +138,7 @@ export const THREE_DS_SELECTORS = {
   RESULT_ICON_SUCCESS: '.result-icon.success',
   RESULT_ICON_ERROR: '.result-icon.error',
   RESULT_TITLE_ERROR: '.result-title:has-text("Payment Failed")',
+  RESULT_TITLE_PENDING: '.result-title:has-text("Payment Pending")',
   MAKE_ANOTHER_PURCHASE_BUTTON: 'button:has-text("Make Another Purchase")',
   TRY_AGAIN_BUTTON: 'button:has-text("Try Again")',
   START_OVER_BUTTON: 'button:has-text("Start Over")',
@@ -126,6 +157,11 @@ export const PLACEHOLDERS = {
   // Hosted Fields
   HOSTED_FIRST_NAME: "Enter first name",
   HOSTED_LAST_NAME: "Enter last name",
+
+  // stripe apm
+  STRIPE_APM_IBAN: "DE00 0000 0000 0000 0000 00",
+  STRIPE_APM_NAME: "First and last name",
+  STRIPE_APM_EMAIL: "you@example.com",
 };
 
 export const LABELS = {
@@ -176,6 +212,17 @@ export const TEST_DATA = {
   THREE_DS2_FRUCTIONLESS_FAILURE_CARD_NUMBER: "5248 4811 1120 0179",
   THREE_DS2_CHALLENGE_FLOW_SUCCESS_PIN: "1234",
   THREE_DS2_CHALLENGE_FLOW_FAILED_PIN: "4567",
+  THREE_DS2_GATEWAY_SPECIFIC_VALID_CARD_NUMBER: "4556 7610 2998 3886",
+  THREE_DS2_GATEWAY_SPECIFIC_INVALID_CARD_NUMBER: "4024 0071 0193 4890",
+  STRIPE_APM_IBAN: "IE64 IRCE 9205 0112 3456 78",
+  STRIPE_APM_NAME: "John Doe",
+  STRIPE_APM_EMAIL: "john.doe@example.com",
+  STRIPE_APM_CITY: "Dublin",
+  STRIPE_APM_ZIP: "d02af30",
+  STRIPE_APM_SEPA_COUNTRY: "IE",
+  STRIPE_APM_SEPA_COUNTRY_STATE: "Dublin",
+  STRIPE_APM_BANK_NAME_EPS: "Bank Austria",
+  STRIPE_APM_BANK_NAME_PRZELEWY24: "alior_bank"
 };
 
 export const HEADINGS = {

@@ -108,7 +108,7 @@ export const purchasePage = {
         await expect(challengeOverlay).toHaveClass(/hidden/, { timeout });
     },
 
-    waitForResultPage: async (page: Page, timeout: number = 15000) => {
+    waitForResultPage: async (page: Page, timeout: number = 30000) => {
         await purchasePage.waitForChallengeModalToHide(page, timeout);
         const resultSection = page.locator(THREE_DS_SELECTORS.RESULT_SECTION);
         await expect(resultSection).toBeVisible({ timeout });
@@ -127,7 +127,8 @@ export const purchasePage = {
             return 'success';
         } else if (await errorTitle.count() > 0 && await errorTitle.isVisible()) {
             return 'error';
-        } else {
+        }
+        else {
             throw new Error('Unable to determine result page type');
         }
     },
