@@ -10,12 +10,12 @@ function getSDKType() {
 function getSDKScriptUrl() {
   const sdkType = getSDKType();
   // uncomment this to use local sdk
-  // if (window.location.hostname === 'localhost') {
-  //   if (sdkType === 'express-checkout') {
-  //     return 'http://localhost:5173/express-checkout.js';
-  //   }
-  //   return 'http://localhost:5000/index.js';
-  // }
+  if (window.location.hostname === 'localhost') {
+    if (sdkType === 'express-checkout') {
+      return 'http://localhost:5173/express-checkout.js';
+    }
+    return 'http://localhost:5000/index.js';
+  }
 
   if (sdkType === 'express-checkout') {
     return 'https://core.spreedly.com/checkout/elements/1.0.1/express-checkout.js';
@@ -279,12 +279,9 @@ window.SpreedlyUtils = {
   createOffsitePurchase,
   getTransactionStatus,
 
-<<<<<<< HEAD
   // ACH Payments
   createAchPurchase,
   
-=======
->>>>>>> main
   // UI helpers
   showStatus,
   hideStatus,
