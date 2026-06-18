@@ -3,10 +3,10 @@ permissions:
   contents: read
 
 on:
-  pull_request:
-  push:
-    branches:
-      - main
+  # pull_request:
+  # push:
+  #   branches:
+  #     - main
   schedule:
     # Run at 06:00 UTC daily
     - cron: '0 6 * * *'
