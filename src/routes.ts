@@ -17,6 +17,7 @@ import {
   createPurchase,
   createBraintreePurchase,
   confirmTransaction,
+  createAchPurchase,
 } from './controllers/payments';
 
 const router = Router();
@@ -574,5 +575,43 @@ router.post('/braintree-purchase', createBraintreePurchase);
  *         description: Error confirming transaction
  */
 router.post('/transactions/:transactionToken/confirm', confirmTransaction);
+
+/**
+ * @swagger
+ * /api/v1/ach-purchase:
+ *   post:
+ *     description: Create a purchase transaction against an ACH (bank_account) payment method using the Spreedly Test gateway
+ *     tags: [ACH Payments]
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: body
+ *         description: Purchase details
+ *         in: body
+ *         required: true
+ *         schema:
+ *           type: object
+ *           required:
+ *             - payment_method_token
+ *             - amount
+ *           properties:
+ *             payment_method_token:
+ *               type: string
+ *               description: Token of the bank_account payment method
+ *             amount:
+ *               type: number
+ *               description: Transaction amount in cents
+ *             currency_code:
+ *               type: string
+ *               description: ISO 4217 currency code (default USD)
+ *     responses:
+ *       200:
+ *         description: ACH purchase created successfully
+ *       400:
+ *         description: Missing required parameters
+ *       500:
+ *         description: Error creating purchase
+ */
+router.post('/ach-purchase', createAchPurchase);
 
 export default router;

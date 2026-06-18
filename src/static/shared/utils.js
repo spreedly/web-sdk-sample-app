@@ -218,6 +218,22 @@ async function createOffsitePurchase(paymentMethodToken, amount, redirectUrl, ca
   }
 }
 
+// ACH Payments — runs a server-side gateway purchase against an ACH
+// (bank_account) payment method token using the configured Spreedly Test gateway.
+async function createAchPurchase(paymentMethodToken, amount, currencyCode = 'USD') {
+  try {
+    const response = await axios.post(`${LOCAL_API_URL}/ach-purchase`, {
+      payment_method_token: paymentMethodToken,
+      amount,
+      currency_code: currencyCode,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error creating ACH purchase:', error);
+    throw error;
+  }
+}
+
 async function getTransactionStatus(transactionToken) {
   try {
     const response = await axios.get(`${API_BASE_URL}/transactions/${transactionToken}`);
@@ -263,6 +279,9 @@ window.SpreedlyUtils = {
   createOffsitePurchase,
   getTransactionStatus,
 
+  // ACH Payments
+  createAchPurchase,
+  
   // UI helpers
   showStatus,
   hideStatus,

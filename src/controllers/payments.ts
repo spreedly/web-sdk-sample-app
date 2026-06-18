@@ -490,6 +490,50 @@ export const createBraintreePurchase = async (req: Request, res: Response): Prom
   }
 };
 
+// Run a purchase against an ACH (bank_account) payment method token using
+// the Spreedly Test gateway. Mirrors createSimplePurchase but is dedicated to
+// ACH so it can be wired and documented independently for the demo flow.
+export const createAchPurchase = async (req: Request, res: Response): Promise<void> => {
+  const gateway_key = config.spreedlyGatewayToken;
+
+  const { payment_method_token, amount, currency_code = 'USD' } = req.body;
+
+  if (!payment_method_token || !amount) {
+    res.status(400).json({ error: 'payment_method_token and amount are required' });
+    return;
+  }
+
+  const body = {
+    transaction: {
+      payment_method_token,
+      amount,
+      currency_code,
+    },
+  };
+
+  try {
+    const response = await axios.post(
+      `${config.spreedlyUrl}/v1/gateways/${gateway_key}/purchase.json`,
+      body,
+      {
+        headers: {
+          Authorization: getAuthorizationHeader(),
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    const transaction = response.data?.transaction;
+    res.json({
+      success: transaction?.succeeded || false,
+      transaction,
+    });
+  } catch (error) {
+    const apiError = error as AxiosError;
+    res.status(apiError.response?.status || 500).json(apiError.response?.data);
+  }
+};
+
 // Confirm a Braintree/Stripe-apm transaction with the nonce from PayPal/Venmo
 export const confirmTransaction = async (req: Request, res: Response): Promise<void> => {
   const transaction_token = req.params.transactionToken || '';

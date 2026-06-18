@@ -9,7 +9,6 @@ library to the new Checkout Web SDK (`SpreedlyHostedFields` /
 - ✅ — direct equivalent
 - ⚠️ — equivalent exists but the signature, event name, or payload changed
 - 🆕 — new in Checkout Web SDK (no legacy counterpart)
-- ❌ TODO — exists in legacy, not yet in Checkout Web SDK
 
 ---
 
@@ -274,8 +273,6 @@ are marked ⚠️.
 | `'recache'` `(token, pm)` | `'recacheSuccess'` `(response)` | ⚠️ | Renamed; payload is the recache response object `{ message, token, payment_method }`. |
 | _(none)_ | `'cvvExpired'` (subset of `'error'`) | 🆕 | New SDK clears CVV after PCI DSS 3.2.3 TTL (3 minutes) and emits an `error` with `{ message: 'CVV expired after 3 minutes', reason: 'PCI DSS 3.2.3 TTL compliance' }`. |
 | `'3ds:status'` `(event)` (single dispatcher; switch on `event.action`) | Typed callbacks on the `SpreedlyThreeDSLifecycle` constructor | ⚠️ | See [3DS](#3ds--global--forter) — replaced by `callbacks: { onChallenge, onSuccess, onError, onDeviceFingerprint?, onTriggerCompletion? }`. |
-| `'fraud:token'` | _(none — Spreedly Fraud client not ported)_ | ❌ TODO | |
-| _none_ | `'close'` (Hosted Fields after `destroy()`, and Express Checkout) | 🆕 | |
 | _none_ | `'offsiteTokenGenerated'` / `'offsitePaymentError'` | 🆕 | See [Offsite payments](#offsite-payments--paypal--redirect-style). |
 | _none_ | `'achTokenGenerated'` / `'achPaymentError'` | 🆕 | See [ACH payments](#ach-payments-). |
 
@@ -577,22 +574,3 @@ sdk.expressCheckout({
 
 Reference: `web-sdk-sample-app/src/static/tokenize/tokenize.js?sdk=express-checkout`,
 `checkout-web-sdk/docs/tokenization/express-checkout/INTEGRATION_GUIDE.md`
-
----
-
-## Not yet migrated
-
-The following legacy iFrame APIs do **not** have an equivalent in Checkout Web
-SDK today. Track each as a TODO when planning your migration.
-
-### Field-level controls
-- `Spreedly.setValue('number' \| 'cvv', value)` — intentionally not migrated;
-  setting card values from the parent page would break PCI scope.
-
-### Events
-- `'numberSet'` / `'cvvSet'` / `'sourceSet'` — mirror legacy `setValue` / `source`
-  flows that aren't supported.
-- `'fraud:token'` — see below.
-
-### Other
-- `Spreedly.Fraud` (built-in fraud client).
