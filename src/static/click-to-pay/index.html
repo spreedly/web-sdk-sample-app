@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Click to Pay (Mastercard) — Spreedly Web SDK Demo</title>
+
+  <!-- Mastercard SRC UI Kit (card list / OTP web components for returning-user flows) -->
+  <script
+    type="module"
+    src="https://sandbox.src.mastercard.com/srci/integration/components/src-ui-kit/src-ui-kit.esm.js"
+  ></script>
+  <link
+    rel="stylesheet"
+    href="https://sandbox.src.mastercard.com/srci/integration/components/src-ui-kit/src-ui-kit.css"
+  />
+
+  <!-- Mastercard Click to Pay library (sandbox). The SDK reads srcDpaId + locale off
+       this tag. DPAID is the Spreedly sandbox DPAID. -->
+  <script
+    src="https://sandbox.src.mastercard.com/srci/integration/2/lib.js?srcDpaId=83f255e3-7f82-4441-8782-b17737fa6e29&locale=en_US"
+  ></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <link rel="stylesheet" href="../shared/styles.css" />
+  <style>
+    /* ── Stepper ───────────────────────────────────────────────────────── */
+    .stepper { display: flex; justify-content: center; margin-bottom: 2rem; padding: 0 1rem; }
+    .stepper-step { display: flex; align-items: center; gap: 0.5rem; }
+    .stepper-step:not(:last-child)::after {
+      content: ''; width: 60px; height: 2px; background: var(--color-gray-300); margin: 0 1rem;
+    }
+    .stepper-step.completed:not(:last-child)::after { background: #22c55e; }
+    .step-number {
+      width: 2.5rem; height: 2.5rem; border-radius: 50%; display: flex; align-items: center;
+      justify-content: center; font-weight: 700; font-size: 1rem; background: #e5e7eb;
+      color: #6b7280; transition: all 0.2s ease; border: 2px solid transparent;
+    }
+    .stepper-step.active .step-number {
+      background: #000; color: #fff; border-color: #000; box-shadow: 0 0 0 4px rgba(0,0,0,0.2);
+    }
+    .stepper-step.completed .step-number { background: #22c55e; color: #fff; border-color: #22c55e; }
+    .step-label { font-size: 0.875rem; font-weight: 500; color: var(--color-gray-500); }
+    .stepper-step.active .step-label, .stepper-step.completed .step-label { color: var(--color-gray-900); }
+
+    .step-content { display: none; text-align: left; }
+    .step-content.active { display: block; }
+
+    /* ── Products ──────────────────────────────────────────────────────── */
+    .products-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.5rem; margin-bottom: 1.5rem;
+    }
+    .product-card {
+      background: var(--color-white); border: 1px solid var(--color-gray-200);
+      border-radius: var(--radius-lg); padding: 1.5rem; display: flex; flex-direction: column;
+      align-items: center; text-align: center; box-shadow: var(--shadow-sm);
+    }
+    .product-emoji { font-size: 3rem; margin-bottom: 0.75rem; }
+    .product-name { font-size: 1.125rem; font-weight: 600; color: var(--color-gray-900); margin-bottom: 0.25rem; }
+    .product-description { font-size: 0.875rem; color: var(--color-gray-500); margin-bottom: 0.75rem; }
+    .product-price { font-size: 1.25rem; font-weight: 700; color: var(--color-accent); margin-bottom: 1rem; }
+    .quantity-control { display: flex; align-items: center; gap: 0.5rem; }
+    .quantity-btn {
+      background: var(--color-gray-100); border: 1px solid var(--color-gray-300);
+      border-radius: var(--radius-md); width: 2.25rem; height: 2.25rem; display: flex;
+      align-items: center; justify-content: center; cursor: pointer; font-size: 1.25rem;
+      color: var(--color-gray-700); transition: all var(--transition);
+    }
+    .quantity-btn:hover:not(:disabled) { background: var(--color-gray-200); }
+    .quantity-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .quantity-input {
+      width: 3rem; text-align: center; border: 1px solid var(--color-gray-300);
+      border-radius: var(--radius-md); padding: 0.25rem 0; font-size: 1rem; color: var(--color-gray-800);
+    }
+
+    /* ── Order summary ─────────────────────────────────────────────────── */
+    .order-summary { background: var(--color-gray-50); border-radius: var(--radius-lg); padding: 1.5rem; margin-top: 1rem; }
+    .order-summary-title { font-size: 1rem; font-weight: 600; color: var(--color-gray-900); margin-bottom: 1rem; }
+    .order-item { display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.9rem; color: var(--color-gray-700); }
+    .order-item-qty { font-size: 0.75rem; color: var(--color-gray-500); }
+    .order-total {
+      display: flex; justify-content: space-between; font-weight: 700; font-size: 1.125rem;
+      padding-top: 0.75rem; margin-top: 0.5rem; border-top: 1px solid var(--color-gray-300);
+    }
+
+    /* ── Forms ─────────────────────────────────────────────────────────── */
+    .form-row { display: flex; gap: 1rem; margin-bottom: 1rem; }
+    .form-group { flex: 1; display: flex; flex-direction: column; }
+    .form-label { font-size: 0.875rem; font-weight: 500; color: var(--color-gray-700); margin-bottom: 0.5rem; }
+    .form-input {
+      padding: 0.75rem 1rem; border: 1px solid var(--color-gray-300); border-radius: var(--radius-md);
+      font-size: 1rem; color: var(--color-gray-900); transition: border-color var(--transition);
+    }
+    .form-input:focus { outline: none; border-color: var(--color-accent); }
+    .hosted-field-container {
+      border: 1px solid var(--color-gray-300); border-radius: var(--radius-md); padding: 0.75rem 1rem;
+      min-height: 44px; display: flex; align-items: center; background: var(--color-white);
+    }
+
+    /* ── Click to Pay loader (Mastercard's <src-loader> in a centered modal) ──── */
+    .c2p-loader-overlay {
+      position: fixed; inset: 0; z-index: 1000;
+      background: rgba(15, 15, 15, 0.5);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .c2p-loader-overlay src-loader {
+      display: block; background: var(--color-white);
+      border-radius: 12px; padding: 1.5rem 2rem;
+      width: min(440px, 92vw); box-shadow: 0 12px 48px rgba(0, 0, 0, 0.25);
+    }
+
+    /* ── Click to Pay consent ──────────────────────────────────────────── */
+    .c2p-consent {
+      display: flex; gap: 0.625rem; align-items: flex-start; background: var(--color-gray-50);
+      border: 1px solid var(--color-gray-200); border-radius: var(--radius-md);
+      padding: 0.875rem 1rem; margin: 1rem 0;
+    }
+    .c2p-consent input[type="checkbox"] { margin-top: 0.2rem; width: 1.05rem; height: 1.05rem; flex-shrink: 0; }
+    .c2p-consent-text { font-size: 0.8125rem; color: var(--color-gray-600); line-height: 1.4; }
+    .c2p-consent-text strong { color: var(--color-gray-900); }
+
+    /* Enhanced consent box (matches Mastercard's demo: brand mark, links, terms line) */
+    .c2p-consent-box {
+      background: var(--color-gray-50); border: 1px solid var(--color-gray-200);
+      border-radius: var(--radius-md); padding: 1.25rem 1.5rem; margin: 1rem 0;
+    }
+    .c2p-consent-brand { margin-bottom: 1rem; }
+    .c2p-consent-brand img { height: 24px; }
+    .c2p-consent-row { display: flex; gap: 0.75rem; align-items: flex-start; cursor: pointer; }
+    .c2p-consent-row input[type="checkbox"] { margin-top: 0.2rem; width: 1.1rem; height: 1.1rem; flex-shrink: 0; }
+    .c2p-consent-row .c2p-consent-text { font-size: 0.9375rem; color: var(--color-gray-900); line-height: 1.45; }
+    .c2p-consent-note { font-size: 0.8125rem; color: var(--color-gray-600); line-height: 1.45; margin-top: 0.875rem; }
+    .c2p-consent-box a { color: var(--color-gray-900); text-decoration: underline; }
+
+    /* ── Saved card list (returning user) ──────────────────────────────── */
+    .saved-cards-list { display: flex; flex-direction: column; gap: 0.75rem; }
+    .saved-card {
+      display: flex; align-items: center; gap: 1rem; padding: 1rem;
+      border: 2px solid var(--color-gray-200); border-radius: var(--radius-md);
+      cursor: pointer; transition: all var(--transition);
+    }
+    .saved-card:hover { border-color: var(--color-gray-300); }
+    .saved-card.selected { border-color: var(--color-accent); background: rgba(10, 10, 10, 0.04); }
+    .saved-card-art { width: 42px; height: 27px; object-fit: contain; border-radius: 3px; }
+    .saved-card-info { flex: 1; min-width: 0; }
+    .saved-card-name { font-weight: 600; color: var(--color-gray-900); }
+    .saved-card-sub { font-size: 0.8125rem; color: var(--color-gray-600); }
+    .saved-card input[type='radio'] { width: 1.1rem; height: 1.1rem; }
+    .otp-input { letter-spacing: 0.3em; text-align: center; font-size: 1.1rem; }
+    .btn-link {
+      background: none; border: none; color: var(--color-gray-600);
+      font-size: 0.8125rem; text-decoration: underline; cursor: pointer; padding: 0.4rem;
+    }
+    .btn-link:hover { color: var(--color-gray-900); }
+    .btn-link:disabled { opacity: 0.5; cursor: default; }
+
+    /* ── Navigation ────────────────────────────────────────────────────── */
+    .step-navigation {
+      display: flex; justify-content: space-between; gap: 1rem; margin-top: 1.5rem;
+      padding-top: 1.5rem; border-top: 1px solid var(--color-gray-200);
+    }
+    .btn-back { background: var(--color-white); color: var(--color-gray-700); border: 1px solid var(--color-gray-300); }
+    .btn-back:hover { background: var(--color-gray-50); }
+
+    /* ── Result ────────────────────────────────────────────────────────── */
+    .result-section { text-align: center; padding: 2rem; }
+    .result-icon {
+      width: 4rem; height: 4rem; border-radius: 50%; display: flex; align-items: center;
+      justify-content: center; margin: 0 auto 1rem;
+    }
+    .result-icon.success { background: rgba(34,197,94,0.1); color: var(--color-success); }
+    .result-icon.error { background: rgba(239,68,68,0.1); color: var(--color-error); }
+    .result-icon svg { width: 2rem; height: 2rem; }
+    .result-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .result-message { font-size: 1rem; color: var(--color-gray-600); margin-bottom: 1.5rem; }
+    .result-details {
+      background: var(--color-gray-50); border-radius: var(--radius-md); padding: 1rem;
+      margin: 0 auto 2rem; text-align: left; max-width: 420px;
+    }
+    .result-detail-row { display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.9rem; gap: 1rem; }
+    .result-detail-label { color: var(--color-gray-600); }
+    .result-detail-value { font-weight: 500; color: var(--color-gray-800); word-break: break-all; text-align: right; }
+
+    /* ── Two-column + event log + test data ────────────────────────────── */
+    .two-column-layout {
+      display: grid; grid-template-columns: 1fr 300px; gap: 1.5rem; text-align: left; align-items: start;
+    }
+    @media (max-width: 900px) { .two-column-layout { grid-template-columns: 1fr; } }
+    .main-panel { min-width: 0; }
+    .side-panel { display: flex; flex-direction: column; gap: 1rem; }
+
+    .event-log-container { background: var(--color-gray-900); border-radius: var(--radius-md); padding: 1rem; margin-top: 1.5rem; }
+    .event-log-header { display: flex; justify-content: space-between; align-items: center; }
+    .event-log-title { font-size: 0.75rem; font-weight: 600; color: var(--color-gray-400); text-transform: uppercase; letter-spacing: 0.05em; }
+    .event-log { max-height: 180px; overflow-y: auto; font-family: var(--font-mono); font-size: 0.75rem; margin-top: 0.5rem; }
+    .event-log-entry { padding: 0.2rem 0; color: var(--color-gray-300); border-bottom: 1px solid var(--color-gray-800); }
+    .event-log-entry.success { color: #4ade80; }
+    .event-log-entry.error { color: #f87171; }
+    .event-log-entry.info { color: #60a5fa; }
+    .event-log-entry .time { color: var(--color-gray-500); }
+
+    .test-data-card { background: #fff; border: 1px solid var(--color-gray-200); border-radius: var(--radius-md); padding: 0.875rem; }
+    .test-data-card h4 { font-size: 0.8125rem; font-weight: 600; color: var(--color-gray-900); margin-bottom: 0.75rem; }
+    .test-field { display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; margin-bottom: 0.25rem; gap: 0.5rem; }
+    .test-field-label { color: var(--color-gray-500); font-size: 0.6875rem; }
+    .test-field-value {
+      font-family: var(--font-mono); font-size: 0.6875rem; color: var(--color-gray-800);
+      background: var(--color-white); padding: 0.125rem 0.375rem; border-radius: var(--radius-sm); border: 1px solid var(--color-gray-200);
+    }
+    .test-note { font-size: 0.6875rem; color: var(--color-gray-500); margin-top: 0.5rem; font-style: italic; }
+    .card-brand-icon { height: 18px; vertical-align: middle; margin-right: 4px; }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <header class="header">
+      <div class="container header-inner">
+        <a href="../index.html" class="back-link">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+          </svg>
+          Back to Flows
+        </a>
+        <div class="sdk-badge" id="sdk-badge"></div>
+      </div>
+    </header>
+
+    <main class="main-content">
+      <div class="container" style="text-align: center">
+        <h1 class="page-title">Click to Pay (Mastercard)</h1>
+        <p class="page-description">
+          New-user enrollment: enter a card, encrypt it inside Spreedly's hosted field, then
+          hand off to Mastercard Click to Pay for verification and tokenization.
+        </p>
+
+        <!-- Stepper -->
+        <div class="stepper">
+          <div class="stepper-step active" id="stepper-step-1">
+            <div class="step-number">1</div>
+            <div class="step-label">Products</div>
+          </div>
+          <div class="stepper-step" id="stepper-step-2">
+            <div class="step-number">2</div>
+            <div class="step-label">Payment</div>
+          </div>
+          <div class="stepper-step" id="stepper-step-3">
+            <div class="step-number">3</div>
+            <div class="step-label">Confirmation</div>
+          </div>
+        </div>
+
+        <div id="global-status-message" class="status-message"></div>
+
+        <!-- Step 1: Products -->
+        <div class="step-content active" id="step-1">
+          <div class="card">
+            <div class="section-title">Select Products</div>
+            <div class="products-grid" id="products-grid"></div>
+            <div class="order-summary" id="cart-summary" style="display: none;">
+              <div class="order-summary-title">Cart Summary</div>
+              <div id="cart-items"></div>
+              <div class="order-total"><span>Total</span><span id="cart-total">$0.00</span></div>
+            </div>
+            <div class="step-navigation">
+              <div></div>
+              <button class="btn btn-primary" id="proceed-to-payment" disabled>Proceed to Checkout →</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Payment -->
+        <div class="step-content" id="step-2">
+          <div class="two-column-layout">
+            <div class="main-panel">
+              <div class="card">
+                <!-- Order summary -->
+                <div class="order-summary" id="order-summary">
+                  <div class="order-summary-title">Order Summary</div>
+                  <div id="summary-items"></div>
+                  <div class="order-total"><span>Total</span><span id="summary-total">$0.00</span></div>
+                </div>
+
+                <!-- Click to Pay (the <src-card-list> component renders its own C2P branding) -->
+                <div style="margin-top: 1.5rem; position: relative;">
+                  <!-- Mastercard's <src-loader> shown during async SRC calls (lookup,
+                       OTP validate → cards), mirroring the demo's "finding your cards". -->
+                  <div id="c2p-loader-overlay" class="c2p-loader-overlay hidden">
+                    <src-loader id="c2p-loader" locale="en_US"></src-loader>
+                  </div>
+                  <div id="status-message" class="status-message"></div>
+
+                  <!-- (1) Lookup — email-first entry. Determines if the shopper already
+                       has a Click to Pay account (idLookup); blank → straight to new card. -->
+                  <div id="c2p-lookup-section">
+                    <!-- Contact information (mirrors Mastercard's demo step 1). Lookup uses
+                         email if present, otherwise mobile number. -->
+                    <div style="font-weight:600;color:var(--color-gray-900);margin-bottom:0.5rem;">Contact information</div>
+                    <div class="form-group" style="margin-bottom:0.75rem;">
+                      <label class="form-label" for="c2p-email">Email</label>
+                      <input type="email" id="c2p-email" class="form-input" placeholder="shopper@example.com" />
+                    </div>
+                    <div class="form-row" style="margin-bottom:0.75rem;">
+                      <div class="form-group" style="flex:0 0 7rem;">
+                        <label class="form-label" for="c2p-country-code">Code</label>
+                        <select id="c2p-country-code" class="form-input">
+                          <option value="1">US +1</option>
+                          <option value="91">IN +91</option>
+                          <option value="44">UK +44</option>
+                        </select>
+                      </div>
+                      <div class="form-group" style="flex:1;">
+                        <label class="form-label" for="c2p-mobile">Mobile number</label>
+                        <input type="tel" id="c2p-mobile" class="form-input" placeholder="Mobile number" inputmode="numeric" />
+                      </div>
+                    </div>
+                    <p class="test-note" style="margin-bottom:1rem;">
+                      Provide email or mobile (or both). Leave both blank to enter a new card.
+                    </p>
+
+                    <!-- Shipping address. First/last name are reused at tokenization (Spreedly
+                         requires a non-blank cardholder name). -->
+                    <div style="font-weight:600;color:var(--color-gray-900);margin-bottom:0.5rem;">Shipping address</div>
+                    <div class="form-row" style="margin-bottom:0.75rem;">
+                      <div class="form-group">
+                        <label class="form-label" for="c2p-ship-first-name">First name</label>
+                        <input type="text" id="c2p-ship-first-name" class="form-input" placeholder="Lee" />
+                      </div>
+                      <div class="form-group">
+                        <label class="form-label" for="c2p-ship-last-name">Last name</label>
+                        <input type="text" id="c2p-ship-last-name" class="form-input" placeholder="Cardholder" />
+                      </div>
+                    </div>
+                    <div class="form-group" style="margin-bottom:0.75rem;">
+                      <label class="form-label" for="c2p-ship-address1">Street address</label>
+                      <input type="text" id="c2p-ship-address1" class="form-input" placeholder="123 Main St." />
+                    </div>
+                    <div class="form-group" style="margin-bottom:0.75rem;">
+                      <label class="form-label" for="c2p-ship-address2">Street address 2 (optional)</label>
+                      <input type="text" id="c2p-ship-address2" class="form-input" />
+                    </div>
+                    <div class="form-group" style="margin-bottom:0.75rem;">
+                      <label class="form-label" for="c2p-ship-country">Country</label>
+                      <select id="c2p-ship-country" class="form-input">
+                        <option value="US">United States</option>
+                        <option value="IN">India</option>
+                        <option value="GB">United Kingdom</option>
+                      </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom:0.75rem;">
+                      <label class="form-label" for="c2p-ship-city">City</label>
+                      <input type="text" id="c2p-ship-city" class="form-input" placeholder="New York" />
+                    </div>
+                    <div class="form-row" style="margin-bottom:0.75rem;">
+                      <div class="form-group">
+                        <label class="form-label" for="c2p-ship-state">State</label>
+                        <input type="text" id="c2p-ship-state" class="form-input" placeholder="NY" />
+                      </div>
+                      <div class="form-group">
+                        <label class="form-label" for="c2p-ship-zip">ZIP</label>
+                        <input type="text" id="c2p-ship-zip" class="form-input" placeholder="10011" />
+                      </div>
+                    </div>
+                    <label class="c2p-consent" style="margin-bottom:1rem;">
+                      <input type="checkbox" id="c2p-save-billing" checked />
+                      <span class="c2p-consent-text">Save as billing address</span>
+                    </label>
+
+                    <button class="btn btn-primary btn-block" id="lookup-btn">
+                      <span class="btn-spinner hidden"><span class="spinner"></span></span>
+                      <span class="btn-text">Continue</span>
+                    </button>
+                  </div>
+
+                  <!-- (2) Returning, recognized — saved card list -->
+                  <div id="c2p-saved-section" class="hidden">
+                    <!-- Mastercard's official card-list web component (from src-ui-kit).
+                         The SDK drives it the default way (loadCards) on display-cards-ready. -->
+                    <src-card-list id="c2p-card-list"></src-card-list>
+                    <!-- Cardholder name is required by Spreedly's tokenization (non-blank first + last).
+                         Click to Pay only returns MASKED consumer names client-side, so — like the
+                         legacy iframe — the merchant supplies the name. In a real integration this
+                         comes from the logged-in customer/billing context; the demo collects it here. -->
+                    <div class="form-row" style="margin-top:1rem;">
+                      <div class="form-group">
+                        <label class="form-label" for="c2p-sel-first-name">First Name</label>
+                        <input type="text" id="c2p-sel-first-name" class="form-input" placeholder="Lee" required />
+                      </div>
+                      <div class="form-group">
+                        <label class="form-label" for="c2p-sel-last-name">Last Name</label>
+                        <input type="text" id="c2p-sel-last-name" class="form-input" placeholder="Cardholder" required />
+                      </div>
+                    </div>
+                    <!-- CVC is required for returning cards too (issuer requirement for auth rates).
+                         The shared #cvv-field hosted iframe is relocated here for this flow; the CVV
+                         never leaves the iframe — it's injected into the token request inside it. -->
+                    <div class="form-group" style="margin-bottom:0.5rem;max-width:50%;">
+                      <label class="form-label">Security Code (CVC)</label>
+                      <div id="saved-cvv-host"></div>
+                    </div>
+                    <button class="btn btn-primary btn-block" id="pay-selected-btn" style="margin-top:1rem;" disabled>
+                      <span class="btn-spinner hidden"><span class="spinner"></span></span>
+                      <span class="btn-text">Pay with selected card</span>
+                    </button>
+                    <button class="btn btn-secondary btn-block" id="use-new-card-btn" style="margin-top:0.5rem;">
+                      Use a new card
+                    </button>
+                    <!-- Mastercard recognizes the DEVICE (cookie), not the email — so a new
+                         email still lands here once you've enrolled on this browser. Reset
+                         clears recognition (signOut) to test the new-user flow again. -->
+                    <button class="btn btn-link btn-block c2p-reset-btn" data-reset style="margin-top:0.75rem;">
+                      Not you? Reset Click to Pay
+                    </button>
+                  </div>
+
+                  <!-- (3) Returning, unrecognized device — OTP.
+                       Mastercard's official <src-otp-input> component (from src-ui-kit).
+                       The SDK drives it (loadSupportedValidationChannels + attrs) and
+                       handles its continue / resend / "Not you?" events on otp-initiated. -->
+                  <div id="c2p-otp-section" class="hidden">
+                    <src-otp-input id="c2p-otp-input"></src-otp-input>
+                  </div>
+
+                  <!-- (4) No profile — new-card enrollment form -->
+                  <div id="c2p-new-card-section" class="hidden">
+                    <!-- Cardholder name is required by Spreedly's tokenization (non-blank first + last). -->
+                    <div class="form-row">
+                      <div class="form-group">
+                        <label class="form-label" for="c2p-first-name">First Name</label>
+                        <input type="text" id="c2p-first-name" class="form-input" placeholder="Lee" required />
+                      </div>
+                      <div class="form-group">
+                        <label class="form-label" for="c2p-last-name">Last Name</label>
+                        <input type="text" id="c2p-last-name" class="form-input" placeholder="Cardholder" required />
+                      </div>
+                    </div>
+
+                    <!-- Card form: hosted number + cvv, plain expiry -->
+                    <div id="c2p-card-form">
+                      <div class="form-group" style="margin-bottom:1rem;">
+                        <label class="form-label">Card Number</label>
+                        <div id="card-number-field" class="hosted-field-container"></div>
+                      </div>
+                      <div class="form-row">
+                        <div class="form-group">
+                          <label class="form-label" for="c2p-month">Expiry Month</label>
+                          <input type="text" id="c2p-month" class="form-input" placeholder="MM" maxlength="2" inputmode="numeric" />
+                        </div>
+                        <div class="form-group">
+                          <label class="form-label" for="c2p-year">Expiry Year</label>
+                          <input type="text" id="c2p-year" class="form-input" placeholder="YYYY" maxlength="4" inputmode="numeric" />
+                        </div>
+                        <div class="form-group">
+                          <label class="form-label">Security Code</label>
+                          <!-- Host for the shared #cvv-field iframe; relocated to the saved-card
+                               section for the returning-user flow (see relocateCvvField). -->
+                          <div id="newcard-cvv-host">
+                            <div id="cvv-field" class="hosted-field-container"></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Consent — appears after the card is encrypted. Hand-rendered to match
+                         Mastercard's demo (which also hand-renders it; the <src-consent> kit
+                         component exists but the demo doesn't use it). TODO: replace the
+                         placeholder Terms / Privacy Notice hrefs with Mastercard's real URLs. -->
+                    <div id="c2p-consent" class="c2p-consent-box hidden">
+                      <!-- Mastercard's brand-mark component (C2P chevron + Mastercard mark).
+                           Its chunk is already loaded by the card-list/OTP components. -->
+                      <div class="c2p-consent-brand">
+                        <src-mark card-brands="mastercard" locale="en_US"></src-mark>
+                      </div>
+                      <label class="c2p-consent-row">
+                        <input type="checkbox" id="c2p-save" checked />
+                        <span class="c2p-consent-text">
+                          <strong>Save my information with Mastercard
+                          <a href="#" target="_blank" rel="noopener">Click to Pay</a></strong> for fast, secure checkout
+                        </span>
+                      </label>
+                      <p class="c2p-consent-note">
+                        Your email or mobile number will be used to verify you. Message/data rates may apply.
+                      </p>
+                      <p class="c2p-consent-note">
+                        By continuing, you agree to Mastercard's
+                        <a href="#" target="_blank" rel="noopener">Terms</a> and understand your data will be
+                        processed according to the <a href="#" target="_blank" rel="noopener">Privacy Notice</a>.
+                      </p>
+                    </div>
+
+                    <button class="btn btn-primary btn-block" id="continue-btn" style="margin-top:1rem;" disabled>
+                      <span class="btn-spinner hidden"><span class="spinner"></span></span>
+                      <span class="btn-text">Continue</span>
+                    </button>
+                  </div>
+                </div>
+
+                <details class="event-log-container" style="margin-top: 1.5rem;">
+                  <summary class="event-log-header" style="cursor: pointer;">
+                    <span class="event-log-title">Event Log</span>
+                  </summary>
+                  <div id="event-log" class="event-log"></div>
+                </details>
+
+                <div class="step-navigation">
+                  <button class="btn btn-back" id="back-to-products">← Back</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Side panel: test data -->
+            <div class="side-panel">
+              <div class="test-data-card">
+                <h4>Returning user (lookup)</h4>
+                <p class="test-note" style="margin-top:0;">
+                  Enter the email of an enrolled Click to Pay profile, then Continue. Recognized →
+                  saved cards; new device → an OTP (sandbox static code, e.g. <strong>123456</strong>)
+                  → saved cards. Use a previously-enrolled email to see this.
+                </p>
+              </div>
+              <div class="test-data-card">
+                <h4>New user (enrollment)</h4>
+                <div class="test-field"><span class="test-field-label">Card</span><span class="test-field-value">5186 0017 0000 8785</span></div>
+                <div class="test-field"><span class="test-field-label">Expiry</span><span class="test-field-value">12/29</span></div>
+                <div class="test-field"><span class="test-field-label">CVV</span><span class="test-field-value">123</span></div>
+                <p class="test-note">
+                  Leave email blank (or use a brand-new one) → enter this card. Mastercard's window
+                  (billing / email / mobile / OTP) is its own UI; use a fresh email + mobile there.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3: Confirmation -->
+        <div class="step-content" id="step-3">
+          <div class="card result-section" id="result-section"></div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="container footer-inner">
+        <span>Spreedly Web SDK Demo</span>
+        <div class="footer-links"><a href="https://spreedly.com" target="_blank">Spreedly</a></div>
+      </div>
+    </footer>
+  </div>
+
+  <script src="../shared/utils.js"></script>
+  <script src="./click-to-pay.js"></script>
+</body>
+</html>

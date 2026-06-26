@@ -9,13 +9,14 @@ function getSDKType() {
 
 function getSDKScriptUrl() {
   const sdkType = getSDKType();
-  // uncomment this to use local sdk
-  // if (window.location.hostname === 'localhost') {
-  //   if (sdkType === 'express-checkout') {
-  //     return 'http://localhost:5173/express-checkout.js';
-  //   }
-  //   return 'http://localhost:5000/index.js';
-  // }
+  // On localhost, load the locally-served SDK build (npm run dev in checkout-web-sdk).
+  // Required for the Stripe Radar demo until sdk.stripeRadar() ships to the rc CDN.
+  if (window.location.hostname === 'localhost') {
+    if (sdkType === 'express-checkout') {
+      return 'http://localhost:5173/express-checkout.js';
+    }
+    return 'http://localhost:5000/index.js';
+  }
 
   if (sdkType === 'express-checkout') {
     return 'https://core-test.spreedly.com/checkout/elements/rc/express-checkout.js';
@@ -200,6 +201,25 @@ function loadSDKScript(callback) {
   document.body.appendChild(script);
 }
 
+// Stripe Radar — runs a server-side purchase through the Stripe Payment Intents
+// gateway, forwarding the radar session id created by sdk.stripeRadar().
+// Hits LOCAL_API_URL because /stripe-radar-purchase is a newly added route that
+// only exists on the locally-running server (not the deployed Heroku app yet).
+async function createStripeRadarPurchase(paymentMethodToken, amount, radarSessionId, currencyCode = 'USD') {
+  try {
+    const response = await axios.post(`${LOCAL_API_URL}/stripe-radar-purchase`, {
+      payment_method_token: paymentMethodToken,
+      amount: amount,
+      currency_code: currencyCode,
+      radar_session_id: radarSessionId,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error creating Stripe Radar purchase:', error);
+    throw error;
+  }
+}
+
 // Offsite Payments
 async function createOffsitePurchase(paymentMethodToken, amount, redirectUrl, callbackUrl, currencyCode = 'USD', gateway = 'spreedly') {
   try {
@@ -274,6 +294,9 @@ window.SpreedlyUtils = {
   retainPaymentMethod,
   createPurchase,
   createPurchaseWith3DS,
+
+  // Stripe Radar
+  createStripeRadarPurchase,
 
   // Offsite Payments
   createOffsitePurchase,

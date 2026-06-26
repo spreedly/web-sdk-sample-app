@@ -8,7 +8,8 @@ import {
   createPurchaseTransaction, 
   createPurchaseWith3DS, 
   createPurchaseWith3DSGatewaySpecific, 
-  createSimplePurchase, 
+  createSimplePurchase,
+  createStripeRadarPurchase,
   completeTransaction,
   createOffsitePurchase,
   getTransaction,
@@ -275,6 +276,39 @@ router.post('/create-purchase-with-3ds-gateway-specific', createPurchaseWith3DSG
  *         description: Error processing purchase
  */
 router.post('/simple-purchase', createSimplePurchase);
+
+/**
+ * @swagger
+ * /api/v1/stripe-radar-purchase:
+ *   post:
+ *     description: Purchase through the Stripe Payment Intents gateway, forwarding a Stripe Radar session id via gateway_specific_fields.stripe_payment_intents.radar_session_id
+ *     tags: [Transactions]
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: body
+ *         in: body
+ *         required: true
+ *         schema:
+ *           type: object
+ *           properties:
+ *             payment_method_token:
+ *               type: string
+ *             amount:
+ *               type: number
+ *               description: Amount in minor units (cents)
+ *             currency_code:
+ *               type: string
+ *             radar_session_id:
+ *               type: string
+ *               description: Stripe Radar session id from sdk.stripeRadar()
+ *     responses:
+ *       200:
+ *         description: Purchase processed (see radar_session_forwarded flag)
+ *       500:
+ *         description: Error processing purchase
+ */
+router.post('/stripe-radar-purchase', createStripeRadarPurchase);
 
 /**
  * @swagger
