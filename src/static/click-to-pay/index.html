@@ -110,6 +110,24 @@
       width: min(440px, 92vw); box-shadow: 0 12px 48px rgba(0, 0, 0, 0.25);
     }
 
+    /* ── Click to Pay checkout drawer (holds Mastercard's DCF iframe) ──────────── */
+    /* Always in the DOM so the SDK can mount into #c2p-checkout-host; closed = dimmed
+       off-screen (kept laid out so the iframe has real dimensions), .open slides it in. */
+    .c2p-drawer {
+      position: fixed; inset: 0; z-index: 1100;
+      background: rgba(15, 15, 15, 0.45);
+      display: flex; justify-content: flex-end;
+      opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+    }
+    .c2p-drawer.open { opacity: 1; pointer-events: auto; }
+    .c2p-drawer-panel {
+      width: min(420px, 100vw); height: 100%;
+      background: var(--color-white); box-shadow: -8px 0 32px rgba(0, 0, 0, 0.18);
+      transform: translateX(100%); transition: transform 0.3s ease;
+    }
+    .c2p-drawer.open .c2p-drawer-panel { transform: translateX(0); }
+    .c2p-drawer-host { width: 100%; height: 100%; }
+
     /* ── Click to Pay consent ──────────────────────────────────────────── */
     .c2p-consent {
       display: flex; gap: 0.625rem; align-items: flex-start; background: var(--color-gray-50);
@@ -120,18 +138,8 @@
     .c2p-consent-text { font-size: 0.8125rem; color: var(--color-gray-600); line-height: 1.4; }
     .c2p-consent-text strong { color: var(--color-gray-900); }
 
-    /* Enhanced consent box (matches Mastercard's demo: brand mark, links, terms line) */
-    .c2p-consent-box {
-      background: var(--color-gray-50); border: 1px solid var(--color-gray-200);
-      border-radius: var(--radius-md); padding: 1.25rem 1.5rem; margin: 1rem 0;
-    }
-    .c2p-consent-brand { margin-bottom: 1rem; }
-    .c2p-consent-brand img { height: 24px; }
-    .c2p-consent-row { display: flex; gap: 0.75rem; align-items: flex-start; cursor: pointer; }
-    .c2p-consent-row input[type="checkbox"] { margin-top: 0.2rem; width: 1.1rem; height: 1.1rem; flex-shrink: 0; }
-    .c2p-consent-row .c2p-consent-text { font-size: 0.9375rem; color: var(--color-gray-900); line-height: 1.45; }
-    .c2p-consent-note { font-size: 0.8125rem; color: var(--color-gray-600); line-height: 1.45; margin-top: 0.875rem; }
-    .c2p-consent-box a { color: var(--color-gray-900); text-decoration: underline; }
+    /* Wrapper box around Mastercard's <src-consent> component. */
+    .c2p-consent-box { margin: 1rem 0; }
 
     /* ── Saved card list (returning user) ──────────────────────────────── */
     .saved-cards-list { display: flex; flex-direction: column; gap: 0.75rem; }
@@ -461,31 +469,13 @@
                       </div>
                     </div>
 
-                    <!-- Consent — appears after the card is encrypted. Hand-rendered to match
-                         Mastercard's demo (which also hand-renders it; the <src-consent> kit
-                         component exists but the demo doesn't use it). TODO: replace the
-                         placeholder Terms / Privacy Notice hrefs with Mastercard's real URLs. -->
+                    <!-- Consent — appears after the card is encrypted. Mastercard's own
+                         <src-consent> component renders the brand mark, "Save my information"
+                         checkbox, and the official Terms / Privacy Notice copy + links (no
+                         placeholder URLs to maintain). It emits checkoutAsGuest / rememberMe;
+                         the demo listens (see click-to-pay.js). -->
                     <div id="c2p-consent" class="c2p-consent-box hidden">
-                      <!-- Mastercard's brand-mark component (C2P chevron + Mastercard mark).
-                           Its chunk is already loaded by the card-list/OTP components. -->
-                      <div class="c2p-consent-brand">
-                        <src-mark card-brands="mastercard" locale="en_US"></src-mark>
-                      </div>
-                      <label class="c2p-consent-row">
-                        <input type="checkbox" id="c2p-save" checked />
-                        <span class="c2p-consent-text">
-                          <strong>Save my information with Mastercard
-                          <a href="#" target="_blank" rel="noopener">Click to Pay</a></strong> for fast, secure checkout
-                        </span>
-                      </label>
-                      <p class="c2p-consent-note">
-                        Your email or mobile number will be used to verify you. Message/data rates may apply.
-                      </p>
-                      <p class="c2p-consent-note">
-                        By continuing, you agree to Mastercard's
-                        <a href="#" target="_blank" rel="noopener">Terms</a> and understand your data will be
-                        processed according to the <a href="#" target="_blank" rel="noopener">Privacy Notice</a>.
-                      </p>
+                      <src-consent id="c2p-consent-el" locale="en_US"></src-consent>
                     </div>
 
                     <button class="btn btn-primary btn-block" id="continue-btn" style="margin-top:1rem;" disabled>
@@ -545,6 +535,15 @@
         <div class="footer-links"><a href="https://spreedly.com" target="_blank">Spreedly</a></div>
       </div>
     </footer>
+  </div>
+
+  <!-- Click to Pay checkout drawer. The SDK (checkoutPresentation:'drawer') mounts
+       Mastercard's DCF iframe into #c2p-checkout-host; this demo owns the panel/backdrop
+       and toggles `.open` on checkout-window-open / checkout-window-close. -->
+  <div id="c2p-checkout-drawer" class="c2p-drawer">
+    <div class="c2p-drawer-panel">
+      <div id="c2p-checkout-host" class="c2p-drawer-host"></div>
+    </div>
   </div>
 
   <script src="../shared/utils.js"></script>

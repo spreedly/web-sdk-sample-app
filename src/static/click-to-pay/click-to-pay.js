@@ -43,6 +43,8 @@ const cardState = { validNumber: false, validCvv: false, cardType: '' };
 let encryptedCard = null;
 let cardBrand = null;
 let encrypting = false;
+let consentCheckoutAsGuest = false; // raw value from <src-consent>'s checkoutAsGuest event
+let consentComplianceResources = []; // complianceResources from <src-consent> → checkout's complianceSettings
 
 const SECTIONS = ['c2p-lookup-section', 'c2p-saved-section', 'c2p-otp-section', 'c2p-new-card-section'];
 
@@ -199,9 +201,15 @@ function initializeClickToPay(authDetails) {
       dpaTransactionOptions: {
         paymentOptions: [{ dynamicDataType: 'NONE' }],
         transactionAmount: {
-          transactionAmount: Math.round(getCartTotal() * 100) || 100,
+          // Mastercard wants the amount in the CURRENCY UNIT (dollars for USD), NOT cents.
+          // (The real amount is re-sent at checkout time via dpaTransactionOptions below.)
+          transactionAmount: getCartTotal() || 1,
           transactionCurrencyCode: 'USD',
         },
+        // Make Mastercard's DCF collect a billing address (like the Mastercard demo).
+        // Default is 'NONE' (contact info only). 'FULL' = full billing address;
+        // 'POSTAL_COUNTRY' = just zip + country.
+        dpaBillingPreference: 'FULL',
       },
       cardBrands: SUPPORTED_BRANDS,
     },
@@ -209,6 +217,17 @@ function initializeClickToPay(authDetails) {
     otpEl: 'c2p-otp-input',
     isSandbox: true,
     doLookup: false, // we trigger lookup from the email "Continue" button.
+    // Request device recognition so Mastercard remembers this browser after enrollment
+    // → checkoutWithCard/NewCard gets rememberMe:true → getCards() should recognize the
+    // shopper on return (cookie-based). If third-party cookies are blocked this won't
+    // stick, which would tell us we need the recognitionToken (option b).
+    rememberMe: true,
+    // Present Mastercard's DCF checkout as an embedded side drawer (like Mastercard's
+    // demo) instead of a popup window. Switch to 'popup' for the legacy window.open UX.
+    // The SDK mounts the DCF iframe into checkoutContainerEl; THIS demo owns the drawer
+    // chrome (panel/backdrop/animation) and shows/hides it on checkout-window-open/close.
+    checkoutPresentation: 'drawer',
+    checkoutContainerEl: 'c2p-checkout-host',
   });
 
   c2p.on('c2p-initialized', () => logEvent('Click to Pay ready', 'success'));
@@ -286,9 +305,14 @@ function initializeClickToPay(authDetails) {
   // ── Checkout window + result ───────────────────────────────────────────────
   c2p.on('checkout-window-open', () => {
     logEvent('Mastercard verification window opened', 'info');
-    showStatus('Complete verification in the Mastercard window…', 'info');
+    // The SDK has mounted the DCF iframe into #c2p-checkout-host; slide our drawer in.
+    // (No-op visually if running in 'popup' mode — the drawer just stays closed.)
+    requestAnimationFrame(() => $('c2p-checkout-drawer')?.classList.add('open'));
   });
-  c2p.on('checkout-window-close', () => logEvent('Mastercard window closed', 'info'));
+  c2p.on('checkout-window-close', () => {
+    logEvent('Mastercard window closed', 'info');
+    $('c2p-checkout-drawer')?.classList.remove('open'); // slide the drawer out
+  });
   c2p.on('checkout-cancelled', () => {
     logEvent('Checkout cancelled by shopper', 'info');
     showStatus('Checkout cancelled. You can try again.', 'info');
@@ -423,6 +447,15 @@ async function payWithSelectedCard() {
       // can't tokenize this flow itself. It builds the click_to_pay body and hands it to
       // this callback, which POSTs from inside the iframe (CVV injected there).
       tokenize: (body) => hostedFields.tokenizeClickToPay(body, { withCvv: true }),
+      // Consumer consent captured by <src-consent> (documented complianceSettings).
+      ...(consentComplianceResources.length
+        ? { complianceSettings: { complianceResources: consentComplianceResources } }
+        : {}),
+      // Send the CURRENT cart amount (dollars, not cents) so Mastercard's DCF shows the
+      // real total instead of the stale page-load value.
+      dpaTransactionOptions: {
+        transactionAmount: { transactionAmount: getCartTotal(), transactionCurrencyCode: 'USD' },
+      },
     });
   } catch (err) {
     logEvent(`Checkout failed: ${err.message || err}`, 'error');
@@ -437,9 +470,19 @@ async function payWithSelectedCard() {
 
 // ── New-card: ready evaluation + eager encryption ──────────────────────────
 function validExpiry() {
-  const month = parseInt($('c2p-month').value.trim(), 10);
-  const year = $('c2p-year').value.trim();
-  return month >= 1 && month <= 12 && /^\d{4}$/.test(year);
+  const monthStr = $('c2p-month').value.trim();
+  const yearStr = $('c2p-year').value.trim();
+  const month = parseInt(monthStr, 10);
+  const year = parseInt(yearStr, 10);
+  if (!(month >= 1 && month <= 12) || !/^\d{4}$/.test(yearStr)) return false;
+  // Reject expired / implausible years (e.g. 1237, 9999) — Mastercard/Spreedly won't
+  // validate this for us; the last-2-digits normalization is why 1237 became 2037.
+  const now = new Date();
+  const curYear = now.getFullYear();
+  const curMonth = now.getMonth() + 1;
+  if (year < curYear || year > curYear + 20) return false;
+  if (year === curYear && month < curMonth) return false;
+  return true;
 }
 
 // Spreedly's tokenization requires a non-blank first + last name, so the card is
@@ -515,8 +558,18 @@ async function handleContinue() {
       cardholder: { firstName, lastName, fullName: [firstName, lastName].filter(Boolean).join(' ') },
       // Tokenize from inside the iframe too (no CVV to inject — it's in Mastercard's
       // encrypted blob). Keeps the POST on a *.spreedly.com origin like the restricted
-      // endpoint requires, instead of the merchant page.
+      // endpoint requires, instead of the merchant page. (Live-tested: new-card tokenizes
+      // successfully with no verification_value — see CLICK_TO_PAY_PARITY.md.)
       tokenize: (body) => hostedFields.tokenizeClickToPay(body),
+      // Consumer consent captured by <src-consent> (documented complianceSettings).
+      ...(consentComplianceResources.length
+        ? { complianceSettings: { complianceResources: consentComplianceResources } }
+        : {}),
+      // Send the CURRENT cart amount (dollars, not cents) so Mastercard's DCF shows the
+      // real total instead of the stale page-load value.
+      dpaTransactionOptions: {
+        transactionAmount: { transactionAmount: getCartTotal(), transactionCurrencyCode: 'USD' },
+      },
     });
   } catch (err) {
     logEvent(`Checkout failed: ${err.message || err}`, 'error');
@@ -683,6 +736,26 @@ function setupEventListeners() {
   // When the shopper submits the OTP, show the "finding your cards" loader over the
   // OTP component while the SDK validates (the SDK also listens to this event to validate).
   $('c2p-otp-input').addEventListener('continue', () => showLoader());
+
+  // Mastercard's <src-consent> component emits the shopper's choices. We record them here;
+  // checkoutAsGuest.detail.complianceResources carries Mastercard's official Terms/Privacy
+  // URLs (so no placeholder links to maintain). NOTE: wiring consentGiven through to
+  // checkout() (guest vs enroll) is an SDK-side follow-up — see CLICK_TO_PAY_PARITY.md.
+  const consentEl = $('c2p-consent-el');
+  if (consentEl) {
+    // Record the raw component values. Exact mapping to checkout (the checkoutAsGuest
+    // field's meaning, enroll-vs-guest) is the SDK-side follow-up — see the tracker.
+    consentEl.addEventListener('checkoutAsGuest', (e) => {
+      consentCheckoutAsGuest = !!e.detail?.checkoutAsGuest;
+      // complianceResources is the documented consent payload → checkout's complianceSettings.
+      consentComplianceResources = e.detail?.complianceResources || [];
+      logEvent(`Consent changed (checkoutAsGuest=${consentCheckoutAsGuest})`);
+    });
+    consentEl.addEventListener('rememberMe', (e) =>
+      logEvent(`Consent: remember this device = ${!!e.detail?.rememberMe}`)
+    );
+    consentEl.addEventListener('learnMore', () => logEvent('Consent: opened "learn more"'));
+  }
 
   // Expiry / name changes can invalidate or feed a pending encryption.
   ['c2p-month', 'c2p-year', 'c2p-first-name', 'c2p-last-name'].forEach((id) =>
