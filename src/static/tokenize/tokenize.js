@@ -248,10 +248,41 @@ function clearHostedFieldsDemoPanelUi() {
   if (stylePlaceholders) stylePlaceholders.checked = false;
   hostedFieldsMaskEnabled = false;
   hostedFieldsAutocompleteEnabled = false;
+  clearHostedFieldsValidationErrors();
 }
 
-/** Writes the latest `validation` event payload as formatted JSON into the demo panel. */
+/** Clears both hosted-field inline error labels. */
+function clearHostedFieldsValidationErrors() {
+  setHostedFieldError('card-number-field', 'card-number-error', '');
+  setHostedFieldError('cvv-field', 'cvv-error', '');
+}
+
+/** Shows/clears an inline error label under a hosted field and flags the container. */
+function setHostedFieldError(containerId, errorId, message) {
+  const container = document.getElementById(containerId);
+  const errorEl = document.getElementById(errorId);
+  if (errorEl) {
+    errorEl.textContent = message || '';
+    errorEl.classList.toggle('visible', Boolean(message));
+  }
+  if (container) {
+    container.classList.toggle('has-error', Boolean(message));
+  }
+}
+
+/** Marks the number/cvv hosted fields with inline error labels from a `validation` payload. */
 function updateHostedFieldsDemoLastValidation(payload) {
+  let numberError = '';
+  if (payload?.validNumber === false) {
+    numberError = 'Card number is invalid';
+  } else if (payload?.luhnValid === false) {
+    numberError = 'Card number failed the Luhn check';
+  }
+  const cvvError = payload?.validCvv === false ? 'CVV is invalid' : '';
+
+  setHostedFieldError('card-number-field', 'card-number-error', numberError);
+  setHostedFieldError('cvv-field', 'cvv-error', cvvError);
+
   const pre = document.getElementById('hf-demo-last-validation');
   if (!pre) return;
   pre.textContent = JSON.stringify(payload, null, 2);
@@ -410,6 +441,7 @@ function setupHostedFieldsConfigPanel(sdkInstance) {
     resetFieldsBtn.onclick = function handleHostedFieldsResetFieldsClick() {
       if (!sdk || sdk !== sdkInstance || !isReady) return;
       sdkInstance.resetFields();
+      clearHostedFieldsValidationErrors();
       showStatus('Fields reset.', 'info');
     };
   }

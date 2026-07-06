@@ -141,6 +141,15 @@
     /* Wrapper box around Mastercard's <src-consent> component. */
     .c2p-consent-box { margin: 1rem 0; }
 
+    /* Required-field asterisk on mandatory card-form labels. */
+    .req { color: #dc2626; font-weight: 700; }
+
+    /* Mastercard <src-button> (branded pay button): center it; gate it via a class
+       since the component has no `disabled` prop. */
+    .brand-btn-wrap { margin-top: 1rem; }
+    #pay-selected-btn, #continue-btn { display: block; cursor: pointer;  --src-button-width: 100% !important;}
+    .src-btn-disabled { opacity: 0.5; pointer-events: none; }
+
     /* ── Saved card list (returning user) ──────────────────────────────── */
     .saved-cards-list { display: flex; flex-direction: column; gap: 0.75rem; }
     .saved-card {
@@ -326,54 +335,8 @@
                       Provide email or mobile (or both). Leave both blank to enter a new card.
                     </p>
 
-                    <!-- Shipping address. First/last name are reused at tokenization (Spreedly
-                         requires a non-blank cardholder name). -->
-                    <div style="font-weight:600;color:var(--color-gray-900);margin-bottom:0.5rem;">Shipping address</div>
-                    <div class="form-row" style="margin-bottom:0.75rem;">
-                      <div class="form-group">
-                        <label class="form-label" for="c2p-ship-first-name">First name</label>
-                        <input type="text" id="c2p-ship-first-name" class="form-input" placeholder="Lee" />
-                      </div>
-                      <div class="form-group">
-                        <label class="form-label" for="c2p-ship-last-name">Last name</label>
-                        <input type="text" id="c2p-ship-last-name" class="form-input" placeholder="Cardholder" />
-                      </div>
-                    </div>
-                    <div class="form-group" style="margin-bottom:0.75rem;">
-                      <label class="form-label" for="c2p-ship-address1">Street address</label>
-                      <input type="text" id="c2p-ship-address1" class="form-input" placeholder="123 Main St." />
-                    </div>
-                    <div class="form-group" style="margin-bottom:0.75rem;">
-                      <label class="form-label" for="c2p-ship-address2">Street address 2 (optional)</label>
-                      <input type="text" id="c2p-ship-address2" class="form-input" />
-                    </div>
-                    <div class="form-group" style="margin-bottom:0.75rem;">
-                      <label class="form-label" for="c2p-ship-country">Country</label>
-                      <select id="c2p-ship-country" class="form-input">
-                        <option value="US">United States</option>
-                        <option value="IN">India</option>
-                        <option value="GB">United Kingdom</option>
-                      </select>
-                    </div>
-                    <div class="form-group" style="margin-bottom:0.75rem;">
-                      <label class="form-label" for="c2p-ship-city">City</label>
-                      <input type="text" id="c2p-ship-city" class="form-input" placeholder="New York" />
-                    </div>
-                    <div class="form-row" style="margin-bottom:0.75rem;">
-                      <div class="form-group">
-                        <label class="form-label" for="c2p-ship-state">State</label>
-                        <input type="text" id="c2p-ship-state" class="form-input" placeholder="NY" />
-                      </div>
-                      <div class="form-group">
-                        <label class="form-label" for="c2p-ship-zip">ZIP</label>
-                        <input type="text" id="c2p-ship-zip" class="form-input" placeholder="10011" />
-                      </div>
-                    </div>
-                    <label class="c2p-consent" style="margin-bottom:1rem;">
-                      <input type="checkbox" id="c2p-save-billing" checked />
-                      <span class="c2p-consent-text">Save as billing address</span>
-                    </label>
-
+                    <!-- Lookup needs only the identity (email/mobile). Shipping/billing is
+                         collected later, with the card (see the new-card section). -->
                     <button class="btn btn-primary btn-block" id="lookup-btn">
                       <span class="btn-spinner hidden"><span class="spinner"></span></span>
                       <span class="btn-text">Continue</span>
@@ -391,11 +354,11 @@
                          comes from the logged-in customer/billing context; the demo collects it here. -->
                     <div class="form-row" style="margin-top:1rem;">
                       <div class="form-group">
-                        <label class="form-label" for="c2p-sel-first-name">First Name</label>
+                        <label class="form-label" for="c2p-sel-first-name">First Name <span class="req">*</span></label>
                         <input type="text" id="c2p-sel-first-name" class="form-input" placeholder="Lee" required />
                       </div>
                       <div class="form-group">
-                        <label class="form-label" for="c2p-sel-last-name">Last Name</label>
+                        <label class="form-label" for="c2p-sel-last-name">Last Name <span class="req">*</span></label>
                         <input type="text" id="c2p-sel-last-name" class="form-input" placeholder="Cardholder" required />
                       </div>
                     </div>
@@ -403,13 +366,22 @@
                          The shared #cvv-field hosted iframe is relocated here for this flow; the CVV
                          never leaves the iframe — it's injected into the token request inside it. -->
                     <div class="form-group" style="margin-bottom:0.5rem;max-width:50%;">
-                      <label class="form-label">Security Code (CVC)</label>
+                      <label class="form-label">Security Code (CVC) <span class="req">*</span></label>
                       <div id="saved-cvv-host"></div>
                     </div>
-                    <button class="btn btn-primary btn-block" id="pay-selected-btn" style="margin-top:1rem;" disabled>
-                      <span class="btn-spinner hidden"><span class="spinner"></span></span>
-                      <span class="btn-text">Pay with selected card</span>
-                    </button>
+                    <!-- Mastercard's branded Click to Pay button (SRC UI kit <src-button>).
+                         It has no label/disabled/loading props — it renders the C2P + brand
+                         marks. We gate it with the .src-btn-disabled class (pointer-events:none),
+                         and its native click bubbles to the host, so the existing click listener
+                         still fires. -->
+                    <div class="brand-btn-wrap">
+                      <src-button
+                        id="pay-selected-btn"
+                        class="src-btn-disabled"
+                        card-brands="mastercard,visa,amex,discover"
+                        locale="en_US"
+                      ></src-button>
+                    </div>
                     <button class="btn btn-secondary btn-block" id="use-new-card-btn" style="margin-top:0.5rem;">
                       Use a new card
                     </button>
@@ -434,11 +406,11 @@
                     <!-- Cardholder name is required by Spreedly's tokenization (non-blank first + last). -->
                     <div class="form-row">
                       <div class="form-group">
-                        <label class="form-label" for="c2p-first-name">First Name</label>
+                        <label class="form-label" for="c2p-first-name">First Name <span class="req">*</span></label>
                         <input type="text" id="c2p-first-name" class="form-input" placeholder="Lee" required />
                       </div>
                       <div class="form-group">
-                        <label class="form-label" for="c2p-last-name">Last Name</label>
+                        <label class="form-label" for="c2p-last-name">Last Name <span class="req">*</span></label>
                         <input type="text" id="c2p-last-name" class="form-input" placeholder="Cardholder" required />
                       </div>
                     </div>
@@ -446,20 +418,20 @@
                     <!-- Card form: hosted number + cvv, plain expiry -->
                     <div id="c2p-card-form">
                       <div class="form-group" style="margin-bottom:1rem;">
-                        <label class="form-label">Card Number</label>
+                        <label class="form-label">Card Number <span class="req">*</span></label>
                         <div id="card-number-field" class="hosted-field-container"></div>
                       </div>
                       <div class="form-row">
                         <div class="form-group">
-                          <label class="form-label" for="c2p-month">Expiry Month</label>
+                          <label class="form-label" for="c2p-month">Expiry Month <span class="req">*</span></label>
                           <input type="text" id="c2p-month" class="form-input" placeholder="MM" maxlength="2" inputmode="numeric" />
                         </div>
                         <div class="form-group">
-                          <label class="form-label" for="c2p-year">Expiry Year</label>
+                          <label class="form-label" for="c2p-year">Expiry Year <span class="req">*</span></label>
                           <input type="text" id="c2p-year" class="form-input" placeholder="YYYY" maxlength="4" inputmode="numeric" />
                         </div>
                         <div class="form-group">
-                          <label class="form-label">Security Code</label>
+                          <label class="form-label">Security Code <span class="req">*</span></label>
                           <!-- Host for the shared #cvv-field iframe; relocated to the saved-card
                                section for the returning-user flow (see relocateCvvField). -->
                           <div id="newcard-cvv-host">
@@ -468,6 +440,46 @@
                         </div>
                       </div>
                     </div>
+
+                    <!-- Optional shipping address, collected WITH the card (moved out of the
+                         lookup step). Native <details> = "option to add" with no JS. -->
+                    <details style="margin-top:1rem;">
+                      <summary style="cursor:pointer;font-weight:600;color:var(--color-gray-900);">
+                        Add shipping address (optional)
+                      </summary>
+                      <div style="margin-top:0.75rem;">
+                        <div class="form-group" style="margin-bottom:0.75rem;">
+                          <label class="form-label" for="c2p-ship-address1">Street address</label>
+                          <input type="text" id="c2p-ship-address1" class="form-input" placeholder="123 Main St." />
+                        </div>
+                        <div class="form-group" style="margin-bottom:0.75rem;">
+                          <label class="form-label" for="c2p-ship-address2">Street address 2 (optional)</label>
+                          <input type="text" id="c2p-ship-address2" class="form-input" />
+                        </div>
+                        <div class="form-group" style="margin-bottom:0.75rem;">
+                          <label class="form-label" for="c2p-ship-country">Country</label>
+                          <select id="c2p-ship-country" class="form-input">
+                            <option value="US">United States</option>
+                            <option value="IN">India</option>
+                            <option value="GB">United Kingdom</option>
+                          </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom:0.75rem;">
+                          <label class="form-label" for="c2p-ship-city">City</label>
+                          <input type="text" id="c2p-ship-city" class="form-input" placeholder="New York" />
+                        </div>
+                        <div class="form-row">
+                          <div class="form-group">
+                            <label class="form-label" for="c2p-ship-state">State</label>
+                            <input type="text" id="c2p-ship-state" class="form-input" placeholder="NY" />
+                          </div>
+                          <div class="form-group">
+                            <label class="form-label" for="c2p-ship-zip">ZIP</label>
+                            <input type="text" id="c2p-ship-zip" class="form-input" placeholder="10011" />
+                          </div>
+                        </div>
+                      </div>
+                    </details>
 
                     <!-- Consent — appears after the card is encrypted. Mastercard's own
                          <src-consent> component renders the brand mark, "Save my information"
@@ -478,10 +490,16 @@
                       <src-consent id="c2p-consent-el" locale="en_US"></src-consent>
                     </div>
 
-                    <button class="btn btn-primary btn-block" id="continue-btn" style="margin-top:1rem;" disabled>
-                      <span class="btn-spinner hidden"><span class="spinner"></span></span>
-                      <span class="btn-text">Continue</span>
-                    </button>
+                    <!-- Branded Click to Pay button (SRC UI kit <src-button>), same as the
+                         selected-card pay button — gated via .src-btn-disabled, sized via JS. -->
+                    <div class="brand-btn-wrap">
+                      <src-button
+                        id="continue-btn"
+                        class="src-btn-disabled"
+                        card-brands="mastercard,visa,amex,discover"
+                        locale="en_US"
+                      ></src-button>
+                    </div>
                   </div>
                 </div>
 

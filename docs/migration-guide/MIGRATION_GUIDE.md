@@ -96,6 +96,7 @@ manages its own UI via `sdk.expressCheckout({...})` configuration
 |---|---|---|---|
 | `Spreedly.setPlaceholder(field, text)` | `sdk.setPlaceholder('number' \| 'cvv', text)` | ✅ | |
 | `Spreedly.setStyle(field, css)` (CSS string) | `sdk.setStyles('number' \| 'cvv', { fontSize, color, ... })` (object) | ⚠️ | Renamed (`setStyle` → `setStyles`); pass a plain object of camelCase CSS properties instead of a CSS string. |
+| `Spreedly.setStyle('placeholder', css)` (CSS string) | `sdk.setPlaceholderStyles({ color, opacity, fontWeight, ... })` (object) | ⚠️ | Now a **dedicated method**. Legacy overloaded `setStyle` with the `'placeholder'` pseudo-field; the new SDK splits placeholder styling into its own `setPlaceholderStyles`. Applies to **both** the number and cvv placeholders (same as legacy). Pass a camelCase object instead of a CSS string. |
 | `Spreedly.setFieldType(field, type)` | `sdk.setFieldType('number' \| 'cvv', 'text' \| 'tel' \| 'number' \| 'password')` | ✅ | |
 | `Spreedly.setLabel(field, value)` | `sdk.setLabel('number' \| 'cvv', value)` | ✅ | Sets `aria-label` on the hosted input. HTML-like tags are stripped (same as legacy). |
 | `Spreedly.setTitle(field, value)` | `sdk.setTitle('number' \| 'cvv', value)` | ✅ | Sets the `title` attribute on the hosted input. |

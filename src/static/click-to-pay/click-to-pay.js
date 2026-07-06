@@ -72,8 +72,13 @@ function relocateCvvField(hostId) {
 
 function showSection(id) {
   SECTIONS.forEach((s) => (s === id ? show(s) : hide(s)));
-  if (id === 'c2p-saved-section') relocateCvvField('saved-cvv-host');
-  else if (id === 'c2p-new-card-section') relocateCvvField('newcard-cvv-host');
+  if (id === 'c2p-saved-section') {
+    relocateCvvField('saved-cvv-host');
+    requestAnimationFrame(() => sizeBrandBtn('pay-selected-btn')); // size once laid out
+  } else if (id === 'c2p-new-card-section') {
+    relocateCvvField('newcard-cvv-host');
+    requestAnimationFrame(() => sizeBrandBtn('continue-btn'));
+  }
 }
 
 function logEvent(message, type = 'info') {
@@ -107,6 +112,19 @@ function setBtnLoading(id, loading, text = null) {
   btn.disabled = loading;
   spinner?.classList.toggle('hidden', !loading);
   if (text && textEl) textEl.textContent = text;
+}
+
+// Mastercard's <src-button> (branded button) has no `disabled`/loading props, so gate it via a
+// class (pointer-events:none), and its width is a numeric (px) prop, not CSS — size it to its
+// container so it spans full width. Shared by both branded buttons (selected-card "pay" and
+// new-card "continue"). Sizing must run while the button is visible (a hidden ancestor → 0).
+function setBrandBtnDisabled(id, disabled) {
+  $(id)?.classList.toggle('src-btn-disabled', disabled);
+}
+function sizeBrandBtn(id) {
+  const btn = $(id);
+  const wrap = btn?.parentElement;
+  if (btn && wrap && wrap.clientWidth) btn.width = wrap.clientWidth;
 }
 
 // ── Init ─────────────────────────────────────────────────────────────────────
@@ -316,7 +334,7 @@ function initializeClickToPay(authDetails) {
   c2p.on('checkout-cancelled', () => {
     logEvent('Checkout cancelled by shopper', 'info');
     showStatus('Checkout cancelled. You can try again.', 'info');
-    setBtnLoading('pay-selected-btn', false);
+    setBrandBtnDisabled('pay-selected-btn', false);
     setContinueLoading(false);
   });
 
@@ -331,7 +349,7 @@ function initializeClickToPay(authDetails) {
     const msg = err?.errors?.[0]?.message || err?.message || String(err);
     logEvent(`Click to Pay error: ${msg}`, 'error');
     setBtnLoading('lookup-btn', false);
-    setBtnLoading('pay-selected-btn', false);
+    setBrandBtnDisabled('pay-selected-btn', false);
     setContinueLoading(false);
     hideLoader();
     showResult('error', { message: msg });
@@ -373,7 +391,7 @@ function resetDemoState() {
   ['c2p-email', 'c2p-mobile', 'c2p-sel-first-name', 'c2p-sel-last-name'].forEach(
     (id) => ($(id).value = '')
   );
-  $('pay-selected-btn').disabled = true;
+  setBrandBtnDisabled('pay-selected-btn', true);
 }
 
 async function resetClickToPay() {
@@ -412,10 +430,8 @@ function validSelectedCvv() {
 
 function evaluateSelectedReady() {
   // Cards showing (component pre-selects one), a non-blank name, AND a CVC.
-  $('pay-selected-btn').disabled = !(
-    cardSelectionReady &&
-    validSelectedName() &&
-    validSelectedCvv()
+  setBrandBtnDisabled('pay-selected-btn', 
+    !(cardSelectionReady && validSelectedName() && validSelectedCvv())
   );
 }
 
@@ -433,7 +449,7 @@ async function payWithSelectedCard() {
     return;
   }
   hideStatus();
-  setBtnLoading('pay-selected-btn', true, 'Starting Click to Pay…');
+  setBrandBtnDisabled('pay-selected-btn', true);
   logEvent('Checking out with selected card…');
   const firstName = $('c2p-sel-first-name').value.trim();
   const lastName = $('c2p-sel-last-name').value.trim();
@@ -459,7 +475,7 @@ async function payWithSelectedCard() {
     });
   } catch (err) {
     logEvent(`Checkout failed: ${err.message || err}`, 'error');
-    setBtnLoading('pay-selected-btn', false);
+    setBrandBtnDisabled('pay-selected-btn', false);
     showResult('error', { message: err.message || 'Checkout failed' });
   }
 }
@@ -504,7 +520,7 @@ function resetEncrypted() {
   encryptedCard = null;
   cardBrand = null;
   hide('c2p-consent');
-  $('continue-btn').disabled = true;
+  setBrandBtnDisabled('continue-btn', true);
 }
 
 async function encryptCard() {
@@ -531,7 +547,7 @@ async function encryptCard() {
     cardBrand = result.cardBrand;
     logEvent(`Card encrypted (${cardBrand})`, 'success');
     show('c2p-consent');
-    $('continue-btn').disabled = false;
+    setBrandBtnDisabled('continue-btn', false);
     hideStatus();
   } catch (err) {
     encrypting = false;
@@ -682,24 +698,10 @@ function showResult(type, data) {
   }
 }
 
-// continue-btn loading (its disabled state also depends on encryption readiness).
-let originalContinueText = null;
-function setContinueLoading(loading, text = null) {
-  const btn = $('continue-btn');
-  if (!btn) return;
-  const spinner = btn.querySelector('.btn-spinner');
-  const textEl = btn.querySelector('.btn-text');
-  btn.disabled = loading || (!loading && !encryptedCard);
-  spinner?.classList.toggle('hidden', !loading);
-  if (textEl) {
-    if (loading) {
-      if (!originalContinueText) originalContinueText = textEl.textContent;
-      if (text) textEl.textContent = text;
-    } else if (originalContinueText) {
-      textEl.textContent = originalContinueText;
-      originalContinueText = null;
-    }
-  }
+// continue-btn is Mastercard's <src-button> (no spinner/text) — reflect loading as the gated
+// state. It also stays disabled until the card is encrypted (encryptedCard set).
+function setContinueLoading(loading) {
+  setBrandBtnDisabled('continue-btn', loading || !encryptedCard);
 }
 
 // ── Listeners ──────────────────────────────────────────────────────────────
@@ -718,6 +720,10 @@ function setupEventListeners() {
   // Lookup / returning-user / OTP / new-card actions.
   $('lookup-btn').addEventListener('click', runLookup);
   $('pay-selected-btn').addEventListener('click', payWithSelectedCard);
+  window.addEventListener('resize', () => {
+    sizeBrandBtn('pay-selected-btn');
+    sizeBrandBtn('continue-btn');
+  });
   $('use-new-card-btn').addEventListener('click', () => {
     showStatus('Enter a new card to pay with Click to Pay.', 'info');
     showSection('c2p-new-card-section');
