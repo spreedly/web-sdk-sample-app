@@ -109,7 +109,7 @@ export const redirectResultPage = {
         await expect(page.locator(SELECTORS.REDIRECT_TITLE)).toBeVisible({ timeout: 10000 });
     },
 
-    getRedirectResultPageType: async (page: Page): Promise<'success' | 'failed' | 'pending'> => {
+    getRedirectResultPageType: async (page: Page): Promise<'success' | 'failed' | 'pending' | 'processing'> => {
         await page.waitForTimeout(5000);
         await redirectResultPage.waitForRedirectResultPage(page);
         const redirectTitle = await page.locator(SELECTORS.REDIRECT_TITLE);
@@ -124,6 +124,9 @@ export const redirectResultPage = {
         else if (await redirectTitle.count() > 0 && await redirectMessage=='Payment Pending') {
             return 'pending';
         }
+        else if (await redirectTitle.count() > 0 && await redirectMessage=='Payment Processing') {
+            return 'processing';
+        }
         else {  
             throw new Error('Unable to determine redirect result page type');
         }
@@ -137,7 +140,7 @@ export const redirectResultPage = {
         return page.locator(`.detail-label:has-text("Status") + .status-badge` )
     },
 
-    verifyTransactionDetails: async (page: Page, paymentMethod: string, gatewayMethod: string, resultStatus: string) => {
+    verifyTransactionDetails: async (page: Page, paymentMethod: string, gatewayMethod: string, resultStatus: string | string[]) => {
         const paymentMethodRow = await redirectResultPage.getTransactionDetailsRow(page, 'Payment Method');
         const paymentMethodValue = await paymentMethodRow.textContent();
         await expect(paymentMethodValue).toBe(paymentMethod);
@@ -146,7 +149,11 @@ export const redirectResultPage = {
         await expect(gatewayValue).toBe(gatewayMethod);
         const statusRow = await redirectResultPage.getStatusRow(page);
         const statusValue = await statusRow.textContent();
-        await expect(statusValue).toBe(resultStatus);
+        if (Array.isArray(resultStatus)) {
+            expect(resultStatus).toContain(statusValue);
+        } else {
+            expect(statusValue).toBe(resultStatus);
+        }
     },
 
 
