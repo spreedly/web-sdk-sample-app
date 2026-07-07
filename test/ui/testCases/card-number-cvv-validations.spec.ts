@@ -46,15 +46,16 @@ test.describe('Card Number and CVV Validation', () => {
       expiryMonth: TEST_DATA.EXPIRY_MONTH,
       expiryYear: getValidYearString(),
     });
-    await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.INVALID_CARD_NUMBER, {
+    await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.INVALID_CARD_NUMBER_FORMATTED, {
       cvv: TEST_DATA.CVV,
       firstName: TEST_DATA.FIRST_NAME,
       lastName: TEST_DATA.LAST_NAME,
       expiryMonth: TEST_DATA.EXPIRY_MONTH,
       expiryYear: getValidYearString(),
     });
-    await expect(await helperFunctions.getHostedFieldsCardNumberField(page)).toHaveAttribute('aria-invalid', 'true');
-    await expect(page.frameLocator(SELECTORS.HOSTED_CVV_IFRAME).locator(`[aria-label="${ERROR_MESSAGES.INVALID_CARD_NUMBER}"]`).first()).toBeVisible()
+    await helperFunctions.clickOnHostedFieldsSubmitButton(page);
+    await expect(page.locator(SELECTORS.TOKENIZATION_FAILED_MESSAGE_SELECTOR)).toBeVisible();
+    await expect(page.locator(SELECTORS.TOKENIZATION_FAILED_MESSAGE_SELECTOR)).toHaveText(ERROR_MESSAGES.TOKENIZATION_FAILED_MESSAGE);
   });
 
   test('CVV validation for express checkout', async ({ page }) => {

@@ -88,7 +88,7 @@ test.describe("Allow Blank Date Option", () => {
       cvv: TEST_DATA.CVV,
     }
   );
-   await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.CARD_NUMBER, {
+   await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.CARD_NUMBER_FORMATTED, {
     firstName: TEST_DATA.FIRST_NAME,
     lastName: TEST_DATA.LAST_NAME,
     cvv: TEST_DATA.CVV,
@@ -115,7 +115,7 @@ test.describe("Allow Blank Date Option", () => {
       lastName: TEST_DATA.LAST_NAME
     }
   );
-   await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.CARD_NUMBER, {
+   await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.CARD_NUMBER_FORMATTED, {
     firstName: TEST_DATA.FIRST_NAME,
     lastName: TEST_DATA.LAST_NAME,
     cvv: TEST_DATA.CVV

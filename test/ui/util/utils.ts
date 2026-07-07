@@ -138,7 +138,7 @@ export const PLACEHOLDERS = {
         return page.locator(SELECTORS.EXPIRY_YEAR);
     },
     getHostedFieldsCvvField: async (page: Page) => {
-        return page.frameLocator(SELECTORS.HOSTED_CVV_IFRAME).getByRole("textbox", { name: LABELS.CVV_NUMBER });
+        return page.frameLocator(SELECTORS.HOSTED_CVV_IFRAME).locator('input[data-testid="hosted-cvv-field"]');
     },
     getHostedFieldsCardNumberField: async (page: Page) => {
         return page.frameLocator(SELECTORS.HOSTED_CARD_IFRAME).getByRole("textbox", { name: LABELS.CARD_NUMBER });
