@@ -102,6 +102,8 @@ export const SELECTORS = {
   NUPAY_AUTHORIZE_YES_BUTTON: 'a:has-text("Authorized = YES")',
   NUPAY_AUTHORIZE_NO_BUTTON: 'a:has-text("Authorized = NO")',
   NUPAY_AUTHORIZE_PENDING_BUTTON: 'a:has-text("Leave Pending")',
+  PARITY_OPTION_CARD_UPDATER: '#config-eligible-for-card-updater',
+  PARITY_OPTION_IS_LOADED_RESULT: '#hf-demo-is-loaded-result',
 } as const;
 
 export const THREE_DS_SELECTORS = {
@@ -181,6 +183,7 @@ export const TEST_DATA = {
   CARD_NUMBER_FORMATTED: "4111 1111 1111 1111",
   AMEX_CARD_NUMBER: "3782 822463 10005",
   MASKED_CARD_NUMBER:"•••• •••• •••• 1111",
+  NUMBER_FORMAT_MASKED: "****************",
   CVV: "123",
   INVALID_CVV_LONG: "1234",
   INVALID_CVV_SHORT: "12",
@@ -283,6 +286,8 @@ export const ERROR_SELECTORS = {
 export const CSS_PROPERTIES = {
   RED_BORDER: "rgb(255, 0, 0)",
   GREEN_TEXT: "rgb(0, 128, 0)",
+  PLACEHOLDER_TEXT_COLOR_BEFORE: "rgb(156, 163, 175)",
+  PLACEHOLDER_TEXT_COLOR_AFTER: "rgb(255, 0, 0)",
 };
 
 export const CSS_CLASSES = {
