@@ -56,6 +56,7 @@ export const SELECTORS = {
   EXPIRY_YEAR_ERROR: "#expiry-year-error",
   EXPIRY_MONTH_ERROR: "#expiry-month-error",
   tokenizationFailedMessage: '#status-message',
+  TOKENIZATION_FAILED_MESSAGE_SELECTOR: '#status-message.status-message.visible.error',
 
 
   BIN_CARD_LABEL:".MuiChip-label",
@@ -126,6 +127,8 @@ export const THREE_DS_SELECTORS = {
   CHALLENGE_CANCEL_BUTTON: 'button:has-text("Cancel")',
   CHALLENGE_WHITELIST_CHECKBOX: 'input[type="checkbox"]',
   CHALLENGE_OVERLAY: '#challenge-overlay',
+  CHALLENGE_PASS_BUTTON: 'button[name="challengeStatus"][value="pass"]',
+  CHALLENGE_FAIL_BUTTON: 'button[name="challengeStatus"][value="fail"]',
   // 3DS Success Page Selectors
   RESULT_SECTION: '#result-section',
   RESULT_TITLE: '.result-title',
@@ -179,6 +182,7 @@ export const TEST_DATA = {
   CARD_NUMBER_TOO_SHORT: "411111111111", // 12 digits
   CARD_NUMBER_TOO_LONG: "41111111111111111111", // 20 digits
   CARD_NUMBER_FORMATTED: "4111 1111 1111 1111",
+  INVALID_CARD_NUMBER_FORMATTED: "4111 1111 1111 1112",
   AMEX_CARD_NUMBER: "3782 822463 10005",
   MASKED_CARD_NUMBER:"•••• •••• •••• 1111",
   CVV: "123",
@@ -263,7 +267,7 @@ export const ERROR_MESSAGES = {
   HOSTED_FIELDS_AMEX_INVALID_CVV: "CVV must be 4 digits",
   ERROR_MESSAGE_UNAUTHORIZED: "Request failed with status code 401",
   ERROR_MESSAGE_INVALID_YEAR: "Request failed with status code 422",
-  TOKENIZATION_FAILED_MESSAGE: "Tokenization failed. Please try again."
+  TOKENIZATION_FAILED_MESSAGE: "Tokenization failed. Please try again.",
 };
 
 export const ERROR_SELECTORS = {
@@ -283,6 +287,8 @@ export const ERROR_SELECTORS = {
 export const CSS_PROPERTIES = {
   RED_BORDER: "rgb(255, 0, 0)",
   GREEN_TEXT: "rgb(0, 128, 0)",
+  PLACEHOLDER_TEXT_COLOR_BEFORE: "rgb(156, 163, 175)",
+  PLACEHOLDER_TEXT_COLOR_AFTER: "rgb(255, 0, 0)",
 };
 
 export const CSS_CLASSES = {

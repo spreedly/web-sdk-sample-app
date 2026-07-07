@@ -39,8 +39,10 @@ export const purchasePage = {
         
         // Wait for the form inside the iframe to be loaded
         const challengeFrame = page.frameLocator(THREE_DS_SELECTORS.CHALLENGE_IFRAME);
-        const challengeForm = challengeFrame.locator(THREE_DS_SELECTORS.CHALLENGE_FORM);
-        await expect(challengeForm).toBeVisible({ timeout });
+        
+        //3DS2 Challenge UI changed no longer needed
+        //const challengeForm = challengeFrame.locator(THREE_DS_SELECTORS.CHALLENGE_FORM);
+        //await expect(challengeForm).toBeVisible({ timeout });
         
         return challengeFrame;
     },
@@ -156,5 +158,20 @@ export const purchasePage = {
         }
         return null;
     },
+
+    clickChallengePassButton: async (page: Page) => {
+        const challengeFrame = page.frameLocator(THREE_DS_SELECTORS.CHALLENGE_IFRAME);
+        const passButton = challengeFrame.locator(THREE_DS_SELECTORS.CHALLENGE_PASS_BUTTON);
+        await expect(passButton).toBeVisible();
+        await expect(passButton).toBeEnabled();
+        await passButton.click();
+      },
+      clickChallengeFailButton: async (page: Page) => {
+        const challengeFrame = page.frameLocator(THREE_DS_SELECTORS.CHALLENGE_IFRAME);
+        const failButton = challengeFrame.locator(THREE_DS_SELECTORS.CHALLENGE_FAIL_BUTTON);
+        await expect(failButton).toBeVisible();
+        await expect(failButton).toBeEnabled();
+        await failButton.click();
+      },
     
 }

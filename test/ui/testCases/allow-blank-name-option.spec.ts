@@ -96,7 +96,7 @@ test.describe("Allow Blank Name Option - Monorepo", () => {
       expiryYear: getValidYearString(),
     }
   );
-   await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.CARD_NUMBER, {
+   await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.CARD_NUMBER_FORMATTED, {
     firstName: "",
     lastName: "",
     cvv: TEST_DATA.CVV,
@@ -127,7 +127,7 @@ test.describe("Allow Blank Name Option - Monorepo", () => {
       expiryYear: getValidYearString(),
     }
   );
-   await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.CARD_NUMBER, {
+   await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.CARD_NUMBER_FORMATTED, {
     firstName: "",
     lastName: "",
     cvv: TEST_DATA.CVV,
