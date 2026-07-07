@@ -262,7 +262,7 @@ test.describe('offsite payments flow', () => {
     await redirectResultPage.verifyTransactionDetails(page, 'NuPay (EBANX)', 'ebanx', 'gateway_processing_failed');
   })
 
-  test.only('offsite payments flow for hosted fields ebanx nupay authorize case pending case', async ({ page }) => {
+  test('offsite payments flow for hosted fields ebanx nupay authorize case pending case', async ({ page }) => {
     await page.goto(MONOREPO_URLS.BASE);
     await landingPage.clickOnOffsitePaymentsButton(page);
     await waitForAuthParams(page);
