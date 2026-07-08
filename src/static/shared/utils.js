@@ -9,13 +9,13 @@ function getSDKType() {
 
 function getSDKScriptUrl() {
   const sdkType = getSDKType();
-  // uncomment this to use local sdk
-  // if (window.location.hostname === 'localhost') {
-  //   if (sdkType === 'express-checkout') {
-  //     return 'http://localhost:5173/express-checkout.js';
-  //   }
-  //   return 'http://localhost:5000/index.js';
-  // }
+  //uncomment this to use local sdk
+  if (window.location.hostname === 'localhost') {
+    if (sdkType === 'express-checkout') {
+      return 'http://localhost:5173/express-checkout.js';
+    }
+    return 'http://localhost:5000/index.js';
+  }
 
   if (sdkType === 'express-checkout') {
     return 'https://core-test.spreedly.com/checkout/elements/rc/express-checkout.js';

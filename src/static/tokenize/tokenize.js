@@ -16,6 +16,7 @@ const config = {
   allowBlankDate: false,
   twoDigitExpiryYear: false,
   eligibleForCardUpdater: false,
+  showCardTypeIcon: true,
   ecExtraFields: [],
 };
 
@@ -160,6 +161,11 @@ function setupConfigCheckboxListeners() {
     config.eligibleForCardUpdater = this.checked;
   });
 
+  // Express Checkout: card-type badge is a launch-time uiConfig flag.
+  document.getElementById('ec-demo-card-type-icon')?.addEventListener('change', function () {
+    config.showCardTypeIcon = this.checked;
+  });
+
   document.querySelectorAll('input[data-ec-field]').forEach((checkbox) => {
     checkbox.addEventListener('change', () => {
       syncEcExtraFieldsFromCheckboxes();
@@ -228,6 +234,8 @@ function syncConfigFromCheckboxes() {
   config.allowBlankDate = document.getElementById('config-allow-blank-date')?.checked || false;
   config.allowExpiredDate = document.getElementById('config-allow-expired-date')?.checked || false;
   config.eligibleForCardUpdater = document.getElementById('config-eligible-for-card-updater')?.checked || false;
+  const ecCardTypeIcon = document.getElementById('ec-demo-card-type-icon');
+  config.showCardTypeIcon = ecCardTypeIcon ? ecCardTypeIcon.checked : true;
   syncEcExtraFieldsFromCheckboxes();
 }
 
@@ -312,6 +320,9 @@ function configureHostedFieldsOnReady(sdkInstance) {
   sdkInstance.setTitle('cvv', 'Security code');
   sdkInstance.setPlaceholderStyles(HOSTED_FIELDS_PLACEHOLDER_STYLES.default);
   sdkInstance.setNumberFormat('prettyFormat');
+  // Respect the card-type-icon checkbox even if toggled before the form was opened.
+  const cardTypeIcon = document.getElementById('hf-demo-card-type-icon');
+  sdkInstance.setShowCardTypeIcon(cardTypeIcon ? cardTypeIcon.checked : true);
 }
 
 /** Wires SDK Configuration panel controls to hosted fields SDK methods. */
@@ -402,6 +413,14 @@ function setupHostedFieldsConfigPanel(sdkInstance) {
       if (!sdk || sdk !== sdkInstance || !isReady) return;
       sdkInstance.setRequiredAttribute('number', this.checked);
       sdkInstance.setRequiredAttribute('cvv', this.checked);
+    };
+  }
+
+  const cardTypeIconCheckbox = document.getElementById('hf-demo-card-type-icon');
+  if (cardTypeIconCheckbox) {
+    cardTypeIconCheckbox.onchange = function handleHostedFieldsCardTypeIconChange() {
+      if (!sdk || sdk !== sdkInstance || !isReady) return;
+      sdkInstance.setShowCardTypeIcon(this.checked);
     };
   }
 
@@ -634,6 +653,7 @@ window.openExpressCheckoutForm = function () {
     uiConfig: {
       twoDigitExpiry: config.twoDigitExpiryYear,
       showSaveCardCheckbox: true,
+      showCardTypeIcon: config.showCardTypeIcon,
       textConfig: {
         title: 'Payment Details',
         submitBtnText: 'Create Payment Method',
