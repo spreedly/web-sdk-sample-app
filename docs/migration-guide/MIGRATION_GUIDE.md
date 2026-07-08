@@ -24,8 +24,10 @@ the migration is small. In order:
 3. Rename event handlers:
    - `Spreedly.on('paymentMethod', cb)` → `sdk.on('tokenGenerated', cb)`
      **payload changed** (now `{ message, tokenResponse: { token, succeeded, payment_method } }`).
-   - `Spreedly.on('errors', cb)` → `sdk.on('error', cb)` **payload changed**
-     (now an object `{ message, errors? }`).
+   - `Spreedly.on('errors', cb)` → `sdk.on('error', cb)` **payload changed**:
+     legacy always passed an array of error objects; the new SDK's payload varies by
+     source — a `string` for client-side validation errors, Spreedly's error response
+     body for API failures. See [Events](#events).
    - See [Events](#events) for the full list.
 4. Replace `Spreedly.tokenizeCreditCard()` with `sdk.submit(formData, submitParams)` —
    see [Tokenization (submit)](#tokenization-submit).
@@ -55,7 +57,6 @@ If you used 3DS, see [3DS — Global / Forter](#3ds--global--forter).
 11. [Offsite payments — Braintree (PayPal/Venmo)](#offsite-payments--braintree-paypalvenmo)
 12. [ACH payments 🆕](#ach-payments-)
 13. [Express Checkout 🆕](#express-checkout-)
-14. [Not yet migrated](#not-yet-migrated)
 
 ---
 
@@ -75,7 +76,7 @@ Reference: `web-sdk-sample-app/src/static/shared/utils.js` (`getSDKScriptUrl`)
 | Legacy iFrame | Checkout Web SDK | Status | Notes |
 |---|---|---|---|
 | `Spreedly.init(envKey, { nonce, timestamp, certificateToken, signature, numberEl, cvvEl })` | `new SpreedlyHostedFields({ environment_key, nonce, timestamp, certificate_token, signature })` + `sdk.inAppElements({ number: { containerId }, cvv: { containerId } })` | ⚠️ | Auth fields are now snake_case and passed to the constructor; iframe mount is a separate explicit call. `data-environment-key` / `data-number-id` / `data-cvv-id` HTML attributes are no longer used. |
-| _(global singleton `Spreedly`)_ | _(per-instance `sdk`)_ | ⚠️ | The new SDK is class-based; you can hold multiple instances. |
+| _(global singleton `Spreedly`)_ | _(per-instance `sdk`)_ | ⚠️ | The new SDK is class-based |
 | `Spreedly.unload()` | `sdk.destroy()` | ⚠️ | Renamed. Removes the iframes, clears `on()` callbacks, and emits `'close'`. Idempotent. After destroy, other SDK methods no-op with a warning. |
 | `Spreedly.reload()` | `sdk.reload()` | ✅ | Same name. Internally tears down current iframes and re-mounts using the same `inAppElements()` config; merchant `on('ready', …)` callbacks fire again. |
 | `Spreedly.removeHandlers()` | `sdk.removeHandlers()` | ✅ | Same name; clears all callbacks registered via `on()`. |
@@ -96,6 +97,7 @@ manages its own UI via `sdk.expressCheckout({...})` configuration
 |---|---|---|---|
 | `Spreedly.setPlaceholder(field, text)` | `sdk.setPlaceholder('number' \| 'cvv', text)` | ✅ | |
 | `Spreedly.setStyle(field, css)` (CSS string) | `sdk.setStyles('number' \| 'cvv', { fontSize, color, ... })` (object) | ⚠️ | Renamed (`setStyle` → `setStyles`); pass a plain object of camelCase CSS properties instead of a CSS string. |
+| `Spreedly.setStyle('placeholder', css)` | `sdk.setPlaceholderStyles({ color, fontStyle, ... })` | ⚠️ | Placeholder styling is now its own method (applies to both fields); pass a plain object instead of a CSS string. |
 | `Spreedly.setFieldType(field, type)` | `sdk.setFieldType('number' \| 'cvv', 'text' \| 'tel' \| 'number' \| 'password')` | ✅ | |
 | `Spreedly.setLabel(field, value)` | `sdk.setLabel('number' \| 'cvv', value)` | ✅ | Sets `aria-label` on the hosted input. HTML-like tags are stripped (same as legacy). |
 | `Spreedly.setTitle(field, value)` | `sdk.setTitle('number' \| 'cvv', value)` | ✅ | Sets the `title` attribute on the hosted input. |
@@ -107,6 +109,7 @@ manages its own UI via `sdk.expressCheckout({...})` configuration
 | `Spreedly.transferFocus(field)` | `sdk.transferFocus('number' \| 'cvv' \| 'iframe')` | ✅ | `'iframe'` parks focus on the iframe document (same as legacy). |
 | `Spreedly.validate()` | `sdk.validate(options?)` | ⚠️ | Now async — payload arrives via `sdk.on('validation', payload => …)`. Optional `options.allow_blank_name` / `options.allow_expired_date` mirror legacy submit flags. The same `validation` event fires when `submit()` is blocked client-side (followed by `error`). For continuous live state (typing, focus, hover, keys), use `sdk.on('fieldStateChange', …)`. |
 | `Spreedly.resetFields()` | `sdk.resetFields()` | ✅ | Clears both inputs. In recache mode the prefilled disabled number stays — only CVV is cleared. |
+| _(none — legacy always renders the brand badge)_ | `sdk.setShowCardTypeIcon(false)` (Hosted Fields) / `uiConfig.showCardTypeIcon: false` (Express Checkout) | 🆕 | Hide the built-in card-type badge (e.g. `VISA`). No legacy equivalent — legacy always shows it. Default is shown. |
 | `Spreedly.setValue('number' \| 'cvv', value)` | _(none — setting card values from the parent page is not supported)_ | ❌ | Intentionally not migrated. Hosted Fields exists to keep card values in the iframe; setting from the parent page would break PCI scope. |
 | `Spreedly.setParam(name, value)` | Pass via `sdk.submit(formData, submitParams)` | ⚠️ | See [Tokenization (submit)](#tokenization-submit) — params are passed at submit time, not set ahead. |
 
@@ -157,7 +160,7 @@ sdk.submit(
 
 | Legacy iFrame | Checkout Web SDK | Status |
 |---|---|---|
-| `Spreedly.tokenizeCreditCard(opts?)` | `sdk.submit(formData, submitParams?)` | ✅ |
+| `Spreedly.tokenizeCreditCard(opts?)` — returned `false` so it could be used directly as an inline `onsubmit` handler | `sdk.submit(formData, submitParams?)` — returns `void`; call `event.preventDefault()` yourself in form submit handlers | ⚠️ |
 | `Spreedly.setParam('first_name' \| 'last_name' \| 'full_name' \| 'month' \| 'year' \| 'email' \| 'address1' \| ... \| 'shipping_*', val)` | `formData` (typed `HostedFieldsFormData`; mandatory: `first_name`, `last_name`, `month`, `year`) | ✅ | Every legacy `permittedStringParams` field has a typed slot on `formData` — see [the typed `HostedFieldsFormData` surface](#typed-formdata-surface) below. Unknown keys are dropped server-side and the SDK logs a console warning listing the offending keys so typos (e.g. `address_1` vs `address1`) surface fast. |
 | `Spreedly.setParam('metadata', {...})` | `submitParams.metadata` | ✅ |
 | `Spreedly.setParam('allow_blank_name' \| 'allow_blank_date' \| 'allow_expired_date', true)` | `submitParams.allow_blank_name` / `submitParams.allow_blank_date` / `submitParams.allow_expired_date` | ✅ |
@@ -264,7 +267,7 @@ are marked ⚠️.
 |---|---|---|---|
 | `'ready'` | `'ready'` | ✅ | |
 | `'paymentMethod'` `(token, pm)` | `'tokenGenerated'` `(payload)` | ⚠️ | Renamed and payload changed. Payload is `{ message, tokenResponse: { token, succeeded, payment_method: { token, card_type, last_four_digits, ... } } }`. |
-| `'errors'` `(errorsArray)` | `'error'` `(errorPayload)` | ⚠️ | Renamed (singular) and payload changed: a single object `{ message, errors? }` instead of an array. |
+| `'errors'` `(errorsArray)` | `'error'` `(payload)` | ⚠️ | Renamed (singular) and payload changed — it varies by source: a `string` for client-side validation and guard errors (e.g. `'Invalid card number'`, `'Please wait before submitting again'`); Spreedly's error response body (object with an `errors` array) for API failures; `{ message, attribute? }` objects for recache configuration errors. Handle both strings and objects. |
 | `'validation'` `(payload)` | `'validation'` `(payload)` | ✅ | Fired in response to `sdk.validate()` and again when `submit()` is blocked client-side. Payload includes `cardType`, `validNumber`, `validCvv`, `cvvLength`, `numberLength`, `luhnValid`, `iin?`, `maskedNumber?`, `allow_blank_name?`, `allow_expired_date?`. |
 | `'fieldEvent'` `(name, type, ...)` | `'fieldStateChange'` `(payload)` | ⚠️ | Renamed; single object payload. Includes the same numeric snapshot as `validation` plus `field`, `action` (`focus` \| `blur` \| `input` \| `mouseover` \| `mouseout` \| `enter` \| `escape` \| `tab` \| `shiftTab`), `focused`, `hovered?`. Opt in to PAN-prefix `iin` via `sdk.setFieldStateReporting({ includeIin: true })`. |
 | `'consoleError'` `(error)` | `'consoleError'` `(payload)` | ⚠️ | Same name; payload shape is now `{ msg, url, line, col, error, field: 'number' \| 'cvv' }`. Fired when an uncaught error occurs inside one of the hosted iframes. |
@@ -508,9 +511,7 @@ sdk.on('error',          (err)  => {});
 sdk.on('close',          () => {});
 
 const checkout = sdk.expressCheckout({
-  containerId: 'checkout-container',  // or omit for modal
-  amount: 9900,
-  currencyCode: 'USD',
+  parentContainerId: 'checkout-container', // omit for full-screen dialog mode
 });
 
 sdk.updateTextElement('title',          'Complete Your Purchase');
@@ -546,7 +547,7 @@ Example — render an `email` input and tokenize as eligible for the Card Update
 
 ```js
 sdk.expressCheckout({
-  containerId: 'checkout-container',
+  parentContainerId: 'checkout-container',
   uiConfig: {
     cardPaymentFormFields: {
       // Default mandatory fields are merged in automatically; just add the extras.
@@ -566,7 +567,7 @@ sdk.expressCheckout({
 | API | Status |
 |---|---|
 | `new SpreedlyExpressCheckout(authDetails)` | 🆕 |
-| `sdk.expressCheckout({ containerId?, amount, currencyCode, ... })` | 🆕 |
+| `sdk.expressCheckout({ parentContainerId?, uiConfig?, submitParams?, id?, className? })` — embedded when `parentContainerId` is given, full-screen dialog otherwise; returns `{ destroy }` | 🆕 |
 | `sdk.updateTextElement(key, value)` | 🆕 |
 | `sdk.addField(name, config)` / `sdk.removeField(name)` / `sdk.setFieldConfig(name, config)` | 🆕 |
 | `sdk.close(force?)` | 🆕 |

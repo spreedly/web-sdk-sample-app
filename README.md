@@ -34,10 +34,10 @@ Both options provide the same security guarantees — card data never touches yo
 
 ### Latest version
 
-The latest released version is **`1.0.1`**, available at:
+The latest released version is **`1.2.0`**, available at:
 
-- Hosted Fields: [`https://core.spreedly.com/checkout/sdk/1.0.1/index.js`](https://core.spreedly.com/checkout/sdk/1.0.1/index.js)
-- Express Checkout: [`https://core.spreedly.com/checkout/elements/1.0.1/express-checkout.js`](https://core.spreedly.com/checkout/elements/1.0.1/express-checkout.js)
+- Hosted Fields: [`https://core.spreedly.com/checkout/sdk/1.2.0/index.js`](https://core.spreedly.com/checkout/sdk/1.0.1/index.js)
+- Express Checkout: [`https://core.spreedly.com/checkout/elements/1.2.0/express-checkout.js`](https://core.spreedly.com/checkout/elements/1.0.1/express-checkout.js)
 
 ---
 
