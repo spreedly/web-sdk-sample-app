@@ -1,7 +1,7 @@
 # Spreedly Web SDK — Getting Started
 
 This sample application demonstrates how to integrate the Spreedly Web SDK into your payment flow. Use it as a reference implementation for collecting card data, recaching CVVs, processing 3D Secure authentication, handling offsite payments etc.
-
+[`Live Sample app`](https://checkout-web-sample-app-049a3c617015.herokuapp.com/)
 ---
 
 ## Table of Contents
@@ -34,10 +34,10 @@ Both options provide the same security guarantees — card data never touches yo
 
 ### Latest version
 
-The latest released version is **`1.0.1`**, available at:
+The latest released version is **`1.2.0`**, available at:
 
-- Hosted Fields: [`https://core.spreedly.com/checkout/sdk/1.0.1/index.js`](https://core.spreedly.com/checkout/sdk/1.0.1/index.js)
-- Express Checkout: [`https://core.spreedly.com/checkout/elements/1.0.1/express-checkout.js`](https://core.spreedly.com/checkout/elements/1.0.1/express-checkout.js)
+- Hosted Fields: [`https://core.spreedly.com/checkout/sdk/1.2.0/index.js`](https://core.spreedly.com/checkout/sdk/1.2.0/index.js)
+- Express Checkout: [`https://core.spreedly.com/checkout/elements/1.2.0/express-checkout.js`](https://core.spreedly.com/checkout/elements/1.2.0/express-checkout.js)
 
 ---
 
@@ -69,7 +69,7 @@ Replace `{version}` with:
 
 | Channel | Description | Example |
 |---------|-------------|---------|
-| A specific version | Pinned release (recommended for production) | `1.0.1` |
+| A specific version | Pinned release (recommended for production) | `1.2.0` |
 | `rc` | Latest release candidate | `rc` |
 
 ---

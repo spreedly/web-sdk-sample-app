@@ -467,6 +467,16 @@
 
               <!-- Express Checkout only: extra fields rendered inside the iframe -->
               <div id="express-checkout-only-panel" class="hidden">
+                <div class="config-option-row">
+                  <div class="config-option">
+                    <input type="checkbox" id="ec-demo-card-type-icon" class="config-checkbox" checked>
+                    <div class="config-option-content">
+                      <label for="ec-demo-card-type-icon" class="config-option-label">Card type icon</label>
+                      <span class="config-option-desc">Show the card brand badge (e.g. VISA) inside the number
+                        field via <code>uiConfig.showCardTypeIcon</code></span>
+                    </div>
+                  </div>
+                </div>
                 <details id="ec-extra-fields-section" style="border:1px solid var(--color-gray-200); border-radius:6px; padding:.5rem .75rem; margin-bottom:.75rem;">
                   <summary style="cursor:pointer; font-weight:600;">Extra fields in Express Checkout</summary>
                   <p style="font-size:.85rem; color: var(--color-gray-500); margin-top:.5rem;">
@@ -640,6 +650,17 @@
                       <div class="config-option-content">
                         <label for="hf-demo-autocomplete" class="config-option-label">Browser autofill</label>
                         <span class="config-option-desc">Enable autofill on card number and CVV</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="config-option-row">
+                    <div class="config-option">
+                      <input type="checkbox" id="hf-demo-card-type-icon" class="config-checkbox" checked>
+                      <div class="config-option-content">
+                        <label for="hf-demo-card-type-icon" class="config-option-label">Card type icon</label>
+                        <span class="config-option-desc">Show the card brand badge (e.g. VISA) inside the number
+                          field via <code>setShowCardTypeIcon</code></span>
                       </div>
                     </div>
                   </div>
