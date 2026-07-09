@@ -17,7 +17,6 @@ Methods are grouped into the sections below; type definitions follow.
 | [Form Configuration](#form-configuration) | Configure the prebuilt form — which fields to render, their labels/placeholders, the display text, and submit parameters. |
 | [Recache](#recache) | Update the CVV on an already-retained (previously tokenized) payment method. |
 | [Offsite Payments](#offsite-payments) | Redirect-style / alternative payment methods, inherited from the shared SDK — see the dedicated Offsite Payments reference. |
-| [ACH](#ach) | Bank-account (ACH) tokenization, inherited from the shared SDK — see the dedicated ACH reference. |
 | [Type Definitions](#type-definitions) | The parameter and return types used throughout the API. |
 
 ## Example
@@ -59,7 +58,7 @@ Mandatory card form fields required for payment processing
 
 ### SpreedlySDKCallbacks
 
-> `static` **SpreedlySDKCallbacks**: `Readonly`\<\{ `ACHPaymentError`: `"achPaymentError"`; `ACHTokenGenerated`: `"achTokenGenerated"`; `Close`: `"close"`; `ConsoleError`: `"consoleError"`; `Error`: `"error"`; `FieldStateChange`: `"fieldStateChange"`; `OffsitePaymentError`: `"offsitePaymentError"`; `OffsiteTokenGenerated`: `"offsiteTokenGenerated"`; `Ready`: `"ready"`; `RecacheReady`: `"recacheReady"`; `RecacheSuccess`: `"recacheSuccess"`; `TokenGenerated`: `"tokenGenerated"`; `Validation`: `"validation"`; \}\>
+> `static` **SpreedlySDKCallbacks**: `Readonly`\<\{ `Close`: `"close"`; `ConsoleError`: `"consoleError"`; `Error`: `"error"`; `FieldStateChange`: `"fieldStateChange"`; `OffsitePaymentError`: `"offsitePaymentError"`; `OffsiteTokenGenerated`: `"offsiteTokenGenerated"`; `Ready`: `"ready"`; `RecacheReady`: `"recacheReady"`; `RecacheSuccess`: `"recacheSuccess"`; `TokenGenerated`: `"tokenGenerated"`; `Validation`: `"validation"`; \}\>
 
 Available SDK callback events that merchants can listen to
 
@@ -748,105 +747,6 @@ sdk.setupOffsitePayment({
 });
 sdk.submitOffsitePayment();
 // Token received via 'offsiteTokenGenerated' event
-```
-
-### ACH
-
-#### clearACHPayment()
-
-> **clearACHPayment**(): `void`
-
-Clear ACH payment configuration
-
-Clears the stored ACH payment configuration. Use this if you need to
-reset the ACH payment setup (for example after a failed submission
-before re-collecting account details).
-
-##### Returns
-
-`void`
-
-***
-
-#### setupACHPayment()
-
-> **setupACHPayment**(`config`): `void`
-
-Setup ACH (bank account) payment configuration
-
-Stores the bank account details that will be tokenized when
-`submitACHPayment()` is called. The merchant collects these values
-in their own UI; this SDK does not render any input fields for ACH.
-
-Required: `bankRoutingNumber`, `bankAccountNumber`, and either
-`fullName` OR (`firstName` AND `lastName`).
-
-Note: routing-number / account-number format validation is delegated
-to Spreedly Core. Invalid values surface via the `achPaymentError`
-event after `submitACHPayment()` is called.
-
-##### Parameters
-
-###### config
-
-`ACHPaymentConfig`
-
-ACH payment configuration
-
-##### Returns
-
-`void`
-
-##### Throws
-
-If required fields are missing
-
-##### Example
-
-```javascript
-sdk.setupACHPayment({
-  bankRoutingNumber: '021000021',
-  bankAccountNumber: '9876543210',
-  fullName: 'Bob Smith',
-  bankAccountType: 'checking',
-  bankAccountHolderType: 'personal',
-});
-```
-
-***
-
-#### submitACHPayment()
-
-> **submitACHPayment**(): `void`
-
-Submit ACH payment - creates a bank_account payment method via API
-
-Makes a direct API call to Spreedly's payment_methods endpoint. On
-success, emits the `achTokenGenerated` event with
-`{ token, last4 }`. On error, emits `achPaymentError`.
-
-Requires `setupACHPayment()` to be called first.
-
-##### Returns
-
-`void`
-
-##### Throws
-
-If `setupACHPayment()` was not called first
-
-##### Example
-
-```javascript
-sdk.on('achTokenGenerated', ({ token, last4 }) => {
-  // Send token to your backend to run the gateway purchase
-});
-sdk.on('achPaymentError', (error) => {
-  console.error('ACH error:', error.message);
-});
-
-sdk.setupACHPayment({ ... });
-sdk.submitACHPayment();
 ```
 
 ***

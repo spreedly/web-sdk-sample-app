@@ -55,8 +55,7 @@ If you used 3DS, see [3DS — Global / Forter](#3ds--global--forter).
 9. [Offsite payments — PayPal & redirect-style](#offsite-payments--paypal--redirect-style)
 10. [Offsite payments — Stripe APM](#offsite-payments--stripe-apm)
 11. [Offsite payments — Braintree (PayPal/Venmo)](#offsite-payments--braintree-paypalvenmo)
-12. [ACH payments 🆕](#ach-payments-)
-13. [Express Checkout 🆕](#express-checkout-)
+12. [Express Checkout 🆕](#express-checkout-)
 
 ---
 
@@ -276,8 +275,8 @@ are marked ⚠️.
 | `'recache'` `(token, pm)` | `'recacheSuccess'` `(response)` | ⚠️ | Renamed; payload is the recache response object `{ message, token, payment_method }`. |
 | _(none)_ | `'cvvExpired'` (subset of `'error'`) | 🆕 | New SDK clears CVV after PCI DSS 3.2.3 TTL (3 minutes) and emits an `error` with `{ message: 'CVV expired after 3 minutes', reason: 'PCI DSS 3.2.3 TTL compliance' }`. |
 | `'3ds:status'` `(event)` (single dispatcher; switch on `event.action`) | Typed callbacks on the `SpreedlyThreeDSLifecycle` constructor | ⚠️ | See [3DS](#3ds--global--forter) — replaced by `callbacks: { onChallenge, onSuccess, onError, onDeviceFingerprint?, onTriggerCompletion? }`. |
+| _none_ | `'close'` (Hosted Fields after `destroy()`, and Express Checkout) | 🆕 | |
 | _none_ | `'offsiteTokenGenerated'` / `'offsitePaymentError'` | 🆕 | See [Offsite payments](#offsite-payments--paypal--redirect-style). |
-| _none_ | `'achTokenGenerated'` / `'achPaymentError'` | 🆕 | See [ACH payments](#ach-payments-). |
 
 ---
 
@@ -458,39 +457,6 @@ const result = await braintree.mount();
 
 Reference: `web-sdk-sample-app/src/static/offsite-payments/braintree/braintree.js`,
 `checkout-web-sdk/docs/offsite-payments/braintree/INTEGRATION_GUIDE.md`
-
----
-
-## ACH payments 🆕
-
-No equivalent in the legacy iFrame SDK (legacy used a hand-built transparent-redirect
-form posting `payment_method_type=bank_account` to
-`https://core.spreedly.com/v1/payment_methods`).
-
-```js
-// Checkout Web SDK
-sdk.on('achTokenGenerated', ({ token, last4 }) => {
-  // POST token to your backend → run the gateway purchase
-});
-sdk.on('achPaymentError', (err) => { /* ... */ });
-
-sdk.setupACHPayment({
-  bankRoutingNumber:     '021000021',
-  bankAccountNumber:     '9876543210',
-  fullName:              'Bob Smith',           // OR firstName + lastName
-  bankAccountType:       'checking',            // 'checking' | 'savings'
-  bankAccountHolderType: 'personal',            // 'personal' | 'business'
-});
-sdk.submitACHPayment();
-```
-
-| Legacy iFrame | Checkout Web SDK | Status |
-|---|---|---|
-| Hand-built `<form>` posting `payment_method_type=bank_account` | `sdk.setupACHPayment(config)` + `sdk.submitACHPayment()` + `sdk.clearACHPayment()` | 🆕 |
-| _none_ | Events: `'achTokenGenerated'` (`{ token, last4 }`), `'achPaymentError'` | 🆕 |
-
-Reference: `web-sdk-sample-app/src/static/ach-payments/ach-payments.js`,
-`checkout-web-sdk/docs/ach-payments/INTEGRATION_GUIDE.md`
 
 ---
 
