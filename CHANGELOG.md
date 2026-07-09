@@ -33,8 +33,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `toggleMask`, `toggleAutoComplete`, `transferFocus`, `validate`,
   `setFieldStateReporting`, `destroy`, and `setStyles` (renamed from
   `setStyle`); plus `removeHandlers` on the shared base class (HC-1450).
-- New hosted-fields callback event: `fieldStateChange` (live field
-  metadata) (HC-1450).
+- New hosted-fields callback events: `fieldStateChange` (live field metadata)
+  and `validation` (client-side validation snapshot, emitted by `validate()`
+  and when `submit()` is blocked client-side) (HC-1450).
 - **Gateway-specific 3D Secure** flow support, alongside the existing
   SCA-provider flow (HC-1073).
 - New Recache config options: `allow_blank_name`, `allow_expired_date`,
