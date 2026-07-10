@@ -18,6 +18,7 @@ Methods are grouped into the sections below; type definitions follow.
 | [Tokenization](#tokenization) | Submit the collected card data to create a Spreedly payment method token. |
 | [Recache](#recache) | Update the CVV on an already-retained (previously tokenized) payment method. |
 | [Offsite Payments](#offsite-payments) | Redirect-style / alternative payment methods, inherited from the shared SDK — see the dedicated Offsite Payments reference. |
+| [ACH](#ach) | Bank-account (ACH) tokenization, inherited from the shared SDK — see the dedicated ACH reference. |
 | [Type Definitions](#type-definitions) | The parameter and return types used throughout the API. |
 
 ## Example
@@ -40,7 +41,7 @@ hostedFields.on('ready', () => {
 
 ### SpreedlySDKCallbacks
 
-> `static` **SpreedlySDKCallbacks**: `Readonly`\<\{ `Close`: `"close"`; `ConsoleError`: `"consoleError"`; `Error`: `"error"`; `FieldStateChange`: `"fieldStateChange"`; `OffsitePaymentError`: `"offsitePaymentError"`; `OffsiteTokenGenerated`: `"offsiteTokenGenerated"`; `Ready`: `"ready"`; `RecacheReady`: `"recacheReady"`; `RecacheSuccess`: `"recacheSuccess"`; `TokenGenerated`: `"tokenGenerated"`; `Validation`: `"validation"`; \}\>
+> `static` **SpreedlySDKCallbacks**: `Readonly`\<\{ `ACHPaymentError`: `"achPaymentError"`; `ACHTokenGenerated`: `"achTokenGenerated"`; `Close`: `"close"`; `ConsoleError`: `"consoleError"`; `Error`: `"error"`; `FieldStateChange`: `"fieldStateChange"`; `OffsitePaymentError`: `"offsitePaymentError"`; `OffsiteTokenGenerated`: `"offsiteTokenGenerated"`; `Ready`: `"ready"`; `RecacheReady`: `"recacheReady"`; `RecacheSuccess`: `"recacheSuccess"`; `TokenGenerated`: `"tokenGenerated"`; `Validation`: `"validation"`; \}\>
 
 Available SDK callback events that merchants can listen to
 
@@ -1147,7 +1148,7 @@ Two flows are supported based on whether redirectUrl is provided:
 
 ###### config
 
-`OffsitePaymentConfig`
+[`OffsitePaymentConfig`](#offsitepaymentconfig)
 
 Configuration for the offsite payment method
 
@@ -1233,9 +1234,261 @@ sdk.submitOffsitePayment();
 // Token received via 'offsiteTokenGenerated' event
 ```
 
+### ACH
+
+#### clearACHPayment()
+
+> **clearACHPayment**(): `void`
+
+Clear ACH payment configuration
+
+Clears the stored ACH payment configuration. Use this if you need to
+reset the ACH payment setup (for example after a failed submission
+before re-collecting account details).
+
+##### Returns
+
+`void`
+
+***
+
+#### setupACHPayment()
+
+> **setupACHPayment**(`config`): `void`
+
+Setup ACH (bank account) payment configuration
+
+Stores the bank account details that will be tokenized when
+`submitACHPayment()` is called. The merchant collects these values
+in their own UI; this SDK does not render any input fields for ACH.
+
+Required: `bankRoutingNumber`, `bankAccountNumber`, and either
+`fullName` OR (`firstName` AND `lastName`).
+
+Note: routing-number / account-number format validation is delegated
+to Spreedly Core. Invalid values surface via the `achPaymentError`
+event after `submitACHPayment()` is called.
+
+##### Parameters
+
+###### config
+
+[`ACHPaymentConfig`](#achpaymentconfig)
+
+ACH payment configuration
+
+##### Returns
+
+`void`
+
+##### Throws
+
+If required fields are missing
+
+##### Example
+
+```javascript
+sdk.setupACHPayment({
+  bankRoutingNumber: '021000021',
+  bankAccountNumber: '9876543210',
+  fullName: 'Bob Smith',
+  bankAccountType: 'checking',
+  bankAccountHolderType: 'personal',
+});
+```
+
+***
+
+#### submitACHPayment()
+
+> **submitACHPayment**(): `void`
+
+Submit ACH payment - creates a bank_account payment method via API
+
+Makes a direct API call to Spreedly's payment_methods endpoint. On
+success, emits the `achTokenGenerated` event with
+`{ token, last4 }`. On error, emits `achPaymentError`.
+
+Requires `setupACHPayment()` to be called first.
+
+##### Returns
+
+`void`
+
+##### Throws
+
+If `setupACHPayment()` was not called first
+
+##### Example
+
+```javascript
+sdk.on('achTokenGenerated', ({ token, last4 }) => {
+  // Send token to your backend to run the gateway purchase
+});
+sdk.on('achPaymentError', (error) => {
+  console.error('ACH error:', error.message);
+});
+
+sdk.setupACHPayment({ ... });
+sdk.submitACHPayment();
+```
+
 ***
 
 ## Type Definitions
+
+### ACHPaymentConfig
+
+> **ACHPaymentConfig** = `object`
+
+Configuration for tokenizing a US or Canadian bank account (ACH), passed to
+`setupACHPayment(config)`. Provide the account holder's name either as `fullName`
+OR as `firstName` + `lastName`. Routing- and account-number formats are validated
+by Spreedly Core (not client-side); the SDK only checks that required fields are present.
+
+## Properties
+
+### address1?
+
+> `optional` **address1?**: `string`
+
+Billing address line 1. Optional (gateway-dependent).
+
+***
+
+### address2?
+
+> `optional` **address2?**: `string`
+
+Billing address line 2. Optional (gateway-dependent).
+
+***
+
+### bankAccountHolderType?
+
+> `optional` **bankAccountHolderType?**: `"personal"` \| `"business"`
+
+Account holder type. Optional; one of `'personal'` or `'business'`.
+
+***
+
+### bankAccountNumber
+
+> **bankAccountNumber**: `string`
+
+Bank account number. Required.
+
+***
+
+### bankAccountType?
+
+> `optional` **bankAccountType?**: `"checking"` \| `"savings"`
+
+Account type. Optional; one of `'checking'` or `'savings'`.
+
+***
+
+### bankName?
+
+> `optional` **bankName?**: `string`
+
+Bank name. Optional.
+
+***
+
+### bankRoutingNumber
+
+> **bankRoutingNumber**: `string`
+
+Bank routing number (9-digit ABA / transit number). Required.
+
+***
+
+### city?
+
+> `optional` **city?**: `string`
+
+Billing city. Optional (gateway-dependent).
+
+***
+
+### country?
+
+> `optional` **country?**: `string`
+
+Two-letter country code. Optional; Spreedly supports `'US'` and `'CA'` for ACH.
+
+***
+
+### email?
+
+> `optional` **email?**: `string`
+
+Account holder email. Optional (gateway-dependent).
+
+***
+
+### firstName?
+
+> `optional` **firstName?**: `string`
+
+Account holder's first name. Use together with `lastName` when `fullName` is not provided.
+
+***
+
+### fullName?
+
+> `optional` **fullName?**: `string`
+
+Account holder's full name. Provide this **or** `firstName` + `lastName`.
+
+***
+
+### lastName?
+
+> `optional` **lastName?**: `string`
+
+Account holder's last name. Use together with `firstName` when `fullName` is not provided.
+
+***
+
+### metadata?
+
+> `optional` **metadata?**: `Record`\<`string`, `string`\>
+
+Arbitrary key/value metadata stored on the payment method. Optional.
+
+***
+
+### phoneNumber?
+
+> `optional` **phoneNumber?**: `string`
+
+Account holder phone number. Optional (gateway-dependent).
+
+***
+
+### retained?
+
+> `optional` **retained?**: `boolean`
+
+When `true`, request that Spreedly retain the payment method after creation. Optional.
+
+***
+
+### state?
+
+> `optional` **state?**: `string`
+
+Billing state/province. Optional (gateway-dependent).
+
+***
+
+### zip?
+
+> `optional` **zip?**: `string`
+
+Billing postal/ZIP code. Optional (gateway-dependent).
 
 ### AuthDetails
 
@@ -1301,7 +1554,7 @@ Configuration for a single Spreedly hosted field (the card number field or the C
 
 Each hosted field is rendered as a secure Spreedly-hosted iframe injected into a DOM
 element you provide. You supply one `HostedFieldInput` per field via
-[HostedFieldsConfig](HostedFieldsConfig.md) when calling `inAppElements()`. The referenced container
+[HostedFieldsConfig](#hostedfieldsconfig) when calling `inAppElements()`. The referenced container
 element must already exist in the DOM when `inAppElements()` runs; if the element with
 the given `containerId` cannot be found, that field is skipped and a warning is logged.
 
@@ -1341,7 +1594,7 @@ PAN/CVV and drives validation and tokenization, while the CVV iframe connects to
 
 ### cvv
 
-> **cvv**: [`HostedFieldInput`](HostedFieldInput.md)
+> **cvv**: [`HostedFieldInput`](#hostedfieldinput)
 
 Placement for the CVV field. Required. `containerId` (required `string`) is the `id` of the DOM element the CVV iframe is appended into. `styles` (optional `Record<string, string>`) is accepted by the type but is currently NOT read by the mount logic — field styling is applied at runtime via `setStyles('cvv', …)` / `setPlaceholderStyles(…)`, not through this config.
 
@@ -1349,7 +1602,7 @@ Placement for the CVV field. Required. `containerId` (required `string`) is the 
 
 ### number
 
-> **number**: [`HostedFieldInput`](HostedFieldInput.md)
+> **number**: [`HostedFieldInput`](#hostedfieldinput)
 
 Placement for the card number field. Required. `containerId` (required `string`) is the `id` of the DOM element the number iframe is appended into. `styles` (optional `Record<string, string>`) is accepted by the type but is currently NOT read by the mount logic — field styling is applied at runtime via `setStyles('number', …)` / `setPlaceholderStyles(…)`, not through this config.
 
@@ -1378,6 +1631,129 @@ service. Optional; no default. May also be supplied via
 ### NumberDisplayFormat
 
 > **NumberDisplayFormat** = `"maskedFormat"` \| `"plainFormat"` \| `"prettyFormat"`
+
+### OffsitePaymentConfig
+
+> **OffsitePaymentConfig** = `object`
+
+Configuration for creating an offsite / alternative payment method, passed to
+`setupOffsitePayment(config)`. The required fields vary by `paymentMethodType`;
+the address/contact fields below are used by the LATAM methods that need them.
+Provide the customer's name either as `fullName` OR as `firstName` + `lastName`.
+
+## Properties
+
+### address1?
+
+> `optional` **address1?**: `string`
+
+Address line 1. Optional (method-dependent).
+
+***
+
+### address2?
+
+> `optional` **address2?**: `string`
+
+Address line 2. Optional (method-dependent).
+
+***
+
+### city?
+
+> `optional` **city?**: `string`
+
+City. Optional (method-dependent).
+
+***
+
+### country?
+
+> `optional` **country?**: `string`
+
+Two-letter country code (e.g. `'BR'`, `'MX'`, `'CL'`, `'AR'`). Optional (method-dependent).
+
+***
+
+### documentId?
+
+> `optional` **documentId?**: `string`
+
+National ID / taxpayer ID (e.g. CPF for Brazil). Optional (method-dependent).
+
+***
+
+### email?
+
+> `optional` **email?**: `string`
+
+Customer email. Optional (method-dependent).
+
+***
+
+### firstName?
+
+> `optional` **firstName?**: `string`
+
+Customer first name. Use together with `lastName` when `fullName` is not provided.
+
+***
+
+### fullName?
+
+> `optional` **fullName?**: `string`
+
+Customer full name. Provide this **or** `firstName` + `lastName`.
+
+***
+
+### lastName?
+
+> `optional` **lastName?**: `string`
+
+Customer last name. Use together with `firstName` when `fullName` is not provided.
+
+***
+
+### paymentMethodType
+
+> **paymentMethodType**: `string`
+
+The offsite payment method to create — e.g. `'paypal'`, `'pix'`,
+`'boleto_bancario'`, `'oxxo'`, `'nupay'`, `'khipu'`, `'rapipago'`. Required.
+
+***
+
+### phoneNumber?
+
+> `optional` **phoneNumber?**: `string`
+
+Customer phone number. Optional (method-dependent).
+
+***
+
+### redirectUrl?
+
+> `optional` **redirectUrl?**: `string`
+
+URL to redirect to after the payment method is created. When provided, the SDK
+uses the form-based redirect flow instead of the API flow. Optional.
+
+***
+
+### state?
+
+> `optional` **state?**: `string`
+
+State/province. Optional (method-dependent).
+
+***
+
+### zip?
+
+> `optional` **zip?**: `string`
+
+Postal/ZIP code. Optional (method-dependent).
 
 ### RecacheOptions
 

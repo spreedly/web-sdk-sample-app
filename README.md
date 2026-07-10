@@ -39,6 +39,14 @@ The latest released version is **`1.2.0`**, available at:
 - Hosted Fields: [`https://core.spreedly.com/checkout/sdk/1.2.0/index.js`](https://core.spreedly.com/checkout/sdk/1.2.0/index.js)
 - Express Checkout: [`https://core.spreedly.com/checkout/elements/1.2.0/express-checkout.js`](https://core.spreedly.com/checkout/elements/1.2.0/express-checkout.js)
 
+### Past Releases
+
+Previous production releases of the SDK:
+
+| Version | Packages |  Release Date  | Notes |
+|---------|----------|----------------|-------|
+| `1.0.1` | Hosted Fields (`https://core.spreedly.com/checkout/sdk/1.0.1/index.js`) and Express Checkout (`https://core.spreedly.com/checkout/elements/1.0.1/express-checkout.js`) | April 30, 2026 | —     |
+
 ---
 
 ## Prerequisites
