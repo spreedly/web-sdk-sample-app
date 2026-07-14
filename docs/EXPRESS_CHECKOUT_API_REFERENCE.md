@@ -708,8 +708,7 @@ The browser will redirect to Spreedly, then back to your redirectUrl with the to
 
 **Without redirectUrl (API-based flow):**
 Makes a direct API call to create the payment method. On success, emits
-'offsiteTokenGenerated' event with { token, paymentMethodType }. On error,
-emits 'offsitePaymentError' event.
+'offsiteTokenGenerated' event with { token, paymentMethodType } and clears the stored config. On error, emits 'offsitePaymentError' with a sanitized [SanitizedPaymentError](#sanitizedpaymenterror) payload (`{ message, status?, errors? }`) — the raw request (customer PII) is never included, so the payload is safe to log.
 
 Requires setupOffsitePayment() to be called first.
 

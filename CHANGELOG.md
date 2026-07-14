@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **ACH payments** (HC-1126): `setupACHPayment(config)`, `submitACHPayment()`, and `clearACHPayment()` methods (available from both Hosted Fields and Express Checkout), plus `achTokenGenerated` and `achPaymentError` events, for tokenizing US and Canadian bank accounts.
 
+### Changed
+- **Breaking (offsite): `offsitePaymentError` payload shape changed** (HC-1575). The payload was `{ message, error }` in 1.2.0 and is now `{ message, status, errors }`.
+
 ## [1.2.0] - 2026-06-05
 
 ### Added
@@ -38,8 +41,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `toggleMask`, `toggleAutoComplete`, `transferFocus`, `validate`,
   `setFieldStateReporting`, `destroy`, and `setStyles` (renamed from
   `setStyle`); plus `removeHandlers` on the shared base class (HC-1450).
-- New hosted-fields callback event: `fieldStateChange` (live field
-  metadata) (HC-1450).
+- New hosted-fields callback events: `fieldStateChange` (live field metadata)
+  and `validation` (client-side validation snapshot, emitted by `validate()`
+  and when `submit()` is blocked client-side) (HC-1450).
 - **Gateway-specific 3D Secure** flow support, alongside the existing
   SCA-provider flow (HC-1073).
 - New Recache config options: `allow_blank_name`, `allow_expired_date`,

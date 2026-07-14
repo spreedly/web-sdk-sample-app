@@ -312,11 +312,36 @@ The `callback_url` receives POST notifications when transaction state changes. T
 
 ### SDK Errors
 
+The `offsitePaymentError` event (API flow) fires with a sanitized, safe-to-log
+object built from Spreedly Core's response. It never includes the raw request,
+so customer PII cannot leak into logs if you serialize it.
+
+| Field     | Type                     | Description                                                                            |
+| --------- | ------------------------ | -------------------------------------------------------------------------------------- |
+| `message` | `string`                 | Human-readable message (server message when available, otherwise a generic fallback).  |
+| `status`  | `number`                 | HTTP status code from the response, when available (e.g. `422`).                        |
+| `errors`  | `SpreedlyServiceError[]` | Validation details from Spreedly Core's `errors` array, when available.                 |
+
+Each `SpreedlyServiceError` is `{ key: string; message: string; attribute?: string }` — e.g.
+`{ key: 'errors.invalid', message: 'Document is invalid', attribute: 'document_id' }`. These
+describe the failure and never echo back the submitted PII values. See the
+**[Error Keys Reference](../../errors/ERROR_KEYS_REFERENCE.md)** for the full list of `key`
+values and their meanings.
+
 ```javascript
 sdk.on('offsitePaymentError', (error) => {
-  // handle based on error received.
+  console.error(error.message);
+  if (error.status === 422) {
+    error.errors?.forEach((e) => console.warn(e.attribute, e.message));
+  }
 });
 ```
+
+> **Changed in 1.3.0.** The payload was previously `{ message, error }`, where
+> `error` was the raw HTTP error (which could expose the submitted request body).
+> It is now `{ message, status, errors }`. If you were reading `error.error` (or
+> anything nested under it), switch to `error.status` / `error.errors`. Reading
+> `error.message` is unchanged.
 
 ### Transaction Errors
 

@@ -1192,8 +1192,11 @@ The browser will redirect to Spreedly, then back to your redirectUrl with the to
 
 **Without redirectUrl (API-based flow):**
 Makes a direct API call to create the payment method. On success, emits
-'offsiteTokenGenerated' event with { token, paymentMethodType }. On error,
-emits 'offsitePaymentError' event.
+'offsiteTokenGenerated' event with { token, paymentMethodType } and clears
+the stored config. On error, emits 'offsitePaymentError' with a sanitized
+[SanitizedPaymentError](#sanitizedpaymenterror) payload (`{ message, status?, errors? }`) —
+the raw request (customer PII) is never included, so the payload is safe to
+log.
 
 Requires setupOffsitePayment() to be called first.
 
@@ -1306,8 +1309,11 @@ sdk.setupACHPayment({
 Submit ACH payment - creates a bank_account payment method via API
 
 Makes a direct API call to Spreedly's payment_methods endpoint. On
-success, emits the `achTokenGenerated` event with
-`{ token, last4 }`. On error, emits `achPaymentError`.
+success, emits the `achTokenGenerated` event with `{ token, last4 }` and
+clears the stored config. On error, emits `achPaymentError` with a
+sanitized [SanitizedPaymentError](#sanitizedpaymenterror) payload
+(`{ message, status?, errors? }`) — the raw request (bank account/routing
+numbers) is never included, so the payload is safe to log.
 
 Requires `setupACHPayment()` to be called first.
 
@@ -1847,11 +1853,82 @@ Storage state of the payment method. Required, and must be exactly `'retained'` 
 
 Expiration year of the saved card (e.g. `'2025'`). Required.
 
+### SanitizedPaymentError
+
+> **SanitizedPaymentError** = `object`
+
+Sanitized payment error emitted to the merchant's `achPaymentError` /
+`offsitePaymentError` callbacks.
+
+This is a shaped, safe-to-log projection of the underlying HTTP error. It is
+deliberately built only from the server response and NEVER includes the raw
+request (`config`/`request`), so sensitive request-body values — bank
+account/routing numbers (ACH) or customer PII (offsite) — cannot leak into
+merchant logs or third-party log/monitoring processors.
+
+## Properties
+
+### errors?
+
+> `optional` **errors?**: [`SpreedlyServiceError`](#spreedlyserviceerror)[]
+
+Validation details from Spreedly Core's response `errors` array, when available.
+
+***
+
+### message
+
+> **message**: `string`
+
+Human-readable error message (server message when available, otherwise a generic fallback).
+
+***
+
+### status?
+
+> `optional` **status?**: `number`
+
+HTTP status code from the response, when available.
+
 ### SpreedlyInputMode
 
 > **SpreedlyInputMode** = `"none"` \| `"text"` \| `"numeric"` \| `"decimal"` \| `"tel"` \| `"search"` \| `"email"` \| `"url"`
 
 Allowed `inputmode` values for hosted field inputs (HTML spec subset).
+
+### SpreedlyServiceError
+
+> **SpreedlyServiceError** = `object`
+
+A single error entry from Spreedly Core's response `errors` array.
+
+These describe *why* the request failed (e.g. an invalid routing number) and
+never echo back the submitted account/routing/PII values, so they are safe to
+surface and log.
+
+## Properties
+
+### attribute?
+
+> `optional` **attribute?**: `string`
+
+The request field the error applies to, e.g. `'bank_routing_number'`. Absent for non-field (base) errors.
+
+***
+
+### key
+
+> **key**: `string`
+
+Machine-readable error key, e.g. `'errors.invalid'` or `'errors.blank'`.
+
+***
+
+### message
+
+> **message**: `string`
+
+Human-readable description of the failure, e.g. `'is invalid'`.
 
 ### SubmitParams
 

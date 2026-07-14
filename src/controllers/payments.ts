@@ -48,8 +48,8 @@ export const createPaymentMethod = async (req: Request, res: Response): Promise<
 
     res.json(response.data);
   } catch (error) {
-    if (error instanceof Error) {
-      res.status(500).json({ error: error.message });
+    if (error instanceof AxiosError) {
+      res.status(error?.response?.status || 500).json(error.response?.data);
     } else {
       res.status(500).json({ error: 'An unknown error occurred' });
     }
