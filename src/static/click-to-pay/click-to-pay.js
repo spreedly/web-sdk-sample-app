@@ -167,9 +167,11 @@ async function init() {
         timestamp: auth.timestamp,
       };
 
-      initializeHostedFields(authDetails);
+      // Single-entry integration: SpreedlyClickToPay creates + mounts its own hosted
+      // fields (config.fields) and tokenizes inside the number iframe automatically.
       initializeClickToPay(authDetails);
-      await c2p.init();
+      attachHostedFieldsListeners();
+      await c2p.init(); // mounts the fields, then initializes Click to Pay
     } catch (err) {
       logEvent(`Initialization failed: ${err.message}`, 'error');
       SpreedlyUtils.showStatus('global-status-message', err.message || 'Failed to initialize SDK.', 'error');
@@ -177,12 +179,12 @@ async function init() {
   });
 }
 
-// Hosted fields: mount the number + cvv iframes (3DS pattern — mount at init; the
-// new-card section stays hidden until the lookup resolves to c2p-new-user). The raw
-// card is encrypted in-iframe via encryptCardForClickToPay; the PAN never leaves it.
-function initializeHostedFields(authDetails) {
-  logEvent('Initializing Hosted Fields…');
-  hostedFields = new window.SpreedlyHostedFields(authDetails);
+// Hosted-fields listeners: the instance is created and mounted BY SpreedlyClickToPay
+// (config.fields) and exposed as c2p.hostedFields — full public API. Listeners are
+// attached after construction, before c2p.init() mounts the fields. The raw card is
+// encrypted in-iframe via encryptCardForClickToPay; the PAN never leaves it.
+function attachHostedFieldsListeners() {
+  hostedFields = c2p.hostedFields;
 
   hostedFields.on('ready', () => {
     isReady = true;
@@ -204,16 +206,19 @@ function initializeHostedFields(authDetails) {
     logEvent(`Hosted Fields error: ${err.message || err}`, 'error');
     showStatus(err.message || 'A card error occurred', 'error');
   });
-
-  hostedFields.inAppElements({
-    number: { containerId: 'card-number-field' },
-    cvv: { containerId: 'cvv-field' },
-  });
 }
 
 function initializeClickToPay(authDetails) {
   logEvent('Initializing Click to Pay orchestrator…');
   c2p = new window.SpreedlyClickToPay(authDetails, {
+    // The SDK creates + mounts its own hosted number/cvv fields in these containers
+    // (number lives in the hidden new-card section — the number iframe is the
+    // tokenization engine and CVV holder, so it must be mounted even for the
+    // saved-card flow; hidden is fine).
+    fields: {
+      number: { containerId: 'card-number-field' },
+      cvv: { containerId: 'cvv-field' },
+    },
     c2pConfig: {
       dpaData: { dpaPresentationName: 'Spreedly Demo Store', dpaName: 'SpreedlyDemoStore' },
       dpaTransactionOptions: {
@@ -459,10 +464,9 @@ async function payWithSelectedCard() {
       // Merchant-supplied cardholder name — mirrors the legacy iframe, which plucks
       // first_name/last_name/full_name from merchant params for the selected-card flow too.
       cardholder: { firstName, lastName, fullName: [firstName, lastName].filter(Boolean).join(' ') },
-      // CVV is PCI-sensitive and lives in the hosted-fields iframe, so the orchestrator
-      // can't tokenize this flow itself. It builds the click_to_pay body and hands it to
-      // this callback, which POSTs from inside the iframe (CVV injected there).
-      tokenize: (body) => hostedFields.tokenizeClickToPay(body, { withCvv: true }),
+      // No tokenize callback needed: the SDK routes tokenization into its own hosted
+      // number iframe automatically (config.fields), injecting the held CVV for this
+      // selected-card flow (withCvv is decided by flow inside the SDK).
       // Consumer consent captured by <src-consent> (documented complianceSettings).
       ...(consentComplianceResources.length
         ? { complianceSettings: { complianceResources: consentComplianceResources } }
@@ -572,11 +576,10 @@ async function handleContinue() {
       cardBrand,
       // Spreedly requires a non-blank cardholder name on the C2P token request.
       cardholder: { firstName, lastName, fullName: [firstName, lastName].filter(Boolean).join(' ') },
-      // Tokenize from inside the iframe too (no CVV to inject — it's in Mastercard's
-      // encrypted blob). Keeps the POST on a *.spreedly.com origin like the restricted
-      // endpoint requires, instead of the merchant page. (Live-tested: new-card tokenizes
-      // successfully with no verification_value — see CLICK_TO_PAY_PARITY.md.)
-      tokenize: (body) => hostedFields.tokenizeClickToPay(body),
+      // No tokenize callback needed: the SDK tokenizes inside its own hosted number
+      // iframe automatically (config.fields). New-card sends no verification_value —
+      // the CVV rides in Mastercard's encrypted blob (live-tested; see
+      // CLICK_TO_PAY_PARITY.md).
       // Consumer consent captured by <src-consent> (documented complianceSettings).
       ...(consentComplianceResources.length
         ? { complianceSettings: { complianceResources: consentComplianceResources } }
