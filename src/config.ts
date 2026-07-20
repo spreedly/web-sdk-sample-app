@@ -16,6 +16,10 @@ interface Config {
   paypalGatewayToken: string;
   ebanxGatewayToken: string;
   braintreeGatewayToken: string;
+  // PPCP (PayPal Complete Payments) — interim direct-to-PayPal spike (sandbox).
+  paypalPpcpClientId: string;
+  paypalPpcpClientSecret: string;
+  paypalApiBaseUrl: string;
 }
 
 const config: Config = {
@@ -32,6 +36,11 @@ const config: Config = {
   paypalGatewayToken: process.env.PAYPAL_GATEWAY_TOKEN_NEW || '',
   ebanxGatewayToken: process.env.EBANX_GATEWAY_TOKEN_NEW || '',
   braintreeGatewayToken: process.env.BRAINTREE_GATEWAY_TOKEN_NEW || '',
+  // PPCP interim spike — see ppcp/integration-plan/07-interim-direct-order-spike.md
+  paypalPpcpClientId: process.env.PAYPAL_PPCP_CLIENT_ID_NEW || '',
+  paypalPpcpClientSecret: process.env.PAYPAL_PPCP_CLIENT_SECRET_NEW || '',
+  paypalApiBaseUrl:
+    process.env.PAYPAL_API_BASE_URL_NEW || 'https://api-m.sandbox.paypal.com',
 };
 
 export default config;
