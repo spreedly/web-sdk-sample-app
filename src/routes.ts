@@ -19,6 +19,11 @@ import {
   confirmTransaction,
   createAchPurchase,
 } from './controllers/payments';
+import {
+  getPPCPClientToken,
+  createPPCPOrder,
+  capturePPCPOrder,
+} from './controllers/ppcp';
 
 const router = Router();
 
@@ -613,5 +618,83 @@ router.post('/transactions/:transactionToken/confirm', confirmTransaction);
  *         description: Error creating purchase
  */
 router.post('/ach-purchase', createAchPurchase);
+
+/**
+ * @swagger
+ * /api/v1/ppcp/client-token:
+ *   get:
+ *     description: (PPCP interim spike) Mint a browser-safe PayPal client token for the JS SDK v6 createInstance({ clientToken }). Talks to PayPal sandbox directly.
+ *     tags: [PPCP]
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: Client token minted
+ *         schema:
+ *           type: object
+ *           properties:
+ *             clientToken:
+ *               type: string
+ *       500:
+ *         description: Error minting client token
+ */
+router.get('/ppcp/client-token', getPPCPClientToken);
+
+/**
+ * @swagger
+ * /api/v1/ppcp/orders:
+ *   post:
+ *     description: (PPCP interim spike) Create a PayPal order via Orders V2 (sandbox, direct). Returns the PayPal order incl. id.
+ *     tags: [PPCP]
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: body
+ *         description: Order details
+ *         in: body
+ *         required: false
+ *         schema:
+ *           type: object
+ *           properties:
+ *             amount:
+ *               type: string
+ *               description: Decimal amount string, e.g. "10.00" (default "10.00")
+ *             currency_code:
+ *               type: string
+ *               description: ISO 4217 currency code (default USD)
+ *             intent:
+ *               type: string
+ *               description: CAPTURE or AUTHORIZE (default CAPTURE)
+ *     responses:
+ *       200:
+ *         description: Order created
+ *       500:
+ *         description: Error creating order
+ */
+router.post('/ppcp/orders', createPPCPOrder);
+
+/**
+ * @swagger
+ * /api/v1/ppcp/orders/{orderId}/capture:
+ *   post:
+ *     description: (PPCP interim spike) Capture an approved PayPal order via Orders V2 (sandbox, direct).
+ *     tags: [PPCP]
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: orderId
+ *         description: PayPal order id
+ *         in: path
+ *         required: true
+ *         type: string
+ *     responses:
+ *       200:
+ *         description: Order captured
+ *       400:
+ *         description: Invalid order id
+ *       500:
+ *         description: Error capturing order
+ */
+router.post('/ppcp/orders/:orderId/capture', capturePPCPOrder);
 
 export default router;
