@@ -310,6 +310,66 @@ export const createSimplePurchase = async (req: Request, res: Response): Promise
   }
 };
 
+// Web SDK endpoint demonstrating Stripe Radar fraud signals.
+// The browser calls sdk.stripeRadar(publishableKey) to create a Stripe Radar
+// session and posts the resulting session id here. We forward it to Stripe
+// through the Stripe Payment Intents gateway using the documented
+// gateway_specific_fields.stripe_payment_intents.radar_session_id field, so
+// Stripe can correlate its fraud evaluation with this charge.
+export const createStripeRadarPurchase = async (req: Request, res: Response): Promise<void> => {
+  const gateway_key = config.stripeGatewayToken;
+
+  const payment_method_token = req.body.payment_method_token;
+  const amount = req.body.amount;
+  const currency_code = req.body.currency_code || 'USD';
+  const radar_session_id = req.body.radar_session_id;
+
+  if (!gateway_key) {
+    res.status(500).json({
+      error: 'STRIPE_GATEWAY_TOKEN_NEW is not configured. A Stripe Payment Intents gateway is required for the Radar demo.',
+    });
+    return;
+  }
+
+  const transaction: Record<string, unknown> = {
+    payment_method_token,
+    amount,
+    currency_code,
+  };
+
+  // Only attach the gateway-specific field when we actually have a session id,
+  // so a failed/absent Radar session still produces a normal Stripe charge.
+  if (radar_session_id) {
+    transaction.gateway_specific_fields = {
+      stripe_payment_intents: {
+        radar_session_id,
+      },
+    };
+  }
+
+  try {
+    const response = await axios.post(
+      `${config.spreedlyUrl}/v1/gateways/${gateway_key}/purchase.json`,
+      { transaction },
+      {
+        headers: {
+          Authorization: getAuthorizationHeader(),
+        },
+      }
+    );
+
+    const tx = response.data?.transaction;
+    res.json({
+      success: tx?.succeeded || false,
+      radar_session_forwarded: Boolean(radar_session_id),
+      transaction: tx,
+    });
+  } catch (error) {
+    const apiError = error as AxiosError;
+    res.status(apiError.response?.status || 500).json(apiError.response?.data);
+  }
+};
+
 //Create an offsite purchase
 export const createOffsitePurchase = async (req: Request, res: Response): Promise<void> => {
   const gateway_key = getGatewayKey(req.body.gateway || 'spreedly');
