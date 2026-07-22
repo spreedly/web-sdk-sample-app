@@ -239,7 +239,7 @@ async function createOffsitePurchase(paymentMethodToken, amount, redirectUrl, ca
 // (bank_account) payment method token using the configured Spreedly Test gateway.
 async function createAchPurchase(paymentMethodToken, amount, currencyCode = 'USD') {
   try {
-    const response = await axios.post(`${LOCAL_API_URL}/ach-purchase`, {
+    const response = await axios.post(`${API_BASE_URL}/ach-purchase`, {
       payment_method_token: paymentMethodToken,
       amount,
       currency_code: currencyCode,
