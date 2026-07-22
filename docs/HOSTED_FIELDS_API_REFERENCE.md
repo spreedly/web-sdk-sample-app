@@ -941,11 +941,13 @@ After `destroy()` this is a no-op that logs a warning.
 [`HostedFieldsFormData`](#hostedfieldsformdata)
 
 Non-sensitive cardholder details to tokenize alongside the PAN/CVV held in the iframes.
-  first_name {string} - Cardholder first name. Required.
-  last_name {string} - Cardholder last name. Required.
   month {string} - Expiry month (e.g. "03"). Required.
   year {string} - Expiry year (e.g. "2027"). Required.
-  full_name, email, company, address1, address2, zip, city, state, country, phone_number {string} - Billing details. Optional.
+  Cardholder name — provide EITHER full_name OR both first_name and last_name:
+  first_name {string} - Cardholder first name. Required unless full_name is provided.
+  last_name {string} - Cardholder last name. Required unless full_name is provided.
+  full_name {string} - Cardholder full name; use instead of first_name + last_name. Required unless both first_name and last_name are provided.
+  email, company, address1, address2, zip, city, state, country, phone_number {string} - Billing details. Optional.
   shipping_address1, shipping_address2, shipping_city, shipping_state, shipping_zip, shipping_country, shipping_phone_number {string} - Shipping details. Optional.
   eligible_for_card_updater {boolean} - Marks the card as eligible for automatic updater. Optional.
 
@@ -1674,9 +1676,13 @@ code. Every field mirrors a legacy `Spreedly.setParam(name, value)` slot one-to-
 any key that is not recognized is dropped server-side during tokenization and logged as
 a console warning so typos are easy to spot.
 
+`month` and `year` are required. For the cardholder name, provide **either** `full_name`
+**or** both `first_name` and `last_name` — the SDK forwards whatever you supply and
+Spreedly Core enforces the requirement.
+
 ## Type Declaration
 
-### eligible\_for\_card\_updater?
+### eligible\_for\_card\_updater?\
 
 > `optional` **eligible\_for\_card\_updater?**: `boolean`
 
@@ -1942,7 +1948,7 @@ HTTP status code from the response, when available.
 
 ### SpreedlyInputMode
 
-> **SpreedlyInputMode** = `"none"` \| `"text"` \| `"numeric"` \| `"decimal"` \| `"tel"` \| `"search"` \| `"email"` \| `"url"`
+> **SpreedlyInputMode** = `"none"` \| `"text"` \| `"numeric"` \| `"decimal"` \| `"tel"` \| `"search"` \| `"email"` \| `"url"` \| `"tel-national"` \| `"tel-international"` \| `"tel-national-prefix-optional"` \| `"tel-international-prefix-optional"`
 
 Allowed `inputmode` values for hosted field inputs (HTML spec subset).
 
