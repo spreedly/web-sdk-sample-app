@@ -11,10 +11,11 @@ Use Spreedly Hosted Fields (`SpreedlyHostedFields`) to build a fully custom paym
 3. [Integration Flow](#integration-flow)
 4. [Complete Usage Example](#complete-usage-example)
 5. [Styling Hosted Fields](#styling-hosted-fields)
-6. [Error Handling](#error-handling)
-7. [Testing](#testing)
-8. [API Reference](#api-reference)
-9. [Troubleshooting](#troubleshooting)
+6. [Validation](#validation)
+7. [Error Handling](#error-handling)
+8. [Testing](#testing)
+9. [API Reference](#api-reference)
+10. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -145,6 +146,19 @@ document.getElementById('payment-form').addEventListener('submit', (e) => {
 });
 ```
 
+> **Cardholder name:** provide **either** `full_name` **or** both `first_name` and
+> `last_name` — whichever suits your form. `month` and `year` are always required. The
+> SDK forwards whatever you supply; Spreedly Core enforces the name requirement, so a
+> submission with only `full_name` (and no `first_name`/`last_name`) tokenizes fine:
+>
+> ```javascript
+> sdk.submit({
+>   full_name: document.getElementById('full-name').value,
+>   month: document.getElementById('expiry-month').value,
+>   year: document.getElementById('expiry-year').value
+> });
+> ```
+
 ### Step 6 — Handle the token
 
 The `tokenGenerated` callback fires on success:
@@ -256,9 +270,13 @@ sdk.on('tokenGenerated', (response) => {
     sdk.on('error', (error) => {
       const result = document.getElementById('result');
       result.className = 'error';
-      if (error.errors) {
+      if (typeof error === 'string') {
+        // Client-side validation errors arrive as plain strings
+        result.textContent = error;
+      } else if (error.errors) {
+        // API errors carry Spreedly's response body
         result.innerHTML = error.errors
-          .map(e => `<strong>${e.attribute}:</strong> ${e.message}`)
+          .map(e => `<strong>${e.attribute || e.key}:</strong> ${e.message}`)
           .join('<br>');
       } else {
         result.textContent = error.message || 'An error occurred';
@@ -332,34 +350,103 @@ You can style the **container** `<div>` directly with CSS:
 
 ---
 
+## Validation
+
+Only the card number and CVV live inside the hosted iframes, so the SDK validates
+**those two fields** for you and reports their state through the **`validation`**
+event. (Expiry, name, and address are your own inputs — validate them in your form.)
+
+You get this structured state two ways:
+
+- **On demand** — call **`sdk.validate(options?)`** whenever you want to check the
+  current field state (e.g. to enable/disable your submit button, or show inline
+  hints). It resolves asynchronously: the result arrives via the `validation` event,
+  not as a return value.
+- **Automatically on a blocked submit** — when `submit()` is rejected client-side
+  (invalid number/CVV), the SDK emits the same `validation` event **and** an `error`
+  event. Use `validation` to drive field-level UI and `error` for a human-readable
+  message.
+
+```javascript
+// Receive the structured snapshot
+sdk.on('validation', (payload) => {
+  document.getElementById('submit-btn').disabled =
+    !payload.validNumber || !payload.validCvv;
+
+  if (payload.validNumber === false) {
+    showFieldError('number', 'Enter a valid card number');
+  }
+  if (!payload.validCvv) {
+    showFieldError('cvv', 'Enter a valid CVV');
+  }
+});
+
+// Ask the SDK to validate the current field state on demand
+sdk.validate();
+
+// Optional flags mirror the legacy submit flags
+sdk.validate({ allow_blank_name: true, allow_expired_date: false });
+```
+
+### `validation` payload
+
+The snapshot describes only the two hosted fields (card number + CVV):
+
+| Field | Type | Description |
+|---|---|---|
+| `cardType` | `string` | Detected brand (e.g. `'visa'`, `'master'`). Empty string when no single brand matches the typed digits. |
+| `validNumber` | `boolean` | Whether the card number is valid (length + Luhn for the detected brand). |
+| `validCvv` | `boolean` | Whether the CVV is valid for the detected brand. |
+| `numberLength` | `number` | Number of digits typed in the card-number field. |
+| `cvvLength` | `number` | Number of digits typed in the CVV field. |
+| `luhnValid` | `boolean` | Whether the card number passes the Luhn checksum. |
+| `iin` | `string` \| `null` | Issuer identification number (BIN) prefix — 8 digits for Visa/Mastercard once ≥8 are typed, otherwise 6 (once ≥6), else `null`. |
+| `maskedNumber` | `string` | Masked display value of the number field, when available. |
+| `allow_blank_name` | `boolean` | Echoed back only when passed to `validate()` / `submit()`. |
+| `allow_expired_date` | `boolean` | Echoed back only when passed to `validate()` / `submit()`. |
+
+> **In recache mode** only the CVV field is active, so the snapshot is the CVV
+> subset: `cardType`, `cvvLength`, `validCvv`, and `maskedNumber`.
+
+For **continuous** live field state (on every keystroke, focus, blur, and hover)
+rather than a point-in-time snapshot, subscribe to `fieldStateChange`, which carries
+the same fields plus the active `field` and `action`. See the
+[API Reference](#api-reference).
+
+---
+
 ## Error Handling
+
+The `error` callback payload **varies by error source** — handle both strings and
+objects. For **field-level** card/CVV validity, prefer the structured
+[`validation` event](#validation) above; the `error` event carries a human-readable
+`string` for the same client-side failures.
 
 ```javascript
 sdk.on('error', (error) => {
-  // Validation errors (e.g., invalid card number, expired date)
-  if (error.errors && Array.isArray(error.errors)) {
-    error.errors.forEach(err => {
-      console.error(`${err.attribute}: ${err.message}`);
-    });
-    return;
+  if (typeof error === 'string') {
+    // Client-side validation and guard errors
+    console.error(error);
+  } else if (error.errors && Array.isArray(error.errors)) {
+    // API errors: Spreedly's error response body is passed through
+    error.errors.forEach(err => console.error(`${err.attribute}: ${err.message}`));
+  } else {
+    // Configuration errors (e.g. recache setup)
+    console.error(error.message);
   }
-
-  // General errors
-  console.error(error.message);
 });
 ```
 
-### Error payload shape
+### Error payload shapes by source
 
-```javascript
-{
-  message: 'Unable to create payment method',
-  errors: [
-    { attribute: 'number', key: 'errors.invalid', message: 'is invalid' },
-    { attribute: 'month', key: 'errors.expired', message: 'is expired' }
-  ]
-}
-```
+| Error source | Payload |
+|---|---|
+| Client-side validation (invalid card number / CVV / expiry, invalid auth body) | `string` — e.g. `'Card number must be between 13 and 19 digits'`, `'Invalid CVV'` |
+| Submit throttling / auth credential misuse | `string` — e.g. `'Please wait before submitting again'` |
+| Tokenization or recache API failure | Spreedly's error response body — typically `{ errors: [{ attribute, key, message }] }` — or a `string` message for network-level failures |
+| Recache configuration (`setRecache` with missing token / non-retained card) | `{ message, attribute }` |
+| Recache mode guards (`recache()` before `setRecache()`, iframes not mounted) | `{ message }` |
+| CVV TTL expiry (3-minute PCI limit) | `{ message, reason }` |
 
 ---
 

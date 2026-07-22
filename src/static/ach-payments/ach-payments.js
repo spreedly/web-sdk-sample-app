@@ -81,7 +81,7 @@ async function fetchAuthParamsAndInitSDK() {
 
   sdk.on('achPaymentError', error => {
     console.error('ACH payment error:', error);
-    renderError(error?.message || 'Failed to create ACH payment method.');
+    renderError(error?.errors?.[0]?.message || 'Failed to create ACH payment method.');
     setSubmitting(false);
   });
 

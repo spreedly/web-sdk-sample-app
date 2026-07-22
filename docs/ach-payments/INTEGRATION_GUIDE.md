@@ -167,16 +167,47 @@ between attempts.
 | Event                | Payload                          | Notes                              |
 | -------------------- | -------------------------------- | ---------------------------------- |
 | `achTokenGenerated`  | `{ token: string, last4?: string }` | Spreedly returns the last 4 digits as `account_number_display_digits`; the SDK exposes them as `last4` |
-| `achPaymentError`    | `{ message: string, error?: any }` |                                  |
+| `achPaymentError`    | `{ message: string, status?: number, errors?: SpreedlyServiceError[] }` | A sanitized error built from the server response — see below |
+
+### `achPaymentError` payload
+
+The error payload is a shaped, safe-to-log object derived from Spreedly Core's
+response. It deliberately never includes the raw request, so your bank account /
+routing numbers cannot leak into logs if you serialize it.
+
+| Field     | Type                     | Description                                                                            |
+| --------- | ------------------------ | -------------------------------------------------------------------------------------- |
+| `message` | `string`                 | Human-readable message (server message when available, otherwise a generic fallback).  |
+| `status`  | `number`                 | HTTP status code from the response, when available (e.g. `422`).                        |
+| `errors`  | `SpreedlyServiceError[]` | Validation details from Spreedly Core's `errors` array, when available.                 |
+
+Each `SpreedlyServiceError` is `{ key: string; message: string; attribute?: string }` — e.g.
+`{ key: 'errors.invalid', message: 'is invalid', attribute: 'bank_routing_number' }`. These
+describe the failure and never echo back the submitted account/routing values. See the
+**[Error Keys Reference](../errors/ERROR_KEYS_REFERENCE.md)** for the full list of `key`
+values and their meanings.
+
+```javascript
+sdk.on('achPaymentError', (error) => {
+  console.error(error.message);      // e.g. "Unable to create payment method"
+  if (error.status === 422) {
+    error.errors?.forEach((e) => console.warn(e.attribute, e.message));
+  }
+});
+```
 
 ---
 
 ## Security notes
 
 - Account and routing numbers never leave the merchant page until they are
-  posted directly to Spreedly Core. The SDK does not log them.
+  posted directly to Spreedly Core. The SDK does not log them, and the stored
+  config is cleared after a successful tokenization.
 - The SDK's success log includes only the masked `last4` returned by
   Spreedly, never the full account number.
+- The `achPaymentError` payload is sanitized: it is built only from the server
+  response (`message` / `status` / `errors`) and never carries the request body,
+  so bank account / routing numbers cannot leak into your logs or any log/monitoring processor that serializes the error.
 - The merchant page's CSP must allow `connect-src https://core.spreedly.com`
   (the standard SDK CSP already does).
 

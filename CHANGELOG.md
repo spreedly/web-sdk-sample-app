@@ -5,6 +5,19 @@ All notable changes to the Spreedly Web SDK will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-07-10
+
+### Added
+- **ACH payments**: `setupACHPayment(config)`, `submitACHPayment()`, and `clearACHPayment()` methods (available from both Hosted Fields and Express Checkout), plus `achTokenGenerated` and `achPaymentError` events, for tokenizing US and Canadian bank accounts. See `docs/ach-payments/INTEGRATION_GUIDE.md`
+- **Stripe Radar**: `stripeRadar(publishableKey, options?)` method (available from both Hosted Fields and Express Checkout) that wraps `Stripe.createRadarSession()` and resolves with the Radar session id (or `null` on failure) to forward with a Stripe Payment Intents charge. Legacy parity for `Spreedly.stripeRadar(...)` (callback → Promise). See `docs/stripe-radar/INTEGRATION_GUIDE.md`.
+
+### Changed
+- **Breaking (offsite): `offsitePaymentError` payload shape changed**. The payload was `{ message, error }` in 1.2.0 and is now `{ message, status, errors }`. Refer to `docs/offsite-payments/general/INTEGRATION_GUIDE.md` for complete details.
+
+### Fixed
+- **Hosted Fields cardholder name typing/docs**: `HostedFieldsFormData.first_name` and `last_name` are now correctly typed as optional. Provide **either** `full_name` **or** both `first_name` + `last_name` — the SDK forwards whatever is supplied and Spreedly Core enforces the requirement. API reference, migration guide, and the Hosted Fields integration guide updated accordingly. (Express Checkout's prebuilt form is unchanged — it still renders `first_name`/`last_name` by default.)
+- **Hosted Fields integration guide** now documents `sdk.validate()` and the `validation` event (structured field-level validation), which previously only appeared in the migration guide.
+
 ## [1.2.0] - 2026-06-05
 
 ### Added
