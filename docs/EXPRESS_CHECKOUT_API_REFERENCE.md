@@ -18,6 +18,7 @@ Methods are grouped into the sections below; type definitions follow.
 | [Recache](#recache) | Update the CVV on an already-retained (previously tokenized) payment method. |
 | [Offsite Payments](#offsite-payments) | Redirect-style / alternative payment methods, inherited from the shared SDK — see the dedicated Offsite Payments reference. |
 | [ACH](#ach) | Bank-account (ACH) tokenization, inherited from the shared SDK — see the dedicated ACH reference. |
+| [Stripe Radar](#stripe-radar) | Create a Stripe Radar fraud session and get its session id, inherited from the shared SDK — see the dedicated Stripe Radar guide. |
 | [Type Definitions](#type-definitions) | The parameter and return types used throughout the API. |
 
 ## Example
@@ -708,7 +709,11 @@ The browser will redirect to Spreedly, then back to your redirectUrl with the to
 
 **Without redirectUrl (API-based flow):**
 Makes a direct API call to create the payment method. On success, emits
-'offsiteTokenGenerated' event with { token, paymentMethodType } and clears the stored config. On error, emits 'offsitePaymentError' with a sanitized [SanitizedPaymentError](#sanitizedpaymenterror) payload (`{ message, status?, errors? }`) — the raw request (customer PII) is never included, so the payload is safe to log.
+'offsiteTokenGenerated' event with { token, paymentMethodType } and clears
+the stored config. On error, emits 'offsitePaymentError' with a sanitized
+[SanitizedPaymentError](#sanitizedpaymenterror) payload (`{ message, status?, errors? }`) —
+the raw request (customer PII) is never included, so the payload is safe to
+log.
 
 Requires setupOffsitePayment() to be called first.
 
@@ -821,8 +826,11 @@ sdk.setupACHPayment({
 Submit ACH payment - creates a bank_account payment method via API
 
 Makes a direct API call to Spreedly's payment_methods endpoint. On
-success, emits the `achTokenGenerated` event with
-`{ token, last4 }`. On error, emits `achPaymentError`.
+success, emits the `achTokenGenerated` event with `{ token, last4 }` and
+clears the stored config. On error, emits `achPaymentError` with a
+sanitized [SanitizedPaymentError](#sanitizedpaymenterror) payload
+(`{ message, status?, errors? }`) — the raw request (bank account/routing
+numbers) is never included, so the payload is safe to log.
 
 Requires `setupACHPayment()` to be called first.
 
@@ -846,6 +854,52 @@ sdk.on('achPaymentError', (error) => {
 
 sdk.setupACHPayment({ ... });
 sdk.submitACHPayment();
+```
+
+### Stripe Radar
+
+#### stripeRadar()
+
+> **stripeRadar**(`publishableKey`, `options?`): `Promise`\<`string` \| `null`\>
+
+Creates a Stripe Radar session and resolves with its session id.
+
+Stripe Radar collects fraud signals from the browser. Pass the resulting
+session id to your backend so it can be forwarded to Stripe when the
+payment is processed. This is the modern parity for the legacy
+`Spreedly.stripeRadar(publishableKey, callback, options)` API.
+
+Stripe.js must already be loaded on the page
+(`<script src="https://js.stripe.com/v3/"></script>`). The session id is
+returned to you only — it is NOT attached to tokenization automatically.
+
+##### Parameters
+
+###### publishableKey
+
+`string`
+
+Your Stripe publishable key (starts with `pk_`)
+
+###### options?
+
+[`StripeRadarOptions`](#striperadaroptions)
+
+Optional settings, e.g. `stripeAccount` for Stripe Connect
+
+##### Returns
+
+`Promise`\<`string` \| `null`\>
+
+The radar session id, or `null` if creation failed
+
+##### Example
+
+```javascript
+const radarSessionId = await sdk.stripeRadar('pk_test_...');
+if (radarSessionId) {
+  // send radarSessionId to your backend alongside the payment token
+}
 ```
 
 ***
@@ -915,7 +969,10 @@ Bank name. Optional.
 
 > **bankRoutingNumber**: `string`
 
-Bank routing number (9-digit ABA / transit number). Required.
+Bank routing number. Required, exactly 9 digits. For US accounts this must be a
+valid ABA routing number (checksum-verified by the SDK); for Canadian accounts it
+is the 9-digit electronic routing number beginning with `0`. `setupACHPayment`
+throws `Routing number is invalid` for values that can be neither.
 
 ***
 
@@ -1322,6 +1379,43 @@ Storage state of the payment method. Required, and must be exactly `'retained'` 
 
 Expiration year of the saved card (e.g. `'2025'`). Required.
 
+### SanitizedPaymentError
+
+> **SanitizedPaymentError** = `object`
+
+Sanitized payment error emitted to the merchant's `achPaymentError` /
+`offsitePaymentError` callbacks.
+
+This is a shaped, safe-to-log projection of the underlying HTTP error. It is
+deliberately built only from the server response and NEVER includes the raw
+request (`config`/`request`), so sensitive request-body values — bank
+account/routing numbers (ACH) or customer PII (offsite) — cannot leak into
+merchant logs or third-party log/monitoring processors.
+
+## Properties
+
+### errors?
+
+> `optional` **errors?**: [`SpreedlyServiceError`](#spreedlyserviceerror)[]
+
+Validation details from Spreedly Core's response `errors` array, when available.
+
+***
+
+### message
+
+> **message**: `string`
+
+Human-readable error message (server message when available, otherwise a generic fallback).
+
+***
+
+### status?
+
+> `optional` **status?**: `number`
+
+HTTP status code from the response, when available.
+
 ### SpreedlyCheckoutPluginOptions
 
 > **SpreedlyCheckoutPluginOptions** = `object`
@@ -1355,6 +1449,54 @@ Expiration year of the saved card (e.g. `'2025'`). Required.
 ### uiConfig
 
 > **uiConfig**: [`UIConfig`](#uiconfig)
+
+### SpreedlyServiceError
+
+> **SpreedlyServiceError** = `object`
+
+A single error entry from Spreedly Core's response `errors` array.
+
+These describe *why* the request failed (e.g. an invalid routing number) and
+never echo back the submitted account/routing/PII values, so they are safe to
+surface and log.
+
+## Properties
+
+### attribute?
+
+> `optional` **attribute?**: `string`
+
+The request field the error applies to, e.g. `'bank_routing_number'`. Absent for non-field (base) errors.
+
+***
+
+### key
+
+> **key**: `string`
+
+Machine-readable error key, e.g. `'errors.invalid'` or `'errors.blank'`.
+
+***
+
+### message
+
+> **message**: `string`
+
+Human-readable description of the failure, e.g. `'is invalid'`.
+
+### StripeRadarOptions
+
+> **StripeRadarOptions** = `object`
+
+Options for the `stripeRadar` method.
+
+## Properties
+
+### stripeAccount?
+
+> `optional` **stripeAccount?**: `string`
+
+Connected account id (`acct_...`) for Stripe Connect. Optional.
 
 ### SubmitParams
 

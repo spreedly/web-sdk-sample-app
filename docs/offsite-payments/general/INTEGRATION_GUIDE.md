@@ -175,7 +175,7 @@ app.post('/api/offsite-purchase', async (req, res) => {
 ```json
 {
   "transaction": {
-    "token": "ExampleTransactionToken123",
+    "token": "Y3XPb5f1TFNuy8r3AtGI8UB11PQ",
     "state": "pending",
     "succeeded": false,
     "amount": 1000,
