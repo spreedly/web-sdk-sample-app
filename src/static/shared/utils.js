@@ -10,12 +10,12 @@ function getSDKType() {
 function getSDKScriptUrl() {
   const sdkType = getSDKType();
   //uncomment this to use local sdk
-  // if (window.location.hostname === 'localhost') {
-  //   if (sdkType === 'express-checkout') {
-  //     return 'http://localhost:5173/express-checkout.js';
-  //   }
-  //   return 'http://localhost:5000/index.js';
-  // }
+  if (window.location.hostname === 'localhost') {
+    if (sdkType === 'express-checkout') {
+      return 'http://localhost:5173/express-checkout.js';
+    }
+    return 'http://localhost:5000/index.js';
+  }
 
   if (sdkType === 'express-checkout') {
     return 'https://core-test.spreedly.com/checkout/elements/rc/express-checkout.js';
@@ -204,7 +204,7 @@ function loadSDKScript(callback) {
 // gateway, forwarding the radar session id created by sdk.stripeRadar().
 async function createStripeRadarPurchase(paymentMethodToken, amount, radarSessionId, currencyCode = 'USD') {
   try {
-    const response = await axios.post(`${API_BASE_URL}/stripe-radar-purchase`, {
+    const response = await axios.post(`${LOCAL_API_URL}/stripe-radar-purchase`, {
       payment_method_token: paymentMethodToken,
       amount: amount,
       currency_code: currencyCode,
