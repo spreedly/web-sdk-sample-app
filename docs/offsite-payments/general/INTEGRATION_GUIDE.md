@@ -337,7 +337,7 @@ sdk.on('offsitePaymentError', (error) => {
 });
 ```
 
-> **Changed in 1.3.0.** The payload was previously `{ message, error }`, where
+> **Changed in 1.3.1.** The payload was previously `{ message, error }`, where
 > `error` was the raw HTTP error (which could expose the submitted request body).
 > It is now `{ message, status, errors }`. If you were reading `error.error` (or
 > anything nested under it), switch to `error.status` / `error.errors`. Reading
