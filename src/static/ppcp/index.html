@@ -227,6 +227,32 @@
                   Proceed to Payment
                 </button>
               </div>
+
+              <!-- Save PayPal & recurring (Vault) — independent of the cart -->
+              <div class="card" style="margin-top: 1.5rem;">
+                <div class="section-title">Save PayPal &amp; recurring (Vault)</div>
+                <p style="font-size: 0.8125rem; color: var(--color-gray-500); margin-bottom: 1rem;">
+                  Save a PayPal <strong>without a purchase</strong>, then reuse it two ways:
+                  <strong>one-click</strong> when the buyer returns (buyer present) or a
+                  <strong>merchant-initiated recurring</strong> charge (buyer not present). You can also
+                  tick "save my PayPal" during checkout (vault <em>with</em> purchase).
+                </p>
+
+                <button id="save-trigger" class="btn btn-secondary btn-block">＋ Save a PayPal for later</button>
+                <div id="save-loading" class="payment-buttons-container loading hidden">
+                  <span class="spinner-inline"></span>
+                  <span style="margin-left: 0.5rem;">Loading PayPal SDK...</span>
+                </div>
+                <div id="save-paypal-button"></div>
+                <div id="vault-status" class="status-message"></div>
+
+                <div class="order-summary" style="margin-top: 1.5rem;">
+                  <div class="order-summary-title">Saved payment methods</div>
+                  <div id="saved-methods-list">
+                    <p style="color: var(--color-gray-500); font-size: 0.8125rem;">None saved yet.</p>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <!-- Step 2: Payment -->
@@ -260,6 +286,13 @@
                     <code>findEligibleMethods</code> renders each eligible button for the cart total.
                   </div>
                 </div>
+
+                <!-- Scenario 2: vault WITH purchase -->
+                <label for="save-during-purchase" style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8125rem; color: var(--color-gray-600); margin: 0 0 1rem; cursor: pointer;">
+                  <input type="checkbox" id="save-during-purchase" style="width: auto; margin: 0;">
+                  Also save my PayPal for future purchases
+                  <span class="elig-badge info">vault with purchase</span>
+                </label>
 
                 <!-- Buttons loading -->
                 <div id="payment-buttons-loading" class="payment-buttons-container loading">

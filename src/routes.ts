@@ -23,6 +23,12 @@ import {
   getPPCPClientToken,
   createPPCPOrder,
   capturePPCPOrder,
+  createPPCPVaultSetupToken,
+  createPPCPVaultPaymentToken,
+  listPPCPVaultTokens,
+  chargePPCPVaultToken,
+  createPPCPVaultPurchaseOrder,
+  capturePPCPVaultPurchaseOrder,
 } from './controllers/ppcp';
 
 const router = Router();
@@ -696,5 +702,156 @@ router.post('/ppcp/orders', createPPCPOrder);
  *         description: Error capturing order
  */
 router.post('/ppcp/orders/:orderId/capture', capturePPCPOrder);
+
+/**
+ * @swagger
+ * /api/v1/ppcp/vault/setup-token:
+ *   post:
+ *     description: (PPCP interim spike) Create a PayPal vault setup token (buyer approves via the JS SDK). Returns { setupToken }.
+ *     tags: [PPCP]
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: Setup token created
+ *       500:
+ *         description: Error creating setup token
+ */
+router.post('/ppcp/vault/setup-token', createPPCPVaultSetupToken);
+
+/**
+ * @swagger
+ * /api/v1/ppcp/vault/payment-token:
+ *   post:
+ *     description: (PPCP interim spike) Exchange an approved setup token for a long-lived payment token; stored server-side.
+ *     tags: [PPCP]
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: body
+ *         in: body
+ *         required: true
+ *         schema:
+ *           type: object
+ *           required:
+ *             - vaultSetupToken
+ *           properties:
+ *             vaultSetupToken:
+ *               type: string
+ *     responses:
+ *       200:
+ *         description: Payment token created and stored
+ *       400:
+ *         description: Missing vaultSetupToken
+ *       500:
+ *         description: Error creating payment token
+ */
+router.post('/ppcp/vault/payment-token', createPPCPVaultPaymentToken);
+
+/**
+ * @swagger
+ * /api/v1/ppcp/vault/tokens:
+ *   get:
+ *     description: (PPCP interim spike) List saved payment methods (demo only; raw token ids stay server-side).
+ *     tags: [PPCP]
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: List of saved payment methods
+ */
+router.get('/ppcp/vault/tokens', listPPCPVaultTokens);
+
+/**
+ * @swagger
+ * /api/v1/ppcp/vault/charge:
+ *   post:
+ *     description: (PPCP interim spike) Charge a saved payment token as a merchant-initiated recurring payment (buyer not present).
+ *     tags: [PPCP]
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: body
+ *         in: body
+ *         required: true
+ *         schema:
+ *           type: object
+ *           required:
+ *             - ref
+ *           properties:
+ *             ref:
+ *               type: integer
+ *               description: Opaque handle from GET /ppcp/vault/tokens
+ *             amount:
+ *               type: string
+ *               description: Decimal amount string (default "10.00")
+ *             currency_code:
+ *               type: string
+ *               description: ISO 4217 currency (default USD)
+ *             initiator:
+ *               type: string
+ *               enum: [MERCHANT, CUSTOMER]
+ *               description: MERCHANT (default) = recurring MIT, buyer not present (scenario 4); CUSTOMER = return buyer present, one-click (scenario 3)
+ *     responses:
+ *       200:
+ *         description: Charge processed
+ *       404:
+ *         description: No saved token for that ref
+ *       500:
+ *         description: Error charging saved token
+ */
+router.post('/ppcp/vault/charge', chargePPCPVaultToken);
+
+/**
+ * @swagger
+ * /api/v1/ppcp/vault/purchase-order:
+ *   post:
+ *     description: (PPCP interim spike) Scenario 2 — create a checkout order that also vaults the PayPal on a successful capture.
+ *     tags: [PPCP]
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: body
+ *         in: body
+ *         schema:
+ *           type: object
+ *           properties:
+ *             amount:
+ *               type: string
+ *               description: Decimal amount string (default "10.00")
+ *             currency_code:
+ *               type: string
+ *               description: ISO 4217 currency (default USD)
+ *     responses:
+ *       200:
+ *         description: Order created (approve via the JS SDK checkout session)
+ *       500:
+ *         description: Error creating order
+ */
+router.post('/ppcp/vault/purchase-order', createPPCPVaultPurchaseOrder);
+
+/**
+ * @swagger
+ * /api/v1/ppcp/vault/purchase-order/{orderId}/capture:
+ *   post:
+ *     description: (PPCP interim spike) Scenario 2 — capture a vault-with-purchase order and store the vaulted PayPal token.
+ *     tags: [PPCP]
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: orderId
+ *         description: PayPal order id
+ *         in: path
+ *         required: true
+ *         type: string
+ *     responses:
+ *       200:
+ *         description: Order captured; PayPal vaulted
+ *       400:
+ *         description: Invalid order id
+ *       500:
+ *         description: Error capturing order
+ */
+router.post('/ppcp/vault/purchase-order/:orderId/capture', capturePPCPVaultPurchaseOrder);
 
 export default router;

@@ -195,11 +195,17 @@ export const createPurchaseWith3DS = async (req: Request, res: Response): Promis
     transaction: {
       sca_provider_key,
       payment_method_token,
+      sca_authentication_parameters: {
+            test_scenario: {
+              scenario: "authenticated"
+            }
+    },
       amount,
       browser_info,
       currency_code,
     },
   };
+  console.log("Spreedly 3ds body:", body);
   try {
     const response = await axios.post(
       `${config.spreedlyUrl}/v1/gateways/${gateway_key}/purchase.json`, body, 

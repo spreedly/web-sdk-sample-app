@@ -1,5 +1,6 @@
 import axios, { AxiosError } from 'axios';
 import { Request, Response } from 'express';
+import { randomUUID } from 'crypto';
 import config from '../config';
 
 /**
@@ -17,6 +18,11 @@ import config from '../config';
  * NOTE: exact PayPal request/response shapes should be verified against the Orders V2
  * reference (developer.paypal.com/docs/api/orders/v2/) — see integration-plan/05.
  */
+
+// Spreedly's PayPal partner attribution (BN) code — sent on every Orders V2 call so PayPal
+// attributes the integration to Spreedly; matches the client-side value the SDK sends via
+// createInstance({ partnerAttributionId }). (In production this is owned by Spreedly Core's gateway.)
+const PAYPAL_PARTNER_ATTRIBUTION_ID = 'spreedly_pcp';
 
 // In-memory OAuth access-token cache (server-internal; refreshed ~1 min before expiry).
 let cachedAccessToken: { value: string; expiresAt: number } | null = null;
@@ -112,6 +118,7 @@ export const createPPCPOrder = async (
         headers: {
           Authorization: `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
+          'PayPal-Partner-Attribution-Id': PAYPAL_PARTNER_ATTRIBUTION_ID,
         },
       }
     );
@@ -143,10 +150,256 @@ export const capturePPCPOrder = async (
         headers: {
           Authorization: `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
+          'PayPal-Partner-Attribution-Id': PAYPAL_PARTNER_ATTRIBUTION_ID,
         },
       }
     );
     res.json(response.data);
+  } catch (error) {
+    handleError(error, res);
+  }
+};
+
+// ── Vault / recurring (interim) ───────────────────────────────────────────────
+// In-memory store of vaulted PayPal payment tokens. Throwaway demo state — in production
+// Spreedly Core owns token storage; a real integration NEVER exposes raw token ids to the browser.
+interface VaultedToken {
+  id: string; // PayPal payment-token id (long-lived)
+  createdAt: string;
+  label?: string; // buyer email, if PayPal returns it
+}
+const vaultedTokens: VaultedToken[] = [];
+
+const paypalHeaders = (accessToken: string, idempotent = false) => ({
+  Authorization: `Bearer ${accessToken}`,
+  'Content-Type': 'application/json',
+  'PayPal-Partner-Attribution-Id': PAYPAL_PARTNER_ATTRIBUTION_ID,
+  ...(idempotent ? { 'PayPal-Request-Id': randomUUID() } : {}),
+});
+
+// POST /api/v1/ppcp/vault/setup-token
+// Create a PayPal vault setup token (the buyer approves it via the JS SDK). Returns { setupToken }.
+export const createPPCPVaultSetupToken = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const accessToken = await getPayPalAccessToken();
+    // Use the app's REAL origin so the approval popup can hand control back to the opener.
+    // Placeholder (example.com) URLs make PayPal bail during the popup's loading stage.
+    const origin = req.headers.origin || `${req.protocol}://${req.get('host')}`;
+    const body = {
+      payment_source: {
+        paypal: {
+          usage_type: 'MERCHANT',
+          experience_context: {
+            return_url: `${origin}/ppcp/`,
+            cancel_url: `${origin}/ppcp/`,
+          },
+        },
+      },
+    };
+    const response = await axios.post(
+      `${config.paypalApiBaseUrl}/v3/vault/setup-tokens`,
+      body,
+      { headers: paypalHeaders(accessToken, true) }
+    );
+    // The SDK's createVaultSetupToken() expects { setupToken: <id> }.
+    res.json({ setupToken: response.data.id, status: response.data.status });
+  } catch (error) {
+    handleError(error, res);
+  }
+};
+
+// POST /api/v1/ppcp/vault/payment-token   body: { vaultSetupToken }
+// Exchange an approved setup token for a permanent payment token; store it server-side.
+export const createPPCPVaultPaymentToken = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  const vaultSetupToken = req.body?.vaultSetupToken;
+  if (!vaultSetupToken) {
+    res.status(400).json({ error: 'vaultSetupToken is required' });
+    return;
+  }
+  try {
+    const accessToken = await getPayPalAccessToken();
+    const body = {
+      payment_source: { token: { id: vaultSetupToken, type: 'SETUP_TOKEN' } },
+    };
+    const response = await axios.post(
+      `${config.paypalApiBaseUrl}/v3/vault/payment-tokens`,
+      body,
+      { headers: paypalHeaders(accessToken, true) }
+    );
+    const email = response.data?.payment_source?.paypal?.email_address;
+    // Long-lived token — store server-side; do NOT return it to the browser in a real
+    // integration. Here we keep an in-memory list for the demo.
+    vaultedTokens.unshift({
+      id: response.data.id,
+      createdAt: new Date().toISOString(),
+      label: email,
+    });
+    res.json({ status: 'SUCCESS', label: email });
+  } catch (error) {
+    handleError(error, res);
+  }
+};
+
+// GET /api/v1/ppcp/vault/tokens — list saved payment methods (demo only; never leak raw ids).
+export const listPPCPVaultTokens = async (_req: Request, res: Response): Promise<void> => {
+  res.json({
+    tokens: vaultedTokens.map((t, index) => ({
+      ref: index, // opaque handle the browser uses to charge; the real id stays server-side
+      createdAt: t.createdAt,
+      label: t.label || 'PayPal account',
+      masked: `••••${t.id.slice(-4)}`,
+    })),
+  });
+};
+
+// POST /api/v1/ppcp/vault/charge   body: { ref, amount?, currency_code?, initiator? }
+// Charge a saved payment token. initiator 'MERCHANT' (default) = merchant-initiated recurring
+// MIT, buyer NOT present (scenario 4). initiator 'CUSTOMER' = return buyer PRESENT, one-click
+// (scenario 3). Both reuse the same vaulted token; only stored_credential differs.
+export const chargePPCPVaultToken = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  const { ref, amount = '10.00', currency_code = 'USD', initiator = 'MERCHANT' } = req.body || {};
+  const token = vaultedTokens[Number(ref)];
+  if (!token) {
+    res.status(404).json({ error: 'No saved payment token for that ref' });
+    return;
+  }
+  const buyerPresent = initiator === 'CUSTOMER';
+  try {
+    const accessToken = await getPayPalAccessToken();
+    const body = {
+      intent: 'CAPTURE',
+      purchase_units: [{ amount: { currency_code, value: String(amount) } }],
+      payment_source: {
+        paypal: {
+          vault_id: token.id,
+          // Buyer present → CUSTOMER-initiated one-click (unscheduled); buyer not present →
+          // MERCHANT-initiated recurring (subscription). Both are follow-up (SUBSEQUENT)
+          // charges on the same stored payment source.
+          stored_credential: buyerPresent
+            ? {
+                payment_initiator: 'CUSTOMER',
+                payment_type: 'UNSCHEDULED',
+                usage: 'SUBSEQUENT',
+              }
+            : {
+                payment_initiator: 'MERCHANT',
+                usage: 'SUBSEQUENT',
+                usage_pattern: 'SUBSCRIPTION_PREPAID',
+              },
+        },
+      },
+    };
+    const response = await axios.post(
+      `${config.paypalApiBaseUrl}/v2/checkout/orders`,
+      body,
+      // A create-order that carries a payment_source (the vaulted token) REQUIRES a
+      // PayPal-Request-Id (idempotency key) — PayPal rejects it otherwise with
+      // PAYPAL_REQUEST_ID_REQUIRED. (Plain orders without a payment_source don't need it.)
+      { headers: paypalHeaders(accessToken, true) }
+    );
+    // intent=CAPTURE with a vaulted MERCHANT token auto-captures. Fallback: if it came back
+    // approved-but-not-captured, capture it so the demo shows COMPLETED.
+    let order = response.data;
+    if (order?.id && order.status && order.status !== 'COMPLETED') {
+      try {
+        const captured = await axios.post(
+          `${config.paypalApiBaseUrl}/v2/checkout/orders/${order.id}/capture`,
+          {},
+          { headers: paypalHeaders(accessToken) }
+        );
+        order = captured.data;
+      } catch {
+        // leave order as-is; its status tells the story
+      }
+    }
+    res.json(order);
+  } catch (error) {
+    handleError(error, res);
+  }
+};
+
+// POST /api/v1/ppcp/vault/purchase-order   body: { amount?, currency_code? }
+// Scenario 2 (vault WITH purchase): create a checkout order that ALSO saves the PayPal on a
+// successful capture. The buyer approves the payment + the save in one pass via the normal JS
+// SDK checkout session; the vaulted token id comes back on capture (see the capture route below).
+export const createPPCPVaultPurchaseOrder = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  const { amount = '10.00', currency_code = 'USD' } = req.body || {};
+  try {
+    const accessToken = await getPayPalAccessToken();
+    const origin = req.headers.origin || `${req.protocol}://${req.get('host')}`;
+    const body = {
+      intent: 'CAPTURE',
+      purchase_units: [{ amount: { currency_code, value: String(amount) } }],
+      payment_source: {
+        paypal: {
+          // store_in_vault: ON_SUCCESS → vault the PayPal only if the payment succeeds.
+          attributes: { vault: { store_in_vault: 'ON_SUCCESS', usage_type: 'MERCHANT' } },
+          experience_context: {
+            return_url: `${origin}/ppcp/`,
+            cancel_url: `${origin}/ppcp/`,
+            shipping_preference: 'NO_SHIPPING',
+            user_action: 'PAY_NOW',
+          },
+        },
+      },
+    };
+    const response = await axios.post(
+      `${config.paypalApiBaseUrl}/v2/checkout/orders`,
+      body,
+      // Carries a payment_source → PayPal requires a PayPal-Request-Id (idempotency key).
+      { headers: paypalHeaders(accessToken, true) }
+    );
+    // { id, status, links } — the SDK's createOrder() maps this to { orderId: id }.
+    res.json(response.data);
+  } catch (error) {
+    handleError(error, res);
+  }
+};
+
+// POST /api/v1/ppcp/vault/purchase-order/:orderId/capture
+// Capture a vault-with-purchase order (scenario 2) and store the PayPal token it vaulted so it
+// shows up in the saved list (reusable for scenario 3 one-click / scenario 4 recurring).
+export const capturePPCPVaultPurchaseOrder = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  const orderId = req.params.orderId || '';
+  if (!/^[a-zA-Z0-9]+$/.test(orderId)) {
+    res.status(400).json({ error: 'Invalid order id format' });
+    return;
+  }
+  try {
+    const accessToken = await getPayPalAccessToken();
+    const response = await axios.post(
+      `${config.paypalApiBaseUrl}/v2/checkout/orders/${orderId}/capture`,
+      {},
+      { headers: paypalHeaders(accessToken, true) }
+    );
+    const data = response.data;
+    // On a successful vault-with-purchase, the capture response carries the vaulted token id at
+    // payment_source.paypal.attributes.vault.id — store it (mirrors the setup→payment-token path).
+    const vaulted = data?.payment_source?.paypal?.attributes?.vault;
+    if (vaulted?.id) {
+      const email = data?.payment_source?.paypal?.email_address || data?.payer?.email_address;
+      vaultedTokens.unshift({
+        id: vaulted.id,
+        createdAt: new Date().toISOString(),
+        label: email,
+      });
+    }
+    res.json(data);
   } catch (error) {
     handleError(error, res);
   }

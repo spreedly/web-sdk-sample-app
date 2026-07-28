@@ -85,7 +85,7 @@ async function createPurchase(paymentMethodToken, amount, currencyCode = 'USD') 
 
 async function createPurchaseWith3DS(paymentMethodToken, amount, browserInfo, currencyCode = 'USD') {
   try {
-    const response = await axios.post(`${API_BASE_URL}/create-purchase-with-3ds`, {
+    const response = await axios.post(`${LOCAL_API_URL}/create-purchase-with-3ds`, {
       payment_method_token: paymentMethodToken,
       amount: amount,
       currency_code: currencyCode,

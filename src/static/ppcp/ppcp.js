@@ -39,7 +39,9 @@ const PRODUCTS = [
 // State
 let cart = {}; // { productId: quantity }
 let ppcpInstance = null;
+let vaultInstance = null;
 let sdksLoaded = false;
+let savedDuringPurchase = false; // scenario 2: was "save my PayPal" ticked for the current order?
 
 // /ppcp/* routes are local-only (not deployed to Heroku), so use the local API base.
 const apiBase = () => window.SpreedlyUtils.LOCAL_API_URL;
@@ -276,8 +278,13 @@ async function getClientToken() {
 }
 
 async function createOrder() {
-  setStatus('Creating PayPal order...', 'info');
-  const response = await axios.post(`${apiBase()}/ppcp/orders`, {
+  // Scenario 2 (vault WITH purchase): if "save my PayPal" is ticked, use the vault-purchase
+  // order route so the PayPal is also saved on capture. Same checkout session either way.
+  const saveEl = el('save-during-purchase');
+  savedDuringPurchase = !!(saveEl && saveEl.checked);
+  setStatus(savedDuringPurchase ? 'Creating PayPal order (+ save)...' : 'Creating PayPal order...', 'info');
+  const path = savedDuringPurchase ? '/ppcp/vault/purchase-order' : '/ppcp/orders';
+  const response = await axios.post(`${apiBase()}${path}`, {
     amount: getAmount(),
     currency_code: CURRENCY,
   });
@@ -286,7 +293,10 @@ async function createOrder() {
 }
 
 async function captureOrder(orderId) {
-  const response = await axios.post(`${apiBase()}/ppcp/orders/${orderId}/capture`);
+  const path = savedDuringPurchase
+    ? `/ppcp/vault/purchase-order/${orderId}/capture`
+    : `/ppcp/orders/${orderId}/capture`;
+  const response = await axios.post(`${apiBase()}${path}`);
   return response.data;
 }
 
@@ -300,12 +310,15 @@ async function handlePaymentResult(result) {
       const capture = await captureOrder(result.orderId);
       const status = capture.status || 'COMPLETED';
       updateDebug('status', `Captured: ${status}`);
+      const savedNote = savedDuringPurchase ? ' PayPal also saved for future purchases.' : '';
       showResult(
         true,
         'Payment Successful',
-        `Order ${result.orderId} captured via ${method} (status: ${status}).`
+        `Order ${result.orderId} captured via ${method} (status: ${status}).${savedNote}`
       );
       setStatus('Payment complete.', 'success');
+      // Scenario 2: a vault-with-purchase capture stores the token — refresh the saved list.
+      if (savedDuringPurchase) await refreshVaultedTokens();
     } catch (error) {
       const msg = error.response?.data ? JSON.stringify(error.response.data) : error.message;
       showResult(false, 'Capture Failed', msg);
@@ -319,6 +332,158 @@ async function handlePaymentResult(result) {
     setStatus('Payment failed', 'error');
   }
 }
+
+// ── Vault / recurring (save a PayPal, then charge it later) ───────────────────
+
+function setVaultStatus(message, type = 'info') {
+  const statusEl = el('vault-status');
+  if (!statusEl) return;
+  statusEl.textContent = message;
+  statusEl.className = `status-message ${type}`;
+}
+
+function vaultError(error) {
+  return error.response?.data ? JSON.stringify(error.response.data) : error.message;
+}
+
+// Mount a vault-mode SpreedlyPPCP that renders a "save PayPal" button (no purchase).
+async function mountVault() {
+  const trigger = el('save-trigger');
+  if (trigger) trigger.classList.add('hidden');
+  el('save-loading').classList.remove('hidden');
+  setVaultStatus('Loading PayPal SDK...', 'info');
+
+  try {
+    await loadDependencies();
+    if (vaultInstance) {
+      try {
+        vaultInstance.destroy();
+      } catch (e) {
+        /* ignore */
+      }
+    }
+    el('save-paypal-button').innerHTML = '';
+
+    vaultInstance = new window.SpreedlyPPCP({
+      flow: 'vault',
+      currencyCode: CURRENCY,
+      countryCode: 'US',
+      paymentElements: { paypal: 'save-paypal-button' },
+      getClientToken,
+      createVaultSetupToken: async () => {
+        const res = await axios.post(`${apiBase()}/ppcp/vault/setup-token`);
+        return { setupToken: res.data.setupToken };
+      },
+      onPaymentResult: handleVaultResult,
+    });
+
+    const result = await vaultInstance.mount();
+    el('save-loading').classList.add('hidden');
+    if (result.error) throw new Error(result.error);
+
+    if (result.rendered && result.rendered.paypal) {
+      setVaultStatus('Click the PayPal button to save it for later.', 'info');
+    } else {
+      setVaultStatus('PayPal save is not eligible for this session.', 'info');
+    }
+  } catch (error) {
+    el('save-loading').classList.add('hidden');
+    console.error('Vault mount error:', error);
+    setVaultStatus(vaultError(error), 'error');
+  }
+}
+
+// On approval, exchange the setup token for a stored payment token, then refresh the list.
+async function handleVaultResult(result) {
+  if (result.state === 'Successful') {
+    try {
+      setVaultStatus('Saving payment method...', 'info');
+      await axios.post(`${apiBase()}/ppcp/vault/payment-token`, {
+        vaultSetupToken: result.vaultSetupToken,
+      });
+      setVaultStatus('PayPal saved — you can now charge it as a recurring payment.', 'success');
+      await refreshVaultedTokens();
+    } catch (error) {
+      setVaultStatus(vaultError(error), 'error');
+    }
+  } else if (result.state === 'Cancelled') {
+    setVaultStatus('Save cancelled.', 'info');
+  } else {
+    setVaultStatus(result.message || 'Save failed.', 'error');
+  }
+}
+
+async function refreshVaultedTokens() {
+  try {
+    const res = await axios.get(`${apiBase()}/ppcp/vault/tokens`);
+    const tokens = res.data.tokens || [];
+    const list = el('saved-methods-list');
+    if (!tokens.length) {
+      list.innerHTML =
+        '<p style="color: var(--color-gray-500); font-size: 0.8125rem;">None saved yet.</p>';
+      return;
+    }
+    list.innerHTML = tokens
+      .map(
+        t => `
+      <div class="order-item">
+        <div class="order-item-name">
+          <span>${SpreedlyUtils.escapeHtml(t.label)}</span>
+          <span class="order-item-qty">${SpreedlyUtils.escapeHtml(t.masked)}</span>
+        </div>
+        <div style="display: flex; gap: 0.4rem; flex-shrink: 0;">
+          <button class="btn btn-primary" style="padding: 0.35rem 0.7rem; font-size: 0.8125rem;"
+            onclick="payWithSaved(${t.ref})" title="Return buyer present — one-click (CUSTOMER-initiated)">Pay $10 (1-click)</button>
+          <button class="btn btn-secondary" style="padding: 0.35rem 0.7rem; font-size: 0.8125rem;"
+            onclick="chargeSaved(${t.ref})" title="Buyer not present — recurring MIT (MERCHANT-initiated)">Charge $10 (recurring)</button>
+        </div>
+      </div>`
+      )
+      .join('');
+  } catch (error) {
+    /* ignore — leave the list as-is */
+  }
+}
+
+// Charge a saved token as a merchant-initiated recurring payment (buyer not present).
+window.chargeSaved = async function (ref) {
+  try {
+    setVaultStatus('Charging saved PayPal (recurring, buyer not present)...', 'info');
+    const res = await axios.post(`${apiBase()}/ppcp/vault/charge`, {
+      ref,
+      amount: '10.00',
+      currency_code: CURRENCY,
+    });
+    const status = res.data.status || 'processed';
+    setVaultStatus(
+      `Recurring charge ${status}${res.data.id ? ` (order ${res.data.id})` : ''}.`,
+      status === 'COMPLETED' ? 'success' : 'info'
+    );
+  } catch (error) {
+    setVaultStatus(vaultError(error), 'error');
+  }
+};
+
+// Scenario 3 — return buyer present: pay with a saved token in one click (buyer present,
+// CUSTOMER-initiated). No PayPal popup: the method was already authorized when it was vaulted.
+window.payWithSaved = async function (ref) {
+  try {
+    setVaultStatus('Paying with saved PayPal (one-click, buyer present)...', 'info');
+    const res = await axios.post(`${apiBase()}/ppcp/vault/charge`, {
+      ref,
+      amount: '10.00',
+      currency_code: CURRENCY,
+      initiator: 'CUSTOMER',
+    });
+    const status = res.data.status || 'processed';
+    setVaultStatus(
+      `One-click payment ${status}${res.data.id ? ` (order ${res.data.id})` : ''}.`,
+      status === 'COMPLETED' ? 'success' : 'info'
+    );
+  } catch (error) {
+    setVaultStatus(vaultError(error), 'error');
+  }
+};
 
 // ── UI helpers ────────────────────────────────────────────────────────────────
 
@@ -353,8 +518,10 @@ function showError(message) {
 
 function init() {
   renderProducts();
+  refreshVaultedTokens();
   el('proceed-to-payment').addEventListener('click', () => goToStep(2));
   el('back-to-products').addEventListener('click', () => goToStep(1));
+  el('save-trigger').addEventListener('click', mountVault);
 }
 
 if (document.readyState === 'loading') {
