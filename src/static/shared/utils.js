@@ -83,13 +83,15 @@ async function createPurchase(paymentMethodToken, amount, currencyCode = 'USD') 
   }
 }
 
-async function createPurchaseWith3DS(paymentMethodToken, amount, browserInfo, currencyCode = 'USD') {
+async function createPurchaseWith3DS(paymentMethodToken, amount, browserInfo, currencyCode = 'USD', scaOptions = {}) {
   try {
     const response = await axios.post(`${API_BASE_URL}/create-purchase-with-3ds`, {
       payment_method_token: paymentMethodToken,
       amount: amount,
       currency_code: currencyCode,
       browser_info: browserInfo,
+      sca_provider_type: scaOptions.providerType,
+      test_scenario: scaOptions.scenario,
     });
     return response.data;
   } catch (error) {

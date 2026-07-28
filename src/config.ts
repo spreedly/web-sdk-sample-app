@@ -12,6 +12,7 @@ interface Config {
   spreedlyAccessSecret: string;
   spreedlyGatewayToken: string;
   spreedlySCAProviderKey: string;
+  spreedlySCAProviderKeyTestScenario: string;
   stripeGatewayToken: string;
   paypalGatewayToken: string;
   ebanxGatewayToken: string;
@@ -28,6 +29,7 @@ const config: Config = {
   spreedlyAccessSecret: process.env.SPREEDLY_ACCESS_SECRET_NEW || '',
   spreedlyGatewayToken: process.env.SPREEDLY_GATEWAY_TOKEN_NEW || '',
   spreedlySCAProviderKey: process.env.SPREEDLY_SCA_PROVIDER_KEY_NEW || '',
+  spreedlySCAProviderKeyTestScenario: process.env.SPREEDLY_SCA_PROVIDER_KEY_TEST_SCENARIO_NEW || '',
   stripeGatewayToken: process.env.STRIPE_GATEWAY_TOKEN_NEW || '',
   paypalGatewayToken: process.env.PAYPAL_GATEWAY_TOKEN_NEW || '',
   ebanxGatewayToken: process.env.EBANX_GATEWAY_TOKEN_NEW || '',

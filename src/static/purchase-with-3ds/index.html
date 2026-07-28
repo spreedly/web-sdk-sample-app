@@ -655,6 +655,70 @@
       margin-top: 0.375rem;
       font-style: italic;
     }
+
+    /* SCA Provider Selection */
+    .sca-options {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .sca-option {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--color-gray-200);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all var(--transition);
+      font-size: 0.8125rem;
+    }
+
+    .sca-option:hover {
+      border-color: var(--color-gray-300);
+      background: var(--color-gray-50);
+    }
+
+    .sca-option.selected {
+      border-color: var(--color-primary);
+      background: rgba(79, 70, 229, 0.05);
+    }
+
+    .sca-option input[type="radio"] {
+      width: 1rem;
+      height: 1rem;
+      flex-shrink: 0;
+    }
+
+    .sca-option-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.125rem;
+    }
+
+    .sca-option-title {
+      font-weight: 600;
+      color: var(--color-gray-900);
+    }
+
+    .sca-option-label {
+      font-size: 0.6875rem;
+      color: var(--color-gray-500);
+    }
+
+    .sca-scenarios {
+      margin-top: 0.625rem;
+      padding-top: 0.625rem;
+      padding-left: 0.75rem;
+      border-top: 1px solid var(--color-gray-200);
+      border-left: 2px solid var(--color-primary);
+    }
+
+    .sca-scenarios.hidden {
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -849,6 +913,67 @@
 
             <!-- Side Panel - Test Data -->
             <div class="side-panel">
+              <!-- SCA Provider Selection -->
+              <div class="test-data-card">
+                <h4>
+                  SCA Provider
+                </h4>
+
+                <div class="sca-options">
+                  <label class="sca-option selected" data-provider="forter">
+                    <input type="radio" name="sca-provider" value="forter" checked
+                      onchange="handleScaProviderChange()">
+                    <div class="sca-option-content">
+                      <span class="sca-option-title">Forter</span>
+                      <span class="sca-option-label">Full Forter flow via managed order token</span>
+                    </div>
+                  </label>
+
+                  <label class="sca-option" data-provider="test">
+                    <input type="radio" name="sca-provider" value="test"
+                      onchange="handleScaProviderChange()">
+                    <div class="sca-option-content">
+                      <span class="sca-option-title">Test</span>
+                      <span class="sca-option-label">Simulated outcome, no Forter SDK</span>
+                    </div>
+                  </label>
+                </div>
+
+                <!-- Test Scenarios (shown only for the test provider) -->
+                <div class="sca-scenarios hidden" id="sca-scenarios">
+                  <div class="test-scenario-title">Test Scenario</div>
+                  <div class="sca-options">
+                    <label class="sca-option" data-scenario="authenticated">
+                      <input type="radio" name="sca-scenario" value="authenticated"
+                        onchange="handleScaScenarioChange()">
+                      <div class="sca-option-content">
+                        <span class="sca-option-title">Authenticated</span>
+                        <span class="sca-option-label">Succeeds without a challenge</span>
+                      </div>
+                    </label>
+
+                    <label class="sca-option" data-scenario="challenge">
+                      <input type="radio" name="sca-scenario" value="challenge"
+                        onchange="handleScaScenarioChange()">
+                      <div class="sca-option-content">
+                        <span class="sca-option-title">Challenge</span>
+                        <span class="sca-option-label">Presents a challenge to the cardholder</span>
+                      </div>
+                    </label>
+
+                    <label class="sca-option" data-scenario="not_authenticated">
+                      <input type="radio" name="sca-scenario" value="not_authenticated"
+                        onchange="handleScaScenarioChange()">
+                      <div class="sca-option-content">
+                        <span class="sca-option-title">Not Authenticated</span>
+                        <span class="sca-option-label">Fails authentication</span>
+                      </div>
+                    </label>
+                  </div>
+                  <p class="test-note">Select a scenario to continue</p>
+                </div>
+              </div>
+
               <div class="test-data-card">
                 <h4>
                   3DS Global Test Data

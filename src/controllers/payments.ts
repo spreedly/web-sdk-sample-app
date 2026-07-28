@@ -184,17 +184,26 @@ export const createPurchaseTransaction = async (req: UserAgentAugmentedRequest, 
 
 // Web SDK endpoint for creating a purchase with 3DS
 export const createPurchaseWith3DS = async (req: Request, res: Response): Promise<void> => {
-  const sca_provider_key = config.spreedlySCAProviderKey;
   const gateway_key = config.spreedlyGatewayToken;
 
   const payment_method_token = req.body.payment_method_token;
   const amount = req.body.amount;
   const browser_info = req.body.browser_info;
   const currency_code = req.body.currency_code;
+
+  const isTestProvider = req.body.sca_provider_type === 'test';
+  const sca_provider_key = isTestProvider
+    ? config.spreedlySCAProviderKeyTestScenario
+    : config.spreedlySCAProviderKey;
+  const test_scenario = req.body.test_scenario;
+
   const body = {
     transaction: {
       sca_provider_key,
       payment_method_token,
+      ...(isTestProvider && test_scenario
+        ? { sca_authentication_parameters: { test_scenario: { scenario: test_scenario } } }
+        : {}),
       amount,
       browser_info,
       currency_code,
