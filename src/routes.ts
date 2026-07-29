@@ -171,9 +171,23 @@ router.post('/payment_methods/:paymentMethodToken/recache', recachePaymentMethod
  *             attempt_3dsecure:
  *               type: boolean
  *               description: If true, uses gateway-specific 3DS instead of sca_provider_key
+ *             sca_provider_type:
+ *               type: string
+ *               enum: [forter, test]
+ *               description: >
+ *                 Which SCA provider to use for 3DS Global. Defaults to the Forter provider.
+ *                 Set to "test" to use Spreedly's test SCA provider, which returns no
+ *                 managed_order_token. Ignored when attempt_3dsecure is true.
+ *             test_scenario:
+ *               type: string
+ *               enum: [authenticated, challenge, not_authenticated]
+ *               description: >
+ *                 Outcome to simulate. Only applies when sca_provider_type is "test".
  *     responses:
  *       200:
  *         description: Purchase transaction created successfully
+ *       400:
+ *         description: Invalid test_scenario value
  *       500:
  *         description: Error creating purchase transaction
  */
@@ -204,9 +218,22 @@ router.post('/purchase', createPurchaseTransaction);
  *               type: string
  *             browser_info:
  *               type: string
+ *             sca_provider_type:
+ *               type: string
+ *               enum: [forter, test]
+ *               description: >
+ *                 Which SCA provider to use. Defaults to the Forter provider. Set to "test"
+ *                 to use Spreedly's test SCA provider, which returns no managed_order_token.
+ *             test_scenario:
+ *               type: string
+ *               enum: [authenticated, challenge, not_authenticated]
+ *               description: >
+ *                 Outcome to simulate. Only applies when sca_provider_type is "test".
  *     responses:
  *       200:
  *         description: Purchase processed successfully
+ *       400:
+ *         description: Invalid test_scenario value
  *       500:
  *         description: Error processing purchase
  */
