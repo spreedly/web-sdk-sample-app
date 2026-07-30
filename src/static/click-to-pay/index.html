@@ -141,6 +141,18 @@
     /* Wrapper box around Mastercard's <src-consent> component. */
     .c2p-consent-box { margin: 1rem 0; }
 
+    /* Soft (non-blocking) CVV warning under the card form. */
+    .c2p-cvv-banner {
+      margin-top: 0.75rem;
+      padding: 0.625rem 0.875rem;
+      border: 1px solid #f0c36d;
+      border-radius: var(--radius-md);
+      background: #fdf6e3;
+      color: #8a6d1a;
+      font-size: 0.8125rem;
+      line-height: 1.4;
+    }
+
     /* Required-field asterisk on mandatory card-form labels. */
     .req { color: #dc2626; font-weight: 700; }
 
@@ -441,6 +453,13 @@
                       </div>
                     </div>
 
+                    <!-- Soft CVV warning (flag-don't-block): the SDK's validCvv is advisory,
+                         so an unusual CVC warns the shopper but never disables the button. -->
+                    <div id="c2p-cvv-banner" class="c2p-cvv-banner hidden" role="alert">
+                      The security code doesn't look right for this card — you can still
+                      continue, but the payment may be declined.
+                    </div>
+
                     <!-- Optional shipping address, collected WITH the card (moved out of the
                          lookup step). Native <details> = "option to add" with no JS. -->
                     <details style="margin-top:1rem;">
@@ -481,7 +500,7 @@
                       </div>
                     </details>
 
-                    <!-- Consent — appears after the card is encrypted. Mastercard's own
+                    <!-- Consent — appears once the card form is complete. Mastercard's own
                          <src-consent> component renders the brand mark, "Save my information"
                          checkbox, and the official Terms / Privacy Notice copy + links (no
                          placeholder URLs to maintain). It emits checkoutAsGuest / rememberMe;

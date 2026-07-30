@@ -39,7 +39,7 @@ let cardSelectionReady = false;
 
 // Card field state (from the SDK's fieldStateChange). validCvv is usable in both
 // flows — the SDK falls back to a length check when there's no PAN (selected-card).
-const cardState = { validNumber: false, validCvv: false, cardType: '' };
+const cardState = { validNumber: false, validCvv: false, cvvLength: 0, cardType: '' };
 let encryptedCard = null;
 let cardBrand = null;
 let encrypting = false;
@@ -196,6 +196,7 @@ function attachHostedFieldsListeners() {
   hostedFields.on('fieldStateChange', (payload) => {
     cardState.validNumber = payload.validNumber === true;
     cardState.validCvv = payload.validCvv === true;
+    if (typeof payload.cvvLength === 'number') cardState.cvvLength = payload.cvvLength;
     if (payload.cardType) cardState.cardType = payload.cardType;
     evaluateCardReady();
     // The selected-card flow also requires a CVC (shared cvv field).
@@ -511,20 +512,37 @@ function validName() {
   return $('c2p-first-name').value.trim() !== '' && $('c2p-last-name').value.trim() !== '';
 }
 
+// The continue button only requires a CVV to be PRESENT — validity is advisory
+// (flag-don't-block pattern): an invalid CVC shows a warning banner instead.
+function readyForContinue() {
+  return cardState.validNumber && cardState.cvvLength > 0 && validExpiry() && validName();
+}
+
 function evaluateCardReady() {
-  const ready = cardState.validNumber && cardState.validCvv && validExpiry() && validName();
-  if (ready && !encryptedCard && !encrypting) {
+  // Eager encryption still requires a VALID CVV (avoids re-encrypting per keystroke
+  // and never bakes a known-bad CVC into the blob unless the shopper proceeds).
+  const readyForEncrypt = cardState.validNumber && cardState.validCvv && validExpiry() && validName();
+
+  if (readyForEncrypt && !encryptedCard && !encrypting) {
     encryptCard();
-  } else if (!ready && (encryptedCard || encrypting)) {
+  } else if (!readyForEncrypt && (encryptedCard || encrypting)) {
     resetEncrypted();
   }
+
+  const canContinue = readyForContinue();
+  setBrandBtnDisabled('continue-btn', !canContinue);
+  if (canContinue) show('c2p-consent');
+  else hide('c2p-consent');
+
+  // Soft warning: CVC present but wrong for the detected card type (e.g. 3 digits
+  // for an Amex). The shopper can still continue; the issuer may decline.
+  if (cardState.cvvLength > 0 && !cardState.validCvv) show('c2p-cvv-banner');
+  else hide('c2p-cvv-banner');
 }
 
 function resetEncrypted() {
   encryptedCard = null;
   cardBrand = null;
-  hide('c2p-consent');
-  setBrandBtnDisabled('continue-btn', true);
 }
 
 async function encryptCard() {
@@ -550,8 +568,6 @@ async function encryptCard() {
     encryptedCard = result.encryptedCard;
     cardBrand = result.cardBrand;
     logEvent(`Card encrypted (${cardBrand})`, 'success');
-    show('c2p-consent');
-    setBrandBtnDisabled('continue-btn', false);
     hideStatus();
   } catch (err) {
     encrypting = false;
@@ -561,9 +577,15 @@ async function encryptCard() {
 }
 
 async function handleContinue() {
-  if (!encryptedCard) {
+  if (!encryptedCard && !readyForContinue()) {
     showStatus('Enter a valid card first.', 'error');
     return;
+  }
+  // Flag-don't-block: the shopper proceeded despite the CVV warning — encrypt now
+  // with the CVC as entered (eager encryption only runs for valid CVCs).
+  if (!encryptedCard) {
+    await encryptCard();
+    if (!encryptedCard) return; // encryption failed; error already shown
   }
   hideStatus();
   setContinueLoading(true, 'Starting Click to Pay…');
@@ -702,9 +724,9 @@ function showResult(type, data) {
 }
 
 // continue-btn is Mastercard's <src-button> (no spinner/text) — reflect loading as the gated
-// state. It also stays disabled until the card is encrypted (encryptedCard set).
+// state. When not loading, restore the soft form gate (CVV presence, not validity).
 function setContinueLoading(loading) {
-  setBrandBtnDisabled('continue-btn', loading || !encryptedCard);
+  setBrandBtnDisabled('continue-btn', loading || !readyForContinue());
 }
 
 // ── Listeners ──────────────────────────────────────────────────────────────
