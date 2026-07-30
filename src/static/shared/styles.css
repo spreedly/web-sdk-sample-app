@@ -301,6 +301,27 @@ p {
   border: none;
 }
 
+.hosted-field-container.has-error {
+  border-color: #ef4444;
+}
+
+.hosted-field-container.has-error:focus-within {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+}
+
+/* Inline validation error label under a hosted field */
+.hf-field-error {
+  display: none;
+  margin-top: 0.375rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #991b1b;
+}
+
+.hf-field-error.visible {
+  display: block;
+}
+
 /* Express Checkout Container */
 .express-checkout-container {
   min-height: 500px;
