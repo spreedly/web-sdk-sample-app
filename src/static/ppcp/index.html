@@ -199,7 +199,7 @@
                       <span class="elig-badge ok">always</span>
                     </li>
                     <li>
-                      <span><span class="elig-name">Pay Later</span> — US buyer, USD; Pay in 4 ≥ $30, Pay Monthly ≥ $199</span>
+                      <span><span class="elig-name">Pay Later</span> — eligibility is PayPal's call (<code>findEligibleMethods</code>, US/USD); the $30 / $199 amounts are typical <em>plan</em> thresholds, not a hard gate</span>
                       <span class="elig-badge" id="elig-paylater">—</span>
                     </li>
                     <li>
@@ -293,6 +293,33 @@
                   Also save my PayPal for future purchases
                   <span class="elig-badge info">vault with purchase</span>
                 </label>
+
+                <!-- Button appearance (SpreedlyPPCP buttonStyle: label + shape; v6 has no color option) -->
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end; margin-bottom: 1rem;">
+                  <label style="font-size: 0.75rem; color: var(--color-gray-600); display: flex; flex-direction: column; gap: 0.25rem;">
+                    Button label
+                    <select id="btn-label" style="width: auto; padding: 0.4rem 0.5rem; border: 1px solid var(--color-gray-300); border-radius: var(--radius-sm); font-size: 0.8125rem;">
+                      <option value="">Default</option>
+                      <option value="checkout">Checkout</option>
+                      <option value="pay">Pay</option>
+                      <option value="buynow">Buy Now</option>
+                      <option value="subscribe">Subscribe</option>
+                      <option value="donate">Donate</option>
+                    </select>
+                  </label>
+                  <label style="font-size: 0.75rem; color: var(--color-gray-600); display: flex; flex-direction: column; gap: 0.25rem;">
+                    Button shape
+                    <select id="btn-shape" style="width: auto; padding: 0.4rem 0.5rem; border: 1px solid var(--color-gray-300); border-radius: var(--radius-sm); font-size: 0.8125rem;">
+                      <option value="">Default</option>
+                      <option value="sharp">Sharp</option>
+                      <option value="rounded">Rounded</option>
+                      <option value="pill">Pill</option>
+                    </select>
+                  </label>
+                  <span style="font-size: 0.6875rem; color: var(--color-gray-500); padding-bottom: 0.5rem;">
+                    v6 buttons are brand-fixed (gold/blue) — no color option
+                  </span>
+                </div>
 
                 <!-- Buttons loading -->
                 <div id="payment-buttons-loading" class="payment-buttons-container loading">

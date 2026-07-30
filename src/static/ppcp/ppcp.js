@@ -24,8 +24,10 @@ const PAYPAL_V6_SDK_URL = 'https://www.sandbox.paypal.com/web-sdk/v6/core';
 // Products are priced in USD (Venmo & Pay Later are US/USD only).
 const CURRENCY = 'USD';
 
-// Pay Later US thresholds — the cart total is passed to findEligibleMethods (as `amount`),
-// which is what decides Pay Later eligibility; these values drive the live hint below.
+// Pay Later US *plan* thresholds — informational only. Pay Later ELIGIBILITY is PayPal's call
+// (findEligibleMethods, per account/country/currency); it can return Pay Later eligible even BELOW
+// these amounts, so we never gate the button on them. These just drive the hint showing which
+// installment plan PayPal *typically* offers at a given amount (Pay in 4 ≥ $30, Pay Monthly ≥ $199).
 const PAY_IN_4_MIN = 30;
 const PAY_MONTHLY_MIN = 199;
 
@@ -113,20 +115,22 @@ function updateCartSummary() {
   updateEligibilityHints();
 }
 
-// Live button-eligibility hint based on the current cart total.
+// Live hint: which Pay Later PLAN PayPal typically offers at the current amount. NOTE: this is
+// illustrative, NOT a gate — actual Pay Later eligibility is PayPal's decision (findEligibleMethods),
+// and it can be eligible below these thresholds. The real per-button result shows after mount.
 function updateEligibilityHints() {
   const total = getCartTotal();
   const pl = el('elig-paylater');
   if (!pl) return;
   if (total >= PAY_MONTHLY_MIN) {
-    pl.textContent = 'Pay in 4 + Pay Monthly';
+    pl.textContent = 'Pay in 4 + Monthly';
     pl.className = 'elig-badge ok';
   } else if (total >= PAY_IN_4_MIN) {
     pl.textContent = 'Pay in 4';
     pl.className = 'elig-badge ok';
   } else if (total > 0) {
-    pl.textContent = `add ≥ ${SpreedlyUtils.formatCurrency(PAY_IN_4_MIN)}`;
-    pl.className = 'elig-badge warn';
+    pl.textContent = 'PayPal decides';
+    pl.className = 'elig-badge info';
   } else {
     pl.textContent = '—';
     pl.className = 'elig-badge';
@@ -221,6 +225,7 @@ async function loadAndMountPPCP() {
       getClientToken,
       createOrder,
       onPaymentResult: handlePaymentResult,
+      buttonStyle: getButtonStyle(),
     });
 
     const result = await ppcpInstance.mount();
@@ -270,6 +275,17 @@ async function loadAndMountPPCP() {
 
 function getAmount() {
   return getCartTotal().toFixed(2); // Orders V2 expects a decimal string, e.g. "229.98"
+}
+
+// Read the button-appearance selectors -> SpreedlyPPCP buttonStyle ({ label?, shape? }).
+// (v6 exposes no button color, so there is no color control here.)
+function getButtonStyle() {
+  const label = el('btn-label') && el('btn-label').value;
+  const shape = el('btn-shape') && el('btn-shape').value;
+  const style = {};
+  if (label) style.label = label;
+  if (shape) style.shape = shape;
+  return Object.keys(style).length ? style : undefined;
 }
 
 async function getClientToken() {
@@ -328,7 +344,11 @@ async function handlePaymentResult(result) {
     setStatus('Payment cancelled.', 'info');
     showResult(false, 'Payment Cancelled', `${method} payment was cancelled.`);
   } else {
-    showResult(false, 'Payment Failed', result.message || `${method} payment failed.`);
+    // Surface the structured error code (from onError) alongside the message when present.
+    const detail = result.code
+      ? `[${result.code}] ${result.message || ''}`.trim()
+      : result.message || `${method} payment failed.`;
+    showResult(false, 'Payment Failed', detail);
     setStatus('Payment failed', 'error');
   }
 }
@@ -522,6 +542,15 @@ function init() {
   el('proceed-to-payment').addEventListener('click', () => goToStep(2));
   el('back-to-products').addEventListener('click', () => goToStep(1));
   el('save-trigger').addEventListener('click', mountVault);
+  // Re-mount the buttons when the appearance selectors change (destroy() now clears old buttons).
+  ['btn-label', 'btn-shape'].forEach(id => {
+    const sel = el(id);
+    if (sel) {
+      sel.addEventListener('change', () => {
+        if (sdksLoaded && ppcpInstance) loadAndMountPPCP();
+      });
+    }
+  });
 }
 
 if (document.readyState === 'loading') {
