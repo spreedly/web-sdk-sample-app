@@ -49,6 +49,7 @@ Previous production releases of the SDK:
 | `1.2.0` | Hosted Fields (`https://core.spreedly.com/checkout/sdk/1.2.0/index.js`) and Express Checkout (`https://core.spreedly.com/checkout/elements/1.2.0/express-checkout.js`) | July 9, 2026 | —     |
 | `1.0.1` | Hosted Fields (`https://core.spreedly.com/checkout/sdk/1.0.1/index.js`) and Express Checkout (`https://core.spreedly.com/checkout/elements/1.0.1/express-checkout.js`) | April 30, 2026 | —     |
 
+See additional info on CHANGELOG 
 ---
 
 ## Prerequisites
