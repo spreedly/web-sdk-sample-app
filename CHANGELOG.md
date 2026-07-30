@@ -5,6 +5,17 @@ All notable changes to the Spreedly Web SDK will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-07-30
+
+### Added
+- **Click to Pay (Mastercard SRC)**: new `SpreedlyClickToPay` entry point (exposed from the Hosted Fields bundle) for checkout with Mastercard Click to Pay — identity lookup (recognized device / OTP / new user), Mastercard's `<src-card-list>`/`<src-otp-input>` components driven by the SDK, checkout in a popup or embedded drawer (`checkoutPresentation`), and tokenization into a standard Spreedly payment method. Single-entry integration via `config.fields`: the SDK creates and mounts its own hosted card fields (exposed as `c2p.hostedFields`), encrypts new-card PANs with Mastercard `encryptCard` inside the number iframe, and runs all tokenization in-iframe — the PAN/CVV never touch the merchant page. Legacy kebab-case C2P event names are preserved for migration; `error` events carry a machine-routable stage `code`. See `docs/click-to-pay/` (integration guide + migration guide from legacy `Spreedly.c2pInit`).
+- **Test SCA provider 3DS Global support**: transactions created with Spreedly's test SCA provider (`sca_provider_type: "test"`) now run the 3DS Global flow. These transactions carry no `managed_order_token`, so Forter is not involved — the SDK presents the challenge when the transaction supplies one and completes authentication server-side otherwise, emitting the same `onChallenge`/`onSuccess`/`onError` callbacks as the Forter flow.
+- **Mandate passthrough** (AC-62): optional `mandate` field on the tokenization APIs — `SubmitParams` (Hosted Fields `submit()` and Express Checkout `submitParams`/`updateSubmitParams`) and the `setupACHPayment` config. Forwarded verbatim to Spreedly Core at `payment_method.mandate` alongside the tokenized payment method, and omitted from the request when empty. Opaque by design via a new exported `Mandate` type (`Record<string, unknown>`) — Spreedly Core owns the mandate schema and validation.
+
+### Changed
+- The number iframe's Content-Security-Policy now allows `src.mastercard.com` (and its sandbox host) in `script-src`/`connect-src`; Mastercard's `lib.js` is loaded on demand only when a Click to Pay encryption is requested, so non-C2P merchants never load it.
+- The hosted CVV's 3-minute in-memory TTL pauses while a Click to Pay checkout window is open (re-arms in full when it closes), and the SDK emits a fresh `fieldStateChange` whenever it clears the CVV itself.
+
 ## [1.3.1] - 2026-07-23
 
 ### Added
