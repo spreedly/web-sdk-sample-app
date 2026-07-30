@@ -1,7 +1,7 @@
 # Stripe Radar Integration Guide
 
 This guide covers integrating [Stripe Radar](https://docs.stripe.com/radar)
-fraud signals using the Spreedly Web SDK. Radar is Stripe's fraud-detection system; 
+fraud signals using the Spreedly Web SDK. Radar is Stripe's fraud-detection system;
 it scores each transaction using signals from Stripe's
 network plus rules you configure in the Stripe Dashboard.
 
@@ -171,6 +171,10 @@ on failure. Failure cases (each logged, and emitted as a
 | `stripe_init_failed`      | `window.Stripe(...)` threw or returned falsy                |
 | `no_session_id`           | Stripe returned no `radarSession.id` (see `radar.error`)    |
 | `create_session_threw`    | `createRadarSession()` rejected                             |
+
+> The full method signature and `StripeRadarOptions` type also appear in the
+> generated [Hosted Fields API reference](../HOSTED_FIELDS_API_REFERENCE.md#stripe-radar)
+> and [Express Checkout API reference](../EXPRESS_CHECKOUT_API_REFERENCE.md#stripe-radar).
 
 ### Gateway-specific fields (backend)
 

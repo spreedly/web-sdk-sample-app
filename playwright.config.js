@@ -2,7 +2,7 @@
 const config = {
   testDir: './test',
   testMatch: '**/*.spec.ts',
-
+  retries: 1, // retry once on failure (2 total attempts)
   use: {
     baseURL: 'https://checkout-web-sample-app-049a3c617015.herokuapp.com',
     trace: 'on-first-retry',

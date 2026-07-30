@@ -56,6 +56,7 @@ export const SELECTORS = {
   EXPIRY_YEAR_ERROR: "#expiry-year-error",
   EXPIRY_MONTH_ERROR: "#expiry-month-error",
   tokenizationFailedMessage: '#status-message',
+  TOKENIZATION_FAILED_MESSAGE_SELECTOR: '#status-message.status-message.visible.error',
 
 
   BIN_CARD_LABEL:".MuiChip-label",
@@ -102,6 +103,14 @@ export const SELECTORS = {
   NUPAY_AUTHORIZE_YES_BUTTON: 'a:has-text("Authorized = YES")',
   NUPAY_AUTHORIZE_NO_BUTTON: 'a:has-text("Authorized = NO")',
   NUPAY_AUTHORIZE_PENDING_BUTTON: 'a:has-text("Leave Pending")',
+  PARITY_OPTION_CARD_UPDATER: '#config-eligible-for-card-updater',
+  PARITY_OPTION_IS_LOADED_RESULT: '#hf-demo-is-loaded-result',
+  ACH_PAYMENTS_BUTTON: '[data-flow="ach-payments"]',
+  ACH_ACCOUNT_NUMBER_INPUT: '#ach-account',
+  ACH_ROUTING_NUMBER_INPUT: '#ach-routing',
+  ACH_ERROR_MESSAGE: '.status-message',
+  STRIPE_RADAR_BUTTON: '[data-flow="stripe-radar"]',
+  STRIPE_RADAR_PAY_BUTTON: '#pay-btn'
 } as const;
 
 export const THREE_DS_SELECTORS = {
@@ -126,6 +135,8 @@ export const THREE_DS_SELECTORS = {
   CHALLENGE_CANCEL_BUTTON: 'button:has-text("Cancel")',
   CHALLENGE_WHITELIST_CHECKBOX: 'input[type="checkbox"]',
   CHALLENGE_OVERLAY: '#challenge-overlay',
+  CHALLENGE_PASS_BUTTON: 'button[name="challengeStatus"][value="pass"]',
+  CHALLENGE_FAIL_BUTTON: 'button[name="challengeStatus"][value="fail"]',
   // 3DS Success Page Selectors
   RESULT_SECTION: '#result-section',
   RESULT_TITLE: '.result-title',
@@ -179,8 +190,10 @@ export const TEST_DATA = {
   CARD_NUMBER_TOO_SHORT: "411111111111", // 12 digits
   CARD_NUMBER_TOO_LONG: "41111111111111111111", // 20 digits
   CARD_NUMBER_FORMATTED: "4111 1111 1111 1111",
+  INVALID_CARD_NUMBER_FORMATTED: "4111 1111 1111 1112",
   AMEX_CARD_NUMBER: "3782 822463 10005",
   MASKED_CARD_NUMBER:"•••• •••• •••• 1111",
+  NUMBER_FORMAT_MASKED: "****************",
   CVV: "123",
   INVALID_CVV_LONG: "1234",
   INVALID_CVV_SHORT: "12",
@@ -222,7 +235,14 @@ export const TEST_DATA = {
   STRIPE_APM_SEPA_COUNTRY: "IE",
   STRIPE_APM_SEPA_COUNTRY_STATE: "Dublin",
   STRIPE_APM_BANK_NAME_EPS: "Bank Austria",
-  STRIPE_APM_BANK_NAME_PRZELEWY24: "alior_bank"
+  STRIPE_APM_BANK_NAME_PRZELEWY24: "alior_bank",
+  ACH_ACCOUNT_NUMBER: "9876543210",
+  ACH_ACCOUNT_NUMBER_INVALID: "9876543211",
+  ACH_ROUTING_NUMBER: "021000021",
+  ACH_ROUTING_NUMBER_INVALID: "021000022",
+  ACH_FIRST_NAME: "Bob",
+  ACH_LAST_NAME: "Smith",
+  ACH_BANK_NAME: "First Bank of Elbonia",
 };
 
 export const HEADINGS = {
@@ -263,7 +283,9 @@ export const ERROR_MESSAGES = {
   HOSTED_FIELDS_AMEX_INVALID_CVV: "CVV must be 4 digits",
   ERROR_MESSAGE_UNAUTHORIZED: "Request failed with status code 401",
   ERROR_MESSAGE_INVALID_YEAR: "Request failed with status code 422",
-  TOKENIZATION_FAILED_MESSAGE: "Tokenization failed. Please try again."
+  TOKENIZATION_FAILED_MESSAGE: "Tokenization failed. Please try again.",
+  ACH_INVALID_ROUTING_NUMBER: "Routing number is invalid",
+  ACH_INVALID_ACCOUNT_NUMBER: "Request failed with status code 422",
 };
 
 export const ERROR_SELECTORS = {
@@ -283,6 +305,8 @@ export const ERROR_SELECTORS = {
 export const CSS_PROPERTIES = {
   RED_BORDER: "rgb(255, 0, 0)",
   GREEN_TEXT: "rgb(0, 128, 0)",
+  PLACEHOLDER_TEXT_COLOR_BEFORE: "rgb(156, 163, 175)",
+  PLACEHOLDER_TEXT_COLOR_AFTER: "rgb(255, 0, 0)",
 };
 
 export const CSS_CLASSES = {

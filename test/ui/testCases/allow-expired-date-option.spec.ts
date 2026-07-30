@@ -100,7 +100,7 @@ test.describe("Allow Expired Date Option", () => {
           expiryMonth: TEST_DATA.EXPIRY_MONTH,
           expiryYear: getExpiredYearString(),
         });
-        await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.CARD_NUMBER, {
+        await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.CARD_NUMBER_FORMATTED, {
             cvv: TEST_DATA.CVV,
             firstName: TEST_DATA.FIRST_NAME,
             lastName: TEST_DATA.LAST_NAME,
@@ -132,7 +132,7 @@ test.describe("Allow Expired Date Option", () => {
           expiryMonth: TEST_DATA.EXPIRY_MONTH,
           expiryYear: getExpiredYearString(),
         });
-        await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.CARD_NUMBER, {
+        await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.CARD_NUMBER_FORMATTED, {
             cvv: TEST_DATA.CVV,
             firstName: TEST_DATA.FIRST_NAME,
             lastName: TEST_DATA.LAST_NAME,

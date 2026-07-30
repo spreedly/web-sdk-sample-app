@@ -154,8 +154,38 @@ export const createPurchaseTransaction = async (req: UserAgentAugmentedRequest, 
     os: req.useragent?.os,
   }
 
-  const sca_provider_key = config.spreedlySCAProviderKey;
   const attempt_3dsecure = req.body.attempt_3dsecure;
+  const isTestProvider = req.body.sca_provider_type === 'test';
+  const sca_provider_key = isTestProvider
+    ? config.spreedlySCAProviderKeyTestScenario
+    : config.spreedlySCAProviderKey;
+  const test_scenario = req.body.test_scenario;
+
+  const build3dsParams = () => {
+    // If attempt_3dsecure is true, we want to attempt gateway specific 3DS
+    if (attempt_3dsecure) {
+      return { attempt_3dsecure, three_ds_version: 2 };
+    }
+
+    // no sca provider key, plain purchase
+    if (!sca_provider_key) {
+      return {};
+    }
+
+    // global 3ds, test provider flow
+    if (isTestProvider) {
+      return {
+        sca_provider_key,
+        ...(test_scenario
+          ? { sca_authentication_parameters: { test_scenario: { scenario: test_scenario } } }
+          : {}),
+      };
+    }
+  
+    // global 3ds, forter flow
+    return { sca_provider_key };
+  }
+
 
   const requestBody = {
     transaction: {
@@ -163,9 +193,7 @@ export const createPurchaseTransaction = async (req: UserAgentAugmentedRequest, 
       currency_code: req.body.currency_code,
       payment_method_token: req.body.payment_method_token,
       ip: req.ip || '127.0.0.1',
-      // If attempt_3dsecure is true, we want to attempt gateway specific 3DS
-      ...(sca_provider_key && !attempt_3dsecure ? { sca_provider_key } : {}),
-      ...(attempt_3dsecure ? { attempt_3dsecure, three_ds_version: 2 } : {}),
+      ...build3dsParams(),
       browser_info: btoa(JSON.stringify(browserInfo)),
     }
   };
@@ -189,17 +217,26 @@ export const createPurchaseTransaction = async (req: UserAgentAugmentedRequest, 
 
 // Web SDK endpoint for creating a purchase with 3DS
 export const createPurchaseWith3DS = async (req: Request, res: Response): Promise<void> => {
-  const sca_provider_key = config.spreedlySCAProviderKey;
   const gateway_key = config.spreedlyGatewayToken;
 
   const payment_method_token = req.body.payment_method_token;
   const amount = req.body.amount;
   const browser_info = req.body.browser_info;
   const currency_code = req.body.currency_code;
+
+  const isTestProvider = req.body.sca_provider_type === 'test';
+  const sca_provider_key = isTestProvider
+    ? config.spreedlySCAProviderKeyTestScenario
+    : config.spreedlySCAProviderKey;
+  const test_scenario = req.body.test_scenario;
+
   const body = {
     transaction: {
       sca_provider_key,
       payment_method_token,
+      ...(isTestProvider && test_scenario
+        ? { sca_authentication_parameters: { test_scenario: { scenario: test_scenario } } }
+        : {}),
       amount,
       browser_info,
       currency_code,
@@ -316,7 +353,6 @@ export const createSimplePurchase = async (req: Request, res: Response): Promise
 };
 
 // Web SDK endpoint demonstrating Stripe Radar fraud signals.
-//
 // The browser calls sdk.stripeRadar(publishableKey) to create a Stripe Radar
 // session and posts the resulting session id here. We forward it to Stripe
 // through the Stripe Payment Intents gateway using the documented

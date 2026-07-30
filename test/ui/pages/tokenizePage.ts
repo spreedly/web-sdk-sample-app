@@ -1,5 +1,7 @@
 import { expect } from "../util/fixtures";
 import { Page } from "@playwright/test";
+import { helperFunctions } from "../util/utils";
+import { SELECTORS as TEST_SELECTORS } from "../util/test-constants";
 
 
 export const SELECTORS = {
@@ -19,7 +21,9 @@ export const SELECTORS = {
     resultFirstSix:'#result-label:has-text("First Six")',
     resultExpiry:'#result-label:has-text("Expiry")',
     resultStorageState:'#result-label:has-text("Storage State")',
-    dialogMode: 'label.display-mode-option:has(input[value="dialog"])'
+    dialogMode: 'label.display-mode-option:has(input[value="dialog"])',
+    NUMBER_FORMAT_SELECT: '#hf-demo-number-format',
+    INPUT_MODE_SELECT: '#hf-demo-input-mode',
 }
 
 export const tokenizePage={
@@ -69,4 +73,59 @@ export const tokenizePage={
     await dialogMode.check();
     await expect(dialogMode).toBeChecked();
 },
+
+    checkTheParityOption: async (page: Page, parityOption: string) => {
+    const parityOptionElement = page.locator(`#hf-demo-${parityOption}`);
+    if(await parityOptionElement.isChecked()) {
+        await expect(parityOptionElement).toBeVisible();
+        await parityOptionElement.uncheck();
+        await expect(parityOptionElement).not.toBeChecked();
+    } else {
+        await parityOptionElement.check();
+        await expect(parityOptionElement).toBeChecked();
+    }
+},
+
+    getPlaceholderColor: async (page: Page) => {
+    const cardNumberField = await helperFunctions.getHostedFieldsCardNumberField(page);
+    const placeholderColor= await cardNumberField.evaluate((el) => getComputedStyle(el, '::placeholder').color);
+    return placeholderColor;
+},
+
+    selectNumberFormatOption: async (
+        page: Page, numberFormatOption: string) => {
+        const numberFormatSelect = page.locator(SELECTORS.NUMBER_FORMAT_SELECT);
+        await expect(numberFormatSelect).toBeVisible();
+        await numberFormatSelect.selectOption(numberFormatOption);
+        await expect(numberFormatSelect).toHaveValue(numberFormatOption);
+        await page.waitForTimeout(2000);
+  },
+
+    selectInputModeOption: async (
+        page: Page, inputModeOption: string) => {
+        const inputModeSelect = page.locator(SELECTORS.INPUT_MODE_SELECT);
+        await expect(inputModeSelect).toBeVisible();
+        await inputModeSelect.selectOption(inputModeOption);
+        await expect(inputModeSelect).toHaveValue(inputModeOption);
+        await page.waitForTimeout(2000);
+  },
+
+    getCardNumberFieldInputMode: async (page: Page) => {
+        const cardNumberField = await helperFunctions.getHostedFieldsCardNumberField(page);
+        const inputMode = await cardNumberField.getAttribute('inputmode');
+        return inputMode;
+    },
+
+    getCvvFieldInputMode: async (page: Page) => {
+        const cvvField = await helperFunctions.getHostedFieldsCvvField(page);
+        const inputMode = await cvvField.getAttribute('inputmode');
+        return inputMode;
+  },
+
+    clickOnParityOption: async (page: Page, parityOption: string) => {
+        const parityOptionElement = page.locator(`#hf-demo-${parityOption}`);
+        await expect(parityOptionElement).toBeVisible();
+        await parityOptionElement.click();
+    },
 }
+

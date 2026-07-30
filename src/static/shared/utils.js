@@ -9,14 +9,13 @@ function getSDKType() {
 
 function getSDKScriptUrl() {
   const sdkType = getSDKType();
-  // On localhost, load the locally-served SDK build (npm run dev in checkout-web-sdk).
-  // Required for the Stripe Radar demo until sdk.stripeRadar() ships to the rc CDN.
-  if (window.location.hostname === 'localhost') {
-    if (sdkType === 'express-checkout') {
-      return 'http://localhost:5173/express-checkout.js';
-    }
-    return 'http://localhost:5000/index.js';
-  }
+  //uncomment this to use local sdk
+  // if (window.location.hostname === 'localhost') {
+  //   if (sdkType === 'express-checkout') {
+  //     return 'http://localhost:5173/express-checkout.js';
+  //   }
+  //   return 'http://localhost:5000/index.js';
+  // }
 
   if (sdkType === 'express-checkout') {
     return 'https://core-test.spreedly.com/checkout/elements/rc/express-checkout.js';
@@ -84,13 +83,15 @@ async function createPurchase(paymentMethodToken, amount, currencyCode = 'USD') 
   }
 }
 
-async function createPurchaseWith3DS(paymentMethodToken, amount, browserInfo, currencyCode = 'USD') {
+async function createPurchaseWith3DS(paymentMethodToken, amount, browserInfo, currencyCode = 'USD', scaOptions = {}) {
   try {
     const response = await axios.post(`${API_BASE_URL}/create-purchase-with-3ds`, {
       payment_method_token: paymentMethodToken,
       amount: amount,
       currency_code: currencyCode,
       browser_info: browserInfo,
+      sca_provider_type: scaOptions.providerType,
+      test_scenario: scaOptions.scenario,
     });
     return response.data;
   } catch (error) {
@@ -203,11 +204,9 @@ function loadSDKScript(callback) {
 
 // Stripe Radar — runs a server-side purchase through the Stripe Payment Intents
 // gateway, forwarding the radar session id created by sdk.stripeRadar().
-// Hits LOCAL_API_URL because /stripe-radar-purchase is a newly added route that
-// only exists on the locally-running server (not the deployed Heroku app yet).
 async function createStripeRadarPurchase(paymentMethodToken, amount, radarSessionId, currencyCode = 'USD') {
   try {
-    const response = await axios.post(`${LOCAL_API_URL}/stripe-radar-purchase`, {
+    const response = await axios.post(`${API_BASE_URL}/stripe-radar-purchase`, {
       payment_method_token: paymentMethodToken,
       amount: amount,
       currency_code: currencyCode,
@@ -242,7 +241,7 @@ async function createOffsitePurchase(paymentMethodToken, amount, redirectUrl, ca
 // (bank_account) payment method token using the configured Spreedly Test gateway.
 async function createAchPurchase(paymentMethodToken, amount, currencyCode = 'USD') {
   try {
-    const response = await axios.post(`${LOCAL_API_URL}/ach-purchase`, {
+    const response = await axios.post(`${API_BASE_URL}/ach-purchase`, {
       payment_method_token: paymentMethodToken,
       amount,
       currency_code: currencyCode,
