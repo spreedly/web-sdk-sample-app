@@ -79,7 +79,7 @@ export const SELECTORS = {
   THREE_DS_GATEWAY_SPECIFIC_ACS_SIMULATOR_ALLOW_BUTTON: 'input[value="Allow"]',
   THREE_DS_GATEWAY_SPECIFIC_ACS_SIMULATOR_DENY_BUTTON: 'input[value="Deny"]',
   STRIPE_APM_FRAME_LOCATOR: '.__PrivateStripeElement iframe',
-  OFFSITE_PAYMENTS_BUTTON: '[data-flow="offsite-payments"]',
+  OFFSITE_PAYMENTS_BUTTON: '[data-flow="offsite-payments"]:has(h3:text-is("Offsite Payment Gateways"))',
   PAYPAL_BUTTON: '.payment-method-name:has-text("PayPal")',
   STRIPE_APM_BUTTON: '.payment-method-name:has-text("Stripe APM")',
   STRIPE_APM_ADDRESS_FIELD: '#payment-addressLine1Input',
