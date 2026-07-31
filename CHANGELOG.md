@@ -5,7 +5,7 @@ All notable changes to the Spreedly Web SDK will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.4.0] - 2026-07-30
+## [1.4.1] - 2026-07-31
 
 ### Added
 - **Click to Pay (Mastercard SRC)**: new `SpreedlyClickToPay` entry point (exposed from the Hosted Fields bundle) for checkout with Mastercard Click to Pay — identity lookup (recognized device / OTP / new user), Mastercard's `<src-card-list>`/`<src-otp-input>` components driven by the SDK, checkout in a popup or embedded drawer (`checkoutPresentation`), and tokenization into a standard Spreedly payment method. Single-entry integration via `config.fields`: the SDK creates and mounts its own hosted card fields (exposed as `c2p.hostedFields`), encrypts new-card PANs with Mastercard `encryptCard` inside the number iframe, and runs all tokenization in-iframe — the PAN/CVV never touch the merchant page. Legacy kebab-case C2P event names are preserved for migration; `error` events carry a machine-routable stage `code`. See `docs/click-to-pay/` (integration guide + migration guide from legacy `Spreedly.c2pInit`).
