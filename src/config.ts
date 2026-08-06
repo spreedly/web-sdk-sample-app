@@ -20,6 +20,8 @@ interface Config {
   paypalPpcpClientId: string;
   paypalPpcpClientSecret: string;
   paypalApiBaseUrl: string;
+  // PPCP via Spreedly's paypal_commerce_platform gateway (the production path).
+  ppcpGatewayToken: string;
 }
 
 const config: Config = {
@@ -41,6 +43,8 @@ const config: Config = {
   paypalPpcpClientSecret: process.env.PAYPAL_PPCP_CLIENT_SECRET_NEW || '',
   paypalApiBaseUrl:
     process.env.PAYPAL_API_BASE_URL_NEW || 'https://api-m.sandbox.paypal.com',
+  // PPCP gateway — see ppcp/integration-plan/14-spreedly-pivot-plan.md §7Z
+  ppcpGatewayToken: process.env.PPCP_GATEWAY_TOKEN_NEW || '',
 };
 
 export default config;

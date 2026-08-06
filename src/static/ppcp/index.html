@@ -128,6 +128,51 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
+    /* Saved payment methods — the email can be long and there are two action buttons, so this
+       stacks instead of trying to fit one row (the old .order-item flex row overflowed). */
+    .saved-method {
+      padding: 0.875rem 0; border-bottom: 1px solid var(--color-gray-200);
+    }
+    .saved-method:last-child { border-bottom: none; }
+    .saved-method-head {
+      display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; min-width: 0;
+    }
+    .saved-method-label {
+      font-weight: 600; color: var(--color-gray-900); font-size: 0.875rem;
+      overflow-wrap: anywhere; min-width: 0;
+    }
+    .saved-method-meta { font-size: 0.75rem; color: var(--color-gray-500); }
+    .saved-method-actions {
+      display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.625rem;
+    }
+    .saved-method-actions .btn { padding: 0.35rem 0.7rem; font-size: 0.8125rem; }
+    .saved-method-result {
+      margin-top: 0.625rem; font-size: 0.8125rem; padding: 0.5rem 0.625rem;
+      border-radius: var(--radius-sm); display: none;
+    }
+    .saved-method-result.show { display: block; }
+    .saved-method-result.ok { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+    .saved-method-result.err { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+    .saved-method-result.pending { background: var(--color-gray-50); color: var(--color-gray-600); }
+    /* Buyer-details accordion */
+    .buyer-details { margin-top: 0.625rem; }
+    .buyer-details > summary {
+      cursor: pointer; font-size: 0.75rem; color: var(--color-gray-600); user-select: none;
+      list-style: none;
+    }
+    .buyer-details > summary::-webkit-details-marker { display: none; }
+    .buyer-details > summary::before { content: '▸ '; }
+    .buyer-details[open] > summary::before { content: '▾ '; }
+    .buyer-details dl {
+      display: grid; grid-template-columns: minmax(110px, auto) 1fr; gap: 0.25rem 0.75rem;
+      margin: 0.5rem 0 0; font-size: 0.75rem;
+    }
+    .buyer-details dt { color: var(--color-gray-500); }
+    .buyer-details dd {
+      margin: 0; color: var(--color-gray-800); font-family: 'JetBrains Mono', monospace;
+      overflow-wrap: anywhere;
+    }
+
     /* Result card */
     .result-card {
       background: var(--color-gray-50); border: 1px solid var(--color-gray-200); border-radius: 8px;
@@ -287,6 +332,29 @@
                   </div>
                 </div>
 
+                <!-- Backend toggle: which API creates the order + captures. The SDK is identical
+                     either way — the merchant callbacks just point somewhere else. -->
+                <div style="display: flex; gap: 0.5rem; align-items: center; margin: 0 0 1rem; flex-wrap: wrap;">
+                  <label for="backend-mode" style="font-size: 0.75rem; color: var(--color-gray-600);">Order / capture backend</label>
+                  <select id="backend-mode" style="width: auto; padding: 0.4rem 0.5rem; border: 1px solid var(--color-gray-300); border-radius: var(--radius-sm); font-size: 0.8125rem;">
+                    <option value="spreedly" selected>Spreedly gateway (production path)</option>
+                    <option value="paypal">PayPal direct (interim spike)</option>
+                  </select>
+                  <span class="elig-badge info">SDK unchanged</span>
+                </div>
+
+                <!-- v6 session.start presentationMode. Spreedly's offsite gateway only finalizes
+                     when the buyer returns through its own return_url, which a popup never does. -->
+                <div style="display: flex; gap: 0.5rem; align-items: center; margin: 0 0 1rem; flex-wrap: wrap;">
+                  <label for="presentation-mode" style="font-size: 0.75rem; color: var(--color-gray-600);">Presentation mode</label>
+                  <select id="presentation-mode" style="width: auto; padding: 0.4rem 0.5rem; border: 1px solid var(--color-gray-300); border-radius: var(--radius-sm); font-size: 0.8125rem;">
+                    <option value="redirect" selected>redirect</option>
+                    <option value="auto">auto (popup)</option>
+                    <option value="modal">modal</option>
+                    <option value="popup">popup</option>
+                  </select>
+                </div>
+
                 <!-- Scenario 2: vault WITH purchase -->
                 <label for="save-during-purchase" style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8125rem; color: var(--color-gray-600); margin: 0 0 1rem; cursor: pointer;">
                   <input type="checkbox" id="save-during-purchase" style="width: auto; margin: 0;">
@@ -381,8 +449,8 @@
                 <li>Proceed → load PayPal v6 + local Spreedly SDK</li>
                 <li><code>SpreedlyPPCP.mount()</code> → createInstance + findEligibleMethods</li>
                 <li>Render eligible buttons for the total</li>
-                <li>Click → <code>createOrder()</code> → <code>/ppcp/orders</code></li>
-                <li>Approve → capture → <code>/ppcp/orders/:id/capture</code></li>
+                <li>Click → <code>createOrder()</code> → <code>/ppcp/spreedly/orders</code> (or <code>/ppcp/orders</code> for PayPal direct)</li>
+                <li>Approve → capture → <code>&hellip;/orders/:id/capture</code></li>
               </ol>
             </div>
 

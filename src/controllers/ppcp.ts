@@ -167,8 +167,36 @@ interface VaultedToken {
   id: string; // PayPal payment-token id (long-lived)
   createdAt: string;
   label?: string; // buyer email, if PayPal returns it
+  // Everything else PayPal told us about the buyer. Kept as whatever actually came back rather
+  // than a fixed shape, so the demo displays truth instead of assumed field names.
+  details?: Record<string, string>;
 }
 const vaultedTokens: VaultedToken[] = [];
+
+/**
+ * Flatten a PayPal payer object into label -> value pairs for display.
+ *
+ * PayPal's payer payloads nest inconsistently across endpoints (name.given_name,
+ * address.address_line_1, shipping.address.*), and the exact fields returned vary by account and
+ * call. Rather than hardcode a shape we walk whatever arrived and keep the scalars.
+ */
+const flattenPayerDetails = (
+  source: unknown,
+  prefix = '',
+  out: Record<string, string> = {}
+): Record<string, string> => {
+  if (!source || typeof source !== 'object') return out;
+  for (const [key, value] of Object.entries(source as Record<string, unknown>)) {
+    const label = prefix ? `${prefix}.${key}` : key;
+    if (value === null || value === undefined || value === '') continue;
+    if (typeof value === 'object') {
+      flattenPayerDetails(value, label, out);
+    } else {
+      out[label] = String(value);
+    }
+  }
+  return out;
+};
 
 const paypalHeaders = (accessToken: string, idempotent = false) => ({
   Authorization: `Bearer ${accessToken}`,
@@ -232,13 +260,17 @@ export const createPPCPVaultPaymentToken = async (
       body,
       { headers: paypalHeaders(accessToken, true) }
     );
-    const email = response.data?.payment_source?.paypal?.email_address;
+    const paypalSource = response.data?.payment_source?.paypal;
+    const email = paypalSource?.email_address;
     // Long-lived token — store server-side; do NOT return it to the browser in a real
     // integration. Here we keep an in-memory list for the demo.
     vaultedTokens.unshift({
       id: response.data.id,
       createdAt: new Date().toISOString(),
       label: email,
+      // Whatever PayPal returned about the buyer on the payment-token response. Note this is
+      // identity only — no shipping address; that appears on the ORDER, not the vault token.
+      details: flattenPayerDetails(paypalSource),
     });
     res.json({ status: 'SUCCESS', label: email });
   } catch (error) {
@@ -253,7 +285,8 @@ export const listPPCPVaultTokens = async (_req: Request, res: Response): Promise
       ref: index, // opaque handle the browser uses to charge; the real id stays server-side
       createdAt: t.createdAt,
       label: t.label || 'PayPal account',
-      masked: `••••${t.id.slice(-4)}`,
+      // Buyer details PayPal returned, for the demo's accordion. Never includes the token id.
+      details: t.details || {},
     })),
   });
 };
@@ -309,6 +342,7 @@ export const chargePPCPVaultToken = async (
     // intent=CAPTURE with a vaulted MERCHANT token auto-captures. Fallback: if it came back
     // approved-but-not-captured, capture it so the demo shows COMPLETED.
     let order = response.data;
+    let captureError: string | undefined;
     if (order?.id && order.status && order.status !== 'COMPLETED') {
       try {
         const captured = await axios.post(
@@ -317,11 +351,40 @@ export const chargePPCPVaultToken = async (
           { headers: paypalHeaders(accessToken) }
         );
         order = captured.data;
-      } catch {
-        // leave order as-is; its status tells the story
+      } catch (err) {
+        // Surface it rather than swallowing — a failed follow-up capture used to render as a
+        // neutral success, which hid real failures.
+        const apiError = err as AxiosError;
+        const body = apiError.response?.data as { message?: string } | undefined;
+        captureError = body?.message || (err as Error).message;
       }
     }
-    res.json(order);
+
+    // The ORDER carries payer + shipping, which the vault token does not. Fold it into the
+    // stored details so the saved-methods accordion can show it after a charge.
+    const payer = order?.payment_source?.paypal || order?.payer;
+    const shipping = order?.purchase_units?.[0]?.shipping;
+    if (payer || shipping) {
+      token.details = {
+        ...(token.details || {}),
+        ...flattenPayerDetails(payer),
+        ...flattenPayerDetails(shipping, 'shipping'),
+      };
+    }
+
+    const capture = order?.purchase_units?.[0]?.payments?.captures?.[0];
+    res.json({
+      id: order?.id,
+      status: order?.status,
+      succeeded: order?.status === 'COMPLETED',
+      initiator: buyerPresent ? 'CUSTOMER' : 'MERCHANT',
+      scenario: buyerPresent ? 'one-click (buyer present)' : 'recurring MIT (buyer not present)',
+      amount: capture?.amount?.value,
+      currency_code: capture?.amount?.currency_code,
+      captureId: capture?.id,
+      captureStatus: capture?.status,
+      ...(captureError ? { captureError } : {}),
+    });
   } catch (error) {
     handleError(error, res);
   }

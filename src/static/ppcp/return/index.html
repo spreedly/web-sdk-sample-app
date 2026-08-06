@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PPCP Payment Return | Spreedly Web SDK Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../shared/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <style>
+    .kv { display: grid; grid-template-columns: minmax(140px, auto) 1fr; gap: 0.4rem 1rem; font-size: 0.8125rem; }
+    .kv dt { color: var(--color-gray-600); }
+    .kv dd { margin: 0; font-family: 'JetBrains Mono', monospace; word-break: break-all; }
+    .chain { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; }
+    .chain span { background: var(--color-gray-100); padding: 0.25rem 0.5rem; border-radius: var(--radius-sm); }
+    .spinner { width: 18px; height: 18px; border: 2px solid var(--color-gray-300); border-top-color: var(--color-gray-600); border-radius: 50%; display: inline-block; animation: spin 0.7s linear infinite; vertical-align: middle; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="/" class="logo"><span class="logo-mark">S</span> Spreedly Web SDK</a>
+      <span class="elig-badge info" style="padding:0.25rem 0.5rem;border-radius:999px;font-size:0.6875rem;background:#e0e7ff;color:#3730a3;">PPCP return URL</span>
+    </div>
+  </header>
+
+  <main class="container" style="padding-top: 2rem; padding-bottom: 4rem;">
+    <a href="/ppcp/" class="back-link">&lsaquo; Back to PPCP demo</a>
+
+    <h1 style="margin-top: 1rem;">Payment Return</h1>
+    <p class="subtitle">
+      Spreedly's <code>redirect_url</code> lands here after the buyer approves at PayPal.
+      This page captures the payment using the <code>transaction_token</code> Spreedly appends.
+    </p>
+
+    <div style="display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 2rem; align-items: start; margin-top: 2rem;">
+      <div>
+        <div class="card">
+          <h2 style="font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-gray-600); margin-top: 0;">Capture</h2>
+          <div id="return-status" class="status-message info">
+            <span class="spinner"></span> Reading return parameters&hellip;
+          </div>
+
+          <div id="result-card" class="result-card hidden" style="margin-top: 1rem;">
+            <h3 id="result-title" style="margin: 0 0 0.5rem;"></h3>
+            <p id="result-message" style="margin: 0;"></p>
+          </div>
+
+          <div id="chain-wrap" class="hidden" style="margin-top: 1.5rem;">
+            <div style="font-size: 0.75rem; color: var(--color-gray-600); margin-bottom: 0.5rem;">PayPal id chain</div>
+            <div class="chain">
+              <span id="chain-order">order</span> &rarr;
+              <span id="chain-auth">authorization</span> &rarr;
+              <span id="chain-capture">capture</span>
+            </div>
+          </div>
+
+          <dl id="detail-list" class="kv hidden" style="margin-top: 1.5rem;"></dl>
+        </div>
+
+        <a href="/ppcp/" class="btn btn-secondary" style="display:block;text-align:center;margin-top:1.5rem;">Start another payment</a>
+      </div>
+
+      <aside>
+        <div class="card">
+          <h2 style="font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-gray-600); margin-top: 0;">Why a separate page</h2>
+          <p style="font-size: 0.8125rem; color: var(--color-gray-600); margin-bottom: 0;">
+            With <code>presentationMode: 'redirect'</code> the buyer leaves the checkout page entirely, so the
+            SDK instance is gone and <code>onPaymentResult</code> never fires for the success path. The outcome
+            comes back on this URL instead. This matches how Spreedly's other offsite flows work &mdash; the SDK
+            starts the redirect, the merchant owns the landing.
+          </p>
+        </div>
+
+        <div class="card" style="margin-top: 1.5rem;">
+          <h2 style="font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-gray-600); margin-top: 0;">Flow</h2>
+          <ol style="font-size: 0.8125rem; color: var(--color-gray-600); padding-left: 1.1rem; margin-bottom: 0;">
+            <li>Spreedly finalizes the authorization when the buyer returns through its own return URL</li>
+            <li>It redirects here with <code>?transaction_token=</code></li>
+            <li>This page POSTs to <code>/ppcp/spreedly/transactions/:token/capture</code></li>
+            <li>The server verifies the authorization succeeded, then captures</li>
+          </ol>
+        </div>
+
+        <div class="card" style="margin-top: 1.5rem;">
+          <h2 style="font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-gray-600); margin-top: 0;">Local testing</h2>
+          <p style="font-size: 0.8125rem; color: var(--color-gray-600); margin-bottom: 0;">
+            Spreedly rejects <code>localhost</code> redirect URLs, so the buyer lands on the deployed Heroku
+            origin. Swap the host for <code>localhost:3000</code> by hand to capture against your local server.
+          </p>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <script src="../../shared/utils.js"></script>
+  <script src="./return.js"></script>
+</body>
+</html>

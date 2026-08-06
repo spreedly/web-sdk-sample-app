@@ -27,6 +27,8 @@ const getGatewayKey = (gateway: string = 'spreedly') => {
       return config.stripeGatewayToken;
     case 'braintree':
       return config.braintreeGatewayToken;
+    case 'ppcp':
+      return config.ppcpGatewayToken;
     case 'spreedly':
       return config.spreedlyGatewayToken;
     default:

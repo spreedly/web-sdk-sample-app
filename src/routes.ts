@@ -30,6 +30,12 @@ import {
   createPPCPVaultPurchaseOrder,
   capturePPCPVaultPurchaseOrder,
 } from './controllers/ppcp';
+import {
+  createSpreedlyPPCPOrder,
+  captureSpreedlyPPCPOrder,
+  captureSpreedlyPPCPByTransaction,
+  getSpreedlyPPCPTransaction,
+} from './controllers/ppcp-spreedly';
 
 const router = Router();
 
@@ -702,6 +708,116 @@ router.post('/ppcp/orders', createPPCPOrder);
  *         description: Error capturing order
  */
 router.post('/ppcp/orders/:orderId/capture', capturePPCPOrder);
+
+/**
+ * @swagger
+ * /api/v1/ppcp/spreedly/orders:
+ *   post:
+ *     description: (PPCP via Spreedly) Create a PayPal order through Spreedly's paypal_commerce_platform gateway. Spreedly calls PayPal server-side; the response id is the PayPal order id for the SDK's createOrder().
+ *     tags: [PPCP]
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: body
+ *         description: Order details
+ *         in: body
+ *         required: false
+ *         schema:
+ *           type: object
+ *           properties:
+ *             amount:
+ *               type: string
+ *               description: Decimal amount string, e.g. "10.00" (default "10.00"); converted to minor units for Spreedly
+ *             currency_code:
+ *               type: string
+ *               description: ISO 4217 currency code (default USD)
+ *     responses:
+ *       200:
+ *         description: Order created (id = PayPal order id, status = Spreedly transaction state)
+ *       500:
+ *         description: Error creating order
+ *       502:
+ *         description: Spreedly did not return a PayPal order id
+ */
+router.post('/ppcp/spreedly/orders', createSpreedlyPPCPOrder);
+
+/**
+ * @swagger
+ * /api/v1/ppcp/spreedly/orders/{orderId}/capture:
+ *   post:
+ *     description: (PPCP via Spreedly) Capture the authorization Spreedly created when the buyer approved. The Spreedly transaction token is resolved server-side from the PayPal order id.
+ *     tags: [PPCP]
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: orderId
+ *         description: PayPal order id (as returned by POST /ppcp/spreedly/orders)
+ *         in: path
+ *         required: true
+ *         type: string
+ *     responses:
+ *       200:
+ *         description: Transaction captured
+ *       400:
+ *         description: Invalid order id
+ *       404:
+ *         description: No Spreedly transaction for that order id
+ *       500:
+ *         description: Error capturing transaction
+ */
+router.post('/ppcp/spreedly/orders/:orderId/capture', captureSpreedlyPPCPOrder);
+
+/**
+ * @swagger
+ * /api/v1/ppcp/spreedly/orders/{orderId}:
+ *   get:
+ *     description: (PPCP via Spreedly) Inspect the underlying Spreedly transaction — state, payer details, PayPal order/authorization/capture ids.
+ *     tags: [PPCP]
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: orderId
+ *         description: PayPal order id
+ *         in: path
+ *         required: true
+ *         type: string
+ *     responses:
+ *       200:
+ *         description: The Spreedly transaction
+ *       404:
+ *         description: No Spreedly transaction for that order id
+ */
+router.get('/ppcp/spreedly/orders/:orderId', getSpreedlyPPCPTransaction);
+
+
+/**
+ * @swagger
+ * /api/v1/ppcp/spreedly/transactions/{transactionToken}/capture:
+ *   post:
+ *     description: (PPCP via Spreedly, redirect flow) Capture by SPREEDLY transaction token. presentationMode 'redirect' navigates the buyer away, so the landing page only has the ?transaction_token= Spreedly appends to the return URL — not the PayPal order id.
+ *     tags: [PPCP]
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: transactionToken
+ *         description: Spreedly transaction token from the return URL's transaction_token param
+ *         in: path
+ *         required: true
+ *         type: string
+ *     responses:
+ *       200:
+ *         description: Captured
+ *       400:
+ *         description: Invalid transaction token
+ *       409:
+ *         description: Authorization is not in a succeeded state
+ *       500:
+ *         description: Error capturing transaction
+ */
+router.post(
+  '/ppcp/spreedly/transactions/:transactionToken/capture',
+  captureSpreedlyPPCPByTransaction
+);
 
 /**
  * @swagger
