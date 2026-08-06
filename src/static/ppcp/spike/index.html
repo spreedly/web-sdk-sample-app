@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PPCP via Spreedly | Spreedly Web SDK Demo</title>
+  <title>PPCP via PayPal Direct (spike) | Spreedly Web SDK Demo</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../shared/styles.css">
+  <link rel="stylesheet" href="../../shared/styles.css">
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <style>
     /* Stepper */
@@ -173,7 +173,7 @@
     <!-- Header -->
     <header class="header">
       <div class="container header-inner">
-        <a href="../index.html" class="logo">
+        <a href="../../index.html" class="logo">
           <span class="logo-icon">S</span>
           Spreedly Web SDK
         </a>
@@ -187,7 +187,7 @@
         <div class="tokenize-layout">
           <!-- Left Column - Flow -->
           <div class="tokenize-form">
-            <a href="../index.html" class="back-link">
+            <a href="../../index.html" class="back-link">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
               </svg>
@@ -196,7 +196,7 @@
 
             <h1 class="mb-2">PayPal Complete Payments (PPCP)</h1>
             <p class="mb-6" style="color: var(--color-gray-500);">
-              Brokered through Spreedly’s <code>paypal_commerce_platform</code> gateway. The browser half is identical to the <a href="./spike/index.html">PayPal-direct spike</a> — only the merchant backend differs.
+              Talks straight to PayPal Orders V2 and Vault v3 — <strong>bypasses Spreedly entirely</strong> (no Spreedly transaction, no partner fees, no reporting). Throwaway harness. The production path is <a href="../index.html">PPCP via Spreedly</a>.
             </p>
 
             <!-- Stepper -->
@@ -252,13 +252,6 @@
                 <div id="vault-status" class="status-message"></div>
 
                 <div class="order-summary" style="margin-top: 1.5rem;">
-                  <div class="dev-note" style="margin-bottom: 1rem;">
-                    <strong>Still PayPal-direct.</strong> Vaulting has no Spreedly path yet —
-                    Spreedly’s <code>retain_on_success</code> returns a payment method with no
-                    <code>payer_id</code> or <code>billing_agreement_id</code>, so it cannot be
-                    charged later. These buttons call PayPal’s Vault v3 directly, pending the
-                    Gateway team. See doc 14 §5.5.
-                  </div>
                   <div class="order-summary-title">Saved payment methods</div>
                   <div id="saved-methods-list">
                     <p style="color: var(--color-gray-500); font-size: 0.8125rem;">None saved yet.</p>
@@ -295,7 +288,7 @@
                 <div style="display: flex; gap: 0.5rem; align-items: center; margin: 0 0 1rem; flex-wrap: wrap;">
                   <label for="presentation-mode" style="font-size: 0.75rem; color: var(--color-gray-600);">Presentation mode</label>
                   <select id="presentation-mode" style="width: auto; padding: 0.4rem 0.5rem; border: 1px solid var(--color-gray-300); border-radius: var(--radius-sm); font-size: 0.8125rem;">
-                    <option value="redirect" selected>redirect (required for Spreedly)</option>
+                    <option value="redirect" selected>redirect</option>
                     <option value="auto">auto (popup)</option>
                     <option value="modal">modal</option>
                     <option value="popup">popup</option>
@@ -412,7 +405,7 @@
   </div>
 
   <!-- Scripts -->
-  <script src="../shared/utils.js"></script>
-  <script src="./ppcp.js"></script>
+  <script src="../../shared/utils.js"></script>
+  <script src="./spike.js"></script>
 </body>
 </html>

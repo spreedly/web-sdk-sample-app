@@ -1,5 +1,5 @@
 /**
- * PPCP Demo — brokered through SPREEDLY (the production path).
+ * PPCP Demo — PayPal DIRECT (spike).
  *
  * Two-step flow:
  *   1. Product selection — pick products; the total decides the amount. Shows the
@@ -7,15 +7,13 @@
  *   2. Payment — on "Proceed to Payment", the PayPal JS SDK v6 + local Spreedly SDK
  *      are loaded and SpreedlyPPCP mounts the eligible buttons for the cart total.
  *
- * Drives SpreedlyPPCP against the sample-app /ppcp/spreedly/* routes, which talk ONLY to
- * Spreedly's paypal_commerce_platform gateway. Spreedly creates the PayPal order server-side and
- * returns its id, so the browser half is identical to the direct-PayPal version.
+ * Drives SpreedlyPPCP against the sample-app /ppcp/* routes, which call PayPal Orders V2 and
+ * Vault v3 DIRECTLY in sandbox. Throwaway dev harness, NOT a production path — it bypasses
+ * Spreedly entirely (no Spreedly transaction, no partner fees, no reporting).
+ * See ppcp/integration-plan/07-interim-direct-order-spike.md.
  *
- * presentationMode defaults to 'redirect': Spreedly's offsite gateway only finalizes an
- * authorization when the buyer returns through its own return_url, which a popup never does.
- * The redirect lands on /ppcp/return/, which captures. See doc 14 §7ZZZ.
- *
- * The PayPal-direct version of this same flow lives at /ppcp/spike/.
+ * The Spreedly-brokered version of this same flow lives at /ppcp/ — deliberately a separate
+ * page so the two backends cannot contaminate each other.
  *
  * Requires the LOCAL dev loop:
  *   - checkout-web-sdk:   `npm run dev`  (serves the SDK with SpreedlyPPCP on :5000)
@@ -281,70 +279,34 @@ async function getClientToken() {
 // in-page overlay; 'redirect' navigates the whole page.
 function getPresentationMode() {
   const modeEl = el('presentation-mode');
-  return (modeEl && modeEl.value) || 'redirect';
+  return (modeEl && modeEl.value) || 'auto';
 }
 
-// Which wallet the buyer clicked, as a Spreedly payment_method_type.
-// SpreedlyPPCP's createOrder() callback is NOT told which funding source triggered it, so we
-// record it ourselves: a capture-phase listener on each button's container fires before the
-// SDK's own click handler (which is bound to the button element inside it) calls createOrder().
-// Pay Later and PayPal Credit are PayPal *funding sources*, not separate Spreedly payment
-// methods, so they transact as 'paypal'.
-const CONTAINER_PAYMENT_METHOD_TYPE = {
-  'paypal-button': 'paypal',
-  'paylater-button': 'paypal',
-  'paypalcredit-button': 'paypal',
-  'venmo-button': 'venmo',
-};
-let clickedPaymentMethodType = 'paypal';
-
-function trackClickedWallet() {
-  Object.entries(CONTAINER_PAYMENT_METHOD_TYPE).forEach(([containerId, type]) => {
-    const container = el(containerId);
-    if (!container || container.dataset.walletTracked) return;
-    container.dataset.walletTracked = 'true';
-    container.addEventListener(
-      'click',
-      () => {
-        clickedPaymentMethodType = type;
-      },
-      true // capture phase — must run before the SDK's handler on the button element
-    );
-  });
-}
+// The direct-PayPal routes do not need to know which wallet was clicked — PayPal's Orders API
+// infers the funding source from the approval itself. Kept as a no-op hook so the mount path
+// matches the Spreedly page's shape.
+function trackClickedWallet() {}
 
 
 async function createOrder() {
-  // Scenario 2 (vault WITH purchase) has no Spreedly path yet, so ticking "save my PayPal"
-  // still routes to the PayPal-direct vault-purchase order. Everything else goes to Spreedly.
+  // Scenario 2 (vault WITH purchase): if "save my PayPal" is ticked, use the vault-purchase
+  // order route so the PayPal is also saved on capture. Same checkout session either way.
   const saveEl = el('save-during-purchase');
   savedDuringPurchase = !!(saveEl && saveEl.checked);
-  setStatus(
-    savedDuringPurchase
-      ? 'Creating PayPal order (+ save, PayPal-direct)...'
-      : 'Creating order via Spreedly...',
-    'info'
-  );
-  const path = savedDuringPurchase ? '/ppcp/vault/purchase-order' : '/ppcp/spreedly/orders';
+  setStatus(savedDuringPurchase ? 'Creating PayPal order (+ save)...' : 'Creating PayPal order...', 'info');
+  const path = savedDuringPurchase ? '/ppcp/vault/purchase-order' : '/ppcp/orders';
   const response = await axios.post(`${apiBase()}${path}`, {
     amount: getAmount(),
     currency_code: CURRENCY,
-    // Spreedly transacts venmo as its own payment method type.
-    payment_method_type: clickedPaymentMethodType,
   });
   updateDebug('orderId', response.data.id);
-  updateDebug('backend', savedDuringPurchase ? 'PayPal direct (vault)' : 'Spreedly gateway');
   return { orderId: response.data.id };
 }
 
 async function captureOrder(orderId) {
-  // NOTE: in the default 'redirect' mode this is never reached — the page is destroyed by the
-  // navigation and /ppcp/return/ does the capture instead. It only runs if you switch to a
-  // popup-family presentation mode, where Spreedly is never told the buyer approved, so it will
-  // report that the authorization is still pending. That is the known gateway gap, not a bug here.
   const path = savedDuringPurchase
     ? `/ppcp/vault/purchase-order/${orderId}/capture`
-    : `/ppcp/spreedly/orders/${orderId}/capture`;
+    : `/ppcp/orders/${orderId}/capture`;
   const response = await axios.post(`${apiBase()}${path}`);
   return response.data;
 }
