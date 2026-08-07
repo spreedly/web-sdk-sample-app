@@ -21,6 +21,7 @@ import {
 } from './controllers/payments';
 import {
   getPPCPClientToken,
+  getPPCPConfig,
   createPPCPOrder,
   capturePPCPOrder,
   createPPCPVaultSetupToken,
@@ -651,6 +652,22 @@ router.post('/ach-purchase', createAchPurchase);
  *         description: Error minting client token
  */
 router.get('/ppcp/client-token', getPPCPClientToken);
+
+/**
+ * @swagger
+ * /api/v1/ppcp/config:
+ *   get:
+ *     description: Public PayPal client ID for initialising the JS SDK v6 (createInstance({ clientId })). Static and browser-safe — a real merchant would inline it; this exists because the demo keeps it in .env.
+ *     tags: [PPCP]
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: "{ clientId }"
+ *       500:
+ *         description: Client ID not configured
+ */
+router.get('/ppcp/config', getPPCPConfig);
 
 /**
  * @swagger

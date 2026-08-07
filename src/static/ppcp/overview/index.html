@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PPCP Overview — Walkthrough for PayPal | Spreedly Web SDK</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../shared/styles.css">
+  <style>
+    :root { --ov-max: 820px; }
+    .ov-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 3rem; align-items: start; }
+    @media (max-width: 900px) { .ov-layout { grid-template-columns: 1fr; gap: 1.5rem; } .ov-toc { position: static !important; } }
+
+    /* Table of contents */
+    .ov-toc { position: sticky; top: 2rem; font-size: 0.8125rem; }
+    .ov-toc-title { text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.6875rem;
+      color: var(--color-gray-500); font-weight: 700; margin-bottom: 0.75rem; }
+    .ov-toc a { display: block; padding: 0.3rem 0 0.3rem 0.7rem; color: var(--color-gray-600);
+      text-decoration: none; border-left: 2px solid var(--color-gray-200); line-height: 1.35; }
+    .ov-toc a:hover { color: var(--color-gray-900); border-left-color: var(--color-gray-400); }
+    .ov-toc a.sub { padding-left: 1.4rem; font-size: 0.75rem; }
+
+    /* Prose */
+    .ov h2 { font-size: 1.375rem; margin: 3rem 0 1rem; padding-top: 0.5rem; scroll-margin-top: 1.5rem; }
+    .ov h2:first-of-type { margin-top: 1rem; }
+    .ov h3 { font-size: 1rem; margin: 2rem 0 0.6rem; color: var(--color-gray-800); scroll-margin-top: 1.5rem; }
+    .ov h4 { font-size: 0.9375rem; margin: 1.5rem 0 0.5rem; color: var(--color-gray-800); }
+    .ov p, .ov li { line-height: 1.65; color: var(--color-gray-700); }
+    .ov ul, .ov ol { padding-left: 1.25rem; }
+    .ov li { margin-bottom: 0.35rem; }
+    .ov hr { border: 0; border-top: 1px solid var(--color-gray-200); margin: 2.5rem 0; }
+    .ov code { background: var(--color-gray-100); padding: 0.1rem 0.35rem; border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace; font-size: 0.85em; }
+    .ov pre { background: #0f172a; color: #e2e8f0; padding: 1rem 1.15rem; border-radius: var(--radius-md);
+      overflow-x: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; line-height: 1.6; margin: 1rem 0; }
+    .ov pre code { background: none; padding: 0; color: inherit; font-size: inherit; }
+    .ov pre.diagram { background: var(--color-gray-50); color: var(--color-gray-700);
+      border: 1px solid var(--color-gray-200); font-size: 0.72rem; line-height: 1.35; }
+    .ov table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.8125rem; }
+    .ov th { text-align: left; padding: 0.5rem 0.75rem; background: var(--color-gray-50);
+      border-bottom: 2px solid var(--color-gray-200); font-weight: 600; color: var(--color-gray-700); }
+    .ov td { padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--color-gray-100);
+      color: var(--color-gray-700); vertical-align: top; }
+    .ov blockquote { margin: 1.25rem 0; padding: 0.85rem 1rem; background: #fffbeb;
+      border-left: 3px solid #f59e0b; border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      color: #92400e; font-size: 0.875rem; }
+    .ov blockquote p { color: inherit; margin: 0; }
+    .ov .step { display: inline-flex; align-items: center; justify-content: center; width: 1.5rem;
+      height: 1.5rem; border-radius: 50%; background: var(--color-gray-900); color: #fff;
+      font-size: 0.75rem; font-weight: 700; margin-right: 0.5rem; flex-shrink: 0; }
+    .ov .q { background: #eff6ff; border-left: 3px solid #3b82f6; padding: 0.7rem 0.9rem;
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0; margin: 0.9rem 0; font-size: 0.875rem; color: #1e40af; }
+    .ov .demo-links { display: flex; gap: 0.75rem; flex-wrap: wrap; margin: 1rem 0 0; }
+    .lede { font-size: 1rem; color: var(--color-gray-600); line-height: 1.65; }
+    .meta-line { font-size: 0.8125rem; color: var(--color-gray-500); margin-top: 0.35rem; }
+    @media print {
+      .ov-toc, .site-header, .back-link, .demo-links { display: none !important; }
+      .ov-layout { grid-template-columns: 1fr; }
+      .ov pre { background: #f8fafc; color: #0f172a; border: 1px solid #cbd5e1; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="/" class="logo"><span class="logo-mark">S</span> Spreedly Web SDK</a>
+      <span style="padding:0.25rem 0.6rem;border-radius:999px;font-size:0.6875rem;font-weight:600;background:#e0e7ff;color:#3730a3;">PPCP overview</span>
+    </div>
+  </header>
+
+  <main class="container" style="padding-top: 2rem; padding-bottom: 5rem;">
+    <a href="/" class="back-link">&lsaquo; Back to flows</a>
+
+    <h1 style="margin-top: 1rem;">Spreedly Checkout Web SDK — PayPal Complete Payments</h1>
+    <p class="meta-line">Walkthrough for PayPal &middot; PayPal JS SDK v6 &middot; Spreedly Checkout Web SDK</p>
+
+    <div class="ov-layout" style="margin-top: 2.5rem;">
+      <nav class="ov-toc">
+        <div class="ov-toc-title">Contents</div>
+        <a href="#built">1. What we've built</a>
+        <a href="#actors">2. The three actors</a>
+        <a href="#flow">3. Step-by-step checkout</a>
+        <a href="#vault">4. Vaulting &amp; recurring</a>
+        <a href="#models">5. Two delivery models</a>
+        <a href="#demo">6. Live demo</a>
+        <a href="#findings">7. Technical findings</a>
+        <a href="#f1" class="sub">7.1 Vault setup-token key</a>
+        <a href="#f2" class="sub">7.2 Venmo &amp; redirect mode</a>
+        <a href="#f3" class="sub">7.3 Pay Later &amp; amount</a>
+        <a href="#f4" class="sub">7.4 Button colour</a>
+        <a href="#f5" class="sub">7.5 presentationMode</a>
+        <a href="#status">8. Where we are</a>
+      </nav>
+
+      <article class="ov">
+
+        <h2 id="built">1. What we've built</h2>
+        <p class="lede">
+          <code>SpreedlyPPCP</code> is a new class in Spreedly's Checkout Web SDK that embeds
+          <strong>PayPal's JS SDK v6</strong> inside Spreedly Checkout. It renders PayPal's branded
+          buttons — <strong>PayPal, Pay Later, Venmo</strong> (and optionally PayPal Credit) — and
+          drives the full v6 payment-session lifecycle.
+        </p>
+        <p>
+          It ships in <strong>both</strong> of Spreedly's browser bundles (<code>hosted-fields</code>
+          and <code>express-checkout</code>) as a window global, so any merchant already using
+          Spreedly Checkout gets PPCP without a second integration.
+        </p>
+        <p>
+          <strong>Design principle:</strong> the SDK never calls a payment API and never holds
+          payment credentials. It orchestrates PayPal's browser SDK and hands the outcome to the
+          merchant. Every money-moving call is made by the merchant's backend.
+        </p>
+
+        <hr>
+
+        <h2 id="actors">2. The three actors</h2>
+<pre class="diagram">┌──────────────────────── BROWSER ────────────────────────┐
+│                                                          │
+│  merchant's checkout page                                │
+│    ├─ loads PayPal v6:  www.paypal.com/web-sdk/v6/core   │
+│    │                                                     │
+│    └─ new SpreedlyPPCP({ clientId, createOrder, … })     │
+│         │                                                │
+│         │  paypal.createInstance()                       │
+│         │  instance.findEligibleMethods()                │
+│         │  instance.create*PaymentSession()              │
+│         │  → &lt;paypal-button&gt; / &lt;paypal-pay-later-button&gt; │
+│         │    / &lt;venmo-button&gt;                            │
+│         │                                                │
+│         └─ on click: session.start(opts, createOrder())  │
+└──────────────────────────┬───────────────────────────────┘
+                           │
+              ┌────────────┴────────────┐
+              ▼                         ▼
+     PayPal approval UI        merchant's backend
+     (popup / modal /          → creates &amp; captures the
+      full-page redirect)        order server-side</pre>
+
+        <table>
+          <thead><tr><th>Actor</th><th>Role</th></tr></thead>
+          <tbody>
+            <tr><td><strong>PayPal JS SDK v6</strong></td><td>Renders the buttons, owns the approval experience</td></tr>
+            <tr><td><strong><code>SpreedlyPPCP</code></strong></td><td>Orchestrates v6 — eligibility, button lifecycle, result normalisation</td></tr>
+            <tr><td><strong>Merchant backend</strong></td><td>Creates and captures orders. Two delivery models — see §5</td></tr>
+          </tbody>
+        </table>
+
+        <hr>
+
+        <h2 id="flow">3. Step-by-step: a one-time checkout</h2>
+        <p><strong>Scenario:</strong> a $299.99 order. The buyer picks PayPal, Pay Later, or Venmo.</p>
+
+        <h3><span class="step">1</span>The merchant constructs the SDK</h3>
+<pre><code>const ppcp = new SpreedlyPPCP({
+  clientId: 'YOUR_PAYPAL_CLIENT_ID',   // static, browser-safe
+  currencyCode: 'USD',
+  amount: '299.99',                    // required for Pay Later eligibility
+  countryCode: 'US',
+  paymentElements: {
+    paypal:   'paypal-button-container',
+    payLater: 'paylater-button-container',
+    venmo:    'venmo-button-container',
+  },
+  createOrder:     () =&gt; /* merchant backend → order id */,
+  onPaymentResult: (result) =&gt; { /* merchant handles the outcome */ },
+});
+
+const { rendered, error } = await ppcp.mount();</code></pre>
+
+        <h3><span class="step">2</span><code>mount()</code> initialises PayPal</h3>
+<pre><code>paypal.createInstance({
+  clientId,
+  components: ['paypal-payments', 'venmo-payments'],   // derived from requested buttons
+  pageType: 'checkout',
+  partnerAttributionId: 'spreedly_pcp',                // BN attribution
+  locale,
+})</code></pre>
+        <p><code>components</code> is computed from which buttons the merchant asked for, so we only load what's needed.</p>
+
+        <h3><span class="step">3</span>Eligibility</h3>
+<pre><code>instance.findEligibleMethods({
+  currencyCode: 'USD',
+  countryCode:  'US',
+  amount:       '299.99',    // ← decisive for Pay Later
+})</code></pre>
+        <p>
+          Each requested button is then gated on <code>isEligible(...)</code>. For this buyer at
+          $299.99, PayPal returns Pay Later as eligible (Pay in 4 and Pay Monthly both qualify).
+          At $25 it would not.
+        </p>
+
+        <h3><span class="step">4</span>Sessions and button elements</h3>
+        <p>Per eligible button, the SDK creates the matching session and inserts the web component:</p>
+        <table>
+          <thead><tr><th>Button</th><th>Session factory</th><th>Element</th></tr></thead>
+          <tbody>
+            <tr><td>PayPal</td><td><code>createPayPalOneTimePaymentSession</code></td><td><code>&lt;paypal-button&gt;</code></td></tr>
+            <tr><td>Pay Later</td><td><code>createPayLaterOneTimePaymentSession</code></td><td><code>&lt;paypal-pay-later-button&gt;</code></td></tr>
+            <tr><td>Venmo</td><td><code>createVenmoOneTimePaymentSession</code></td><td><code>&lt;venmo-button&gt;</code></td></tr>
+            <tr><td>PayPal Credit</td><td><code>createPayPalCreditOneTimePaymentSession</code></td><td><code>&lt;paypal-credit-button&gt;</code></td></tr>
+          </tbody>
+        </table>
+        <p>
+          Pay Later and Credit additionally receive <code>productCode</code> / <code>countryCode</code>
+          from <code>eligibility.getDetails(...)</code>.
+        </p>
+        <p>
+          <code>mount()</code> returns <code>{ rendered: { paypal: true, payLater: true, venmo: true } }</code>
+          so the merchant can adjust their layout.
+        </p>
+
+        <h3><span class="step">5</span>The buyer clicks</h3>
+<pre><code>const orderPromise = createOrder();                 // NOT awaited
+session.start({ presentationMode }, orderPromise);</code></pre>
+        <p>
+          The order promise is passed <strong>unresolved</strong>. Awaiting it first would consume
+          the click's transient activation and the browser would block the popup — passing the
+          pending promise lets PayPal open the approval surface immediately while the order is
+          created in parallel.
+        </p>
+
+        <h3><span class="step">6</span>Approval</h3>
+        <p>The buyer approves in PayPal's UI. <code>onApprove</code> fires with the order id.</p>
+
+        <h3><span class="step">7</span>The SDK reports a normalised result</h3>
+<pre><code>{
+  state: 'Successful',
+  payment_method: { payment_method_type: 'paypal' | 'venmo' | 'paylater' | 'paypal_credit' },
+  orderId: '5O190127TN364715T'
+}</code></pre>
+        <p>
+          Cancellation and failure map to the same shape — <code>state: 'Cancelled'</code> /
+          <code>'Failed'</code>, the latter carrying PayPal's stable <code>code</code> (e.g.
+          <code>ERR_*</code>) alongside the message, so merchants can branch on the reason rather
+          than parse text.
+        </p>
+
+        <h3><span class="step">8</span>The merchant captures</h3>
+        <p>
+          The merchant's backend captures the order. <strong>The SDK is not involved</strong> — its
+          job ends at reporting the approval.
+        </p>
+
+        <hr>
+
+        <h2 id="vault">4. Vaulting and recurring</h2>
+        <p><code>flow: 'vault'</code> switches the SDK to the save-payment path:</p>
+<pre><code>new SpreedlyPPCP({
+  flow: 'vault',
+  createVaultSetupToken: () =&gt; /* merchant backend → setup token */,
+  paymentElements: { paypal: 'save-button' },   // PayPal only
+  ...
+})</code></pre>
+        <ul>
+          <li>Uses <code>createPayPalSavePaymentSession</code></li>
+          <li>Eligibility switches to <code>paymentFlow: 'VAULT_WITHOUT_PAYMENT'</code></li>
+          <li>The result carries <code>vaultSetupToken</code>, which the merchant exchanges server-side for a payment token</li>
+        </ul>
+        <p>
+          Later charges (one-click with the buyer present, or merchant-initiated recurring) are
+          backend-only — the SDK plays no part.
+        </p>
+
+        <hr>
+
+        <h2 id="models">5. Two delivery models</h2>
+        <p>
+          The SDK is deliberately backend-agnostic: it takes callbacks, not URLs. The same browser
+          code supports both models, which is what makes the SDK reusable across Spreedly's
+          integration paths.
+        </p>
+        <table>
+          <thead><tr><th></th><th>Merchant backend calls</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Direct</strong></td><td>PayPal Orders V2 and Vault v3</td></tr>
+            <tr><td><strong>Spreedly-brokered</strong></td><td>Spreedly's <code>paypal_commerce_platform</code> gateway, which calls PayPal server-side</td></tr>
+          </tbody>
+        </table>
+        <p>
+          In the brokered model Spreedly creates the PayPal order and returns its id, so the browser
+          half is <strong>byte-identical</strong> between the two. The demo has a page for each.
+        </p>
+
+        <hr>
+
+        <h2 id="demo">6. Live demo</h2>
+        <p><strong>Two pages, same SDK, different backends.</strong></p>
+
+        <h3>A — Spreedly-brokered checkout</h3>
+        <ol>
+          <li>Select products — the cart total becomes the <code>amount</code></li>
+          <li><strong>Proceed to Payment</strong> → the SDK mounts and shows which buttons rendered vs were ineligible</li>
+          <li>Click <strong>PayPal</strong> → approve → payment captured through Spreedly, with the full id chain shown (PayPal order → authorization → capture)</li>
+        </ol>
+        <p>Try <strong>Pay Later</strong> at $299.99 to see the Pay-in-4 / Pay-Monthly plan selection.</p>
+
+        <h3>B — Direct PayPal checkout</h3>
+        <p>Identical flow, backend calls PayPal Orders V2 directly. Useful for showing the SDK is unchanged between models.</p>
+
+        <div class="demo-links">
+          <a href="../index.html" class="btn btn-primary">Open Spreedly-brokered demo</a>
+          <a href="../spike/index.html" class="btn btn-secondary">Open direct PayPal demo</a>
+        </div>
+
+        <h3>Also demonstrable</h3>
+        <ul>
+          <li><strong>Button appearance</strong> — live <code>label</code> and <code>shape</code> controls</li>
+          <li><strong>Presentation modes</strong> — <code>auto</code>, <code>modal</code>, <code>popup</code></li>
+          <li><strong>Vaulting</strong> — save a PayPal without purchase, then charge it as one-click or recurring</li>
+          <li><strong>Eligibility</strong> — drop the cart below $30 and watch Pay Later disappear</li>
+        </ul>
+
+        <blockquote>
+          <p><strong>Note on Venmo:</strong> button rendering and eligibility work. End-to-end Venmo settlement is still being finalised on our side and is not part of this demo.</p>
+        </blockquote>
+
+        <hr>
+
+        <h2 id="findings">7. Technical findings — for discussion</h2>
+        <p>Things we established building against v6 that may be useful to PayPal.</p>
+
+        <h3 id="f1">7.1 Vault setup-token key — documentation appears incorrect</h3>
+        <p>
+          For <code>createPayPalSavePaymentSession</code>, the promise passed as
+          <code>session.start()</code>'s second argument must resolve to:
+        </p>
+<pre><code>{ vaultSetupToken: '&lt;id&gt;' }</code></pre>
+        <p>
+          The published documentation shows <strong><code>{ setupToken: &lt;id&gt; }</code></strong>.
+          JS SDK <strong>v6.58.x</strong> rejects that — and every other shape we tried (bare string,
+          <code>{ setupTokenId }</code>, <code>{ id }</code>, <code>{ token }</code>, passing it in
+          options) — with <code>onError: "no setup token provided"</code>, and the approval window
+          opens then immediately closes.
+        </p>
+        <p>
+          We established this by exhaustively probing every key shape against the live sandbox SDK.
+          Only <code>vaultSetupToken</code> is accepted, and it matches the key <code>onApprove</code>
+          itself reports.
+        </p>
+        <div class="q"><strong>Question:</strong> is this a documentation error, or a version-specific change?</div>
+
+        <h3 id="f2">7.2 Venmo does not support <code>presentationMode: 'redirect'</code></h3>
+<pre><code>ERR_FLOW_UNSUPPORTED_PRESENTATION_MODE — unsupported presentationMode: redirect</code></pre>
+        <p>
+          Traced to the <code>venmo-payments</code> component bundle. The PayPal sessions accept
+          redirect; Venmo does not.
+        </p>
+        <div class="q">
+          <strong>Question:</strong> is full-page redirect support planned for Venmo? Integrations
+          whose payment processor requires a server-visible return leg cannot use a popup, which
+          currently rules Venmo out for them entirely.
+        </div>
+
+        <h3 id="f3">7.3 Pay Later requires <code>amount</code> at eligibility</h3>
+        <p>
+          <code>findEligibleMethods</code> filters Pay Later out entirely unless <code>amount</code>
+          is supplied — silently, with no error. The symptom is an eligibility request whose
+          <code>purchase_units[].amount</code> carries <code>currency_code</code> and no
+          <code>value</code>.
+        </p>
+        <p>
+          Sensible behaviour given financing thresholds are amount-based, but it is easy to miss.
+          Worth making explicit in the docs.
+        </p>
+
+        <h3 id="f4">7.4 Branded buttons expose no colour control</h3>
+        <p>
+          v6 web-component buttons are brand-fixed. <code>observedAttributes</code> are
+          <code>disabled</code>, <code>aria-disabled</code> and <code>type</code> (plus
+          <code>countrycode</code> / <code>productcode</code> for Pay Later and Credit). We verified
+          that setting a colour class or attribute has no visual effect.
+        </p>
+        <p>
+          Merchant-controllable appearance is therefore <strong>label</strong> (via <code>type</code>)
+          and <strong>corner radius</strong> (via the <code>--paypal-button-border-radius</code> /
+          <code>--venmo-button-border-radius</code> custom properties). We have exposed exactly those
+          and deliberately not offered colour.
+        </p>
+        <div class="q">
+          <strong>Question:</strong> is colour control on the roadmap for branded v6 buttons? It is
+          the most frequent styling request we get.
+        </div>
+
+        <h3 id="f5">7.5 <code>presentationMode</code> behaviour</h3>
+        <p>
+          For the record, as observed: <code>popup</code> opens a separate browser tab;
+          <code>modal</code> is the in-page overlay; <code>redirect</code> navigates the full page.
+          Worth documenting the distinction — <code>popup</code> and <code>modal</code> are easily
+          assumed to be the same thing.
+        </p>
+
+        <hr>
+
+        <h2 id="status">8. Where we are</h2>
+        <table>
+          <thead><tr><th>Area</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>One-time checkout — PayPal, Pay Later</td><td>✅ Working end to end in sandbox, both delivery models</td></tr>
+            <tr><td>Button eligibility, rendering, styling</td><td>✅ Complete</td></tr>
+            <tr><td>Result and error handling</td><td>✅ Complete, with PayPal's structured error codes surfaced</td></tr>
+            <tr><td>Vaulting and recurring</td><td>✅ Built; settlement path being finalised</td></tr>
+            <tr><td>Venmo</td><td>🔄 Renders and is eligibility-gated; settlement in progress</td></tr>
+          </tbody>
+        </table>
+        <p>
+          <strong>Next:</strong> completing Venmo settlement, then release readiness — tests,
+          documentation and the public API sign-off.
+        </p>
+
+      </article>
+    </div>
+  </main>
+</body>
+</html>

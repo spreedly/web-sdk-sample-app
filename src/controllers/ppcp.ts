@@ -87,6 +87,20 @@ export const getPPCPClientToken = async (
   }
 };
 
+// GET /api/v1/ppcp/config
+// The PayPal client ID for initialising the JS SDK v6 — `createInstance({ clientId })`.
+//
+// This is a PUBLIC, static value that PayPal documents as safe to embed in front-end code, so a
+// real merchant would simply inline it in their page. This endpoint exists only because the demo
+// keeps it in .env rather than committing it.
+export const getPPCPConfig = async (_req: Request, res: Response): Promise<void> => {
+  if (!config.paypalPpcpClientId) {
+    res.status(500).json({ error: 'PAYPAL_PPCP_CLIENT_ID_NEW is not configured' });
+    return;
+  }
+  res.json({ clientId: config.paypalPpcpClientId });
+};
+
 // POST /api/v1/ppcp/orders   body: { amount?, currency_code?, intent? }
 // Create a PayPal order (Orders V2). The SDK's createOrder() maps the response to { orderId: id }.
 export const createPPCPOrder = async (

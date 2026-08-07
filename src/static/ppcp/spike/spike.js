@@ -188,6 +188,8 @@ async function loadAndMountPPCP() {
     }
     clearButtonContainers();
 
+    const clientId = await getClientId();
+
     ppcpInstance = new window.SpreedlyPPCP({
       currencyCode: CURRENCY,
       amount: getAmount(), // cart total -> Pay Later eligibility (amount-based thresholds)
@@ -198,7 +200,7 @@ async function loadAndMountPPCP() {
         payPalCredit: 'paypalcredit-button',
         venmo: 'venmo-button',
       },
-      getClientToken,
+      clientId,
       createOrder,
       onPaymentResult: handlePaymentResult,
       buttonStyle: getButtonStyle(),
@@ -270,9 +272,15 @@ function getButtonStyle() {
   return Object.keys(style).length ? style : undefined;
 }
 
-async function getClientToken() {
-  const response = await axios.get(`${apiBase()}/ppcp/client-token`);
-  return response.data.clientToken;
+// PayPal's recommended auth for the JS SDK v6: a static, public client ID — nothing to mint.
+// A real merchant inlines this string in their page; the demo reads it from the server only
+// because it lives in .env. Cached so a re-mount does not refetch.
+let cachedClientId = null;
+async function getClientId() {
+  if (cachedClientId) return cachedClientId;
+  const response = await axios.get(`${apiBase()}/ppcp/config`);
+  cachedClientId = response.data.clientId;
+  return cachedClientId;
 }
 
 // v6 session.start presentation mode. 'auto' and 'popup' open a separate window; 'modal' is the
@@ -379,12 +387,14 @@ async function mountVault() {
     }
     el('save-paypal-button').innerHTML = '';
 
+    const clientId = await getClientId();
+
     vaultInstance = new window.SpreedlyPPCP({
       flow: 'vault',
       currencyCode: CURRENCY,
       countryCode: 'US',
       paymentElements: { paypal: 'save-paypal-button' },
-      getClientToken,
+      clientId,
       createVaultSetupToken: async () => {
         const res = await axios.post(`${apiBase()}/ppcp/vault/setup-token`);
         return { setupToken: res.data.setupToken };

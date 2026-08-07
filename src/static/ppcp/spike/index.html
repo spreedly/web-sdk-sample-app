@@ -288,10 +288,10 @@
                 <div style="display: flex; gap: 0.5rem; align-items: center; margin: 0 0 1rem; flex-wrap: wrap;">
                   <label for="presentation-mode" style="font-size: 0.75rem; color: var(--color-gray-600);">Presentation mode</label>
                   <select id="presentation-mode" style="width: auto; padding: 0.4rem 0.5rem; border: 1px solid var(--color-gray-300); border-radius: var(--radius-sm); font-size: 0.8125rem;">
-                    <option value="redirect" selected>redirect</option>
-                    <option value="auto">auto (popup)</option>
+                    <option value="auto" selected>auto (popup)</option>
                     <option value="modal">modal</option>
                     <option value="popup">popup</option>
+                    <option value="redirect" disabled>redirect — needs a return_url (not wired here)</option>
                   </select>
                 </div>
 
