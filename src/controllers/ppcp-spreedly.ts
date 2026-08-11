@@ -1,6 +1,7 @@
 import axios, { AxiosError } from 'axios';
 import { Request, Response } from 'express';
 import config from '../config';
+import { exchangeVaultSetupToken } from './ppcp';
 
 /**
  * PPCP via Spreedly's `paypal_commerce_platform` gateway — the PRODUCTION path.
@@ -123,7 +124,7 @@ export const createSpreedlyPPCPOrder = async (
     //    the buyer's wallet identity only materializes at approval.
     const paymentMethodResponse = await axios.post(
       `${config.spreedlyUrl}/v1/payment_methods.json`,
-      { payment_method: { payment_method_type: paymentMethodType } },
+      { payment_method: { payment_method_type: "paymentMethodType" } },
       { headers: spreedlyHeaders() }
     );
     const paymentMethodToken =
@@ -333,6 +334,152 @@ export const getSpreedlyPPCPTransaction = async (
       { headers: spreedlyHeaders() }
     );
     res.json(response.data);
+  } catch (error) {
+    handleError(error, res);
+  }
+};
+
+// ── Vault / recurring via Spreedly ────────────────────────────────────────────
+/**
+ * Spreedly-brokered vaulting, using the THIRD-PARTY TOKEN import path.
+ *
+ * The save itself still runs against PayPal: vaulting a PayPal wallet requires the buyer to
+ * approve in the browser (the JS SDK save session), and Spreedly's `store.json` has no offsite
+ * approval leg — its payload carries no redirect_url/callback_url. So we mint the PayPal vault
+ * token ourselves and then IMPORT it into Spreedly:
+ *
+ *   POST /v1/payment_methods.json
+ *     { payment_method_type: 'third_party_token', reference: <PayPal vault id>,
+ *       gateway_type: 'paypal_commerce_platform', retained: true }
+ *
+ * Charges then go through Spreedly with flat stored-credential fields:
+ *   stored_credential_initiator   = 'cardholder' (buyer present) | 'merchant' (buyer absent)
+ *   stored_credential_reason_type = 'unscheduled' | 'recurring'
+ *
+ * Verified against Spreedly's own e2e suite (spreedly/e2e-test-automation, [RQA-T155]) and probed
+ * directly: a well-formed but non-existent vault id reaches PayPal and returns 404, confirming the
+ * whole chain. NOTE a MALFORMED reference is rejected by PayPal's edge with a raw nginx 406 —
+ * 406 means wrong shape, 404 means well-formed but unknown.
+ */
+interface SpreedlyVaultedToken {
+  paymentMethodToken: string; // Spreedly's token for the imported third_party_token
+  createdAt: string;
+  label?: string;
+  details?: Record<string, string>;
+}
+const spreedlyVaultedTokens: SpreedlyVaultedToken[] = [];
+
+// POST /api/v1/ppcp/spreedly/vault/payment-token   body: { vaultSetupToken }
+// Exchange the approved setup token at PayPal, then import the resulting vault id into Spreedly.
+export const importSpreedlyPPCPVaultToken = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  const vaultSetupToken = req.body?.vaultSetupToken;
+  if (!vaultSetupToken) {
+    res.status(400).json({ error: 'vaultSetupToken is required' });
+    return;
+  }
+  try {
+    assertGatewayConfigured();
+
+    // 1. PayPal: approved setup token -> permanent vault payment token.
+    const vaulted = await exchangeVaultSetupToken(vaultSetupToken);
+
+    // 2. Spreedly: register that PayPal vault id as a third_party_token payment method.
+    const response = await axios.post(
+      `${config.spreedlyUrl}/v1/payment_methods.json`,
+      {
+        payment_method: {
+          payment_method_type: 'paypal',
+          reference: vaulted.id,
+          gateway_type: 'paypal_commerce_platform',
+          retained: true,
+        },
+      },
+      { headers: spreedlyHeaders() }
+    );
+    const paymentMethod =
+      response.data?.transaction?.payment_method || response.data?.payment_method;
+    console.log('importSpreedlyPPCPVaultToken paymentMethod: ', paymentMethod);
+    if (!paymentMethod?.token) {
+      res.status(502).json({ error: 'Spreedly did not return a payment method token' });
+      return;
+    }
+
+    spreedlyVaultedTokens.unshift({
+      paymentMethodToken: paymentMethod.token,
+      createdAt: new Date().toISOString(),
+      ...(vaulted.email ? { label: vaulted.email } : {}),
+      details: vaulted.details,
+    });
+
+    res.json({
+      status: 'SUCCESS',
+      label: vaulted.email,
+      payment_method_type: paymentMethod.payment_method_type,
+      storage_state: paymentMethod.storage_state,
+    });
+  } catch (error) {
+    handleError(error, res);
+  }
+};
+
+// GET /api/v1/ppcp/spreedly/vault/tokens — saved methods for the demo list.
+export const listSpreedlyPPCPVaultTokens = async (_req: Request, res: Response): Promise<void> => {
+  res.json({
+    tokens: spreedlyVaultedTokens.map((t, index) => ({
+      ref: index,
+      createdAt: t.createdAt,
+      label: t.label || 'PayPal account',
+      details: t.details || {},
+    })),
+  });
+};
+
+// POST /api/v1/ppcp/spreedly/vault/charge   body: { ref, amount?, currency_code?, initiator? }
+// Charge a saved method through Spreedly. initiator 'CUSTOMER' = buyer present (one-click);
+// 'MERCHANT' (default) = buyer absent (recurring MIT).
+export const chargeSpreedlyPPCPVaultToken = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  const { ref, amount = '10.00', currency_code = 'USD', initiator = 'MERCHANT' } = req.body || {};
+  const token = spreedlyVaultedTokens[Number(ref)];
+  if (!token) {
+    res.status(404).json({ error: 'No saved payment method for that ref' });
+    return;
+  }
+  const buyerPresent = initiator === 'CUSTOMER';
+  try {
+    assertGatewayConfigured();
+    const response = await axios.post(
+      `${config.spreedlyUrl}/v1/gateways/${config.ppcpGatewayToken}/purchase.json`,
+      {
+        transaction: {
+          payment_method_token: token.paymentMethodToken,
+          amount: toMinorUnits(amount),
+          currency_code,
+          stored_credential_initiator: buyerPresent ? 'cardholder' : 'merchant',
+          stored_credential_reason_type: buyerPresent ? 'unscheduled' : 'recurring',
+        },
+      },
+      { headers: spreedlyHeaders() }
+    );
+    const transaction = response.data?.transaction;
+    res.json({
+      id: transaction?.token,
+      status: transaction?.state,
+      succeeded: !!transaction?.succeeded,
+      message: transaction?.message,
+      amount: transaction?.amount,
+      currency_code: transaction?.currency_code,
+      initiator: buyerPresent ? 'CUSTOMER' : 'MERCHANT',
+      scenario: buyerPresent ? 'one-click (buyer present)' : 'recurring MIT (buyer not present)',
+      gatewayTransactionId: transaction?.gateway_transaction_id,
+      storedCredentialInitiator: transaction?.stored_credential_initiator,
+      storedCredentialReasonType: transaction?.stored_credential_reason_type,
+    });
   } catch (error) {
     handleError(error, res);
   }

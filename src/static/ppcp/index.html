@@ -253,11 +253,16 @@
 
                 <div class="order-summary" style="margin-top: 1.5rem;">
                   <div class="dev-note" style="margin-bottom: 1rem;">
-                    <strong>Still PayPal-direct.</strong> Vaulting has no Spreedly path yet —
-                    Spreedly’s <code>retain_on_success</code> returns a payment method with no
-                    <code>payer_id</code> or <code>billing_agreement_id</code>, so it cannot be
-                    charged later. These buttons call PayPal’s Vault v3 directly, pending the
-                    Gateway team. See doc 14 §5.5.
+                    <strong>Saved methods live in Spreedly.</strong> The vault id is imported as a
+                    <code>third_party_token</code> payment method, and both charge buttons run through
+                    Spreedly&rsquo;s gateway with <code>stored_credential_initiator</code> /
+                    <code>stored_credential_reason_type</code>.
+                    <br><br>
+                    The <em>save</em> itself is still a direct PayPal call: vaulting a PayPal wallet needs
+                    the buyer to approve in the browser, and Spreedly&rsquo;s <code>store.json</code> has no
+                    offsite approval leg. So we mint the vault token at PayPal, then import it.
+                    &ldquo;Also save my PayPal&rdquo; during checkout (vault <em>with</em> purchase) remains
+                    PayPal-direct end to end.
                   </div>
                   <div class="order-summary-title">Saved payment methods</div>
                   <div id="saved-methods-list">

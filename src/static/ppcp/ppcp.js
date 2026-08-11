@@ -461,10 +461,12 @@ async function handleVaultResult(result) {
   if (result.state === 'Successful') {
     try {
       setVaultStatus('Saving payment method...', 'info');
-      await axios.post(`${apiBase()}/ppcp/vault/payment-token`, {
+      // Exchange at PayPal, then import the vault id into Spreedly as a third_party_token
+      // payment method — charges then run through Spreedly's gateway.
+      await axios.post(`${apiBase()}/ppcp/spreedly/vault/payment-token`, {
         vaultSetupToken: result.vaultSetupToken,
       });
-      setVaultStatus('PayPal saved — you can now charge it as a recurring payment.', 'success');
+      setVaultStatus('PayPal saved and imported into Spreedly — you can now charge it.', 'success');
       await refreshVaultedTokens();
     } catch (error) {
       setVaultStatus(vaultError(error), 'error');
@@ -478,7 +480,7 @@ async function handleVaultResult(result) {
 
 async function refreshVaultedTokens() {
   try {
-    const res = await axios.get(`${apiBase()}/ppcp/vault/tokens`);
+    const res = await axios.get(`${apiBase()}/ppcp/spreedly/vault/tokens`);
     const tokens = res.data.tokens || [];
     const list = el('saved-methods-list');
     if (!tokens.length) {
@@ -551,7 +553,7 @@ function setSavedResult(ref, kind, message) {
 window.chargeSaved = async function (ref) {
   setSavedResult(ref, 'pending', 'Charging (recurring, buyer not present)…');
   try {
-    const res = await axios.post(`${apiBase()}/ppcp/vault/charge`, {
+    const res = await axios.post(`${apiBase()}/ppcp/spreedly/vault/charge`, {
       ref,
       amount: '10.00',
       currency_code: CURRENCY,
@@ -562,13 +564,13 @@ window.chargeSaved = async function (ref) {
     await refreshVaultedTokens();
     if (d.succeeded) {
       setSavedResult(ref, 'ok',
-        `Recurring charge succeeded — ${amount} captured. Order ${d.id}` +
-          (d.captureId ? `, capture ${d.captureId}.` : '.'));
+        `Recurring charge succeeded — ${amount} through Spreedly. Transaction ${d.id}` +
+          (d.gatewayTransactionId ? `, PayPal ${d.gatewayTransactionId}.` : '.'));
       setVaultStatus('Recurring charge succeeded.', 'success');
     } else {
       setSavedResult(ref, 'err',
-        `Recurring charge did not complete — order status ${d.status || 'unknown'}` +
-          (d.captureError ? ` (${d.captureError})` : '') + '.');
+        `Recurring charge did not complete — Spreedly state ${d.status || 'unknown'}` +
+          (d.message ? ` (${d.message})` : '') + '.');
       setVaultStatus('Recurring charge did not complete.', 'error');
     }
   } catch (error) {
@@ -582,7 +584,7 @@ window.chargeSaved = async function (ref) {
 window.payWithSaved = async function (ref) {
   setSavedResult(ref, 'pending', 'Paying (one-click, buyer present)…');
   try {
-    const res = await axios.post(`${apiBase()}/ppcp/vault/charge`, {
+    const res = await axios.post(`${apiBase()}/ppcp/spreedly/vault/charge`, {
       ref,
       amount: '10.00',
       currency_code: CURRENCY,
@@ -594,13 +596,13 @@ window.payWithSaved = async function (ref) {
     await refreshVaultedTokens();
     if (d.succeeded) {
       setSavedResult(ref, 'ok',
-        `One-click payment succeeded — ${amount} captured. Order ${d.id}` +
-          (d.captureId ? `, capture ${d.captureId}.` : '.'));
+        `One-click payment succeeded — ${amount} through Spreedly. Transaction ${d.id}` +
+          (d.gatewayTransactionId ? `, PayPal ${d.gatewayTransactionId}.` : '.'));
       setVaultStatus('One-click payment succeeded.', 'success');
     } else {
       setSavedResult(ref, 'err',
-        `One-click payment did not complete — order status ${d.status || 'unknown'}` +
-          (d.captureError ? ` (${d.captureError})` : '') + '.');
+        `One-click payment did not complete — Spreedly state ${d.status || 'unknown'}` +
+          (d.message ? ` (${d.message})` : '') + '.');
       setVaultStatus('One-click payment did not complete.', 'error');
     }
   } catch (error) {

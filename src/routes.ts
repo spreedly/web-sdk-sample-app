@@ -36,6 +36,9 @@ import {
   captureSpreedlyPPCPOrder,
   captureSpreedlyPPCPByTransaction,
   getSpreedlyPPCPTransaction,
+  importSpreedlyPPCPVaultToken,
+  listSpreedlyPPCPVaultTokens,
+  chargeSpreedlyPPCPVaultToken,
 } from './controllers/ppcp-spreedly';
 
 const router = Router();
@@ -805,6 +808,60 @@ router.post('/ppcp/spreedly/orders/:orderId/capture', captureSpreedlyPPCPOrder);
  *         description: No Spreedly transaction for that order id
  */
 router.get('/ppcp/spreedly/orders/:orderId', getSpreedlyPPCPTransaction);
+
+/**
+ * @swagger
+ * /api/v1/ppcp/spreedly/vault/payment-token:
+ *   post:
+ *     description: (PPCP via Spreedly) Exchange an approved PayPal vault setup token for a permanent vault token, then import it into Spreedly as a third_party_token payment method. The save leg stays a direct PayPal call because vaulting a PayPal wallet needs browser approval, which Spreedly's store.json cannot drive.
+ *     tags: [PPCP]
+ *     parameters:
+ *       - name: body
+ *         in: body
+ *         required: true
+ *         schema:
+ *           type: object
+ *           properties:
+ *             vaultSetupToken: { type: string }
+ *     responses:
+ *       200: { description: Imported into Spreedly }
+ *       400: { description: vaultSetupToken missing }
+ *       502: { description: Spreedly did not return a payment method token }
+ */
+router.post('/ppcp/spreedly/vault/payment-token', importSpreedlyPPCPVaultToken);
+
+/**
+ * @swagger
+ * /api/v1/ppcp/spreedly/vault/tokens:
+ *   get:
+ *     description: (PPCP via Spreedly) Saved payment methods imported into Spreedly.
+ *     tags: [PPCP]
+ *     responses:
+ *       200: { description: Saved methods }
+ */
+router.get('/ppcp/spreedly/vault/tokens', listSpreedlyPPCPVaultTokens);
+
+/**
+ * @swagger
+ * /api/v1/ppcp/spreedly/vault/charge:
+ *   post:
+ *     description: (PPCP via Spreedly) Charge a saved method through Spreedly using flat stored-credential fields. initiator CUSTOMER = one-click (cardholder/unscheduled); MERCHANT = recurring MIT (merchant/recurring).
+ *     tags: [PPCP]
+ *     parameters:
+ *       - name: body
+ *         in: body
+ *         required: true
+ *         schema:
+ *           type: object
+ *           properties:
+ *             ref: { type: integer }
+ *             amount: { type: string }
+ *             initiator: { type: string, description: CUSTOMER or MERCHANT }
+ *     responses:
+ *       200: { description: Charge attempted }
+ *       404: { description: No saved payment method for that ref }
+ */
+router.post('/ppcp/spreedly/vault/charge', chargeSpreedlyPPCPVaultToken);
 
 
 /**

@@ -48,7 +48,10 @@ const handleError = (error: unknown, res: Response): void => {
 };
 
 // Exchange client id/secret for a PayPal OAuth access token (cached until near expiry).
-const getPayPalAccessToken = async (): Promise<string> => {
+// Exported so the Spreedly controller can reuse it: PayPal vaulting requires buyer approval in
+// the browser, and Spreedly has no equivalent browser-save flow, so the setup-token exchange
+// stays a direct PayPal call even on the Spreedly path. See ppcp-spreedly.ts.
+export const getPayPalAccessToken = async (): Promise<string> => {
   assertPPCPConfigured();
   if (cachedAccessToken && cachedAccessToken.expiresAt > Date.now() + 60_000) {
     return cachedAccessToken.value;
@@ -184,6 +187,7 @@ interface VaultedToken {
   // Everything else PayPal told us about the buyer. Kept as whatever actually came back rather
   // than a fixed shape, so the demo displays truth instead of assumed field names.
   details?: Record<string, string>;
+  completeDetails?: unknown;
 }
 const vaultedTokens: VaultedToken[] = [];
 
@@ -285,11 +289,35 @@ export const createPPCPVaultPaymentToken = async (
       // Whatever PayPal returned about the buyer on the payment-token response. Note this is
       // identity only — no shipping address; that appears on the ORDER, not the vault token.
       details: flattenPayerDetails(paypalSource),
+      completeDetails: response.data,
     });
     res.json({ status: 'SUCCESS', label: email });
   } catch (error) {
     handleError(error, res);
   }
+};
+
+/**
+ * Exchange an approved PayPal vault SETUP token for a permanent PAYMENT token.
+ *
+ * Shared by both delivery paths. The PayPal-direct path stores the result locally; the Spreedly
+ * path hands it to Spreedly as a `third_party_token` payment method (see ppcp-spreedly.ts).
+ */
+export const exchangeVaultSetupToken = async (
+  vaultSetupToken: string
+): Promise<{ id: string; email?: string; details: Record<string, string> }> => {
+  const accessToken = await getPayPalAccessToken();
+  const response = await axios.post(
+    `${config.paypalApiBaseUrl}/v3/vault/payment-tokens`,
+    { payment_source: { token: { id: vaultSetupToken, type: 'SETUP_TOKEN' } } },
+    { headers: paypalHeaders(accessToken, true) }
+  );
+  const paypalSource = response.data?.payment_source?.paypal;
+  return {
+    id: response.data.id,
+    email: paypalSource?.email_address,
+    details: flattenPayerDetails(paypalSource),
+  };
 };
 
 // GET /api/v1/ppcp/vault/tokens — list saved payment methods (demo only; never leak raw ids).
@@ -301,6 +329,7 @@ export const listPPCPVaultTokens = async (_req: Request, res: Response): Promise
       label: t.label || 'PayPal account',
       // Buyer details PayPal returned, for the demo's accordion. Never includes the token id.
       details: t.details || {},
+      completeDetails: t.completeDetails || {},
     })),
   });
 };

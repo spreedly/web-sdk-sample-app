@@ -207,6 +207,7 @@ async function loadAndMountPPCP() {
       // 'auto' pops up; a full-page redirect mode instead returns the buyer through the
       // gateway's own return_url, which is what Spreedly's offsite flow needs to finalize.
       presentationMode: getPresentationMode(),
+      ...(getTestBuyerCountry() ? { testBuyerCountry: getTestBuyerCountry() } : {}),
     });
 
     const result = await ppcpInstance.mount();
@@ -285,6 +286,14 @@ async function getClientId() {
 
 // v6 session.start presentation mode. 'auto' and 'popup' open a separate window; 'modal' is the
 // in-page overlay; 'redirect' navigates the whole page.
+// SANDBOX ONLY — overrides the buyer country PayPal uses for eligibility. Venmo is US-gated, so
+// without this findEligibleMethods filters it out when testing from outside the US. PayPal throws
+// on this in production. It does NOT influence Venmo's own check at its handoff endpoint.
+function getTestBuyerCountry() {
+  const el2 = el('test-buyer-country');
+  return (el2 && el2.value) || '';
+}
+
 function getPresentationMode() {
   const modeEl = el('presentation-mode');
   return (modeEl && modeEl.value) || 'auto';
@@ -612,7 +621,7 @@ function init() {
   // clears old buttons). presentationMode and buttonStyle are read by the constructor, so a
   // change only takes effect on a fresh mount; backend-mode is read per call but re-mounts too
   // so the rendered buttons always match what the controls say.
-  ['btn-label', 'btn-shape', 'presentation-mode'].forEach(id => {
+  ['btn-label', 'btn-shape', 'presentation-mode', 'test-buyer-country'].forEach(id => {
     const sel = el(id);
     if (sel) {
       sel.addEventListener('change', () => {

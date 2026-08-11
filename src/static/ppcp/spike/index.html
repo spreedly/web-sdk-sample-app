@@ -283,6 +283,20 @@
                 <div class="section-title">Choose Payment Method</div>
 
 
+                <!-- SANDBOX ONLY. Venmo is US-gated, so testing from elsewhere makes
+                     findEligibleMethods filter it out. This overrides the country PayPal resolves
+                     for eligibility. It does NOT affect Venmo's own check at its handoff URL. -->
+                <div style="display: flex; gap: 0.5rem; align-items: center; margin: 0 0 1rem; flex-wrap: wrap;">
+                  <label for="test-buyer-country" style="font-size: 0.75rem; color: var(--color-gray-600);">Test buyer country</label>
+                  <select id="test-buyer-country" style="width: auto; padding: 0.4rem 0.5rem; border: 1px solid var(--color-gray-300); border-radius: var(--radius-sm); font-size: 0.8125rem;">
+                    <option value="">(none — use real location)</option>
+                    <option value="US" selected>US — needed for Venmo</option>
+                    <option value="GB">GB</option>
+                    <option value="DE">DE</option>
+                  </select>
+                  <span class="elig-badge warn">sandbox only</span>
+                </div>
+
                 <!-- v6 session.start presentationMode. Spreedly's offsite gateway only finalizes
                      when the buyer returns through its own return_url, which a popup never does. -->
                 <div style="display: flex; gap: 0.5rem; align-items: center; margin: 0 0 1rem; flex-wrap: wrap;">
