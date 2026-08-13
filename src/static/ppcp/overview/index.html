@@ -366,24 +366,6 @@ session.start({ presentationMode }, orderPromise);</code></pre>
           Worth making explicit in the docs.
         </p>
 
-        <h3 id="f4">7.4 Branded buttons expose no colour control</h3>
-        <p>
-          v6 web-component buttons are brand-fixed. <code>observedAttributes</code> are
-          <code>disabled</code>, <code>aria-disabled</code> and <code>type</code> (plus
-          <code>countrycode</code> / <code>productcode</code> for Pay Later and Credit). We verified
-          that setting a colour class or attribute has no visual effect.
-        </p>
-        <p>
-          Merchant-controllable appearance is therefore <strong>label</strong> (via <code>type</code>)
-          and <strong>corner radius</strong> (via the <code>--paypal-button-border-radius</code> /
-          <code>--venmo-button-border-radius</code> custom properties). We have exposed exactly those
-          and deliberately not offered colour.
-        </p>
-        <div class="q">
-          <strong>Question:</strong> is colour control on the roadmap for branded v6 buttons? It is
-          the most frequent styling request we get.
-        </div>
-
         <h3 id="f5">7.5 <code>presentationMode</code> behaviour</h3>
         <p>
           For the record, as observed: <code>popup</code> opens a separate browser tab;

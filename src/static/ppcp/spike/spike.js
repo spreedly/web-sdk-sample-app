@@ -264,12 +264,20 @@ function getAmount() {
 
 // Read the button-appearance selectors -> SpreedlyPPCP buttonStyle ({ label?, shape? }).
 // (v6 exposes no button color, so there is no color control here.)
+// The SDK config panel uses radios, one group per SpreedlyPPCP option.
+function cfg(name) {
+  const picked = document.querySelector(`input[name="${name}"]:checked`);
+  return picked ? picked.value : '';
+}
+
 function getButtonStyle() {
-  const label = el('btn-label') && el('btn-label').value;
-  const shape = el('btn-shape') && el('btn-shape').value;
+  const label = cfg('btn-label');
+  const shape = cfg('btn-shape');
+  const color = cfg('btn-color');
   const style = {};
   if (label) style.label = label;
   if (shape) style.shape = shape;
+  if (color) style.color = color;
   return Object.keys(style).length ? style : undefined;
 }
 
@@ -290,13 +298,11 @@ async function getClientId() {
 // without this findEligibleMethods filters it out when testing from outside the US. PayPal throws
 // on this in production. It does NOT influence Venmo's own check at its handoff endpoint.
 function getTestBuyerCountry() {
-  const el2 = el('test-buyer-country');
-  return (el2 && el2.value) || '';
+  return cfg('test-buyer-country');
 }
 
 function getPresentationMode() {
-  const modeEl = el('presentation-mode');
-  return (modeEl && modeEl.value) || 'auto';
+  return cfg('presentation-mode') || 'auto';
 }
 
 // The direct-PayPal routes do not need to know which wallet was clicked — PayPal's Orders API
@@ -617,18 +623,14 @@ function init() {
   el('proceed-to-payment').addEventListener('click', () => goToStep(2));
   el('back-to-products').addEventListener('click', () => goToStep(1));
   el('save-trigger').addEventListener('click', mountVault);
-  // Re-mount the buttons when any selector that feeds the SDK config changes (destroy() now
-  // clears old buttons). presentationMode and buttonStyle are read by the constructor, so a
-  // change only takes effect on a fresh mount; backend-mode is read per call but re-mounts too
-  // so the rendered buttons always match what the controls say.
-  ['btn-label', 'btn-shape', 'presentation-mode', 'test-buyer-country'].forEach(id => {
-    const sel = el(id);
-    if (sel) {
-      sel.addEventListener('change', () => {
-        if (sdksLoaded && ppcpInstance) loadAndMountPPCP();
-      });
-    }
-  });
+  // Re-mount when any SDK config radio changes. One delegated listener on the panel, so
+  // adding an option to the panel needs no JS change.
+  const cfgPanel = el('sdk-config');
+  if (cfgPanel) {
+    cfgPanel.addEventListener('change', () => {
+      if (sdksLoaded && ppcpInstance) loadAndMountPPCP();
+    });
+  }
 }
 
 if (document.readyState === 'loading') {

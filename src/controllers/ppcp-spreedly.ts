@@ -102,6 +102,22 @@ const publicOrigin = (req: Request): string => {
 const PAYMENT_METHOD_TYPES = ['paypal', 'venmo'] as const;
 type SpreedlyWalletType = (typeof PAYMENT_METHOD_TYPES)[number];
 
+/**
+ * TEST PLUMBING (2026-08-13) — re-added to retest confirm.json after the Gateway team's fix.
+ *
+ * confirm.json only accepts OffsitePurchase / OffsiteSynchronousPurchase /
+ * OffsiteSynchronousAuthorization. authorize.json produces an OffsiteAuthorization, which it
+ * rejects with errors.invalid_offsite_transaction — so testing confirm needs purchase.json.
+ * Default stays 'authorize' so the proven redirect flow is untouched.
+ */
+const TRANSACTION_TYPES = ['authorize', 'purchase'] as const;
+type SpreedlyTransactionType = (typeof TRANSACTION_TYPES)[number];
+
+const resolveTransactionType = (requested: unknown): SpreedlyTransactionType =>
+  TRANSACTION_TYPES.includes(requested as SpreedlyTransactionType)
+    ? (requested as SpreedlyTransactionType)
+    : 'authorize';
+
 const resolvePaymentMethodType = (requested: unknown): SpreedlyWalletType =>
   PAYMENT_METHOD_TYPES.includes(requested as SpreedlyWalletType)
     ? (requested as SpreedlyWalletType)
@@ -117,6 +133,7 @@ export const createSpreedlyPPCPOrder = async (
   // Which wallet the buyer actually clicked. Defaults to paypal: the SDK's createOrder()
   // callback is not told which funding source triggered it, so the page has to report it.
   const paymentMethodType = resolvePaymentMethodType(req.body?.payment_method_type);
+  const transactionType = resolveTransactionType(req.body?.transaction_type);
   try {
     assertGatewayConfigured();
 
@@ -124,7 +141,7 @@ export const createSpreedlyPPCPOrder = async (
     //    the buyer's wallet identity only materializes at approval.
     const paymentMethodResponse = await axios.post(
       `${config.spreedlyUrl}/v1/payment_methods.json`,
-      { payment_method: { payment_method_type: "paymentMethodType" } },
+      { payment_method: { payment_method_type: paymentMethodType } },
       { headers: spreedlyHeaders() }
     );
     const paymentMethodToken =
@@ -139,7 +156,7 @@ export const createSpreedlyPPCPOrder = async (
     //    it lands in storage_state 'used' and any later reuse is rejected.
     const origin = publicOrigin(req);
     const transactionResponse = await axios.post(
-      `${config.spreedlyUrl}/v1/gateways/${config.ppcpGatewayToken}/authorize.json`,
+      `${config.spreedlyUrl}/v1/gateways/${config.ppcpGatewayToken}/${transactionType}.json`,
       {
         transaction: {
           payment_method_token: paymentMethodToken,
@@ -184,6 +201,7 @@ export const createSpreedlyPPCPOrder = async (
       id: orderId,
       status: transaction.state,
       payment_method_type: paymentMethodType,
+      transaction_type: transaction.transaction_type,
       checkout_url: transaction.response?.checkout_url,
     });
   } catch (error) {
@@ -479,6 +497,58 @@ export const chargeSpreedlyPPCPVaultToken = async (
       gatewayTransactionId: transaction?.gateway_transaction_id,
       storedCredentialInitiator: transaction?.stored_credential_initiator,
       storedCredentialReasonType: transaction?.stored_credential_reason_type,
+    });
+  } catch (error) {
+    handleError(error, res);
+  }
+};
+
+/**
+ * POST /api/v1/ppcp/spreedly/orders/:orderId/confirm   — TEST PLUMBING (2026-08-13)
+ *
+ * Finalize an approval that did NOT come back through the redirect, i.e. the popup/modal flow.
+ * confirm.json is Spreedly's mechanism for in-page approvals — it is what the Braintree gateway
+ * uses (pending transaction -> buyer approves in-page -> merchant POSTs the client-side result).
+ * Here the client-side evidence is the approved PayPal order id rather than a Braintree nonce.
+ *
+ * Requires the order to have been created with transaction_type 'purchase'.
+ */
+export const confirmSpreedlyPPCPOrder = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  const orderId = req.params.orderId || '';
+  if (!/^[a-zA-Z0-9]+$/.test(orderId)) {
+    res.status(400).json({ error: 'Invalid order id format' });
+    return;
+  }
+  const transactionToken = orderToTransaction.get(orderId);
+  if (!transactionToken) {
+    res.status(404).json({ error: 'No Spreedly transaction for that order id' });
+    return;
+  }
+  try {
+    const response = await axios.post(
+      `${config.spreedlyUrl}/v1/transactions/${transactionToken}/confirm.json`,
+      {
+        state: 'Successful',
+        nonce: orderId, // the approved PayPal order id stands in for Braintree's nonce
+        payment_method: {
+          payment_method_type: resolvePaymentMethodType(req.body?.payment_method_type),
+        },
+      },
+      { headers: spreedlyHeaders() }
+    );
+    const transaction = response.data?.transaction;
+    res.json({
+      id: orderId,
+      status: transaction?.state,
+      succeeded: !!transaction?.succeeded,
+      message: transaction?.message,
+      transaction_type: transaction?.transaction_type,
+      confirmToken: transaction?.token,
+      authorizationToken: transactionToken,
+      gatewayTransactionId: transaction?.gateway_transaction_id,
     });
   } catch (error) {
     handleError(error, res);

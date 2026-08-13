@@ -36,6 +36,7 @@ import {
   captureSpreedlyPPCPOrder,
   captureSpreedlyPPCPByTransaction,
   getSpreedlyPPCPTransaction,
+  confirmSpreedlyPPCPOrder,
   importSpreedlyPPCPVaultToken,
   listSpreedlyPPCPVaultTokens,
   chargeSpreedlyPPCPVaultToken,
@@ -808,6 +809,23 @@ router.post('/ppcp/spreedly/orders/:orderId/capture', captureSpreedlyPPCPOrder);
  *         description: No Spreedly transaction for that order id
  */
 router.get('/ppcp/spreedly/orders/:orderId', getSpreedlyPPCPTransaction);
+
+/**
+ * @swagger
+ * /api/v1/ppcp/spreedly/orders/{orderId}/confirm:
+ *   post:
+ *     description: (TEST) Finalize a popup/modal approval via Spreedly's confirm.json. Requires transaction_type 'purchase'.
+ *     tags: [PPCP]
+ *     parameters:
+ *       - name: orderId
+ *         in: path
+ *         required: true
+ *         type: string
+ *     responses:
+ *       200: { description: Confirmed }
+ *       404: { description: No Spreedly transaction for that order id }
+ */
+router.post('/ppcp/spreedly/orders/:orderId/confirm', confirmSpreedlyPPCPOrder);
 
 /**
  * @swagger

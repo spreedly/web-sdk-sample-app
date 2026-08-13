@@ -44,6 +44,7 @@ let ppcpInstance = null;
 let vaultInstance = null;
 let sdksLoaded = false;
 let savedDuringPurchase = false; // scenario 2: was "save my PayPal" ticked for the current order?
+let orderIsConfirmable = false; // was the order an OffsitePurchase? (confirm.json only takes those)
 
 // /ppcp/* routes are local-only (not deployed to Heroku), so use the local API base.
 const apiBase = () => window.SpreedlyUtils.LOCAL_API_URL;
@@ -265,12 +266,20 @@ function getAmount() {
 
 // Read the button-appearance selectors -> SpreedlyPPCP buttonStyle ({ label?, shape? }).
 // (v6 exposes no button color, so there is no color control here.)
+// The SDK config panel uses radios, one group per SpreedlyPPCP option.
+function cfg(name) {
+  const picked = document.querySelector(`input[name="${name}"]:checked`);
+  return picked ? picked.value : '';
+}
+
 function getButtonStyle() {
-  const label = el('btn-label') && el('btn-label').value;
-  const shape = el('btn-shape') && el('btn-shape').value;
+  const label = cfg('btn-label');
+  const shape = cfg('btn-shape');
+  const color = cfg('btn-color');
   const style = {};
   if (label) style.label = label;
   if (shape) style.shape = shape;
+  if (color) style.color = color;
   return Object.keys(style).length ? style : undefined;
 }
 
@@ -288,8 +297,7 @@ async function getClientId() {
 // v6 session.start presentation mode. 'auto' and 'popup' open a separate window; 'modal' is the
 // in-page overlay; 'redirect' navigates the whole page.
 function getPresentationMode() {
-  const modeEl = el('presentation-mode');
-  return (modeEl && modeEl.value) || 'redirect';
+  return cfg('presentation-mode') || 'redirect';
 }
 
 // Which wallet the buyer clicked, as a Spreedly payment_method_type.
@@ -339,7 +347,9 @@ async function createOrder() {
     currency_code: CURRENCY,
     // Spreedly transacts venmo as its own payment method type.
     payment_method_type: clickedPaymentMethodType,
+    transaction_type: cfg('transaction-type'),
   });
+  orderIsConfirmable = response.data.transaction_type === 'OffsitePurchase';
   updateDebug('orderId', response.data.id);
   updateDebug('backend', savedDuringPurchase ? 'PayPal direct (vault)' : 'Spreedly gateway');
   return { orderId: response.data.id };
@@ -363,8 +373,16 @@ async function handlePaymentResult(result) {
 
   if (result.state === 'Successful') {
     try {
-      setStatus('Capturing order...', 'info');
-      const capture = await captureOrder(result.orderId);
+      // A popup/modal approval never travels through Spreedly's return_url, so Spreedly has not
+      // finalized the transaction and capture would be refused. confirm.json is the mechanism for
+      // that case — but it only accepts an OffsitePurchase.
+      const useConfirm = orderIsConfirmable;
+      setStatus(useConfirm ? 'Confirming with Spreedly...' : 'Capturing order...', 'info');
+      const capture = useConfirm
+        ? await (await axios.post(`${apiBase()}/ppcp/spreedly/orders/${result.orderId}/confirm`, {
+            payment_method_type: clickedPaymentMethodType,
+          })).data
+        : await captureOrder(result.orderId);
       const status = capture.status || 'COMPLETED';
       updateDebug('status', `Captured: ${status}`);
       const savedNote = savedDuringPurchase ? ' PayPal also saved for future purchases.' : '';
@@ -648,18 +666,14 @@ function init() {
   el('proceed-to-payment').addEventListener('click', () => goToStep(2));
   el('back-to-products').addEventListener('click', () => goToStep(1));
   el('save-trigger').addEventListener('click', mountVault);
-  // Re-mount the buttons when any selector that feeds the SDK config changes (destroy() now
-  // clears old buttons). presentationMode and buttonStyle are read by the constructor, so a
-  // change only takes effect on a fresh mount; backend-mode is read per call but re-mounts too
-  // so the rendered buttons always match what the controls say.
-  ['btn-label', 'btn-shape', 'presentation-mode'].forEach(id => {
-    const sel = el(id);
-    if (sel) {
-      sel.addEventListener('change', () => {
-        if (sdksLoaded && ppcpInstance) loadAndMountPPCP();
-      });
-    }
-  });
+  // Re-mount when any SDK config radio changes. One delegated listener on the panel, so
+  // adding an option to the panel needs no JS change.
+  const cfgPanel = el('sdk-config');
+  if (cfgPanel) {
+    cfgPanel.addEventListener('change', () => {
+      if (sdksLoaded && ppcpInstance) loadAndMountPPCP();
+    });
+  }
 }
 
 if (document.readyState === 'loading') {
