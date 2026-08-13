@@ -159,6 +159,113 @@ document.getElementById('payment-form').addEventListener('submit', (e) => {
 > });
 > ```
 
+---
+
+## Composable hosted field catalogue (optional)
+
+Beyond the mandatory `number` and `cvv` fields, you can opt any of the following
+non-sensitive fields into their own Spreedly-hosted iframe so their values are collected
+inside the secure frame instead of your page. Every field is **granular** — one input mapped
+to a single Spreedly tokenization parameter — so you mount only what you need, each into its
+own container. The config key matches the Spreedly parameter name exactly (the combined
+`expiry` field is the one exception).
+
+| Config key | Spreedly parameter(s) collected |
+|---|---|
+| `expiry` | a single `MM/YY` input, parsed into `month` + `year` |
+| `month` | `month` (separate `MM` input) |
+| `year` | `year` (separate `YYYY` input) |
+| `first_name` | `first_name` |
+| `last_name` | `last_name` |
+| `full_name` | `full_name` |
+| `email` | `email` |
+| `company` | `company` |
+| `phone_number` | `phone_number` |
+| `address1` | `address1` |
+| `address2` | `address2` |
+| `city` | `city` |
+| `state` | `state` |
+| `zip` | `zip` |
+| `country` | `country` |
+| `shipping_address1` … `shipping_country` | the matching `shipping_*` parameter |
+| `shipping_phone_number` | `shipping_phone_number` |
+
+### Expiry: combined or split
+
+Collect the expiration date **either** as one combined `expiry` field (`MM/YY`, parsed into
+`month` + `year`) **or** as two separate `month` and `year` fields — not both. If you
+configure the combined `expiry` alongside `month`/`year`, the separate fields are ignored
+(with a warning) and the combined field wins. Both modes get the same date validation as
+`express-checkout` (valid month `1`–`12`, 4-digit year, not-expired unless
+`allow_expired_date`).
+
+The combined `expiry` field **auto-formats to `MM/YY` as the cardholder types** — the `/`
+separator is inserted automatically after the two month digits (and a leading `2`–`9` is
+padded to `0X/`), while backspacing still clears the separator cleanly.
+
+Add a container `<div>` for each field you want, then include it in `inAppElements()`:
+
+```html
+<div id="card-number-field"></div>
+<div id="cvv-field"></div>
+<div id="expiry-field"></div>
+<div id="name-field"></div>
+<div id="address1-field"></div>
+<div id="city-field"></div>
+<div id="zip-field"></div>
+```
+
+```javascript
+sdk.inAppElements({
+  number: { containerId: 'card-number-field' },
+  cvv: { containerId: 'cvv-field' },
+
+  // Optional granular catalogue fields — include only the ones you want hosted.
+  // Name & date fields are required by default; the others are optional unless `required: true`.
+  expiry: { containerId: 'expiry-field' }, // or: month + year
+  full_name: { containerId: 'name-field' },
+  address1: { containerId: 'address1-field', required: true },
+  city: { containerId: 'city-field' },
+  zip: { containerId: 'zip-field' }
+});
+```
+
+To collect expiry as separate inputs instead, swap `expiry` for `month` + `year`:
+
+```javascript
+sdk.inAppElements({
+  number: { containerId: 'card-number-field' },
+  cvv: { containerId: 'cvv-field' },
+  month: { containerId: 'expiry-month-field' },
+  year: { containerId: 'expiry-year-field' }
+});
+```
+
+**Behavior**
+
+- **Hosted value wins.** When a catalogue field is mounted, its value is read from the
+  secure iframe at `submit()` time. Any value you pass to `submit()` for a parameter that
+  field owns (e.g. `first_name` when the `first_name` field is mounted) is ignored and a
+  warning is logged.
+- **Name & date are required by default.** When a **name** field (`first_name` / `last_name` /
+  `full_name`) or a **date** field (`expiry` / `month` / `year`) is mounted, it is required —
+  leaving it blank blocks tokenization with a `validation` then `error` event. This is
+  independent of the `required` option below. To allow blanks, pass `allow_blank_name` (name)
+  or `allow_blank_date` (date) to `submit()`; `allow_expired_date` similarly permits a past date.
+- **`required` (optional, default `false`).** Applies to the other granular fields (email /
+  company / phone / address). When `true`, tokenization is blocked with a `validation` then
+  `error` event if that field is left blank. (Ignored for name/date fields, which are always
+  required by default as described above.)
+- **Styling & configuration.** The field-configuration methods accept the granular catalogue
+  types too, e.g. `sdk.setPlaceholder('expiry', 'MM/YY')` or `sdk.setStyles('full_name', { … })`.
+
+```javascript
+// With expiry + full_name + address fields mounted, submit() only needs whatever is left:
+sdk.submit({
+  metadata: { order_id: 'ORDER-123' }
+});
+```
+
 ### Step 6 — Handle the token
 
 The `tokenGenerated` callback fires on success:

@@ -12,6 +12,51 @@
     rel="stylesheet">
   <link rel="stylesheet" href="../shared/styles.css">
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <style>
+    /* Marks a form field whose value is collected inside a Spreedly-hosted iframe. */
+    .hf-hosted-badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: #166534;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 999px;
+      padding: 0.1rem 0.5rem;
+      margin-left: 0.5rem;
+      vertical-align: middle;
+    }
+
+    .hf-catalogue-group-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--color-gray-600);
+      margin: 0.75rem 0 0;
+    }
+
+    /* The selected hosted fields, laid out two per row inside the payment form. */
+    .hf-catalogue-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .hf-catalogue-grid .form-group {
+      margin-bottom: 0;
+    }
+
+    .hf-catalogue-wide,
+    .hf-catalogue-heading {
+      grid-column: 1 / -1;
+    }
+
+    .hf-catalogue-heading {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--color-gray-600);
+    }
+  </style>
 </head>
 
 <body>
@@ -77,6 +122,8 @@
                     <span class="loading-text">Loading...</span>
                   </span>
                 </button>
+                <p id="hosted-catalogue-summary"
+                  style="margin-top:1rem; font-size:.85rem; color:var(--color-gray-600);"></p>
               </div>
 
               <!-- Test Card Info -->
@@ -95,18 +142,6 @@
             <div id="hosted-fields-form" class="hidden">
               <div class="card">
                 <form id="payment-form">
-                  <!-- Cardholder Name -->
-                  <div class="form-row">
-                    <div class="form-group">
-                      <label class="form-label" for="first_name">First Name</label>
-                      <input type="text" id="first_name" name="first_name" class="form-input" placeholder="John">
-                    </div>
-                    <div class="form-group">
-                      <label class="form-label" for="last_name">Last Name</label>
-                      <input type="text" id="last_name" name="last_name" class="form-input" placeholder="Doe">
-                    </div>
-                  </div>
-
                   <!-- Card Number - Hosted Field -->
                   <div class="form-group">
                     <label class="form-label" id="hosted-field-label-card-number" role="button" tabindex="0">Card
@@ -122,129 +157,10 @@
                     <div id="cvv-error" class="hf-field-error" role="alert" aria-live="polite"></div>
                   </div>
 
-                  <!-- Expiry Fields -->
-                  <div id="expiry-separate-fields" class="form-row">
-                    <div class="form-group">
-                      <label class="form-label" for="expiry_month">Expiry Month</label>
-                      <input type="text" id="expiry_month" name="month" class="form-input" placeholder="MM"
-                        maxlength="2" inputmode="numeric" pattern="[0-9]*">
-                    </div>
-                    <div class="form-group">
-                      <label class="form-label" for="expiry_year">Expiry Year</label>
-                      <input type="text" id="expiry_year" name="year" class="form-input" placeholder="YYYY"
-                        maxlength="4" inputmode="numeric" pattern="[0-9]*">
-                    </div>
-                  </div>
-
-                  <!-- Combined Expiry (for two-digit mode) -->
-                  <div id="expiry-combined-field" class="form-group hidden">
-                    <label class="form-label" for="expiry_date">Expiry Date</label>
-                    <input type="text" id="expiry_date" name="expiry_date" class="form-input" placeholder="MM/YY"
-                      maxlength="5" style="max-width: 140px;">
-                  </div>
-
-                  <!-- Optional: Email -->
-                  <div class="form-group">
-                    <label class="form-label" for="email">Email (optional)</label>
-                    <input type="email" id="email" name="email" class="form-input" placeholder="john@example.com">
-                  </div>
-
-                  <details id="optional-fields-section" class="form-group" style="border:1px solid var(--color-gray-200); border-radius:6px; padding: .5rem .75rem;">
-                    <summary style="cursor:pointer; font-weight:600;">Optional billing &amp; shipping</summary>
-                    <p style="font-size:.85rem; color: var(--color-gray-500); margin-top:.5rem;">
-                      Every legacy <code>Spreedly.setParam(name, value)</code> field has a typed slot on
-                      <code>sdk.submit(formData)</code>. Fill any of these and they flow through to
-                      <code>payment_method.credit_card.{...}</code>.
-                    </p>
-
-                    <div class="form-row">
-                      <div class="form-group">
-                        <label class="form-label" for="full_name">Full Name</label>
-                        <input type="text" id="full_name" name="full_name" class="form-input" placeholder="John Doe">
-                      </div>
-                      <div class="form-group">
-                        <label class="form-label" for="company">Company</label>
-                        <input type="text" id="company" name="company" class="form-input" placeholder="Acme Inc">
-                      </div>
-                    </div>
-
-                    <h4 style="margin-top:.75rem; margin-bottom:.25rem;">Billing address</h4>
-                    <div class="form-row">
-                      <div class="form-group">
-                        <label class="form-label" for="address1">Address 1</label>
-                        <input type="text" id="address1" name="address1" class="form-input" placeholder="123 Main St">
-                      </div>
-                      <div class="form-group">
-                        <label class="form-label" for="address2">Address 2</label>
-                        <input type="text" id="address2" name="address2" class="form-input" placeholder="Apt 4">
-                      </div>
-                    </div>
-                    <div class="form-row">
-                      <div class="form-group">
-                        <label class="form-label" for="city">City</label>
-                        <input type="text" id="city" name="city" class="form-input" placeholder="New York">
-                      </div>
-                      <div class="form-group">
-                        <label class="form-label" for="state">State</label>
-                        <input type="text" id="state" name="state" class="form-input" placeholder="NY">
-                      </div>
-                    </div>
-                    <div class="form-row">
-                      <div class="form-group">
-                        <label class="form-label" for="zip">Zip</label>
-                        <input type="text" id="zip" name="zip" class="form-input" placeholder="10001">
-                      </div>
-                      <div class="form-group">
-                        <label class="form-label" for="country">Country</label>
-                        <input type="text" id="country" name="country" class="form-input" placeholder="US" maxlength="2">
-                      </div>
-                    </div>
-                    <div class="form-group">
-                      <label class="form-label" for="phone_number">Phone</label>
-                      <input type="text" id="phone_number" name="phone_number" class="form-input" placeholder="5551234567">
-                    </div>
-
-                    <h4 style="margin-top:.75rem; margin-bottom:.25rem;">Shipping address</h4>
-                    <div class="form-row">
-                      <div class="form-group">
-                        <label class="form-label" for="shipping_address1">Address 1</label>
-                        <input type="text" id="shipping_address1" name="shipping_address1" class="form-input" placeholder="456 Park Ave">
-                      </div>
-                      <div class="form-group">
-                        <label class="form-label" for="shipping_address2">Address 2</label>
-                        <input type="text" id="shipping_address2" name="shipping_address2" class="form-input" placeholder="Suite 9">
-                      </div>
-                    </div>
-                    <div class="form-row">
-                      <div class="form-group">
-                        <label class="form-label" for="shipping_city">City</label>
-                        <input type="text" id="shipping_city" name="shipping_city" class="form-input" placeholder="Boston">
-                      </div>
-                      <div class="form-group">
-                        <label class="form-label" for="shipping_state">State</label>
-                        <input type="text" id="shipping_state" name="shipping_state" class="form-input" placeholder="MA">
-                      </div>
-                    </div>
-                    <div class="form-row">
-                      <div class="form-group">
-                        <label class="form-label" for="shipping_zip">Zip</label>
-                        <input type="text" id="shipping_zip" name="shipping_zip" class="form-input" placeholder="02101">
-                      </div>
-                      <div class="form-group">
-                        <label class="form-label" for="shipping_country">Country</label>
-                        <input type="text" id="shipping_country" name="shipping_country" class="form-input" placeholder="US" maxlength="2">
-                      </div>
-                    </div>
-                    <div class="form-group">
-                      <label class="form-label" for="shipping_phone_number">Phone</label>
-                      <input type="text" id="shipping_phone_number" name="shipping_phone_number" class="form-input" placeholder="5559876543">
-                    </div>
-
-                    <div class="form-group" style="margin-top:.5rem;">
-                      <input type="checkbox" id="eligible_for_card_updater" name="eligible_for_card_updater">
-                      <label for="eligible_for_card_updater"><code>eligible_for_card_updater</code></label>
-                    </div>
-                  </details>
+                  <!-- Every field beyond number and cvv is hosted and comes from the merchant's
+                       selection in the "Hosted catalogue fields" panel — rendered by
+                       renderHostedFieldContainers(). This page collects no card data at all. -->
+                  <div id="hosted-catalogue-fields" class="hidden"></div>
 
                   <input type="checkbox" id="retain-payment-method" name="retain-payment-method">
                   <label for="retain-payment-method">Save this card.</label>
@@ -444,14 +360,6 @@
                     <span class="config-option-desc">Tokenize without expiration date</span>
                   </div>
                 </div>
-
-                <div class="config-option">
-                  <input type="checkbox" id="config-two-digit-expiry" class="config-checkbox">
-                  <div class="config-option-content">
-                    <label for="config-two-digit-expiry" class="config-option-label">Two Digit Expiry</label>
-                    <span class="config-option-desc">Use MM/YY format</span>
-                  </div>
-                </div>
               </div>
 
               <!-- Legacy setParam parity: applies to both Hosted Fields and Express Checkout -->
@@ -476,6 +384,15 @@
                       <label for="ec-demo-card-type-icon" class="config-option-label">Card type icon</label>
                       <span class="config-option-desc">Show the card brand badge (e.g. VISA) inside the number
                         field via <code>uiConfig.showCardTypeIcon</code></span>
+                    </div>
+                  </div>
+
+                  <div class="config-option">
+                    <input type="checkbox" id="config-two-digit-expiry" class="config-checkbox">
+                    <div class="config-option-content">
+                      <label for="config-two-digit-expiry" class="config-option-label">Two Digit Expiry</label>
+                      <span class="config-option-desc">Use MM/YY format via <code>uiConfig.twoDigitExpiry</code>.
+                        Hosted Fields does this by mounting the <code>expiry</code> catalogue field instead.</span>
                     </div>
                   </div>
                 </div>
@@ -619,6 +536,45 @@
               </div>
               <div id="hosted-fields-only-panel">
                 <div id="hosted-fields-config-options">
+                  <details id="hf-catalogue-section"
+                    style="border:1px solid var(--color-gray-200); border-radius:6px; padding:.5rem .75rem; margin-bottom:.75rem;">
+                    <summary style="cursor:pointer; font-weight:600;">Hosted catalogue fields</summary>
+                    <p style="font-size:.85rem; color: var(--color-gray-500); margin-top:.5rem;">
+                      <code>number</code> and <code>cvv</code> are always hosted. The payment form shows exactly the
+                      fields you tick here and nothing else — each is mounted as its own secure Spreedly-hosted iframe
+                      via <code>inAppElements</code>, and its value is read from inside that iframe at
+                      <code>submit()</code>, never by this page.
+                    </p>
+
+                    <div style="display:flex; gap:.5rem; margin:.5rem 0;">
+                      <button type="button" id="hf-catalogue-select-all" class="btn btn-secondary"
+                        style="font-size:.8rem; padding:.25rem .625rem;">Select all</button>
+                      <button type="button" id="hf-catalogue-clear" class="btn btn-secondary"
+                        style="font-size:.8rem; padding:.25rem .625rem;">Clear</button>
+                    </div>
+
+                    <!-- Checkbox per catalogue field, rendered by renderHostedCatalogueCheckboxes(). -->
+                    <div id="hf-catalogue-field-list"></div>
+
+                    <div class="config-option-row">
+                      <div class="config-option">
+                        <input type="checkbox" id="hf-catalogue-required" class="config-checkbox">
+                        <div class="config-option-content">
+                          <label for="hf-catalogue-required" class="config-option-label">Mount with
+                            <code>required: true</code></label>
+                          <span class="config-option-desc">Blocks tokenization when a mounted email / company / phone /
+                            address field is blank. Name and date fields are required by default regardless.</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <p style="font-size:.8rem; color: var(--color-gray-500); margin-top:.5rem;">
+                      Settings are read when you click <strong>Open Payment Form</strong>; reopen the form to apply
+                      changes. The combined <code>expiry</code> field wins over separate <code>month</code> /
+                      <code>year</code>.
+                    </p>
+                  </details>
+
                   <div class="config-option-row">
                     <div class="config-option">
                       <input type="checkbox" id="hf-demo-include-iin" class="config-checkbox">
