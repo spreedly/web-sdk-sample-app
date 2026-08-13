@@ -5,6 +5,11 @@ All notable changes to the Spreedly Web SDK will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.1] - 2026-08-13
+
+### Added
+- **Paze digital wallet demo** (HC-1633): new `/paze` flow using `SpreedlyPaze` (merchant-loaded Paze sandbox script, eligibility via `canCheckout`, Review & Pay vs Express Pay, change card/shipping, retain + provision network token) and `POST /api/v1/paze-payment-method` to create a Spreedly `third_party_network_token` payment method from `securedPayload`. CSP allows Paze sandbox and production hosts. See `docs/paze/` (integration guide + API reference).
+
 ## [1.4.1] - 2026-07-31
 
 ### Added

@@ -19,6 +19,7 @@ import {
   createBraintreePurchase,
   confirmTransaction,
   createAchPurchase,
+  createPazePaymentMethod,
 } from './controllers/payments';
 
 const router = Router();
@@ -674,5 +675,23 @@ router.post('/transactions/:transactionToken/confirm', confirmTransaction);
  *         description: Error creating purchase
  */
 router.post('/ach-purchase', createAchPurchase);
+
+/**
+ * @swagger
+ * /api/v1/paze-payment-method:
+ *   post:
+ *     description: Create a Paze payment method from securedPayload via third_party_network_token
+ *     tags: [Paze Payments]
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: Paze payment method created successfully
+ *       400:
+ *         description: Missing required parameters
+ *       500:
+ *         description: Error creating payment method
+ */
+router.post('/paze-payment-method', createPazePaymentMethod);
 
 export default router;
