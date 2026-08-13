@@ -469,18 +469,8 @@ async function init() {
   try {
     await loadSpreedlySDK();
 
-    const authParams = await SpreedlyUtils.fetchAuthParams();
     const clientConfig = getPazeClientConfig();
-
-    const authConfig = {
-      certificate_token: authParams.certificateToken,
-      environment_key: authParams.environmentKey,
-      nonce: authParams.nonce,
-      signature: authParams.signature,
-      timestamp: authParams.timestamp,
-    };
-
-    pazeInstance = new window.SpreedlyPaze(authConfig, {
+    pazeInstance = new window.SpreedlyPaze({
       clientConfig,
       environment: 'sandbox',
     });

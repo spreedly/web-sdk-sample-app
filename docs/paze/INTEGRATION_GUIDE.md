@@ -22,7 +22,6 @@ supports `third_party_network_token` transactions.
   values in `src/static/paze/paze.js` and `.env`).
 - **`PAZE_CERTIFICATE_TOKEN`** in the sample app environment — Spreedly certificate used when
   creating the payment method on the server.
-- Spreedly signed **auth params** from `GET /api/v1/auth/params` (already implemented).
 - A **gateway with network tokenization** if you charge the token outside this demo (the demo UI
   stops at payment method creation).
 
@@ -33,7 +32,7 @@ supports `third_party_network_token` transactions.
 | **Paze `digitalwallet-sdk.js`** | Loaded at the end of `src/static/paze/index.html` |
 | **`<paze-button>`** | Paze branded button; color/shape controls recreate the element |
 | **`SpreedlyPaze`** | Orchestrator in `src/static/paze/paze.js` |
-| **Sample app server** | Auth params + `POST /api/v1/paze-payment-method` |
+| **Sample app server** | `POST /api/v1/paze-payment-method` |
 
 ---
 
@@ -61,7 +60,7 @@ from the sample app's configured CDN. `window.SpreedlyPaze` must exist after tha
 ### Demo flow in `paze.js`
 
 ```
-fetchAuthParams → new SpreedlyPaze(auth, { clientConfig, environment: 'sandbox' })
+new SpreedlyPaze({ clientConfig, environment: 'sandbox' })
   → on(pazeReady / pazeCheckoutComplete / pazeTokenGenerated / pazeError)
   → setup()
   → canCheckout(email)   // on blur + optional dynamic button

@@ -751,7 +751,6 @@ export const createPazePaymentMethod = async (req: Request, res: Response): Prom
   }
 
   try {
-    console.log(JSON.stringify(paymentMethod, null, 2));
     const response = await axios.post(
       `${config.spreedlyUrl}/v1/payment_methods.json`,
       { payment_method: paymentMethod },
@@ -772,7 +771,6 @@ export const createPazePaymentMethod = async (req: Request, res: Response): Prom
     });
   } catch (error) {
     const apiError = error as AxiosError;
-    console.log(JSON.stringify(apiError, null, 2));
     res.status(apiError.response?.status || 500).json(apiError.response?.data);
   }
 };

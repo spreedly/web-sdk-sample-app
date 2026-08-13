@@ -8,16 +8,15 @@ Merchant integration steps and demo controls are in [INTEGRATION_GUIDE.md](./INT
 ## `SpreedlyPaze`
 
 ```js
-const paze = new window.SpreedlyPaze(authDetails, config);
+const paze = new window.SpreedlyPaze(config);
 ```
 
 | Constructor param | Type | |
 |-------------------|------|--|
-| `authDetails` | `{ environment_key, certificate_token, nonce, signature, timestamp }` | From `SpreedlyUtils.fetchAuthParams()` in the demo. |
 | `config` | `PazeConfig` | See [PazeConfig](#pazeconfig). |
 
-The constructor **throws synchronously** on: invalid/incomplete `authDetails`, or missing
-`clientConfig.id` / `clientConfig.name` / `clientConfig.profileId`.
+The constructor **throws synchronously** on missing `clientConfig.id` / `clientConfig.name` /
+`clientConfig.profileId`.
 
 The demo constructs this in `src/static/paze/paze.js` after loading the Spreedly script.
 
