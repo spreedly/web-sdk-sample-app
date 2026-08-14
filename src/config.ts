@@ -17,6 +17,10 @@ interface Config {
   paypalGatewayToken: string;
   ebanxGatewayToken: string;
   braintreeGatewayToken: string;
+  pazeCertificateToken: string;
+  pazeClientId: string;
+  pazeClientName: string;
+  pazeProfileId: string;
 }
 
 const config: Config = {
@@ -34,6 +38,10 @@ const config: Config = {
   paypalGatewayToken: process.env.PAYPAL_GATEWAY_TOKEN_NEW || '',
   ebanxGatewayToken: process.env.EBANX_GATEWAY_TOKEN_NEW || '',
   braintreeGatewayToken: process.env.BRAINTREE_GATEWAY_TOKEN_NEW || '',
+  pazeCertificateToken: process.env.PAZE_CERTIFICATE_TOKEN || '',
+  pazeClientId: process.env.PAZE_CLIENT_ID || '',
+  pazeClientName: process.env.PAZE_CLIENT_NAME || '',
+  pazeProfileId: process.env.PAZE_PROFILE_ID || '',
 };
 
 export default config;
