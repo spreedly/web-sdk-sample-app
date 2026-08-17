@@ -355,6 +355,11 @@ function hostedCatalogueContainerId(type) {
   return `hosted-field-${type}`;
 }
 
+/** Element id of the inline error label under a catalogue field. */
+function hostedCatalogueErrorId(type) {
+  return `hosted-field-${type}-error`;
+}
+
 /** Renders one checkbox per catalogue field into the SDK Configuration panel, grouped by section. */
 function renderHostedCatalogueCheckboxes() {
   const list = document.getElementById('hf-catalogue-field-list');
@@ -478,7 +483,13 @@ function renderHostedFieldContainers(types) {
     container.className = 'hosted-field-container';
     container.id = hostedCatalogueContainerId(type);
 
-    group.append(label, container);
+    const errorEl = document.createElement('div');
+    errorEl.id = hostedCatalogueErrorId(type);
+    errorEl.className = 'hf-field-error';
+    errorEl.setAttribute('role', 'alert');
+    errorEl.setAttribute('aria-live', 'polite');
+
+    group.append(label, container, errorEl);
     grid.appendChild(group);
   });
 
@@ -518,10 +529,13 @@ function clearHostedFieldsDemoPanelUi() {
   clearHostedFieldsValidationErrors();
 }
 
-/** Clears both hosted-field inline error labels. */
+/** Clears number, CVV, and mounted catalogue-field inline error labels. */
 function clearHostedFieldsValidationErrors() {
   setHostedFieldError('card-number-field', 'card-number-error', '');
   setHostedFieldError('cvv-field', 'cvv-error', '');
+  mountedCatalogueFields.forEach((type) => {
+    setHostedFieldError(hostedCatalogueContainerId(type), hostedCatalogueErrorId(type), '');
+  });
 }
 
 /** Shows/clears an inline error label under a hosted field and flags the container. */
@@ -539,7 +553,6 @@ function setHostedFieldError(containerId, errorId, message) {
 
 /** Marks the number/cvv hosted fields with inline error labels from a `validation` payload. */
 function updateHostedFieldsDemoLastValidation(payload) {
-  console.log('updateHostedFieldsDemoLastValidation', payload);
   let numberError = '';
   if (payload?.validNumber === false) {
     numberError = 'Card number is invalid';
@@ -550,10 +563,23 @@ function updateHostedFieldsDemoLastValidation(payload) {
 
   setHostedFieldError('card-number-field', 'card-number-error', numberError);
   setHostedFieldError('cvv-field', 'cvv-error', cvvError);
+  updateHostedCatalogueValidationErrors(payload?.formFields);
 
   const pre = document.getElementById('hf-demo-last-validation');
   if (!pre) return;
   pre.textContent = JSON.stringify(payload, null, 2);
+}
+
+/**
+ * Applies `payload.formFields[<type>]` to each mounted catalogue field. Uses the SDK error
+ * string when `valid` is false; clears the label when the field is valid or missing.
+ */
+function updateHostedCatalogueValidationErrors(formFields) {
+  mountedCatalogueFields.forEach((type) => {
+    const result = formFields?.[type];
+    const message = result && result.valid === false ? result.error || 'Invalid' : '';
+    setHostedFieldError(hostedCatalogueContainerId(type), hostedCatalogueErrorId(type), message);
+  });
 }
 
 /** Writes the latest `consoleError` event payload as formatted JSON into the demo panel. */
@@ -591,6 +617,7 @@ function setupHostedFieldsSdkDemoPanel(sdkInstance) {
       sdkInstance.validate({
         allow_blank_name: config.allowBlankName,
         allow_expired_date: config.allowExpiredDate,
+        allow_blank_date: config.allowBlankDate,
       });
     };
   }
@@ -1163,7 +1190,11 @@ async function handleTokenSuccess(response) {
 function handleTokenError(error) {
   setLoading(false);
 
-  const message = error?.message || error?.errors?.[0]?.message || 'Tokenization failed. Please try again.';
+  // Client-side validation / guard failures arrive as a bare string; API failures are objects.
+  const message =
+    typeof error === 'string' && error.trim()
+      ? error
+      : error?.message || error?.errors?.[0]?.message || 'Tokenization failed. Please try again.';
   showStatus(message, 'error');
 
   console.error('Token error:', error);
