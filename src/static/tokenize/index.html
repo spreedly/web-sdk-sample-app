@@ -179,6 +179,7 @@
                         <span class="loading-text">Processing...</span>
                       </span>
                     </button>
+                    <div id="hosted-submit-button-field" class="hosted-field hidden" style="height: 48px; margin-top: 1.5rem;"></div>
                   </div>
 
                   <div class="security-badge mt-4" style="justify-content: center;">
@@ -644,6 +645,16 @@
                       <code>year</code>.
                     </p>
                   </details>
+
+                  <div class="config-option-row">
+                    <div class="config-option">
+                      <input type="checkbox" id="hf-hosted-submit" class="config-checkbox">
+                      <div class="config-option-content">
+                        <label for="hf-hosted-submit" class="config-option-label">Hosted submit button</label>
+                        <span class="config-option-desc">Mount <code>submit</code> via <code>inAppElements</code> and hide this page's Pay button. Clicks emit <code>submitClick</code>; this demo registers that listener and calls <code>submit()</code> with this page's allow_* flags and metadata.</span>
+                      </div>
+                    </div>
+                  </div>
 
                   <div class="config-option-row">
                     <div class="config-option">
