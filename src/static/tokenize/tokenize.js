@@ -45,6 +45,11 @@ const HOSTED_FIELD_CATALOGUE = Object.freeze([
   { type: 'zip', label: 'ZIP / Postal code', group: 'Billing address' },
   { type: 'country', label: 'Country', group: 'Billing address' },
   { type: 'phone_number', label: 'Phone', group: 'Billing address', wide: true },
+  { type: 'house_number_or_name', label: 'House number or name', group: 'Billing address' },
+  { type: 'street', label: 'Street', group: 'Billing address', wide: true },
+  { type: 'street_line2', label: 'Street line 2', group: 'Billing address', wide: true },
+  { type: 'phone_number_country_code', label: 'Phone country code', group: 'Billing address' },
+  { type: 'phone_number_area_code', label: 'Phone area code', group: 'Billing address' },
   { type: 'shipping_address1', label: 'Address line 1', group: 'Shipping address', wide: true },
   { type: 'shipping_address2', label: 'Address line 2', group: 'Shipping address', wide: true },
   { type: 'shipping_city', label: 'City', group: 'Shipping address' },
@@ -52,6 +57,11 @@ const HOSTED_FIELD_CATALOGUE = Object.freeze([
   { type: 'shipping_zip', label: 'ZIP / Postal code', group: 'Shipping address' },
   { type: 'shipping_country', label: 'Country', group: 'Shipping address' },
   { type: 'shipping_phone_number', label: 'Phone', group: 'Shipping address', wide: true },
+  { type: 'shipping_house_number_or_name', label: 'House number or name', group: 'Shipping address' },
+  { type: 'shipping_street', label: 'Street', group: 'Shipping address', wide: true },
+  { type: 'shipping_street_line2', label: 'Street line 2', group: 'Shipping address', wide: true },
+  { type: 'shipping_phone_number_country_code', label: 'Phone country code', group: 'Shipping address' },
+  { type: 'shipping_phone_number_area_code', label: 'Phone area code', group: 'Shipping address' },
 ]);
 
 /** Catalogue field types actually mounted by the current `inAppElements` call. */
@@ -77,6 +87,11 @@ const EC_EXTRA_FIELD_KEYS = Object.freeze([
   'state',
   'zip',
   'country',
+  'house_number_or_name',
+  'street',
+  'street_line2',
+  'phone_number_country_code',
+  'phone_number_area_code',
   'shipping_address1',
   'shipping_address2',
   'shipping_city',
@@ -84,6 +99,11 @@ const EC_EXTRA_FIELD_KEYS = Object.freeze([
   'shipping_zip',
   'shipping_country',
   'shipping_phone_number',
+  'shipping_house_number_or_name',
+  'shipping_street',
+  'shipping_street_line2',
+  'shipping_phone_number_country_code',
+  'shipping_phone_number_area_code',
 ]);
 
 /** SDK instance that already has `validation` / `fieldStateChange` listeners registered. */
@@ -289,6 +309,11 @@ const EC_EXTRA_FIELD_DEFAULTS = Object.freeze({
   state:                   { label: 'State',               placeholder: 'NY' },
   zip:                     { label: 'Zip',                 placeholder: '10001' },
   country:                 { label: 'Country',             placeholder: 'US' },
+  house_number_or_name:    { label: 'House Number or Name', placeholder: '123' },
+  street:                  { label: 'Street',              placeholder: 'Main St' },
+  street_line2:            { label: 'Street Line 2',       placeholder: 'Apt 1' },
+  phone_number_country_code: { label: 'Phone Country Code', placeholder: '1' },
+  phone_number_area_code:  { label: 'Phone Area Code',     placeholder: '415' },
   shipping_address1:       { label: 'Shipping Address 1',  placeholder: '456 Park Ave' },
   shipping_address2:       { label: 'Shipping Address 2',  placeholder: 'Suite 9' },
   shipping_city:           { label: 'Shipping City',       placeholder: 'Boston' },
@@ -296,6 +321,11 @@ const EC_EXTRA_FIELD_DEFAULTS = Object.freeze({
   shipping_zip:            { label: 'Shipping Zip',        placeholder: '02101' },
   shipping_country:        { label: 'Shipping Country',    placeholder: 'US' },
   shipping_phone_number:   { label: 'Shipping Phone',      placeholder: '5559876543' },
+  shipping_house_number_or_name: { label: 'Shipping House Number or Name', placeholder: '123' },
+  shipping_street:         { label: 'Shipping Street',     placeholder: 'Main St' },
+  shipping_street_line2:   { label: 'Shipping Street Line 2', placeholder: 'Apt 1' },
+  shipping_phone_number_country_code: { label: 'Shipping Phone Country Code', placeholder: '1' },
+  shipping_phone_number_area_code: { label: 'Shipping Phone Area Code', placeholder: '415' },
 });
 
 function buildEcExtraFieldsConfig(fieldKeys) {
