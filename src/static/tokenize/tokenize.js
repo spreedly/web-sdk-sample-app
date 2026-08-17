@@ -539,6 +539,7 @@ function setHostedFieldError(containerId, errorId, message) {
 
 /** Marks the number/cvv hosted fields with inline error labels from a `validation` payload. */
 function updateHostedFieldsDemoLastValidation(payload) {
+  console.log('updateHostedFieldsDemoLastValidation', payload);
   let numberError = '';
   if (payload?.validNumber === false) {
     numberError = 'Card number is invalid';
@@ -907,7 +908,9 @@ window.openHostedFieldsForm = function () {
 
   SpreedlyUtils.setButtonLoading('open-hosted-fields-btn', true, 'Loading...');
 
-  sdk.inAppElements(buildHostedFieldsElementsConfig());
+  const inAppElementsConfig = buildHostedFieldsElementsConfig();
+  console.log('inAppElementsConfig', inAppElementsConfig);
+  sdk.inAppElements(inAppElementsConfig);
 }
 
 /**
