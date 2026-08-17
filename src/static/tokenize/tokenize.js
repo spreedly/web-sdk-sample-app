@@ -20,6 +20,7 @@ const config = {
   ecExtraFields: [],
   hostedCatalogueFields: [],
   hostedCatalogueRequired: false,
+  hostedSubmitButton: false,
 };
 
 /**
@@ -507,6 +508,7 @@ function syncConfigFromCheckboxes() {
   config.showCardTypeIcon = ecCardTypeIcon ? ecCardTypeIcon.checked : true;
   syncEcExtraFieldsFromCheckboxes();
   syncHostedCatalogueFromCheckboxes();
+  config.hostedSubmitButton = document.getElementById('hf-hosted-submit')?.checked || false;
 }
 
 /** Clears demo panel output and resets SDK Configuration controls to defaults. */
@@ -826,6 +828,15 @@ function registerHostedFieldsSdkHandlers(sdkInstance) {
     setupHostedFieldsEventListeners();
     // Nothing on this form is validated by the page — the hosted fields gate tokenization.
     elements.submitBtn().disabled = false;
+    if (config.hostedSubmitButton) {
+      sdkInstance.setStyles('submit', {
+        backgroundColor: '#0a0a0a',
+        color: '#fff',
+        fontSize: '16px',
+        fontWeight: '600',
+        borderRadius: '6px',
+      });
+    }
     hideStatus();
     SpreedlyUtils.setButtonLoading('open-hosted-fields-btn', false);
     elements.hostedFieldsOpenSection().classList.add('hidden');
@@ -835,6 +846,10 @@ function registerHostedFieldsSdkHandlers(sdkInstance) {
 
   sdkInstance.on('tokenGenerated', (response) => {
     console.log('Token generated:', response);
+    if (config.hostedSubmitButton) {
+      sdkInstance.setDisable('submit', false);
+      sdkInstance.setText('submit', 'Pay');
+    }
     handleTokenSuccess({
       ...response,
       shouldRetain: document.getElementById('retain-payment-method')?.checked || false,
@@ -843,6 +858,10 @@ function registerHostedFieldsSdkHandlers(sdkInstance) {
 
   sdkInstance.on('error', (error) => {
     console.error('SDK error:', error);
+    if (config.hostedSubmitButton) {
+      sdkInstance.setDisable('submit', false);
+      sdkInstance.setText('submit', 'Pay');
+    }
     SpreedlyUtils.setButtonLoading('open-hosted-fields-btn', false);
     handleTokenError(error);
   });
@@ -933,10 +952,43 @@ window.openHostedFieldsForm = function () {
   // Containers must exist in the DOM before inAppElements runs or the field is skipped.
   renderHostedFieldContainers(mountedCatalogueFields);
 
+  const merchantSubmit = document.getElementById('submit-btn');
+  const hostedSubmit = document.getElementById('hosted-submit-button-field');
+  if (config.hostedSubmitButton) {
+    merchantSubmit?.classList.add('hidden');
+    hostedSubmit?.classList.remove('hidden');
+  } else {
+    merchantSubmit?.classList.remove('hidden');
+    hostedSubmit?.classList.add('hidden');
+  }
+
   SpreedlyUtils.setButtonLoading('open-hosted-fields-btn', true, 'Loading...');
 
   const inAppElementsConfig = buildHostedFieldsElementsConfig();
   console.log('inAppElementsConfig', inAppElementsConfig);
+
+  if (config.hostedSubmitButton) {
+    sdk.on('submitClick', (formFields) => {
+      console.log('submitClick catalogue values:', formFields);
+      sdk.setDisable('submit', true);
+      sdk.setText('submit', 'Please wait...');
+      sdk.submit(
+        {},
+        {
+          metadata: {
+            source: 'tokenize-flow-demo',
+            timestamp: new Date().toISOString(),
+            hostedSubmitButton: true,
+          },
+          allow_blank_date: config.allowBlankDate,
+          allow_expired_date: config.allowExpiredDate,
+          allow_blank_name: config.allowBlankName,
+          ...(config.eligibleForCardUpdater ? { eligible_for_card_updater: true } : {}),
+        }
+      );
+    });
+  }
+
   sdk.inAppElements(inAppElementsConfig);
 }
 
@@ -956,6 +1008,12 @@ function buildHostedFieldsElementsConfig() {
       ...(config.hostedCatalogueRequired ? { required: true } : {}),
     };
   });
+  if (config.hostedSubmitButton) {
+    elementsConfig.submit = {
+      containerId: 'hosted-submit-button-field',
+      text: 'Pay',
+    };
+  }
   return elementsConfig;
 }
 
