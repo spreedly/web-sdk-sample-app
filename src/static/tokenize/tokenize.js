@@ -638,7 +638,6 @@ function setupHostedFieldsSdkDemoPanel(sdkInstance) {
 function configureHostedFieldsOnReady(sdkInstance) {
   sdkInstance.setTitle('number', 'Credit card number');
   sdkInstance.setTitle('cvv', 'Security code');
-  sdkInstance.setStyles('number', HOSTED_INPUT_STYLE);
   sdkInstance.setStyles('cvv', HOSTED_INPUT_STYLE);
   sdkInstance.setPlaceholderStyles(HOSTED_FIELDS_PLACEHOLDER_STYLES.default);
   sdkInstance.setNumberFormat('prettyFormat');
@@ -655,6 +654,7 @@ function configureHostedFieldsOnReady(sdkInstance) {
  */
 function applyHostedCatalogueStyles(sdkInstance) {
   mountedCatalogueFields.forEach((type) => {
+    if (type === 'full_name') return;
     sdkInstance.setStyles(type, HOSTED_INPUT_STYLE);
     const iframe = document.querySelector(`#${hostedCatalogueContainerId(type)} iframe`);
     iframe?.addEventListener(
@@ -828,15 +828,6 @@ function registerHostedFieldsSdkHandlers(sdkInstance) {
     setupHostedFieldsEventListeners();
     // Nothing on this form is validated by the page — the hosted fields gate tokenization.
     elements.submitBtn().disabled = false;
-    if (config.hostedSubmitButton) {
-      sdkInstance.setStyles('submit', {
-        backgroundColor: '#0a0a0a',
-        color: '#fff',
-        fontSize: '16px',
-        fontWeight: '600',
-        borderRadius: '6px',
-      });
-    }
     hideStatus();
     SpreedlyUtils.setButtonLoading('open-hosted-fields-btn', false);
     elements.hostedFieldsOpenSection().classList.add('hidden');
@@ -1000,18 +991,26 @@ window.openHostedFieldsForm = function () {
 function buildHostedFieldsElementsConfig() {
   const elementsConfig = {
     cvv: { containerId: 'cvv-field' },
-    number: { containerId: 'card-number-field' },
+    number: { containerId: 'card-number-field', styles: HOSTED_INPUT_STYLE },
   };
   mountedCatalogueFields.forEach((type) => {
     elementsConfig[type] = {
       containerId: hostedCatalogueContainerId(type),
       ...(config.hostedCatalogueRequired ? { required: true } : {}),
+      ...(type === 'full_name' ? { styles: HOSTED_INPUT_STYLE } : {}),
     };
   });
   if (config.hostedSubmitButton) {
     elementsConfig.submit = {
       containerId: 'hosted-submit-button-field',
       text: 'Pay',
+      styles: {
+        backgroundColor: '#0a0a0a',
+        color: '#fff',
+        fontSize: '16px',
+        fontWeight: '600',
+        borderRadius: '6px',
+      },
     };
   }
   return elementsConfig;
