@@ -114,10 +114,14 @@ export const createPPCPOrder = async (
     amount = '10.00',
     currency_code = 'USD',
     intent = 'CAPTURE',
+    // The caller says whether the buyer will be navigated away from the page. Only then does the
+    // order need somewhere to come back to.
+    redirect = false,
   } = req.body || {};
   try {
     const accessToken = await getPayPalAccessToken();
-    const body = {
+    const origin = req.headers.origin || `${req.protocol}://${req.get('host')}`;
+    const body: Record<string, unknown> = {
       intent,
       purchase_units: [
         {
@@ -128,6 +132,27 @@ export const createPPCPOrder = async (
         },
       ],
     };
+
+    // Only send a return URL when the buyer is actually going to be navigated away.
+    //
+    // In a popup or modal PayPal talks straight back to the page that opened it, so there is
+    // nothing to return to and the order does not need this. Sending it anyway is not harmless:
+    // adding a payment_source block makes PayPal answer PAYER_ACTION_REQUIRED instead of CREATED,
+    // which changes a flow that already works.
+    //
+    // In redirect mode the buyer leaves the page. Without a return URL they approve and then sit
+    // on PayPal's page with nowhere to go — that was the hanging spinner.
+    if (redirect) {
+      body.payment_source = {
+        paypal: {
+          experience_context: {
+            return_url: `${origin}/ppcp/spike/`,
+            // Same page, but flagged, so the page can tell "approved" from "backed out".
+            cancel_url: `${origin}/ppcp/spike/?ppcp_cancelled=1`,
+          },
+        },
+      };
+    }
     const response = await axios.post(
       `${config.paypalApiBaseUrl}/v2/checkout/orders`,
       body,

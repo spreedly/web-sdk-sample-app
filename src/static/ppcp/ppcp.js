@@ -210,6 +210,18 @@ async function loadAndMountPPCP() {
       // 'auto' pops up; a full-page redirect mode instead returns the buyer through the
       // gateway's own return_url, which is what Spreedly's offsite flow needs to finalize.
       presentationMode: getPresentationMode(),
+      ...(getCommit() === undefined ? {} : { commit: getCommit() }),
+      // "Also save my PayPal" — tells PayPal this purchase also saves the payment method, so the
+      // buyer is asked to agree. Read at mount time, not click time, so the checkbox re-mounts.
+      ...(el('save-during-purchase')?.checked ? { savePayment: true } : {}),
+      // When the merchant supplies onRedirect the SDK stops navigating and hands back the URL.
+      ...(cfg('on-redirect') === 'manual' ? { onRedirect: showRedirectUrl } : {}),
+      // This whole app is sandbox, so always point Venmo at Venmo's sandbox. Venmo has its own
+      // network and its own accounts, so a Venmo sandbox buyer does not exist in production.
+      venmoSandbox: true,
+      // PayPal shows a grey overlay over the page while the buyer is away. Only an explicit
+      // false turns it off, so only send it then.
+      ...(cfg('full-page-overlay') === 'off' ? { fullPageOverlay: false } : {}),
     });
 
     const result = await ppcpInstance.mount();
@@ -296,6 +308,13 @@ async function getClientId() {
 
 // v6 session.start presentation mode. 'auto' and 'popup' open a separate window; 'modal' is the
 // in-page overlay; 'redirect' navigates the whole page.
+// commit controls PayPal's final button wording. Only sent when explicitly chosen, so PayPal's
+// own default stands otherwise.
+function getCommit() {
+  const v = cfg('commit');
+  return v === '' ? undefined : v === 'true';
+}
+
 function getPresentationMode() {
   return cfg('presentation-mode') || 'redirect';
 }
@@ -369,6 +388,7 @@ async function captureOrder(orderId) {
 
 async function handlePaymentResult(result) {
   updateDebug('state', result.state);
+  updateDebug('payerId', result.payerId);
   const method = result.payment_method?.payment_method_type || 'paypal';
 
   if (result.state === 'Successful') {
@@ -401,7 +421,13 @@ async function handlePaymentResult(result) {
     }
   } else if (result.state === 'Cancelled') {
     setStatus('Payment cancelled.', 'info');
-    showResult(false, 'Payment Cancelled', `${method} payment was cancelled.`);
+    // onCancel carries the order id, so the merchant can void the order they already created.
+    showResult(
+      false,
+      'Payment Cancelled',
+      `${method} payment was cancelled.` +
+        (result.orderId ? ` Order ${result.orderId} was created and can be voided.` : '')
+    );
   } else {
     // Surface the structured error code (from onError) alongside the message when present.
     const detail = result.code
@@ -629,10 +655,65 @@ window.payWithSaved = async function (ref) {
   }
 };
 
+// "Give me the URL" only does something in a flow that navigates — redirect, or the mobile
+// app-switch. In popup/modal PayPal completes in place, so onRedirect never fires and picking it
+// would silently do nothing. Grey it out and say why, rather than letting the combination exist.
+function syncRedirectHandlingAvailability() {
+  const manual = document.querySelector('input[name="on-redirect"][value="manual"]');
+  if (!manual) return;
+  const mode = getPresentationMode();
+  const navigates = mode === 'redirect';
+  manual.disabled = !navigates;
+  manual.closest('.cfg-opt')?.classList.toggle('disabled', !navigates);
+
+  const why = manual.parentElement?.querySelector('.why');
+  if (why) why.textContent = navigates ? 'shows a button' : `not in ${mode} mode`;
+
+  // If it was selected and the mode changed out from under it, fall back to the default.
+  if (!navigates && manual.checked) {
+    const auto = document.querySelector('input[name="on-redirect"][value=""]');
+    if (auto) auto.checked = true;
+  }
+}
+
+// onRedirect handler. The SDK gives us the approval URL rather than navigating, so we show it and
+// let the buyer choose when to go — the same hook a mobile app would use to open it somewhere it
+// can handle the return from.
+function showRedirectUrl(url) {
+  updateDebug('status', 'Redirect URL received (SDK did not navigate)');
+  setStatus('SDK handed back the approval URL instead of navigating.', 'info');
+  const container = el('payment-buttons-container');
+  if (!container) return;
+  let box = el('redirect-url-box');
+  if (!box) {
+    box = document.createElement('div');
+    box.id = 'redirect-url-box';
+    box.style.cssText =
+      'margin-top:1rem;padding:0.75rem;border:1px solid var(--color-gray-300);' +
+      'border-radius:var(--radius-sm);background:var(--color-gray-50);font-size:0.8125rem;';
+    container.appendChild(box);
+  }
+  box.innerHTML = '';
+  const label = document.createElement('div');
+  label.style.cssText = 'color:var(--color-gray-600);margin-bottom:0.5rem;';
+  label.textContent = 'onRedirect fired. The SDK did not navigate — this URL is yours to use:';
+  const code = document.createElement('div');
+  code.style.cssText =
+    'font-family:var(--font-mono);font-size:0.6875rem;word-break:break-all;' +
+    'color:var(--color-gray-800);margin-bottom:0.75rem;';
+  code.textContent = url;
+  const go = document.createElement('button');
+  go.className = 'btn btn-primary';
+  go.textContent = 'Continue to PayPal';
+  go.addEventListener('click', () => window.location.assign(url));
+  box.append(label, code, go);
+}
+
 // ── UI helpers ────────────────────────────────────────────────────────────────
 
 function updateDebug(field, value) {
-  const target = el(`debug-${field === 'orderId' ? 'order-id' : field}`);
+  const map = { orderId: 'order-id', payerId: 'payer-id' };
+  const target = el(`debug-${map[field] || field}`);
   if (target) target.textContent = value || '—';
 }
 
@@ -666,13 +747,19 @@ function init() {
   el('proceed-to-payment').addEventListener('click', () => goToStep(2));
   el('back-to-products').addEventListener('click', () => goToStep(1));
   el('save-trigger').addEventListener('click', mountVault);
+  // savePayment is read when the SDK is built, so changing this has to rebuild it.
+  el('save-during-purchase')?.addEventListener('change', () => {
+    if (sdksLoaded && ppcpInstance) loadAndMountPPCP();
+  });
   // Re-mount when any SDK config radio changes. One delegated listener on the panel, so
   // adding an option to the panel needs no JS change.
   const cfgPanel = el('sdk-config');
   if (cfgPanel) {
     cfgPanel.addEventListener('change', () => {
+      syncRedirectHandlingAvailability();
       if (sdksLoaded && ppcpInstance) loadAndMountPPCP();
     });
+    syncRedirectHandlingAvailability();
   }
 }
 

@@ -411,10 +411,10 @@
                     <span>modal</span>
                     <span class="why">WebView only</span>
                   </label>
-                  <label class="cfg-opt disabled">
-                    <input type="radio" name="presentation-mode" value="redirect" disabled>
+                  <label class="cfg-opt">
+                    <input type="radio" name="presentation-mode" value="redirect">
                     <span>redirect</span>
-                    <span class="why">needs a return URL</span>
+                    <span class="why">full page</span>
                   </label>
                   <label class="cfg-opt">
                     <input type="radio" name="presentation-mode" value="payment-handler">
@@ -423,7 +423,64 @@
                   </label>
                 </div>
               </div>
-                <p class="cfg-note">Redirect needs a <code>return_url</code> on the order. The direct-PayPal order does not set one, so it would hang after approval.</p>
+              <div class="cfg-group">
+                <div class="cfg-group-label">Button text <code>commit</code></div>
+                <p class="cfg-hint">Wording on PayPal's final button. Use Continue when your checkout has a review step after approval.</p>
+                <div class="cfg-options">
+                  <label class="cfg-opt">
+                    <input type="radio" name="commit" value="" checked>
+                    <span>Default</span>
+                    <span class="why">PayPal decides</span>
+                  </label>
+                  <label class="cfg-opt">
+                    <input type="radio" name="commit" value="true">
+                    <span>Pay Now</span>
+                    <span class="why">commit: true</span>
+                  </label>
+                  <label class="cfg-opt">
+                    <input type="radio" name="commit" value="false">
+                    <span>Continue</span>
+                    <span class="why">commit: false</span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="cfg-group">
+                <div class="cfg-group-label">Redirect handling <code>onRedirect</code></div>
+                <p class="cfg-hint">Supply the callback and the SDK hands you the URL instead of navigating — so you can save state first, or (on mobile) open it somewhere your app controls.</p>
+                <div class="cfg-options">
+                  <label class="cfg-opt">
+                    <input type="radio" name="on-redirect" value="" checked>
+                    <span>SDK navigates</span>
+                    <span class="why">default</span>
+                  </label>
+                  <label class="cfg-opt">
+                    <input type="radio" name="on-redirect" value="manual">
+                    <span>Give me the URL</span>
+                    <span class="why">shows a button</span>
+                  </label>
+                </div>
+                <p class="cfg-note">Only applies to redirect and mobile app-switch. Popup and modal never navigate, so nothing fires.</p>
+              </div>
+
+              <div class="cfg-group">
+                <div class="cfg-group-label">PayPal's waiting overlay <code>fullPageOverlay</code></div>
+                <p class="cfg-hint">The grey overlay PayPal draws over the page while the buyer is away approving. Turn it off if your own checkout already shows a waiting state.</p>
+                <div class="cfg-options">
+                  <label class="cfg-opt">
+                    <input type="radio" name="full-page-overlay" value="" checked>
+                    <span>Show it</span>
+                    <span class="why">default</span>
+                  </label>
+                  <label class="cfg-opt">
+                    <input type="radio" name="full-page-overlay" value="off">
+                    <span>Turn it off</span>
+                    <span class="why">fullPageOverlay: false</span>
+                  </label>
+                </div>
+                <p class="cfg-note">Easiest to see in popup or modal, which work on this page. It applies to redirect too.</p>
+              </div>
+
               <div class="cfg-group">
                 <div class="cfg-group-label">Button colour <code>buttonStyle.color</code></div>
                 <p class="cfg-hint">PayPal-family: gold, blue, white, black. Venmo: blue, black.</p>
@@ -534,6 +591,7 @@
               </summary>
               <div class="mt-3" style="font-family: var(--font-mono); color: var(--color-gray-500); word-break: break-all;">
                 <div class="mb-2"><strong>Order ID:</strong> <span id="debug-order-id">—</span></div>
+                <div class="mb-2"><strong>Payer ID:</strong> <span id="debug-payer-id">—</span></div>
                 <div class="mb-2"><strong>State:</strong> <span id="debug-state">—</span></div>
                 <div class="mb-2"><strong>Status:</strong> <span id="debug-status">Select products to begin</span></div>
               </div>
