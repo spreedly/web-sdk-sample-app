@@ -113,15 +113,19 @@ type SpreedlyWalletType = (typeof PAYMENT_METHOD_TYPES)[number];
 const TRANSACTION_TYPES = ['authorize', 'purchase'] as const;
 type SpreedlyTransactionType = (typeof TRANSACTION_TYPES)[number];
 
+// Both of these return a LITERAL rather than the caller's value narrowed by `includes()`.
+// transactionType is interpolated into the Spreedly URL, so returning the request value — even
+// one an `includes()` check has already proven safe — keeps it linked to user input and CodeQL
+// flags it as SSRF. Returning a constant breaks that link outright.
+//
+// ⚠️ These no longer widen automatically: adding a value to TRANSACTION_TYPES or
+// PAYMENT_METHOD_TYPES does NOT make it accepted here. Add the case below too, or the new value
+// silently falls back to the default.
 const resolveTransactionType = (requested: unknown): SpreedlyTransactionType =>
-  TRANSACTION_TYPES.includes(requested as SpreedlyTransactionType)
-    ? (requested as SpreedlyTransactionType)
-    : 'authorize';
+  requested === 'purchase' ? 'purchase' : 'authorize';
 
 const resolvePaymentMethodType = (requested: unknown): SpreedlyWalletType =>
-  PAYMENT_METHOD_TYPES.includes(requested as SpreedlyWalletType)
-    ? (requested as SpreedlyWalletType)
-    : 'paypal';
+  requested === 'venmo' ? 'venmo' : 'paypal';
 
 // POST /api/v1/ppcp/spreedly/orders   body: { amount?, currency_code?, payment_method_type? }
 // Creates the PayPal order THROUGH Spreedly and returns its id for the SDK's createOrder().

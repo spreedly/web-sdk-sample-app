@@ -31,12 +31,21 @@ function showResult(isSuccess, title, message) {
   el('result-message').textContent = message;
 }
 
+// Values here come from the query string, so they are attacker-controlled. Build the nodes and
+// assign textContent instead of interpolating into innerHTML.
 function showDetails(rows) {
   const list = el('detail-list');
-  list.innerHTML = rows
+  list.textContent = '';
+  rows
     .filter(([, value]) => value !== undefined && value !== null && value !== '')
-    .map(([key, value]) => `<dt>${key}</dt><dd>${value}</dd>`)
-    .join('');
+    .forEach(([key, value]) => {
+      const dt = document.createElement('dt');
+      dt.textContent = String(key);
+      const dd = document.createElement('dd');
+      dd.textContent = String(value);
+      list.appendChild(dt);
+      list.appendChild(dd);
+    });
   list.classList.remove('hidden');
 }
 
