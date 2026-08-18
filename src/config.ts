@@ -17,6 +17,12 @@ interface Config {
   paypalGatewayToken: string;
   ebanxGatewayToken: string;
   braintreeGatewayToken: string;
+  // PPCP (PayPal Complete Payments) — interim direct-to-PayPal spike (sandbox).
+  paypalPpcpClientId: string;
+  paypalPpcpClientSecret: string;
+  paypalApiBaseUrl: string;
+  // PPCP via Spreedly's paypal_commerce_platform gateway (the production path).
+  ppcpGatewayToken: string;
   pazeCertificateToken: string;
   pazeClientId: string;
   pazeClientName: string;
@@ -38,6 +44,13 @@ const config: Config = {
   paypalGatewayToken: process.env.PAYPAL_GATEWAY_TOKEN_NEW || '',
   ebanxGatewayToken: process.env.EBANX_GATEWAY_TOKEN_NEW || '',
   braintreeGatewayToken: process.env.BRAINTREE_GATEWAY_TOKEN_NEW || '',
+  // PPCP interim spike — see ppcp/integration-plan/07-interim-direct-order-spike.md
+  paypalPpcpClientId: process.env.PAYPAL_PPCP_CLIENT_ID_NEW || '',
+  paypalPpcpClientSecret: process.env.PAYPAL_PPCP_CLIENT_SECRET_NEW || '',
+  paypalApiBaseUrl:
+    process.env.PAYPAL_API_BASE_URL_NEW || 'https://api-m.sandbox.paypal.com',
+  // PPCP gateway — see ppcp/integration-plan/14-spreedly-pivot-plan.md §7Z
+  ppcpGatewayToken: process.env.PPCP_GATEWAY_TOKEN_NEW || '',
   pazeCertificateToken: process.env.PAZE_CERTIFICATE_TOKEN || '',
   pazeClientId: process.env.PAZE_CLIENT_ID || '',
   pazeClientName: process.env.PAZE_CLIENT_NAME || '',

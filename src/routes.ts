@@ -21,6 +21,28 @@ import {
   createAchPurchase,
   createPazePaymentMethod,
 } from './controllers/payments';
+import {
+  getPPCPClientToken,
+  getPPCPConfig,
+  createPPCPOrder,
+  capturePPCPOrder,
+  createPPCPVaultSetupToken,
+  createPPCPVaultPaymentToken,
+  listPPCPVaultTokens,
+  chargePPCPVaultToken,
+  createPPCPVaultPurchaseOrder,
+  capturePPCPVaultPurchaseOrder,
+} from './controllers/ppcp';
+import {
+  createSpreedlyPPCPOrder,
+  captureSpreedlyPPCPOrder,
+  captureSpreedlyPPCPByTransaction,
+  getSpreedlyPPCPTransaction,
+  confirmSpreedlyPPCPOrder,
+  importSpreedlyPPCPVaultToken,
+  listSpreedlyPPCPVaultTokens,
+  chargeSpreedlyPPCPVaultToken,
+} from './controllers/ppcp-spreedly';
 
 const router = Router();
 
@@ -675,6 +697,432 @@ router.post('/transactions/:transactionToken/confirm', confirmTransaction);
  *         description: Error creating purchase
  */
 router.post('/ach-purchase', createAchPurchase);
+
+/**
+ * @swagger
+ * /api/v1/ppcp/client-token:
+ *   get:
+ *     description: (PPCP interim spike) Mint a browser-safe PayPal client token for the JS SDK v6 createInstance({ clientToken }). Talks to PayPal sandbox directly.
+ *     tags: [PPCP]
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: Client token minted
+ *         schema:
+ *           type: object
+ *           properties:
+ *             clientToken:
+ *               type: string
+ *       500:
+ *         description: Error minting client token
+ */
+router.get('/ppcp/client-token', getPPCPClientToken);
+
+/**
+ * @swagger
+ * /api/v1/ppcp/config:
+ *   get:
+ *     description: Public PayPal client ID for initialising the JS SDK v6 (createInstance({ clientId })). Static and browser-safe — a real merchant would inline it; this exists because the demo keeps it in .env.
+ *     tags: [PPCP]
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: "{ clientId }"
+ *       500:
+ *         description: Client ID not configured
+ */
+router.get('/ppcp/config', getPPCPConfig);
+
+/**
+ * @swagger
+ * /api/v1/ppcp/orders:
+ *   post:
+ *     description: (PPCP interim spike) Create a PayPal order via Orders V2 (sandbox, direct). Returns the PayPal order incl. id.
+ *     tags: [PPCP]
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: body
+ *         description: Order details
+ *         in: body
+ *         required: false
+ *         schema:
+ *           type: object
+ *           properties:
+ *             amount:
+ *               type: string
+ *               description: Decimal amount string, e.g. "10.00" (default "10.00")
+ *             currency_code:
+ *               type: string
+ *               description: ISO 4217 currency code (default USD)
+ *             intent:
+ *               type: string
+ *               description: CAPTURE or AUTHORIZE (default CAPTURE)
+ *     responses:
+ *       200:
+ *         description: Order created
+ *       500:
+ *         description: Error creating order
+ */
+router.post('/ppcp/orders', createPPCPOrder);
+
+/**
+ * @swagger
+ * /api/v1/ppcp/orders/{orderId}/capture:
+ *   post:
+ *     description: (PPCP interim spike) Capture an approved PayPal order via Orders V2 (sandbox, direct).
+ *     tags: [PPCP]
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: orderId
+ *         description: PayPal order id
+ *         in: path
+ *         required: true
+ *         type: string
+ *     responses:
+ *       200:
+ *         description: Order captured
+ *       400:
+ *         description: Invalid order id
+ *       500:
+ *         description: Error capturing order
+ */
+router.post('/ppcp/orders/:orderId/capture', capturePPCPOrder);
+
+/**
+ * @swagger
+ * /api/v1/ppcp/spreedly/orders:
+ *   post:
+ *     description: (PPCP via Spreedly) Create a PayPal order through Spreedly's paypal_commerce_platform gateway. Spreedly calls PayPal server-side; the response id is the PayPal order id for the SDK's createOrder().
+ *     tags: [PPCP]
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: body
+ *         description: Order details
+ *         in: body
+ *         required: false
+ *         schema:
+ *           type: object
+ *           properties:
+ *             amount:
+ *               type: string
+ *               description: Decimal amount string, e.g. "10.00" (default "10.00"); converted to minor units for Spreedly
+ *             currency_code:
+ *               type: string
+ *               description: ISO 4217 currency code (default USD)
+ *     responses:
+ *       200:
+ *         description: Order created (id = PayPal order id, status = Spreedly transaction state)
+ *       500:
+ *         description: Error creating order
+ *       502:
+ *         description: Spreedly did not return a PayPal order id
+ */
+router.post('/ppcp/spreedly/orders', createSpreedlyPPCPOrder);
+
+/**
+ * @swagger
+ * /api/v1/ppcp/spreedly/orders/{orderId}/capture:
+ *   post:
+ *     description: (PPCP via Spreedly) Capture the authorization Spreedly created when the buyer approved. The Spreedly transaction token is resolved server-side from the PayPal order id.
+ *     tags: [PPCP]
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: orderId
+ *         description: PayPal order id (as returned by POST /ppcp/spreedly/orders)
+ *         in: path
+ *         required: true
+ *         type: string
+ *     responses:
+ *       200:
+ *         description: Transaction captured
+ *       400:
+ *         description: Invalid order id
+ *       404:
+ *         description: No Spreedly transaction for that order id
+ *       500:
+ *         description: Error capturing transaction
+ */
+router.post('/ppcp/spreedly/orders/:orderId/capture', captureSpreedlyPPCPOrder);
+
+/**
+ * @swagger
+ * /api/v1/ppcp/spreedly/orders/{orderId}:
+ *   get:
+ *     description: (PPCP via Spreedly) Inspect the underlying Spreedly transaction — state, payer details, PayPal order/authorization/capture ids.
+ *     tags: [PPCP]
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: orderId
+ *         description: PayPal order id
+ *         in: path
+ *         required: true
+ *         type: string
+ *     responses:
+ *       200:
+ *         description: The Spreedly transaction
+ *       404:
+ *         description: No Spreedly transaction for that order id
+ */
+router.get('/ppcp/spreedly/orders/:orderId', getSpreedlyPPCPTransaction);
+
+/**
+ * @swagger
+ * /api/v1/ppcp/spreedly/orders/{orderId}/confirm:
+ *   post:
+ *     description: (TEST) Finalize a popup/modal approval via Spreedly's confirm.json. Requires transaction_type 'purchase'.
+ *     tags: [PPCP]
+ *     parameters:
+ *       - name: orderId
+ *         in: path
+ *         required: true
+ *         type: string
+ *     responses:
+ *       200: { description: Confirmed }
+ *       404: { description: No Spreedly transaction for that order id }
+ */
+router.post('/ppcp/spreedly/orders/:orderId/confirm', confirmSpreedlyPPCPOrder);
+
+/**
+ * @swagger
+ * /api/v1/ppcp/spreedly/vault/payment-token:
+ *   post:
+ *     description: (PPCP via Spreedly) Exchange an approved PayPal vault setup token for a permanent vault token, then import it into Spreedly as a third_party_token payment method. The save leg stays a direct PayPal call because vaulting a PayPal wallet needs browser approval, which Spreedly's store.json cannot drive.
+ *     tags: [PPCP]
+ *     parameters:
+ *       - name: body
+ *         in: body
+ *         required: true
+ *         schema:
+ *           type: object
+ *           properties:
+ *             vaultSetupToken: { type: string }
+ *     responses:
+ *       200: { description: Imported into Spreedly }
+ *       400: { description: vaultSetupToken missing }
+ *       502: { description: Spreedly did not return a payment method token }
+ */
+router.post('/ppcp/spreedly/vault/payment-token', importSpreedlyPPCPVaultToken);
+
+/**
+ * @swagger
+ * /api/v1/ppcp/spreedly/vault/tokens:
+ *   get:
+ *     description: (PPCP via Spreedly) Saved payment methods imported into Spreedly.
+ *     tags: [PPCP]
+ *     responses:
+ *       200: { description: Saved methods }
+ */
+router.get('/ppcp/spreedly/vault/tokens', listSpreedlyPPCPVaultTokens);
+
+/**
+ * @swagger
+ * /api/v1/ppcp/spreedly/vault/charge:
+ *   post:
+ *     description: (PPCP via Spreedly) Charge a saved method through Spreedly using flat stored-credential fields. initiator CUSTOMER = one-click (cardholder/unscheduled); MERCHANT = recurring MIT (merchant/recurring).
+ *     tags: [PPCP]
+ *     parameters:
+ *       - name: body
+ *         in: body
+ *         required: true
+ *         schema:
+ *           type: object
+ *           properties:
+ *             ref: { type: integer }
+ *             amount: { type: string }
+ *             initiator: { type: string, description: CUSTOMER or MERCHANT }
+ *     responses:
+ *       200: { description: Charge attempted }
+ *       404: { description: No saved payment method for that ref }
+ */
+router.post('/ppcp/spreedly/vault/charge', chargeSpreedlyPPCPVaultToken);
+
+
+/**
+ * @swagger
+ * /api/v1/ppcp/spreedly/transactions/{transactionToken}/capture:
+ *   post:
+ *     description: (PPCP via Spreedly, redirect flow) Capture by SPREEDLY transaction token. presentationMode 'redirect' navigates the buyer away, so the landing page only has the ?transaction_token= Spreedly appends to the return URL — not the PayPal order id.
+ *     tags: [PPCP]
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: transactionToken
+ *         description: Spreedly transaction token from the return URL's transaction_token param
+ *         in: path
+ *         required: true
+ *         type: string
+ *     responses:
+ *       200:
+ *         description: Captured
+ *       400:
+ *         description: Invalid transaction token
+ *       409:
+ *         description: Authorization is not in a succeeded state
+ *       500:
+ *         description: Error capturing transaction
+ */
+router.post(
+  '/ppcp/spreedly/transactions/:transactionToken/capture',
+  captureSpreedlyPPCPByTransaction
+);
+
+/**
+ * @swagger
+ * /api/v1/ppcp/vault/setup-token:
+ *   post:
+ *     description: (PPCP interim spike) Create a PayPal vault setup token (buyer approves via the JS SDK). Returns { setupToken }.
+ *     tags: [PPCP]
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: Setup token created
+ *       500:
+ *         description: Error creating setup token
+ */
+router.post('/ppcp/vault/setup-token', createPPCPVaultSetupToken);
+
+/**
+ * @swagger
+ * /api/v1/ppcp/vault/payment-token:
+ *   post:
+ *     description: (PPCP interim spike) Exchange an approved setup token for a long-lived payment token; stored server-side.
+ *     tags: [PPCP]
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: body
+ *         in: body
+ *         required: true
+ *         schema:
+ *           type: object
+ *           required:
+ *             - vaultSetupToken
+ *           properties:
+ *             vaultSetupToken:
+ *               type: string
+ *     responses:
+ *       200:
+ *         description: Payment token created and stored
+ *       400:
+ *         description: Missing vaultSetupToken
+ *       500:
+ *         description: Error creating payment token
+ */
+router.post('/ppcp/vault/payment-token', createPPCPVaultPaymentToken);
+
+/**
+ * @swagger
+ * /api/v1/ppcp/vault/tokens:
+ *   get:
+ *     description: (PPCP interim spike) List saved payment methods (demo only; raw token ids stay server-side).
+ *     tags: [PPCP]
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: List of saved payment methods
+ */
+router.get('/ppcp/vault/tokens', listPPCPVaultTokens);
+
+/**
+ * @swagger
+ * /api/v1/ppcp/vault/charge:
+ *   post:
+ *     description: (PPCP interim spike) Charge a saved payment token as a merchant-initiated recurring payment (buyer not present).
+ *     tags: [PPCP]
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: body
+ *         in: body
+ *         required: true
+ *         schema:
+ *           type: object
+ *           required:
+ *             - ref
+ *           properties:
+ *             ref:
+ *               type: integer
+ *               description: Opaque handle from GET /ppcp/vault/tokens
+ *             amount:
+ *               type: string
+ *               description: Decimal amount string (default "10.00")
+ *             currency_code:
+ *               type: string
+ *               description: ISO 4217 currency (default USD)
+ *             initiator:
+ *               type: string
+ *               enum: [MERCHANT, CUSTOMER]
+ *               description: MERCHANT (default) = recurring MIT, buyer not present (scenario 4); CUSTOMER = return buyer present, one-click (scenario 3)
+ *     responses:
+ *       200:
+ *         description: Charge processed
+ *       404:
+ *         description: No saved token for that ref
+ *       500:
+ *         description: Error charging saved token
+ */
+router.post('/ppcp/vault/charge', chargePPCPVaultToken);
+
+/**
+ * @swagger
+ * /api/v1/ppcp/vault/purchase-order:
+ *   post:
+ *     description: (PPCP interim spike) Scenario 2 — create a checkout order that also vaults the PayPal on a successful capture.
+ *     tags: [PPCP]
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: body
+ *         in: body
+ *         schema:
+ *           type: object
+ *           properties:
+ *             amount:
+ *               type: string
+ *               description: Decimal amount string (default "10.00")
+ *             currency_code:
+ *               type: string
+ *               description: ISO 4217 currency (default USD)
+ *     responses:
+ *       200:
+ *         description: Order created (approve via the JS SDK checkout session)
+ *       500:
+ *         description: Error creating order
+ */
+router.post('/ppcp/vault/purchase-order', createPPCPVaultPurchaseOrder);
+
+/**
+ * @swagger
+ * /api/v1/ppcp/vault/purchase-order/{orderId}/capture:
+ *   post:
+ *     description: (PPCP interim spike) Scenario 2 — capture a vault-with-purchase order and store the vaulted PayPal token.
+ *     tags: [PPCP]
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: orderId
+ *         description: PayPal order id
+ *         in: path
+ *         required: true
+ *         type: string
+ *     responses:
+ *       200:
+ *         description: Order captured; PayPal vaulted
+ *       400:
+ *         description: Invalid order id
+ *       500:
+ *         description: Error capturing order
+ */
+router.post('/ppcp/vault/purchase-order/:orderId/capture', capturePPCPVaultPurchaseOrder);
 
 /**
  * @swagger

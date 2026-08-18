@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PPCP via PayPal Direct (spike) | Spreedly Web SDK Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../shared/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <style>
+    /* Stepper */
+    .stepper { display: flex; justify-content: center; margin-bottom: 2rem; padding: 0 1rem; }
+    .stepper-step { display: flex; align-items: center; gap: 0.5rem; }
+    .stepper-step:not(:last-child)::after {
+      content: ''; width: 60px; height: 2px; background: var(--color-gray-300); margin: 0 1rem;
+    }
+    .stepper-step.completed:not(:last-child)::after { background: var(--color-primary); }
+    .step-number {
+      width: 2.5rem; height: 2.5rem; border-radius: 50%; display: flex; align-items: center;
+      justify-content: center; font-weight: 700; font-size: 1rem; background: #e5e7eb; color: #6b7280;
+      transition: all 0.2s ease; border: 2px solid transparent;
+    }
+    .stepper-step.active .step-number {
+      background: #1f2937; color: #fff; border-color: #1f2937; box-shadow: 0 0 0 4px rgba(31, 41, 55, 0.2);
+    }
+    .stepper-step.completed .step-number { background: #22c55e; color: #fff; border-color: #22c55e; }
+    .step-label { font-size: 0.875rem; font-weight: 500; color: var(--color-gray-500); }
+    .stepper-step.active .step-label, .stepper-step.completed .step-label { color: var(--color-gray-900); }
+
+    /* Step content */
+    .step-content { display: none; }
+    .step-content.active { display: block; }
+
+    /* Products grid */
+    .products-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem; margin-bottom: 1.5rem;
+    }
+    .product-card {
+      border: 2px solid var(--color-gray-200); border-radius: var(--radius-lg); padding: 1rem;
+      transition: all var(--transition); background: var(--color-white);
+    }
+    .product-card:hover { border-color: var(--color-gray-300); box-shadow: var(--shadow-sm); }
+    .product-image {
+      width: 100%; height: 120px; background: var(--color-gray-100); border-radius: var(--radius-md);
+      display: flex; align-items: center; justify-content: center; margin-bottom: 0.75rem; font-size: 2.5rem;
+    }
+    .product-name { font-weight: 600; color: var(--color-gray-900); margin-bottom: 0.25rem; }
+    .product-description { font-size: 0.75rem; color: var(--color-gray-500); margin-bottom: 0.5rem; }
+    .product-price { font-weight: 700; color: var(--color-primary); }
+    .product-quantity { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.75rem; }
+    .quantity-btn {
+      width: 1.75rem; height: 1.75rem; border: 1px solid var(--color-gray-300);
+      border-radius: var(--radius-sm); background: var(--color-white); cursor: pointer; display: flex;
+      align-items: center; justify-content: center; font-weight: 600; color: var(--color-gray-600);
+      transition: all var(--transition);
+    }
+    .quantity-btn:hover { background: var(--color-gray-100); }
+    .quantity-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .quantity-value { font-weight: 600; min-width: 1.5rem; text-align: center; }
+
+    /* Order summary / cart */
+    .order-summary {
+      background: var(--color-gray-50); border-radius: var(--radius-lg); padding: 1.5rem; margin-bottom: 1.5rem;
+    }
+    .order-summary-title {
+      font-weight: 600; color: var(--color-gray-900); margin-bottom: 1rem; padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--color-gray-200);
+    }
+    .order-item { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; }
+    .order-item-name { display: flex; align-items: center; gap: 0.5rem; }
+    .order-item-qty { font-size: 0.75rem; color: var(--color-gray-500); }
+    .order-total {
+      display: flex; justify-content: space-between; font-weight: 700; font-size: 1.125rem;
+      padding-top: 0.75rem; margin-top: 0.5rem; border-top: 1px solid var(--color-gray-300);
+    }
+
+    /* Eligibility result badges */
+    .elig-badge {
+      flex-shrink: 0; font-size: 0.6875rem; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 999px;
+      background: var(--color-gray-100); color: var(--color-gray-600); white-space: nowrap;
+    }
+    .elig-badge.ok { background: #dcfce7; color: #166534; }
+    .elig-badge.warn { background: #fef3c7; color: #92400e; }
+    .elig-badge.info { background: #e0e7ff; color: #3730a3; }
+    #eligibility-result { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.75rem 0; }
+    .elig-result { font-size: 0.75rem; font-weight: 600; padding: 0.2rem 0.55rem; border-radius: 999px; }
+    .elig-result.ok { background: #dcfce7; color: #166534; }
+    .elig-result.no { background: #f3f4f6; color: #6b7280; }
+
+    /* Dev note */
+    .dev-note {
+      background: #fffbeb; border: 1px solid #f59e0b; border-radius: 8px; padding: 0.75rem 1rem;
+      margin-bottom: 1.5rem; font-size: 0.8125rem; color: #92400e; line-height: 1.5;
+    }
+    .dev-note code { background: rgba(0, 0, 0, 0.06); padding: 0.1rem 0.3rem; border-radius: 4px; }
+
+    /* Payment buttons */
+    .section-title { font-size: 1rem; font-weight: 600; color: var(--color-gray-700); margin-bottom: 1rem; }
+    .payment-buttons-container {
+      min-height: 120px; padding: 1.5rem; border: 1px solid var(--color-gray-200); border-radius: 8px;
+      background: white; margin-bottom: 1rem;
+    }
+    .payment-buttons-container.loading {
+      display: flex; align-items: center; justify-content: center; color: var(--color-gray-500);
+    }
+    .payment-buttons-section { display: flex; flex-direction: column; gap: 0.75rem; }
+    .spinner-inline {
+      width: 20px; height: 20px; border: 2px solid var(--color-gray-200);
+      border-top-color: var(--color-primary, #0a0a0a); border-radius: 50%;
+      animation: spin 1s linear infinite; display: inline-block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Saved payment methods — the email can be long and there are two action buttons, so this
+       stacks instead of trying to fit one row (the old .order-item flex row overflowed). */
+    .saved-method {
+      padding: 0.875rem 0; border-bottom: 1px solid var(--color-gray-200);
+    }
+    .saved-method:last-child { border-bottom: none; }
+    .saved-method-head {
+      display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; min-width: 0;
+    }
+    .saved-method-label {
+      font-weight: 600; color: var(--color-gray-900); font-size: 0.875rem;
+      overflow-wrap: anywhere; min-width: 0;
+    }
+    .saved-method-meta { font-size: 0.75rem; color: var(--color-gray-500); }
+    .saved-method-actions {
+      display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.625rem;
+    }
+    .saved-method-actions .btn { padding: 0.35rem 0.7rem; font-size: 0.8125rem; }
+    .saved-method-result {
+      margin-top: 0.625rem; font-size: 0.8125rem; padding: 0.5rem 0.625rem;
+      border-radius: var(--radius-sm); display: none;
+    }
+    .saved-method-result.show { display: block; }
+    .saved-method-result.ok { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+    .saved-method-result.err { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+    .saved-method-result.pending { background: var(--color-gray-50); color: var(--color-gray-600); }
+    /* Buyer-details accordion */
+    .buyer-details { margin-top: 0.625rem; }
+    .buyer-details > summary {
+      cursor: pointer; font-size: 0.75rem; color: var(--color-gray-600); user-select: none;
+      list-style: none;
+    }
+    .buyer-details > summary::-webkit-details-marker { display: none; }
+    .buyer-details > summary::before { content: '▸ '; }
+    .buyer-details[open] > summary::before { content: '▾ '; }
+    .buyer-details dl {
+      display: grid; grid-template-columns: minmax(110px, auto) 1fr; gap: 0.25rem 0.75rem;
+      margin: 0.5rem 0 0; font-size: 0.75rem;
+    }
+    .buyer-details dt { color: var(--color-gray-500); }
+    .buyer-details dd {
+      margin: 0; color: var(--color-gray-800); font-family: 'JetBrains Mono', monospace;
+      overflow-wrap: anywhere;
+    }
+
+
+    /* SDK config panel — radios, one group per SpreedlyPPCP option */
+    .cfg-group { margin-bottom: 1.1rem; }
+    .cfg-group:last-child { margin-bottom: 0; }
+    .cfg-group-label {
+      font-size: 0.75rem; font-weight: 600; color: var(--color-gray-800); margin-bottom: 0.1rem;
+      display: flex; align-items: baseline; gap: 0.4rem; flex-wrap: wrap;
+    }
+    .cfg-group-label code {
+      font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; font-weight: 400;
+      color: var(--color-gray-500); background: var(--color-gray-100);
+      padding: 0.05rem 0.3rem; border-radius: 3px;
+    }
+    .cfg-hint { font-size: 0.6875rem; color: var(--color-gray-500); line-height: 1.4; margin: 0.15rem 0 0.4rem; }
+    .cfg-options { display: flex; flex-flow: row wrap; gap: 0.15rem 0.85rem; }
+    .cfg-opt {
+      display: flex; align-items: center; gap: 0.45rem; font-size: 0.75rem;
+      color: var(--color-gray-700); cursor: pointer; padding: 0.15rem 0; line-height: 1.35;
+    }
+    .cfg-opt input { width: auto; margin: 0; flex-shrink: 0; accent-color: var(--color-gray-900); }
+    .cfg-opt:hover { color: var(--color-gray-900); }
+    .cfg-opt input:disabled + span { color: var(--color-gray-400); }
+    .cfg-opt.disabled { cursor: not-allowed; }
+    .cfg-opt .why { font-size: 0.65rem; color: var(--color-gray-400); }
+    .cfg-note {
+      font-size: 0.65rem; color: #92400e; background: #fffbeb; border: 1px solid #fde68a;
+      border-radius: var(--radius-sm); padding: 0.35rem 0.5rem; margin-top: 0.35rem; line-height: 1.4;
+    }
+
+
+    /* Full-width buttons. PayPal's components set a fixed width from inside their shadow DOM
+       (:host{width:135px}, or 225px once a label is set). Rules in the page beat :host rules for
+       the host element, and PayPal does not mark width !important, so this simply wins. There is
+       no --paypal-button-width custom property — plain CSS on the element is the only lever. */
+    #paypal-button paypal-button,
+    #paylater-button paypal-pay-later-button,
+    #paypalcredit-button paypal-credit-button,
+    #venmo-button venmo-button,
+    #save-paypal-button paypal-button {
+      width: 100%;
+    }
+
+    /* Result card */
+    .result-card {
+      background: var(--color-gray-50); border: 1px solid var(--color-gray-200); border-radius: 8px;
+      padding: 1rem; margin-top: 1rem;
+    }
+    .result-card.success { border-color: var(--color-success); background: #f0fdf4; }
+    .result-card.error { border-color: var(--color-error); background: #fef2f2; }
+  </style>
+</head>
+<body>
+  <div class="page-wrapper">
+    <!-- Header -->
+    <header class="header">
+      <div class="container header-inner">
+        <a href="../../index.html" class="logo">
+          <span class="logo-icon">S</span>
+          Spreedly Web SDK
+        </a>
+        <span class="nav-badge">PPCP (PayPal v6)</span>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+      <div class="container">
+        <div class="tokenize-layout">
+          <!-- Left Column - Flow -->
+          <div class="tokenize-form">
+            <a href="../../index.html" class="back-link">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+              </svg>
+              Back to Home
+            </a>
+
+            <h1 class="mb-2">PayPal Complete Payments (PPCP)</h1>
+            <p class="mb-6" style="color: var(--color-gray-500);">
+              Talks straight to PayPal Orders V2 and Vault v3 — <strong>bypasses Spreedly entirely</strong> (no Spreedly transaction, no partner fees, no reporting). Throwaway harness. The production path is <a href="../index.html">PPCP via Spreedly</a>.
+            </p>
+
+            <!-- Stepper -->
+            <div class="stepper" id="stepper">
+              <div class="stepper-step active" data-step="1">
+                <div class="step-number">1</div>
+                <div class="step-label">Select Products</div>
+              </div>
+              <div class="stepper-step" data-step="2">
+                <div class="step-number">2</div>
+                <div class="step-label">Payment</div>
+              </div>
+            </div>
+
+            <!-- Step 1: Product Selection -->
+            <div class="step-content active" id="step-1">
+              <div class="card">
+                <div class="section-title">Select Products</div>
+                <div class="products-grid" id="products-grid"></div>
+
+
+                <!-- Cart summary -->
+                <div class="order-summary" id="cart-summary" style="display: none;">
+                  <div class="order-summary-title">Your Cart</div>
+                  <div id="cart-items"></div>
+                  <div class="order-total">
+                    <span>Total</span>
+                    <span id="cart-total">$0.00</span>
+                  </div>
+                </div>
+
+                <button id="proceed-to-payment" class="btn btn-primary btn-block" disabled>
+                  Proceed to Payment
+                </button>
+              </div>
+
+              <!-- Save PayPal & recurring (Vault) — independent of the cart -->
+              <div class="card" style="margin-top: 1.5rem;">
+                <div class="section-title">Save PayPal &amp; recurring (Vault)</div>
+                <p style="font-size: 0.8125rem; color: var(--color-gray-500); margin-bottom: 1rem;">
+                  Save a PayPal <strong>without a purchase</strong>, then reuse it two ways:
+                  <strong>one-click</strong> when the buyer returns (buyer present) or a
+                  <strong>merchant-initiated recurring</strong> charge (buyer not present). You can also
+                  tick "save my PayPal" during checkout (vault <em>with</em> purchase).
+                </p>
+
+                <button id="save-trigger" class="btn btn-secondary btn-block">＋ Save a PayPal for later</button>
+                <div id="save-loading" class="payment-buttons-container loading hidden">
+                  <span class="spinner-inline"></span>
+                  <span style="margin-left: 0.5rem;">Loading PayPal SDK...</span>
+                </div>
+                <div id="save-paypal-button"></div>
+                <div id="vault-status" class="status-message"></div>
+
+                <div class="order-summary" style="margin-top: 1.5rem;">
+                  <div class="order-summary-title">Saved payment methods</div>
+                  <div id="saved-methods-list">
+                    <p style="color: var(--color-gray-500); font-size: 0.8125rem;">None saved yet.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 2: Payment -->
+            <div class="step-content" id="step-2">
+              <div class="dev-note">
+                <strong>Interim spike (sandbox).</strong> This step loads the PayPal v6 SDK + the
+                <strong>local</strong> Spreedly SDK build and drives <code>SpreedlyPPCP</code> against routes
+                that call PayPal Orders V2 <strong>directly</strong>. Requires <code>npm run dev</code> in
+                <code>checkout-web-sdk</code> (SDK on :5000).
+              </div>
+
+              <!-- Order summary -->
+              <div class="order-summary">
+                <div class="order-summary-title">Order Summary</div>
+                <div id="summary-items"></div>
+                <div class="order-total">
+                  <span>Total</span>
+                  <span id="summary-total">$0.00</span>
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="section-title">Choose Payment Method</div>
+
+
+                <!-- Scenario 2: vault WITH purchase -->
+                <label for="save-during-purchase" style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8125rem; color: var(--color-gray-600); margin: 0 0 1rem; cursor: pointer;">
+                  <input type="checkbox" id="save-during-purchase" style="width: auto; margin: 0;">
+                  Also save my PayPal for future purchases
+                  <span class="elig-badge info">vault with purchase</span>
+                </label>
+
+                <!-- Buttons loading -->
+                <div id="payment-buttons-loading" class="payment-buttons-container loading">
+                  <span class="spinner-inline"></span>
+                  <span style="margin-left: 0.5rem;">Loading payment buttons...</span>
+                </div>
+
+                <!-- Button containers — SpreedlyPPCP inserts the v6 custom elements into these -->
+                <div id="payment-buttons-container" class="payment-buttons-section hidden">
+                  <div id="paypal-button"></div>
+                  <div id="paylater-button"></div>
+                  <div id="paypalcredit-button"></div>
+                  <div id="venmo-button"></div>
+                </div>
+
+                <!-- Which buttons rendered vs not eligible (populated after mount) -->
+                <div id="eligibility-result"></div>
+
+                <!-- Result -->
+                <div id="result-card" class="result-card hidden">
+                  <h4 id="result-title" style="margin-bottom: 0.5rem;"></h4>
+                  <p id="result-message" style="font-size: 0.875rem; color: var(--color-gray-600);"></p>
+                </div>
+
+                <div id="status-message" class="status-message"></div>
+              </div>
+
+              <button id="back-to-products" class="btn btn-secondary btn-block" style="margin-top: 1rem;">
+                Back to Products
+              </button>
+            </div>
+          </div>
+
+          <!-- Right Column - Info -->
+          <div class="config-panel" id="config-panel">
+
+            <div class="config-section">
+              <div class="config-section-title">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 0 1 0 3.75H5.625a1.875 1.875 0 0 1 0-3.75Z" />
+                </svg>
+                Flow Steps
+              </div>
+              <ol style="font-size: 0.875rem; color: var(--color-gray-600); padding-left: 1.25rem; line-height: 1.8;">
+                <li>Select products → cart total = amount</li>
+                <li>Proceed → load PayPal v6 + local Spreedly SDK</li>
+                <li><code>SpreedlyPPCP.mount()</code> → createInstance + findEligibleMethods</li>
+                <li>Render eligible buttons for the total</li>
+                <li>Click → <code>createOrder()</code> → <code>/ppcp/spreedly/orders</code> (or <code>/ppcp/orders</code> for PayPal direct)</li>
+                <li>Approve → capture → <code>&hellip;/orders/:id/capture</code></li>
+              </ol>
+            </div>
+
+            <div class="config-section" id="sdk-config">
+              <div class="config-section-title">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
+                </svg>
+                SDK Configuration
+              </div>
+              <p class="cfg-hint" style="margin-top:0;">Every option <code>SpreedlyPPCP</code> supports. Changing one re-mounts the buttons.</p>
+              <div class="cfg-group">
+                <div class="cfg-group-label">Presentation mode <code>presentationMode</code></div>
+                <p class="cfg-hint">How PayPal shows the approval step.</p>
+                <div class="cfg-options">
+                  <label class="cfg-opt">
+                    <input type="radio" name="presentation-mode" value="auto" checked>
+                    <span>auto</span>
+                    <span class="why">PayPal picks</span>
+                  </label>
+                  <label class="cfg-opt">
+                    <input type="radio" name="presentation-mode" value="popup">
+                    <span>popup</span>
+                    <span class="why">separate window</span>
+                  </label>
+                  <label class="cfg-opt">
+                    <input type="radio" name="presentation-mode" value="modal">
+                    <span>modal</span>
+                    <span class="why">WebView only</span>
+                  </label>
+                  <label class="cfg-opt">
+                    <input type="radio" name="presentation-mode" value="redirect">
+                    <span>redirect</span>
+                    <span class="why">full page</span>
+                  </label>
+                  <label class="cfg-opt">
+                    <input type="radio" name="presentation-mode" value="payment-handler">
+                    <span>payment-handler</span>
+                    <span class="why">experimental</span>
+                  </label>
+                </div>
+              </div>
+              <div class="cfg-group">
+                <div class="cfg-group-label">Button text <code>commit</code></div>
+                <p class="cfg-hint">Wording on PayPal's final button. Use Continue when your checkout has a review step after approval.</p>
+                <div class="cfg-options">
+                  <label class="cfg-opt">
+                    <input type="radio" name="commit" value="" checked>
+                    <span>Default</span>
+                    <span class="why">PayPal decides</span>
+                  </label>
+                  <label class="cfg-opt">
+                    <input type="radio" name="commit" value="true">
+                    <span>Pay Now</span>
+                    <span class="why">commit: true</span>
+                  </label>
+                  <label class="cfg-opt">
+                    <input type="radio" name="commit" value="false">
+                    <span>Continue</span>
+                    <span class="why">commit: false</span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="cfg-group">
+                <div class="cfg-group-label">Redirect handling <code>onRedirect</code></div>
+                <p class="cfg-hint">Supply the callback and the SDK hands you the URL instead of navigating — so you can save state first, or (on mobile) open it somewhere your app controls.</p>
+                <div class="cfg-options">
+                  <label class="cfg-opt">
+                    <input type="radio" name="on-redirect" value="" checked>
+                    <span>SDK navigates</span>
+                    <span class="why">default</span>
+                  </label>
+                  <label class="cfg-opt">
+                    <input type="radio" name="on-redirect" value="manual">
+                    <span>Give me the URL</span>
+                    <span class="why">shows a button</span>
+                  </label>
+                </div>
+                <p class="cfg-note">Only applies to redirect and mobile app-switch. Popup and modal never navigate, so nothing fires.</p>
+              </div>
+
+              <div class="cfg-group">
+                <div class="cfg-group-label">PayPal's waiting overlay <code>fullPageOverlay</code></div>
+                <p class="cfg-hint">The grey overlay PayPal draws over the page while the buyer is away approving. Turn it off if your own checkout already shows a waiting state.</p>
+                <div class="cfg-options">
+                  <label class="cfg-opt">
+                    <input type="radio" name="full-page-overlay" value="" checked>
+                    <span>Show it</span>
+                    <span class="why">default</span>
+                  </label>
+                  <label class="cfg-opt">
+                    <input type="radio" name="full-page-overlay" value="off">
+                    <span>Turn it off</span>
+                    <span class="why">fullPageOverlay: false</span>
+                  </label>
+                </div>
+                <p class="cfg-note">Easiest to see in popup or modal, which work on this page. It applies to redirect too.</p>
+              </div>
+
+              <div class="cfg-group">
+                <div class="cfg-group-label">Button colour <code>buttonStyle.color</code></div>
+                <p class="cfg-hint">PayPal-family: gold, blue, white, black. Venmo: blue, black.</p>
+                <div class="cfg-options">
+                  <label class="cfg-opt">
+                    <input type="radio" name="btn-color" value="" checked>
+                    <span>Default</span>
+                    <span class="why">gold / blue</span>
+                  </label>
+                  <label class="cfg-opt">
+                    <input type="radio" name="btn-color" value="gold">
+                    <span>Gold</span>
+                  </label>
+                  <label class="cfg-opt">
+                    <input type="radio" name="btn-color" value="blue">
+                    <span>Blue</span>
+                  </label>
+                  <label class="cfg-opt">
+                    <input type="radio" name="btn-color" value="white">
+                    <span>White</span>
+                  </label>
+                  <label class="cfg-opt">
+                    <input type="radio" name="btn-color" value="black">
+                    <span>Black</span>
+                  </label>
+                </div>
+              </div>
+              <div class="cfg-group">
+                <div class="cfg-group-label">Button shape <code>buttonStyle.shape</code></div>
+                <div class="cfg-options">
+                  <label class="cfg-opt">
+                    <input type="radio" name="btn-shape" value="" checked>
+                    <span>Default</span>
+                  </label>
+                  <label class="cfg-opt">
+                    <input type="radio" name="btn-shape" value="sharp">
+                    <span>Sharp</span>
+                  </label>
+                  <label class="cfg-opt">
+                    <input type="radio" name="btn-shape" value="rounded">
+                    <span>Rounded</span>
+                  </label>
+                  <label class="cfg-opt">
+                    <input type="radio" name="btn-shape" value="pill">
+                    <span>Pill</span>
+                  </label>
+                </div>
+              </div>
+              <div class="cfg-group">
+                <div class="cfg-group-label">Button label <code>buttonStyle.label</code></div>
+                <p class="cfg-hint">PayPal and Venmo only. Pay Later and Credit have no label control.</p>
+                <div class="cfg-options">
+                  <label class="cfg-opt">
+                    <input type="radio" name="btn-label" value="" checked>
+                    <span>Default</span>
+                  </label>
+                  <label class="cfg-opt">
+                    <input type="radio" name="btn-label" value="checkout">
+                    <span>Checkout</span>
+                  </label>
+                  <label class="cfg-opt">
+                    <input type="radio" name="btn-label" value="pay">
+                    <span>Pay</span>
+                  </label>
+                  <label class="cfg-opt">
+                    <input type="radio" name="btn-label" value="buynow">
+                    <span>Buy Now</span>
+                  </label>
+                  <label class="cfg-opt">
+                    <input type="radio" name="btn-label" value="subscribe">
+                    <span>Subscribe</span>
+                  </label>
+                  <label class="cfg-opt">
+                    <input type="radio" name="btn-label" value="donate">
+                    <span>Donate</span>
+                    <span class="why">not in PayPal docs</span>
+                  </label>
+                </div>
+              </div>
+              <div class="cfg-group">
+                <div class="cfg-group-label">Test buyer country <code>testBuyerCountry</code></div>
+                <p class="cfg-hint">Sandbox only. Overrides the country PayPal uses for eligibility — Venmo is US-gated.</p>
+                <div class="cfg-options">
+                  <label class="cfg-opt">
+                    <input type="radio" name="test-buyer-country" value="">
+                    <span>Use real location</span>
+                  </label>
+                  <label class="cfg-opt">
+                    <input type="radio" name="test-buyer-country" value="US" checked>
+                    <span>US</span>
+                    <span class="why">needed for Venmo</span>
+                  </label>
+                  <label class="cfg-opt">
+                    <input type="radio" name="test-buyer-country" value="GB">
+                    <span>GB</span>
+                  </label>
+                  <label class="cfg-opt">
+                    <input type="radio" name="test-buyer-country" value="DE">
+                    <span>DE</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <details class="config-section" style="font-size: 0.75rem;">
+              <summary style="cursor: pointer; font-weight: 500; color: var(--color-gray-600);">
+                Debug Information
+              </summary>
+              <div class="mt-3" style="font-family: var(--font-mono); color: var(--color-gray-500); word-break: break-all;">
+                <div class="mb-2"><strong>Order ID:</strong> <span id="debug-order-id">—</span></div>
+                <div class="mb-2"><strong>Payer ID:</strong> <span id="debug-payer-id">—</span></div>
+                <div class="mb-2"><strong>State:</strong> <span id="debug-state">—</span></div>
+                <div class="mb-2"><strong>Status:</strong> <span id="debug-status">Select products to begin</span></div>
+              </div>
+            </details>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container footer-inner">
+        <span>Spreedly Web SDK Demo</span>
+        <div class="footer-links">
+          <a href="https://spreedly.com" target="_blank">Spreedly</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Scripts -->
+  <script src="../../shared/utils.js"></script>
+  <script src="./spike.js"></script>
+</body>
+</html>
