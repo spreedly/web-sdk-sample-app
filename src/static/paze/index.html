@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Paze Digital Wallet | Spreedly Web SDK Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="../shared/styles.css">
+  <style>
+    .amount-input-section {
+      margin-bottom: 1.5rem;
+    }
+
+    .amount-display {
+      align-items: center;
+      color: var(--color-gray-900);
+      display: flex;
+      font-size: 1.5rem;
+      font-weight: 600;
+      gap: 0.5rem;
+    }
+
+    .readonly-value {
+      color: var(--color-gray-900);
+      font-size: 0.9375rem;
+      margin: 0;
+    }
+
+    .paze-info {
+      align-items: flex-start;
+      background: var(--color-primary-light, #f0f7ff);
+      border: 1px solid var(--color-primary, #0a0a0a);
+      border-radius: 8px;
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+      padding: 1rem;
+    }
+
+    .paze-info-icon {
+      color: var(--color-primary, #0a0a0a);
+      flex-shrink: 0;
+    }
+
+    .paze-info-text {
+      color: var(--color-gray-700);
+      font-size: 0.875rem;
+    }
+
+    .section-title {
+      color: var(--color-gray-700);
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+
+    .submit-btn {
+      background: var(--color-primary, #0a0a0a);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      padding: 1rem 1.5rem;
+      transition: all 0.2s ease;
+      width: 100%;
+    }
+
+    .submit-btn:hover {
+      opacity: 0.9;
+    }
+
+    .submit-btn:disabled {
+      background: var(--color-gray-300);
+      cursor: not-allowed;
+    }
+
+    .submit-btn.secondary {
+      background: white;
+      border: 1px solid var(--color-gray-300);
+      color: var(--color-gray-900);
+    }
+
+    .result-card {
+      background: var(--color-gray-50);
+      border: 1px solid var(--color-gray-200);
+      border-radius: 8px;
+      margin-top: 1.5rem;
+      padding: 1rem;
+    }
+
+    .result-card.success {
+      background: #f0fdf4;
+      border-color: var(--color-success);
+    }
+
+    .result-card.error {
+      background: #fef2f2;
+      border-color: var(--color-error);
+    }
+
+    .review-panel {
+      background: #f8fafc;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      margin-bottom: 1rem;
+      padding: 1rem;
+    }
+
+    .review-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+
+    .review-actions button {
+      background: white;
+      border: 1px solid var(--color-gray-300);
+      border-radius: 6px;
+      color: var(--color-gray-700);
+      cursor: pointer;
+      font-size: 0.8125rem;
+      padding: 0.375rem 0.75rem;
+    }
+
+    .review-actions button:hover {
+      border-color: var(--color-gray-400);
+    }
+
+    .paze-button-wrap {
+      margin-bottom: 0.75rem;
+      min-height: 40px;
+      width: 100%;
+    }
+
+    .paze-button-wrap paze-button {
+      display: block;
+      width: 100%;
+    }
+
+    .paze-button-wrap.disabled {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    .paze-button-wrap.tall {
+      height: 80px;
+    }
+
+    .button-customization {
+      display: grid;
+      gap: 0.75rem 1rem;
+      grid-template-columns: 1fr 1fr;
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page-wrapper">
+    <header class="header">
+      <div class="container header-inner">
+        <a href="../index.html" class="logo">
+          <span class="logo-icon">S</span>
+          Spreedly Web SDK
+        </a>
+        <span class="nav-badge">Paze Digital Wallet</span>
+      </div>
+    </header>
+
+    <main class="main">
+      <div class="container">
+        <div class="tokenize-layout">
+          <div class="tokenize-form">
+            <a href="../index.html" class="back-link">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+              </svg>
+              Back to flows
+            </a>
+
+            <h1 class="mb-2">Paze Digital Wallet</h1>
+            <p class="mb-6" style="color: var(--color-gray-500);">
+              Create a Spreedly payment method from Paze using the standalone <code>SpreedlyPaze</code> class
+            </p>
+
+            <div id="loading-state" class="card" style="text-align: center; padding: 3rem;">
+              <div class="loading">
+                <span class="spinner"></span>
+                <span>Initializing Paze...</span>
+              </div>
+            </div>
+
+            <div id="payment-section" class="hidden">
+              <div class="card" style="margin-top: 1.5rem;">
+                <div class="form-group">
+                  <label class="form-label"><strong>Transaction Amount:</strong></label>
+                  <p class="readonly-value">$10.00</p>
+                </div>
+                <div class="form-group">
+                  <label class="form-label"><strong>Paze Client Name:</strong></label>
+                  <p class="readonly-value">Spreedly</p>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label"><strong>Paze Profile ID:</strong></label>
+                  <p class="readonly-value">Spreedly</p>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label"><strong>Email Address:</strong></label>
+                  <input type="email" id="paze-email" class="form-input" value="integrations@spreedly.com"
+                    placeholder="customer@example.com">
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label"><strong>Button Display:</strong></label>
+                  <select id="paze-button-mode" class="form-input">
+                    <option value="static" selected>Static — always show Paze button</option>
+                    <option value="dynamic">Dynamic — show only after canCheckout succeeds</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label"><strong>Checkout Intent:</strong></label>
+                  <select id="paze-intent" class="form-input">
+                    <option value="">Review & Pay (default)</option>
+                    <option value="EXPRESS_CHECKOUT">Express Pay</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <input type="checkbox" id="paze-retain-pm"> Retain payment method
+                  (requires Advanced Vault +
+                  TRID)
+                </div>
+
+                <div class="button-customization">
+                  <div class="form-group">
+                    <label class="form-label" for="paze-btn-color"><strong>Color</strong></label>
+                    <select id="paze-btn-color" class="form-input">
+                      <option value="pazeblue" selected>pazeblue (default)</option>
+                      <option value="midnightBlack">midnightBlack</option>
+                      <option value="white">white</option>
+                      <option value="whitewithoutline">whitewithoutline</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="paze-btn-shape"><strong>Shape</strong></label>
+                    <select id="paze-btn-shape" class="form-input">
+                      <option value="default" selected>default</option>
+                      <option value="rectangle">rectangle</option>
+                      <option value="pill">pill</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <input type="checkbox" id="paze-btn-disable-max-height"> Disable max height
+                  </div>
+                </div>
+
+                <div id="review-panel" class="review-panel hidden"></div>
+
+                <div id="paze-pay-btn" class="paze-button-wrap hidden">
+                  <paze-button></paze-button>
+                </div>
+                <button type="button" id="paze-complete-btn" class="submit-btn secondary hidden">Complete
+                  Payment</button>
+                <button type="button" id="paze-reset-btn" class="submit-btn secondary hidden">Reset</button>
+
+                <div id="result-card" class="result-card hidden">
+                  <h4 id="result-title" style="margin-bottom: 0.5rem;"></h4>
+                  <p id="result-message" style="color: var(--color-gray-600); font-size: 0.875rem;"></p>
+                </div>
+
+                <div id="status-message" class="status-message"></div>
+              </div>
+            </div>
+
+            <div id="error-state" class="card hidden" style="border-top: 4px solid var(--color-error);">
+              <h3 style="color: var(--color-error); margin-bottom: 1rem;">Error</h3>
+              <p id="error-message" style="color: var(--color-gray-600);"></p>
+              <button onclick="window.location.reload()" class="btn btn-secondary" style="margin-top: 1rem;">
+                Try Again
+              </button>
+            </div>
+          </div>
+
+          <div class="config-panel" id="config-panel">
+            <div class="config-section">
+              <div class="config-section-title">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                  stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                </svg>
+                About Paze
+              </div>
+              <p style="color: var(--color-gray-600); font-size: 0.875rem; line-height: 1.6;">
+                Paze is a bank-backed digital wallet. The merchant loads the Paze SDK script; Spreedly's
+                <code>SpreedlyPaze</code> class orchestrates eligibility checks, the checkout popup, and securedPayload
+                retrieval.
+              </p>
+            </div>
+
+            <div class="config-section">
+              <div class="config-section-title">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                  stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 0 1 0 3.75H5.625a1.875 1.875 0 0 1 0-3.75Z" />
+                </svg>
+                Flow Steps
+              </div>
+              <ol style="color: var(--color-gray-600); font-size: 0.875rem; line-height: 1.8; padding-left: 1.25rem;">
+                <li>Load Paze SDK script tag on the page</li>
+                <li>Pass <code>clientConfig</code> from merchant UI into <code>SpreedlyPaze</code></li>
+                <li>Initialize <code>SpreedlyPaze</code> with auth params</li>
+                <li>Check customer eligibility (optional)</li>
+                <li>Launch Paze checkout popup</li>
+                <li>Complete flow to obtain securedPayload</li>
+                <li>Create Spreedly payment method (<code>POST payment_methods</code>)</li>
+              </ol>
+            </div>
+
+            <div class="config-section">
+              <div class="config-section-title">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                  stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M9.53 16.122a3 3 0 0 0-5.78 1.128 2.25 2.25 0 0 1-2.4 2.245 4.5 4.5 0 0 0 8.4-2.245c0-.399-.078-.78-.22-1.128Zm0 0a15.998 15.998 0 0 0 3.388-1.62m-5.043-.025a15.994 15.994 0 0 1 1.622-3.395m3.42 3.42a15.995 15.995 0 0 0 4.764-4.648m3.504-2.5a2.25 2.25 0 0 0-2.25-2.25" />
+                </svg>
+                Button guidelines
+              </div>
+              <ul style="color: var(--color-gray-600); font-size: 0.875rem; line-height: 1.8; padding-left: 1.25rem;">
+                <li>Show the branded Paze button on page load (static mode)</li>
+                <li>Place it where checkout starts — cart, product, or payment page</li>
+                <li>Use Express Pay to reduce clicks after wallet selection</li>
+                <li>Let Paze collect shipping via Change Shipping Address</li>
+              </ul>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="container footer-inner">
+        <span>Spreedly Web SDK Demo</span>
+        <div class="footer-links">
+          <a href="https://spreedly.com" target="_blank">Spreedly</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script src="https://checkout.wallet.cat.earlywarning.io/web/resources/js/digitalwallet-sdk.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="../shared/utils.js"></script>
+  <script src="./paze.js"></script>
+</body>
+
+</html>

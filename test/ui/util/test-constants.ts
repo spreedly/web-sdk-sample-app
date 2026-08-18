@@ -105,6 +105,12 @@ export const SELECTORS = {
   NUPAY_AUTHORIZE_PENDING_BUTTON: 'a:has-text("Leave Pending")',
   PARITY_OPTION_CARD_UPDATER: '#config-eligible-for-card-updater',
   PARITY_OPTION_IS_LOADED_RESULT: '#hf-demo-is-loaded-result',
+  ACH_PAYMENTS_BUTTON: '[data-flow="ach-payments"]',
+  ACH_ACCOUNT_NUMBER_INPUT: '#ach-account',
+  ACH_ROUTING_NUMBER_INPUT: '#ach-routing',
+  ACH_ERROR_MESSAGE: '.status-message',
+  STRIPE_RADAR_BUTTON: '[data-flow="stripe-radar"]',
+  STRIPE_RADAR_PAY_BUTTON: '#pay-btn'
 } as const;
 
 export const THREE_DS_SELECTORS = {
@@ -229,7 +235,14 @@ export const TEST_DATA = {
   STRIPE_APM_SEPA_COUNTRY: "IE",
   STRIPE_APM_SEPA_COUNTRY_STATE: "Dublin",
   STRIPE_APM_BANK_NAME_EPS: "Bank Austria",
-  STRIPE_APM_BANK_NAME_PRZELEWY24: "alior_bank"
+  STRIPE_APM_BANK_NAME_PRZELEWY24: "alior_bank",
+  ACH_ACCOUNT_NUMBER: "9876543210",
+  ACH_ACCOUNT_NUMBER_INVALID: "9876543211",
+  ACH_ROUTING_NUMBER: "021000021",
+  ACH_ROUTING_NUMBER_INVALID: "021000022",
+  ACH_FIRST_NAME: "Bob",
+  ACH_LAST_NAME: "Smith",
+  ACH_BANK_NAME: "First Bank of Elbonia",
 };
 
 export const HEADINGS = {
@@ -271,6 +284,8 @@ export const ERROR_MESSAGES = {
   ERROR_MESSAGE_UNAUTHORIZED: "Request failed with status code 401",
   ERROR_MESSAGE_INVALID_YEAR: "Request failed with status code 422",
   TOKENIZATION_FAILED_MESSAGE: "Tokenization failed. Please try again.",
+  ACH_INVALID_ROUTING_NUMBER: "Routing number is invalid",
+  ACH_INVALID_ACCOUNT_NUMBER: "Request failed with status code 422",
 };
 
 export const ERROR_SELECTORS = {

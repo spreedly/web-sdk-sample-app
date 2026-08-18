@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stripe Radar | Spreedly Web SDK Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="../shared/styles.css">
+  <!-- Stripe.js — required for sdk.stripeRadar() to create a Radar session -->
+  <script src="https://js.stripe.com/v3/"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+
+<body>
+  <div class="page-wrapper">
+    <!-- Header -->
+    <header class="header">
+      <div class="container header-inner">
+        <a href="../index.html" class="logo">
+          <span class="logo-icon">S</span>
+          Spreedly Web SDK
+        </a>
+        <span class="nav-badge" id="sdk-badge">Loading...</span>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+      <div class="container">
+        <div class="tokenize-form" style="max-width: 560px; margin: 0 auto;">
+          <a href="../index.html" class="back-link">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+              stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+            </svg>
+            Back to flows
+          </a>
+
+          <h1 class="mb-2">Stripe Radar</h1>
+          <p class="mb-6" style="color: var(--color-gray-500);">
+            Create a Stripe Radar fraud session with <code>sdk.stripeRadar()</code>, then purchase through the
+            Stripe Payment Intents gateway with the session id forwarded to Stripe.
+          </p>
+
+          <!-- Loading State -->
+          <div id="loading-state" class="card" style="text-align: center; padding: 3rem;">
+            <div class="loading">
+              <span class="spinner"></span>
+              <span>Initializing SDK...</span>
+            </div>
+          </div>
+
+          <!-- Payment Form -->
+          <div id="payment-form-section" class="hidden">
+            <div class="card">
+              <form id="payment-form">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label" for="first_name">First Name</label>
+                    <input type="text" id="first_name" name="first_name" class="form-input" placeholder="John">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="last_name">Last Name</label>
+                    <input type="text" id="last_name" name="last_name" class="form-input" placeholder="Doe">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" id="hosted-field-label-card-number">Card Number</label>
+                  <div id="card-number-field" class="hosted-field-container"></div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" id="hosted-field-label-cvv">CVV</label>
+                  <div id="cvv-field" class="hosted-field-container" style="max-width: 120px;"></div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label" for="month">Expiry Month</label>
+                    <input type="text" id="month" name="month" class="form-input" placeholder="MM" maxlength="2"
+                      inputmode="numeric" pattern="[0-9]*">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="year">Expiry Year</label>
+                    <input type="text" id="year" name="year" class="form-input" placeholder="YYYY" maxlength="4"
+                      inputmode="numeric" pattern="[0-9]*">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="amount">Amount (USD)</label>
+                  <input type="number" id="amount" name="amount" class="form-input" value="25.00" min="0.50"
+                    step="0.01" style="max-width: 160px;">
+                </div>
+
+                <!-- Status Message -->
+                <div id="status-message" class="status-message"></div>
+
+                <button type="button" id="pay-btn" class="btn btn-primary btn-block btn-lg mt-4" disabled>
+                  <span class="btn-text">Pay with Stripe Radar</span>
+                  <span class="btn-loading" style="display: none;">
+                    <span class="spinner"></span>
+                    <span class="loading-text">Processing...</span>
+                  </span>
+                </button>
+
+                <div class="security-badge mt-4" style="justify-content: center;">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
+                  </svg>
+                  <span>PCI-compliant hosted fields by Spreedly</span>
+                </div>
+              </form>
+            </div>
+
+            <!-- Test Card Info -->
+            <div class="test-info mt-4">
+              <div class="test-info-title">Test Data. <a href="https://developer.spreedly.com/docs/test-data"
+                  target="_blank">Click here</a> for more details.</div>
+              <p style="color: var(--color-gray-600);">
+                Card: <code>4111 1111 1111 1111</code> &nbsp;
+                CVV: <code>123</code> &nbsp;
+                Expiry: <code>12/28</code>
+              </p>
+              <p style="color: var(--color-gray-600); margin-top: 0.5rem;">
+                The publishable key in <code>stripe-radar.js</code> must belong to the same Stripe account as the
+                Spreedly Stripe gateway (<code>STRIPE_GATEWAY_TOKEN_NEW</code>), or Stripe can't correlate the session.
+              </p>
+            </div>
+          </div>
+
+          <!-- Result Section -->
+          <div id="result-section" class="hidden"></div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container footer-inner">
+        <span>Spreedly Web SDK Demo</span>
+        <div class="footer-links">
+          <a href="https://spreedly.com" target="_blank">Spreedly</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Scripts -->
+  <script src="../shared/utils.js"></script>
+  <script src="./stripe-radar.js"></script>
+</body>
+
+</html>

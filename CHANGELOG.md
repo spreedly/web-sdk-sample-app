@@ -5,62 +5,139 @@ All notable changes to the Spreedly Web SDK will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.2.0] - 2026-06-05
+## [1.5.1] - 2026-08-14
 
 ### Added
+
+- **Paze digital wallet demo** (HC-1633): new `/paze` flow using `SpreedlyPaze` (merchant-loaded Paze sandbox script, eligibility via `canCheckout`, Review & Pay vs Express Pay, change card/shipping, retain + provision network token) and `POST /api/v1/paze-payment-method` to create a Spreedly `third_party_network_token` payment method from `securedPayload`. CSP allows Paze sandbox and production hosts. See `docs/paze/` (integration guide + API reference).
+
+
+
+## [1.4.1] - 2026-07-31
+
+
+
+### Added
+
+- **Click to Pay (Mastercard SRC)**: new `SpreedlyClickToPay` entry point (exposed from the Hosted Fields bundle) for checkout with Mastercard Click to Pay — identity lookup (recognized device / OTP / new user), Mastercard's `<src-card-list>`/`<src-otp-input>` components driven by the SDK, checkout in a popup or embedded drawer (`checkoutPresentation`), and tokenization into a standard Spreedly payment method. Single-entry integration via `config.fields`: the SDK creates and mounts its own hosted card fields (exposed as `c2p.hostedFields`), encrypts new-card PANs with Mastercard `encryptCard` inside the number iframe, and runs all tokenization in-iframe — the PAN/CVV never touch the merchant page. Legacy kebab-case C2P event names are preserved for migration; `error` events carry a machine-routable stage `code`. See `docs/click-to-pay/` (integration guide + migration guide from legacy `Spreedly.c2pInit`).
+- **Test SCA provider 3DS Global support**: transactions created with Spreedly's test SCA provider (`sca_provider_type: "test"`) now run the 3DS Global flow. These transactions carry no `managed_order_token`, so Forter is not involved — the SDK presents the challenge when the transaction supplies one and completes authentication server-side otherwise, emitting the same `onChallenge`/`onSuccess`/`onError` callbacks as the Forter flow.
+- **Mandate passthrough** (AC-62): optional `mandate` field on the tokenization APIs — `SubmitParams` (Hosted Fields `submit()` and Express Checkout `submitParams`/`updateSubmitParams`) and the `setupACHPayment` config. Forwarded verbatim to Spreedly Core at `payment_method.mandate` alongside the tokenized payment method, and omitted from the request when empty. Opaque by design via a new exported `Mandate` type (`Record<string, unknown>`) — Spreedly Core owns the mandate schema and validation.
+
+
+
+## [1.3.1] - 2026-07-23
+
+
+
+### Added
+
+- **ACH payments**: `setupACHPayment(config)`, `submitACHPayment()`, and `clearACHPayment()` methods (available from both Hosted Fields and Express Checkout), plus `achTokenGenerated` and `achPaymentError` events, for tokenizing US and Canadian bank accounts. See `docs/ach-payments/INTEGRATION_GUIDE.md`
+- **Stripe Radar**: `stripeRadar(publishableKey, options?)` method (available from both Hosted Fields and Express Checkout) that wraps `Stripe.createRadarSession()` and resolves with the Radar session id (or `null` on failure) to forward with a Stripe Payment Intents charge. Legacy parity for `Spreedly.stripeRadar(...)` (callback → Promise). See `docs/stripe-radar/INTEGRATION_GUIDE.md`.
+
+
+
+### Changed
+
+- **Breaking (offsite):** `offsitePaymentError` **payload shape changed**. The payload was `{ message, error }` in 1.2.0 and is now `{ message, status, errors }`. Refer to `docs/offsite-payments/general/INTEGRATION_GUIDE.md` for complete details.
+
+
+
+### Fixed
+
+- **Hosted Fields cardholder name typing/docs**: `HostedFieldsFormData.first_name` and `last_name` are now correctly typed as optional. Provide **either** `full_name` **or** both `first_name` + `last_name` — the SDK forwards whatever is supplied and Spreedly Core enforces the requirement. API reference, migration guide, and the Hosted Fields integration guide updated accordingly. (Express Checkout's prebuilt form is unchanged — it still renders `first_name`/`last_name` by default.)
+- **Hosted Fields integration guide** now documents `sdk.validate()` and the `validation` event (structured field-level validation), which previously only appeared in the migration guide.
+
+
+
+## [1.2.0] - 2026-06-05
+
+
+
+### Added
+
 - Remaining hosted-fields parity methods (HC-1450 follow-up): `setInputMode`,
-  `setRequiredAttribute`, `resetFields`, `isLoaded`, and `reload`.
+`setRequiredAttribute`, `resetFields`, `isLoaded`, and `reload`.
 - New hosted-fields callback event: `consoleError` (uncaught error inside a
-  hosted iframe) (HC-1450).
+hosted iframe) (HC-1450).
 - `email` as an optional Express Checkout form field.
 - `eligible_for_card_updater` flag accepted in hosted-fields form data.
 - Legacy-iframe migration guide (`docs/migration-guide/MIGRATION_GUIDE.md`).
 - Option to hide the built-in card-type badge (e.g. `VISA`): `sdk.setShowCardTypeIcon(false)`
-  on Hosted Fields and `uiConfig.showCardTypeIcon: false` on Express Checkout. Shown by
-  default. Useful when rendering your own brand icon from the `cardType` field.
+on Hosted Fields and `uiConfig.showCardTypeIcon: false` on Express Checkout. Shown by
+default. Useful when rendering your own brand icon from the `cardType` field.
+
+
 
 ### Fixed
+
 - CVV frame tab event not firing (HC-1450).
 
+
+
 ### Changed
+
 - Tightened the CI bundle-size budget for the CVV iframe bundle (max 140 KB).
+
+
 
 ## [1.1.0] - 2026-05-26
 
+
+
 ### Added
+
 - Hosted-fields parity methods to close gaps with the legacy iframe:
-  `setLabel`, `setTitle`, `setNumberFormat`, `setPlaceholderStyles`,
-  `toggleMask`, `toggleAutoComplete`, `transferFocus`, `validate`,
-  `setFieldStateReporting`, `destroy`, and `setStyles` (renamed from
-  `setStyle`); plus `removeHandlers` on the shared base class (HC-1450).
+`setLabel`, `setTitle`, `setNumberFormat`, `setPlaceholderStyles`,
+`toggleMask`, `toggleAutoComplete`, `transferFocus`, `validate`,
+`setFieldStateReporting`, `destroy`, and `setStyles` (renamed from
+`setStyle`); plus `removeHandlers` on the shared base class (HC-1450).
 - New hosted-fields callback events: `fieldStateChange` (live field metadata)
-  and `validation` (client-side validation snapshot, emitted by `validate()`
-  and when `submit()` is blocked client-side) (HC-1450).
+and `validation` (client-side validation snapshot, emitted by `validate()`
+and when `submit()` is blocked client-side) (HC-1450).
 - **Gateway-specific 3D Secure** flow support, alongside the existing
-  SCA-provider flow (HC-1073).
+SCA-provider flow (HC-1073).
 - New Recache config options: `allow_blank_name`, `allow_expired_date`,
-  `allow_blank_date` (HC-1139).
+`allow_blank_date` (HC-1139).
+
+
 
 ### Fixed
+
 - `maskedFormat` input defect on the card-number field (HC-1450).
+
+
 
 ## [1.0.1] - 2026-01-12
 
+
+
 ### Added
+
 - `allow_blank_date` configuration option to the SDK.
 
+
+
 ### Fixed
+
 - `allow_blank_name` configuration option.
 - `allow_expired_date` configuration option.
 
+
+
 ### Removed
+
 - Incorrect integration comments from the 3DS code.
 
+
+
 ## [1.0.0] - 2026-01-02
+
+
 
 ### Added
 
 **Monorepo Architecture**
+
 - Migrated to monorepo structure with npm workspaces and Turborepo
 - New package: `@spreedly/core` - Shared utilities, types, logging, and API
 - New package: `@spreedly/hosted-fields` - Secure iframe card inputs
@@ -68,6 +145,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Shared card-type detection and validation logic in core
 
 **3D Secure (3DS) Support**
+
 - `SpreedlyThreeDSLifecycle` class for managing 3DS authentication flows
 - `serializeBrowserInfo()` utility for collecting browser data
 - `detectBrowserInfo()` utility for 3DS device fingerprinting
@@ -75,6 +153,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Status polling and finalization support
 
 **Security Enhancements**
+
 - Console logs removed in production builds (Terser/esbuild)
 - Debugger statements removed in production builds
 - Source maps generated but hidden (not referenced in bundles)
@@ -87,25 +166,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Express-checkout iframe CSP + `sandbox` parity with hosted-fields; hosted-fields CSP cleanup (HC-1340)
 
 **Offsite payments** 
-- (HC-1076): `setupOffsitePayment(config)`, `submitOffsitePayment()`, and `clearOffsitePayment()`   
-  methods plus `offsiteTokenGenerated` and `offsitePaymentError` events for offsite gateways
-  (PayPal, PIX, Boleto, OXXO, NuPay, etc.).
+
+- (HC-1076): `setupOffsitePayment(config)`, `submitOffsitePayment()`, and `clearOffsitePayment()`  
+methods plus `offsiteTokenGenerated` and `offsitePaymentError` events for offsite gateways
+(PayPal, PIX, Boleto, OXXO, NuPay, etc.).
 
 **Stripe APM** (`SpreedlyStripeAPM`) and **Braintree APM**
+
 - (`SpreedlyBraintree`) integrations for Alternative Payment Methods and
-  PayPal/Venmo buttons (HC-1227).
+PayPal/Venmo buttons (HC-1227).
 
 **Usage and performance telemetry** 
+
 - (HC-1077): a core telemetry service tracking events and 
-  metrics across SDK flows, with an events reference doc.
+metrics across SDK flows, with an events reference doc.
 
 **CI/CD Improvements**
+
 - Separate deployment workflows per package
 - Path-filtered deployments (only changed packages deploy)
 - Staging branch support with staging CDN (`core-test.spreedly.com`)
 - Production deployment on push to main
 - Manual stable promotion via tags (`stable-hf`, `stable-ec`)
 - Automated GitHub Release creation with security artifacts
+
+
 
 ### Changed
 
@@ -120,6 +205,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved cross-frame message validation with origin checks
 - Enhanced logging with Datadog integration
 
+
+
 ### Documentation
 
 - Updated `API_REFERENCE.md` - Complete API for both SDKs
@@ -131,17 +218,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+
+
 ## [0.0.5] - 2025-12-03
+
+
 
 ### Added
 
 **CVV Recache Support**
+
 - `setRecache(token, options)` method for enabling recache mode
 - `recache()` method for triggering CVV update (Hosted Fields only)
 - `recacheReady` event when SDK is ready for CVV recache
 - `recacheSuccess` event on successful CVV update
 - Card number field auto-populated and disabled in recache mode
 - Support for retained payment method CVV updates
+
+
 
 ### Changed
 
@@ -150,7 +244,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+
+
 ## [0.0.1] - 2025-0X-XX
+
+
 
 ### Added
 
@@ -169,40 +267,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+
+
 ## Versioning Strategy
 
 We follow [Semantic Versioning](https://semver.org/):
+
 - **MAJOR** (X.0.0): Breaking changes (architecture, API changes)
 - **MINOR** (0.X.0): New features, backwards-compatible
 - **PATCH** (0.0.X): Bug fixes, backwards-compatible
 
+
+
 ## Release Process
 
 1. Bump the version in all four `package.json` files (root + three packages) in
-   lockstep and run `npm i` to sync the lockfile. Versions are never reused.
+  lockstep and run `npm i` to sync the lockfile. Versions are never reused.
 2. Update `CHANGELOG.md` with the changes
 3. Open a PR targeting `main`; merging deploys the changed package(s) to
-   staging (`core-test.spreedly.com`, versioned + `rc` channels)
+  staging (`core-test.spreedly.com`, versioned + `rc` channels)
 4. Verify on staging
 5. For production, push a `hosted-fields-vX.Y.Z` and/or `express-checkout-vX.Y.Z`
-   tag — the tag version must exactly match `package.json`
+  tag — the tag version must exactly match `package.json`
+
+
 
 ## CDN URLs
 
+
+
 ### Production
+
 - Hosted Fields: `https://core.spreedly.com/checkout/sdk/{version}/index.js`
 - Express Checkout: `https://core.spreedly.com/checkout/elements/{version}/express-checkout.js`
 
+
+
 ### Staging
+
 - Hosted Fields: `https://core-test.spreedly.com/checkout/sdk/{version}/index.js`
 - Express Checkout: `https://core-test.spreedly.com/checkout/elements/{version}/express-checkout.js`
+
+
 
 ## Change Categories
 
 Changes are grouped as follows:
+
 - **Added**: New features
 - **Changed**: Changes to existing functionality
 - **Deprecated**: Soon-to-be removed features
 - **Removed**: Removed features
 - **Fixed**: Bug fixes
 - **Security**: Security improvements or fixes
+

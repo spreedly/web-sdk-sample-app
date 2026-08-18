@@ -530,10 +530,53 @@ function updatePayButton() {
   }
 }
 
+// SCA Provider Selection
+function getScaProviderType() {
+  return document.querySelector('input[name="sca-provider"]:checked')?.value || 'forter';
+}
+
+function getScaScenario() {
+  return document.querySelector('input[name="sca-scenario"]:checked')?.value || null;
+}
+
+window.handleScaProviderChange = function() {
+  const providerType = getScaProviderType();
+
+  document.querySelectorAll('.sca-option[data-provider]').forEach(option => {
+    option.classList.toggle('selected', option.dataset.provider === providerType);
+  });
+
+  document.getElementById('sca-scenarios').classList.toggle('hidden', providerType !== 'test');
+  logEvent(`SCA provider set to ${providerType}`);
+};
+
+window.handleScaScenarioChange = function() {
+  const scenario = getScaScenario();
+
+  document.querySelectorAll('.sca-option[data-scenario]').forEach(option => {
+    option.classList.toggle('selected', option.dataset.scenario === scenario);
+  });
+
+  logEvent(`Test scenario set to ${scenario}`);
+};
+
+// The test provider needs an explicit scenario to determine the transaction outcome
+function isScaSelectionValid() {
+  if (getScaProviderType() === 'test' && !getScaScenario()) {
+    showStatus('Please select a test scenario for the test SCA provider.', 'error');
+    return false;
+  }
+  return true;
+}
+
 // Payment Processing
 window.handlePayment = function() {
   const activeTab = document.querySelector('.payment-tab.active').dataset.tab;
-  
+
+  if (!isScaSelectionValid()) {
+    return;
+  }
+
   hideStatus();
   setPayButtonLoading(true);
   logEvent('Starting payment process...');
@@ -596,6 +639,11 @@ async function processPurchaseWith3DS() {
     return;
   }
 
+  if (!isScaSelectionValid()) {
+    setPayButtonLoading(false);
+    return;
+  }
+
   try {
     // Step 1: Collect browser info
     logEvent('Collecting browser info...');
@@ -610,11 +658,16 @@ async function processPurchaseWith3DS() {
     
     const totalAmount = Math.round(getCartTotal() * 100); // Convert to cents
     
+    const providerType = getScaProviderType();
+    const scenario = providerType === 'test' ? getScaScenario() : null;
+    logEvent(`Using ${providerType} SCA provider${scenario ? ` (${scenario})` : ''}`);
+
     const response = await SpreedlyUtils.createPurchaseWith3DS(
       paymentMethodToken,
       totalAmount,
       browserInfo,
-      'USD'
+      'USD',
+      { providerType, scenario }
     );
     
     const transaction = response.transaction;

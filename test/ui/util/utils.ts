@@ -8,6 +8,9 @@ export const TEST_ID = {
 }
 
 export const PLACEHOLDERS = {
+    ACH_FIRST_NAME: "Bob",
+    ACH_LAST_NAME: "Smith",
+    ACH_BANK_NAME: "First Bank of Elbonia",
     EXPRESS_FIRST_NAME: "Joe",
     EXPRESS_LAST_NAME: "Jones",
     EXPRESS_CARD_NUMBER: "1234 5678 9012 3456",
@@ -145,6 +148,23 @@ export const PLACEHOLDERS = {
     },
     getHostedFieldsSubmitButton: async (page: Page) => {
         return page.locator(SELECTORS.HOSTED_SUBMIT_BUTTON);
+    },
+
+    getACHAccountNumberField: async (page: Page) => {
+        return page.locator(SELECTORS.ACH_ACCOUNT_NUMBER_INPUT);
+    },
+    getACHRoutingNumberField: async (page: Page) => {
+        return page.locator(SELECTORS.ACH_ROUTING_NUMBER_INPUT);
+    },
+    
+    getACHFirstNameField: async (page: Page) => {
+        return page.getByPlaceholder(PLACEHOLDERS.ACH_FIRST_NAME);
+    },
+    getACHLastNameField: async (page: Page) => {
+        return page.getByPlaceholder(PLACEHOLDERS.ACH_LAST_NAME);
+    },
+    getACHBankNameField: async (page: Page) => {
+        return page.getByPlaceholder(PLACEHOLDERS.ACH_BANK_NAME);
     },
 
     verifyFormFieldsHostedFields: async (page: Page, cardNumber: string, options?: {
@@ -332,4 +352,39 @@ export const PLACEHOLDERS = {
         expect(paymentMethod.managed).toBe(managed);
         expect(paymentMethod.number).toMatch(new RegExp(`XXXX-XXXX-XXXX-${number.slice(-4)}`));
       },
+
+      fillACHFieldsForm: async (page: Page, options?: {
+        accountNumber?: string;
+        routingNumber?: string;
+        firstName?: string;
+        lastName?: string;
+        bankName?: string;
+      }) => {
+        const accountNumberField = await helperFunctions.getACHAccountNumberField(page);
+        const routingNumberField = await helperFunctions.getACHRoutingNumberField(page);
+        const firstNameField = await helperFunctions.getACHFirstNameField(page);
+        const lastNameField = await helperFunctions.getACHLastNameField(page);
+        const bankNameField = await helperFunctions.getACHBankNameField(page);
+      if (options?.accountNumber) {
+        await accountNumberField.fill(options.accountNumber);
+      }
+      if (options?.routingNumber) {
+        await routingNumberField.fill(options.routingNumber);
+      }
+      if (options?.firstName) {
+        await firstNameField.fill(options.firstName);
+      }
+      if (options?.lastName) {
+        await lastNameField.fill(options.lastName);
+      }
+      if (options?.bankName) {
+        await bankNameField.fill(options.bankName);
+      }
+    },
+
+    waitForResultCardToBeVisible: async (page: Page) => {
+        await expect(page.locator('.result-card')).toBeVisible({ timeout: 10000 });
+    },
+        
 }
+

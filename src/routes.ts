@@ -8,7 +8,8 @@ import {
   createPurchaseTransaction, 
   createPurchaseWith3DS, 
   createPurchaseWith3DSGatewaySpecific, 
-  createSimplePurchase, 
+  createSimplePurchase,
+  createStripeRadarPurchase,
   completeTransaction,
   createOffsitePurchase,
   getTransaction,
@@ -18,6 +19,7 @@ import {
   createBraintreePurchase,
   confirmTransaction,
   createAchPurchase,
+  createPazePaymentMethod,
 } from './controllers/payments';
 import {
   getPPCPClientToken,
@@ -192,9 +194,23 @@ router.post('/payment_methods/:paymentMethodToken/recache', recachePaymentMethod
  *             attempt_3dsecure:
  *               type: boolean
  *               description: If true, uses gateway-specific 3DS instead of sca_provider_key
+ *             sca_provider_type:
+ *               type: string
+ *               enum: [forter, test]
+ *               description: >
+ *                 Which SCA provider to use for 3DS Global. Defaults to the Forter provider.
+ *                 Set to "test" to use Spreedly's test SCA provider, which returns no
+ *                 managed_order_token. Ignored when attempt_3dsecure is true.
+ *             test_scenario:
+ *               type: string
+ *               enum: [authenticated, challenge, not_authenticated]
+ *               description: >
+ *                 Outcome to simulate. Only applies when sca_provider_type is "test".
  *     responses:
  *       200:
  *         description: Purchase transaction created successfully
+ *       400:
+ *         description: Invalid test_scenario value
  *       500:
  *         description: Error creating purchase transaction
  */
@@ -225,9 +241,22 @@ router.post('/purchase', createPurchaseTransaction);
  *               type: string
  *             browser_info:
  *               type: string
+ *             sca_provider_type:
+ *               type: string
+ *               enum: [forter, test]
+ *               description: >
+ *                 Which SCA provider to use. Defaults to the Forter provider. Set to "test"
+ *                 to use Spreedly's test SCA provider, which returns no managed_order_token.
+ *             test_scenario:
+ *               type: string
+ *               enum: [authenticated, challenge, not_authenticated]
+ *               description: >
+ *                 Outcome to simulate. Only applies when sca_provider_type is "test".
  *     responses:
  *       200:
  *         description: Purchase processed successfully
+ *       400:
+ *         description: Invalid test_scenario value
  *       500:
  *         description: Error processing purchase
  */
@@ -297,6 +326,39 @@ router.post('/create-purchase-with-3ds-gateway-specific', createPurchaseWith3DSG
  *         description: Error processing purchase
  */
 router.post('/simple-purchase', createSimplePurchase);
+
+/**
+ * @swagger
+ * /api/v1/stripe-radar-purchase:
+ *   post:
+ *     description: Purchase through the Stripe Payment Intents gateway, forwarding a Stripe Radar session id via gateway_specific_fields.stripe_payment_intents.radar_session_id
+ *     tags: [Transactions]
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: body
+ *         in: body
+ *         required: true
+ *         schema:
+ *           type: object
+ *           properties:
+ *             payment_method_token:
+ *               type: string
+ *             amount:
+ *               type: number
+ *               description: Amount in minor units (cents)
+ *             currency_code:
+ *               type: string
+ *             radar_session_id:
+ *               type: string
+ *               description: Stripe Radar session id from sdk.stripeRadar()
+ *     responses:
+ *       200:
+ *         description: Purchase processed (see radar_session_forwarded flag)
+ *       500:
+ *         description: Error processing purchase
+ */
+router.post('/stripe-radar-purchase', createStripeRadarPurchase);
 
 /**
  * @swagger
@@ -1061,5 +1123,23 @@ router.post('/ppcp/vault/purchase-order', createPPCPVaultPurchaseOrder);
  *         description: Error capturing order
  */
 router.post('/ppcp/vault/purchase-order/:orderId/capture', capturePPCPVaultPurchaseOrder);
+
+/**
+ * @swagger
+ * /api/v1/paze-payment-method:
+ *   post:
+ *     description: Create a Paze payment method from securedPayload via third_party_network_token
+ *     tags: [Paze Payments]
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: Paze payment method created successfully
+ *       400:
+ *         description: Missing required parameters
+ *       500:
+ *         description: Error creating payment method
+ */
+router.post('/paze-payment-method', createPazePaymentMethod);
 
 export default router;

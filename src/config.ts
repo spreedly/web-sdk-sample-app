@@ -12,6 +12,7 @@ interface Config {
   spreedlyAccessSecret: string;
   spreedlyGatewayToken: string;
   spreedlySCAProviderKey: string;
+  spreedlySCAProviderKeyTestScenario: string;
   stripeGatewayToken: string;
   paypalGatewayToken: string;
   ebanxGatewayToken: string;
@@ -22,6 +23,10 @@ interface Config {
   paypalApiBaseUrl: string;
   // PPCP via Spreedly's paypal_commerce_platform gateway (the production path).
   ppcpGatewayToken: string;
+  pazeCertificateToken: string;
+  pazeClientId: string;
+  pazeClientName: string;
+  pazeProfileId: string;
 }
 
 const config: Config = {
@@ -34,6 +39,7 @@ const config: Config = {
   spreedlyAccessSecret: process.env.SPREEDLY_ACCESS_SECRET_NEW || '',
   spreedlyGatewayToken: process.env.SPREEDLY_GATEWAY_TOKEN_NEW || '',
   spreedlySCAProviderKey: process.env.SPREEDLY_SCA_PROVIDER_KEY_NEW || '',
+  spreedlySCAProviderKeyTestScenario: process.env.SPREEDLY_SCA_PROVIDER_KEY_TEST_SCENARIO_NEW || '',
   stripeGatewayToken: process.env.STRIPE_GATEWAY_TOKEN_NEW || '',
   paypalGatewayToken: process.env.PAYPAL_GATEWAY_TOKEN_NEW || '',
   ebanxGatewayToken: process.env.EBANX_GATEWAY_TOKEN_NEW || '',
@@ -45,6 +51,10 @@ const config: Config = {
     process.env.PAYPAL_API_BASE_URL_NEW || 'https://api-m.sandbox.paypal.com',
   // PPCP gateway — see ppcp/integration-plan/14-spreedly-pivot-plan.md §7Z
   ppcpGatewayToken: process.env.PPCP_GATEWAY_TOKEN_NEW || '',
+  pazeCertificateToken: process.env.PAZE_CERTIFICATE_TOKEN || '',
+  pazeClientId: process.env.PAZE_CLIENT_ID || '',
+  pazeClientName: process.env.PAZE_CLIENT_NAME || '',
+  pazeProfileId: process.env.PAZE_PROFILE_ID || '',
 };
 
 export default config;

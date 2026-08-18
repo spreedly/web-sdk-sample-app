@@ -83,18 +83,45 @@ async function createPurchase(paymentMethodToken, amount, currencyCode = 'USD') 
   }
 }
 
-async function createPurchaseWith3DS(paymentMethodToken, amount, browserInfo, currencyCode = 'USD') {
+async function createPurchaseWith3DS(paymentMethodToken, amount, browserInfo, currencyCode = 'USD', scaOptions = {}) {
   try {
     const response = await axios.post(`${LOCAL_API_URL}/create-purchase-with-3ds`, {
       payment_method_token: paymentMethodToken,
       amount: amount,
       currency_code: currencyCode,
       browser_info: browserInfo,
+      sca_provider_type: scaOptions.providerType,
+      test_scenario: scaOptions.scenario,
     });
     return response.data;
   } catch (error) {
     console.error('Error creating 3DS purchase:', error.response?.data ? error.response?.data : error);
     throw error.response?.data ? error.response?.data : error;
+  }
+}
+
+/** Creates a Paze payment method from securedPayload via third_party_network_token */
+async function createPazePaymentMethod({
+  payloadId,
+  provisionNetworkToken,
+  retained,
+  securedPayload,
+  sessionId,
+  shippingAddress,
+}) {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/paze-payment-method`, {
+      payloadId,
+      provisionNetworkToken,
+      retained,
+      securedPayload,
+      sessionId,
+      shippingAddress,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error creating Paze payment method:', error.response?.data || error);
+    throw error.response?.data || error;
   }
 }
 
@@ -200,6 +227,23 @@ function loadSDKScript(callback) {
   document.body.appendChild(script);
 }
 
+// Stripe Radar — runs a server-side purchase through the Stripe Payment Intents
+// gateway, forwarding the radar session id created by sdk.stripeRadar().
+async function createStripeRadarPurchase(paymentMethodToken, amount, radarSessionId, currencyCode = 'USD') {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/stripe-radar-purchase`, {
+      payment_method_token: paymentMethodToken,
+      amount: amount,
+      currency_code: currencyCode,
+      radar_session_id: radarSessionId,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error creating Stripe Radar purchase:', error);
+    throw error;
+  }
+}
+
 // Offsite Payments
 async function createOffsitePurchase(paymentMethodToken, amount, redirectUrl, callbackUrl, currencyCode = 'USD', gateway = 'spreedly') {
   try {
@@ -222,7 +266,7 @@ async function createOffsitePurchase(paymentMethodToken, amount, redirectUrl, ca
 // (bank_account) payment method token using the configured Spreedly Test gateway.
 async function createAchPurchase(paymentMethodToken, amount, currencyCode = 'USD') {
   try {
-    const response = await axios.post(`${LOCAL_API_URL}/ach-purchase`, {
+    const response = await axios.post(`${API_BASE_URL}/ach-purchase`, {
       payment_method_token: paymentMethodToken,
       amount,
       currency_code: currencyCode,
@@ -274,6 +318,10 @@ window.SpreedlyUtils = {
   retainPaymentMethod,
   createPurchase,
   createPurchaseWith3DS,
+  createPazePaymentMethod,
+
+  // Stripe Radar
+  createStripeRadarPurchase,
 
   // Offsite Payments
   createOffsitePurchase,
@@ -281,7 +329,7 @@ window.SpreedlyUtils = {
 
   // ACH Payments
   createAchPurchase,
-  
+
   // UI helpers
   showStatus,
   hideStatus,

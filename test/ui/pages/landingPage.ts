@@ -31,4 +31,14 @@ export const landingPage = {
         await expect(offsitePaymentsButton).toBeVisible();
         await offsitePaymentsButton.click();
 },
+    clickOnACHPaymentsButton: async (page: Page) => {
+        const achPaymentsButton = page.locator(SELECTORS.ACH_PAYMENTS_BUTTON);
+        await expect(achPaymentsButton).toBeVisible();
+        await achPaymentsButton.click();
+},
+    clickOnStripeRadarButton: async (page: Page) => {
+        const stripeRadarButton = page.locator(SELECTORS.STRIPE_RADAR_BUTTON);
+        await expect(stripeRadarButton).toBeVisible();
+        await stripeRadarButton.click();
+},
 }

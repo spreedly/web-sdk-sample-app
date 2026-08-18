@@ -55,7 +55,8 @@ If you used 3DS, see [3DS — Global / Forter](#3ds--global--forter).
 9. [Offsite payments — PayPal & redirect-style](#offsite-payments--paypal--redirect-style)
 10. [Offsite payments — Stripe APM](#offsite-payments--stripe-apm)
 11. [Offsite payments — Braintree (PayPal/Venmo)](#offsite-payments--braintree-paypalvenmo)
-12. [Express Checkout 🆕](#express-checkout-)
+12. [ACH payments 🆕](#ach-payments-)
+13. [Express Checkout 🆕](#express-checkout-)
 
 ---
 
@@ -160,7 +161,7 @@ sdk.submit(
 | Legacy iFrame | Checkout Web SDK | Status |
 |---|---|---|
 | `Spreedly.tokenizeCreditCard(opts?)` — returned `false` so it could be used directly as an inline `onsubmit` handler | `sdk.submit(formData, submitParams?)` — returns `void`; call `event.preventDefault()` yourself in form submit handlers | ⚠️ |
-| `Spreedly.setParam('first_name' \| 'last_name' \| 'full_name' \| 'month' \| 'year' \| 'email' \| 'address1' \| ... \| 'shipping_*', val)` | `formData` (typed `HostedFieldsFormData`; mandatory: `first_name`, `last_name`, `month`, `year`) | ✅ | Every legacy `permittedStringParams` field has a typed slot on `formData` — see [the typed `HostedFieldsFormData` surface](#typed-formdata-surface) below. Unknown keys are dropped server-side and the SDK logs a console warning listing the offending keys so typos (e.g. `address_1` vs `address1`) surface fast. |
+| `Spreedly.setParam('first_name' \| 'last_name' \| 'full_name' \| 'month' \| 'year' \| 'email' \| 'address1' \| ... \| 'shipping_*', val)` | `formData` (typed `HostedFieldsFormData`; required: `month`, `year`, plus a cardholder name — either `full_name` **or** both `first_name` + `last_name`) | ✅ | Every legacy `permittedStringParams` field has a typed slot on `formData` — see [the typed `HostedFieldsFormData` surface](#typed-formdata-surface) below. Unknown keys are dropped server-side and the SDK logs a console warning listing the offending keys so typos (e.g. `address_1` vs `address1`) surface fast. |
 | `Spreedly.setParam('metadata', {...})` | `submitParams.metadata` | ✅ |
 | `Spreedly.setParam('allow_blank_name' \| 'allow_blank_date' \| 'allow_expired_date', true)` | `submitParams.allow_blank_name` / `submitParams.allow_blank_date` / `submitParams.allow_expired_date` | ✅ |
 | `Spreedly.setParam('eligible_for_card_updater', true)` | `formData.eligible_for_card_updater` (boolean) | ✅ | Legacy boolean flag; lives on `formData` because it ends up on `payment_method.credit_card` server-side, alongside billing/shipping. |
@@ -177,14 +178,16 @@ one-to-one:
 
 ```ts
 type HostedFieldsFormData = {
-  // Mandatory (matches legacy)
-  first_name: string;
-  last_name:  string;
+  // Required expiry
   month:      string;     // 'MM'
   year:       string;     // 'YYYY'
 
-  // Cardholder
-  full_name?:    string;
+  // Cardholder name — provide EITHER full_name OR both first_name + last_name
+  first_name?: string;
+  last_name?:  string;
+  full_name?:  string;
+
+  // Cardholder (other)
   email?:        string;
   company?:      string;
   phone_number?: string;
@@ -277,6 +280,7 @@ are marked ⚠️.
 | `'3ds:status'` `(event)` (single dispatcher; switch on `event.action`) | Typed callbacks on the `SpreedlyThreeDSLifecycle` constructor | ⚠️ | See [3DS](#3ds--global--forter) — replaced by `callbacks: { onChallenge, onSuccess, onError, onDeviceFingerprint?, onTriggerCompletion? }`. |
 | _none_ | `'close'` (Hosted Fields after `destroy()`, and Express Checkout) | 🆕 | |
 | _none_ | `'offsiteTokenGenerated'` / `'offsitePaymentError'` | 🆕 | See [Offsite payments](#offsite-payments--paypal--redirect-style). |
+| _none_ | `'achTokenGenerated'` / `'achPaymentError'` | 🆕 | See [ACH payments](#ach-payments-). |
 
 ---
 
@@ -457,6 +461,39 @@ const result = await braintree.mount();
 
 Reference: `web-sdk-sample-app/src/static/offsite-payments/braintree/braintree.js`,
 `checkout-web-sdk/docs/offsite-payments/braintree/INTEGRATION_GUIDE.md`
+
+---
+
+## ACH payments 🆕
+
+No equivalent in the legacy iFrame SDK (legacy used a hand-built transparent-redirect
+form posting `payment_method_type=bank_account` to
+`https://core.spreedly.com/v1/payment_methods`).
+
+```js
+// Checkout Web SDK
+sdk.on('achTokenGenerated', ({ token, last4 }) => {
+  // POST token to your backend → run the gateway purchase
+});
+sdk.on('achPaymentError', (err) => { /* ... */ });
+
+sdk.setupACHPayment({
+  bankRoutingNumber:     '021000021',
+  bankAccountNumber:     '9876543210',
+  fullName:              'Bob Smith',           // OR firstName + lastName
+  bankAccountType:       'checking',            // 'checking' | 'savings'
+  bankAccountHolderType: 'personal',            // 'personal' | 'business'
+});
+sdk.submitACHPayment();
+```
+
+| Legacy iFrame | Checkout Web SDK | Status |
+|---|---|---|
+| Hand-built `<form>` posting `payment_method_type=bank_account` | `sdk.setupACHPayment(config)` + `sdk.submitACHPayment()` + `sdk.clearACHPayment()` | 🆕 |
+| _none_ | Events: `'achTokenGenerated'` (`{ token, last4 }`), `'achPaymentError'` | 🆕 |
+
+Reference: `web-sdk-sample-app/src/static/ach-payments/ach-payments.js`,
+`checkout-web-sdk/docs/ach-payments/INTEGRATION_GUIDE.md`
 
 ---
 
