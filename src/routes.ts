@@ -22,7 +22,6 @@ import {
   createPazePaymentMethod,
 } from './controllers/payments';
 import {
-  getPPCPClientToken,
   getPPCPConfig,
   createPPCPOrder,
   capturePPCPOrder,
@@ -697,27 +696,6 @@ router.post('/transactions/:transactionToken/confirm', confirmTransaction);
  *         description: Error creating purchase
  */
 router.post('/ach-purchase', createAchPurchase);
-
-/**
- * @swagger
- * /api/v1/ppcp/client-token:
- *   get:
- *     description: (PPCP interim spike) Mint a browser-safe PayPal client token for the JS SDK v6 createInstance({ clientToken }). Talks to PayPal sandbox directly.
- *     tags: [PPCP]
- *     produces:
- *       - application/json
- *     responses:
- *       200:
- *         description: Client token minted
- *         schema:
- *           type: object
- *           properties:
- *             clientToken:
- *               type: string
- *       500:
- *         description: Error minting client token
- */
-router.get('/ppcp/client-token', getPPCPClientToken);
 
 /**
  * @swagger

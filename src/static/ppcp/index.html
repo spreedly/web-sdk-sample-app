@@ -442,11 +442,6 @@
                     <span class="why">separate window</span>
                   </label>
                   <label class="cfg-opt">
-                    <input type="radio" name="presentation-mode" value="modal">
-                    <span>modal</span>
-                    <span class="why">WebView only</span>
-                  </label>
-                  <label class="cfg-opt">
                     <input type="radio" name="presentation-mode" value="payment-handler">
                     <span>payment-handler</span>
                     <span class="why">experimental</span>
@@ -491,7 +486,7 @@
                     <span class="why">shows a button</span>
                   </label>
                 </div>
-                <p class="cfg-note">Only applies to redirect and mobile app-switch. Popup and modal never navigate, so nothing fires.</p>
+                <p class="cfg-note">Only applies to redirect and mobile app-switch. Popup never navigates, so nothing fires.</p>
               </div>
 
               <div class="cfg-group">
@@ -509,7 +504,7 @@
                     <span class="why">fullPageOverlay: false</span>
                   </label>
                 </div>
-                <p class="cfg-note">Works in redirect as well as popup and modal — PayPal checks it on all of them.</p>
+                <p class="cfg-note">Works in redirect as well as popup — PayPal checks it on both.</p>
               </div>
 
               <div class="cfg-group">
@@ -540,23 +535,18 @@
                 </div>
               </div>
               <div class="cfg-group">
-                <div class="cfg-group-label">Button shape <code>buttonStyle.shape</code></div>
+                <div class="cfg-group-label">Corner radius <code>buttonStyle</code></div>
+                <p class="cfg-hint">Any CSS length — <code>0</code>, <code>4px</code>, <code>9999px</code>. Blank leaves PayPal's default (4px).</p>
                 <div class="cfg-options">
                   <label class="cfg-opt">
-                    <input type="radio" name="btn-shape" value="" checked>
-                    <span>Default</span>
+                    <span>PayPal family</span>
+                    <input type="text" name="paypal-radius" placeholder="e.g. 4px" autocomplete="off">
+                    <span class="why">--paypal-button-border-radius</span>
                   </label>
                   <label class="cfg-opt">
-                    <input type="radio" name="btn-shape" value="sharp">
-                    <span>Sharp</span>
-                  </label>
-                  <label class="cfg-opt">
-                    <input type="radio" name="btn-shape" value="rounded">
-                    <span>Rounded</span>
-                  </label>
-                  <label class="cfg-opt">
-                    <input type="radio" name="btn-shape" value="pill">
-                    <span>Pill</span>
+                    <span>Venmo</span>
+                    <input type="text" name="venmo-radius" placeholder="e.g. 4px" autocomplete="off">
+                    <span class="why">--venmo-button-border-radius</span>
                   </label>
                 </div>
               </div>

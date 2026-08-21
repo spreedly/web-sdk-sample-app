@@ -274,22 +274,29 @@ function getAmount() {
   return getCartTotal().toFixed(2); // Orders V2 expects a decimal string, e.g. "229.98"
 }
 
-// Read the button-appearance selectors -> SpreedlyPPCP buttonStyle ({ label?, shape? }).
-// (v6 exposes no button color, so there is no color control here.)
 // The SDK config panel uses radios, one group per SpreedlyPPCP option.
 function cfg(name) {
   const picked = document.querySelector(`input[name="${name}"]:checked`);
   return picked ? picked.value : '';
 }
 
+// Free-text config inputs (the corner radii).
+function cfgText(name) {
+  const field = document.querySelector(`input[name="${name}"]`);
+  return field ? field.value.trim() : '';
+}
+
+// Read the button-appearance controls -> SpreedlyPPCP buttonStyle.
 function getButtonStyle() {
   const label = cfg('btn-label');
-  const shape = cfg('btn-shape');
   const color = cfg('btn-color');
+  const paypalRadius = cfgText('paypal-radius');
+  const venmoRadius = cfgText('venmo-radius');
   const style = {};
   if (label) style.label = label;
-  if (shape) style.shape = shape;
   if (color) style.color = color;
+  if (paypalRadius) style.paypalBorderRadius = paypalRadius;
+  if (venmoRadius) style.venmoBorderRadius = venmoRadius;
   return Object.keys(style).length ? style : undefined;
 }
 
@@ -304,8 +311,8 @@ async function getClientId() {
   return cachedClientId;
 }
 
-// v6 session.start presentation mode. 'auto' and 'popup' open a separate window; 'modal' is the
-// in-page overlay; 'redirect' navigates the whole page.
+// v6 session.start presentation mode. 'auto' and 'popup' open a separate window; 'redirect'
+// navigates the whole page. 'modal' is not supported by the SDK — PayPal advises WebView only.
 // SANDBOX ONLY — overrides the buyer country PayPal uses for eligibility. Venmo is US-gated, so
 // without this findEligibleMethods filters it out when testing from outside the US. PayPal throws
 // on this in production. It does NOT influence Venmo's own check at its handoff endpoint.
@@ -671,7 +678,7 @@ async function handlePayPalReturn() {
 }
 
 // "Give me the URL" only does something in a flow that navigates — redirect, or the mobile
-// app-switch. In popup/modal PayPal completes in place, so onRedirect never fires and picking it
+// app-switch. In popup PayPal completes in place, so onRedirect never fires and picking it
 // would silently do nothing. Grey it out and say why, rather than letting the combination exist.
 function syncRedirectHandlingAvailability() {
   const manual = document.querySelector('input[name="on-redirect"][value="manual"]');

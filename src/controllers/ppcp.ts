@@ -68,28 +68,6 @@ export const getPayPalAccessToken = async (): Promise<string> => {
   return cachedAccessToken.value;
 };
 
-// GET /api/v1/ppcp/client-token
-// Mint a browser-safe client token for the PayPal JS SDK v6: createInstance({ clientToken }).
-export const getPPCPClientToken = async (
-  _req: Request,
-  res: Response
-): Promise<void> => {
-  try {
-    assertPPCPConfigured();
-    const response = await axios.post(
-      `${config.paypalApiBaseUrl}/v1/oauth2/token`,
-      new URLSearchParams({
-        grant_type: 'client_credentials',
-        response_type: 'client_token',
-      }),
-      { auth: paypalBasicAuth() }
-    );
-    res.json({ clientToken: response.data.access_token });
-  } catch (error) {
-    handleError(error, res);
-  }
-};
-
 // GET /api/v1/ppcp/config
 // The PayPal client ID for initialising the JS SDK v6 — `createInstance({ clientId })`.
 //
