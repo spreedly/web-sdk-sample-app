@@ -1,7 +1,7 @@
 import axios, { AxiosError } from 'axios';
 import { Request, Response } from 'express';
 import config from '../config';
-import { exchangeVaultSetupToken } from './ppcp';
+import { callerUrl, exchangeVaultSetupToken } from './ppcp';
 
 /**
  * PPCP via Spreedly's `paypal_commerce_platform` gateway — the PRODUCTION path.
@@ -127,13 +127,15 @@ const resolveTransactionType = (requested: unknown): SpreedlyTransactionType =>
 const resolvePaymentMethodType = (requested: unknown): SpreedlyWalletType =>
   requested === 'venmo' ? 'venmo' : 'paypal';
 
-// POST /api/v1/ppcp/spreedly/orders   body: { amount?, currency_code?, payment_method_type? }
+// POST /api/v1/ppcp/spreedly/orders
+// body: { amount?, currency_code?, payment_method_type?, transaction_type?, redirect_url?,
+//         callback_url? }
 // Creates the PayPal order THROUGH Spreedly and returns its id for the SDK's createOrder().
 export const createSpreedlyPPCPOrder = async (
   req: Request,
   res: Response
 ): Promise<void> => {
-  const { amount = '10.00', currency_code = 'USD' } = req.body || {};
+  const { amount = '10.00', currency_code = 'USD', redirect_url, callback_url } = req.body || {};
   // Which wallet the buyer actually clicked. Defaults to paypal: the SDK's createOrder()
   // callback is not told which funding source triggered it, so the page has to report it.
   const paymentMethodType = resolvePaymentMethodType(req.body?.payment_method_type);
@@ -159,6 +161,12 @@ export const createSpreedlyPPCPOrder = async (
     // 2. Offsite authorize. retain_on_success keeps the payment method reusable — without it
     //    it lands in storage_state 'used' and any later reuse is rejected.
     const origin = publicOrigin(req);
+    // Caller-supplied URLs win over the computed origin — see callerUrl in ppcp.ts for why mobile
+    // needs this. Note Spreedly validates these itself and rejects anything that is not a public
+    // https URL, so a custom scheme (myapp://…) will come back as errors.invalid_url. We forward
+    // it rather than swallow it: silently substituting our web page is what caused the problem.
+    const callerRedirect = callerUrl(redirect_url);
+    const callerCallback = callerUrl(callback_url);
     const transactionResponse = await axios.post(
       `${config.spreedlyUrl}/v1/gateways/${config.ppcpGatewayToken}/${transactionType}.json`,
       {
@@ -169,7 +177,7 @@ export const createSpreedlyPPCPOrder = async (
           // Dedicated return page — with presentationMode 'redirect' the buyer lands here
           // rather than back on the checkout page, and it captures using the
           // ?transaction_token= Spreedly appends. See src/static/ppcp/return/.
-          redirect_url: `${origin}/ppcp/return/`,
+          redirect_url: callerRedirect || `${origin}/ppcp/return/`,
           // Required by Spreedly, but its v6 semantics are UNVERIFIED — the gateway doc says only
           // that offsite transactions need one. (Spreedly's public offsite-callbacks page
           // describes the PayPal v5 / Braintree-era flow, so it is not a source of truth here.)
@@ -177,7 +185,7 @@ export const createSpreedlyPPCPOrder = async (
           // shape and a route can at least answer one. Empirically NOT load-bearing: a checkout
           // completed end-to-end while this pointed at a static HTML page — the redirect leg is
           // what finalizes the authorization. Open question for the Gateway team.
-          callback_url: `${origin}/api/v1/offsite-callback`,
+          callback_url: callerCallback || `${origin}/api/v1/offsite-callback`,
           retain_on_success: true,
         },
       },

@@ -331,6 +331,9 @@
                   <span>Total</span>
                   <span id="summary-total">$0.00</span>
                 </div>
+                <!-- Pay Later promotional messaging renders here (payLaterMessaging.elementId).
+                     Not a button: no eligibility gate, no click — PayPal decides what to show. -->
+                <div id="paylater-message"></div>
               </div>
 
               <div class="card">
@@ -487,6 +490,56 @@
                   </label>
                 </div>
                 <p class="cfg-note">Only applies to redirect and mobile app-switch. Popup never navigates, so nothing fires.</p>
+              </div>
+
+              <div class="cfg-group">
+                <div class="cfg-group-label">Pay Later messaging <code>payLaterMessaging</code></div>
+                <p class="cfg-hint">The "as low as $28/mo" promo. Renders into its own element above — not a button, so no eligibility gate and no click.</p>
+                <div class="cfg-options">
+                  <label class="cfg-opt">
+                    <input type="radio" name="paylater-messaging" value="" checked>
+                    <span>Off</span>
+                  </label>
+                  <label class="cfg-opt">
+                    <input type="radio" name="paylater-messaging" value="on">
+                    <span>Show it</span>
+                    <span class="why">loads paypal-messages</span>
+                  </label>
+                </div>
+                <div class="cfg-options">
+                  <label class="cfg-opt">
+                    <span>logoType</span>
+                    <select name="message-logo-type">
+                      <option value="">PayPal default</option>
+                      <option value="WORDMARK">WORDMARK</option>
+                      <option value="MONOGRAM">MONOGRAM</option>
+                      <option value="TEXT">TEXT</option>
+                      <option value="NONE">NONE</option>
+                    </select>
+                  </label>
+                  <label class="cfg-opt">
+                    <span>textColor</span>
+                    <select name="message-text-color">
+                      <option value="">PayPal default</option>
+                      <option value="BLACK">BLACK</option>
+                      <option value="WHITE">WHITE</option>
+                      <option value="MONOCHROME">MONOCHROME</option>
+                    </select>
+                  </label>
+                </div>
+                <div class="cfg-options">
+                  <label class="cfg-opt">
+                    <span>learn-more mode</span>
+                    <select name="message-presentation-mode">
+                      <option value="">PayPal default</option>
+                      <option value="AUTO">AUTO</option>
+                      <option value="MODAL">MODAL</option>
+                      <option value="POPUP">POPUP</option>
+                      <option value="REDIRECT">REDIRECT</option>
+                    </select>
+                  </label>
+                </div>
+                <p class="cfg-note">Style values pass straight through as attributes on <code>&lt;paypal-message&gt;</code>; an unrecognised value is a console warning, not an error. <code>presentationMode</code> here controls how the <em>learn-more terms</em> open — not the payment approval UI.</p>
               </div>
 
               <div class="cfg-group">

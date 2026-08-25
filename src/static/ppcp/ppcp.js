@@ -222,6 +222,21 @@ async function loadAndMountPPCP() {
       // PayPal shows a grey overlay over the page while the buyer is away. Only an explicit
       // false turns it off, so only send it then.
       ...(cfg('full-page-overlay') === 'off' ? { fullPageOverlay: false } : {}),
+      // Pay Later promotional messaging — independent of the buttons, rendered into its own
+      // element. Off unless the panel asks for it, so the default demo looks unchanged.
+      ...(cfg('paylater-messaging') === 'on'
+        ? {
+            payLaterMessaging: {
+              elementId: 'paylater-message',
+              ...(cfgText('message-logo-type') ? { logoType: cfgText('message-logo-type') } : {}),
+              ...(cfgText('message-text-color') ? { textColor: cfgText('message-text-color') } : {}),
+              ...(cfgText('message-presentation-mode')
+                ? { presentationMode: cfgText('message-presentation-mode') }
+                : {}),
+              onContentReady: () => console.log('[paylater-message] content ready'),
+            },
+          }
+        : {}),
     });
 
     const result = await ppcpInstance.mount();
@@ -282,9 +297,10 @@ function cfg(name) {
   return picked ? picked.value : '';
 }
 
-// Free-text config inputs (the corner radii).
+// Non-radio config controls — the corner-radius text boxes and the messaging dropdowns.
+// Checks select first so a <select> is not missed by an input-only query.
 function cfgText(name) {
-  const field = document.querySelector(`input[name="${name}"]`);
+  const field = document.querySelector(`select[name="${name}"], input[name="${name}"]`);
   return field ? field.value.trim() : '';
 }
 
@@ -393,6 +409,52 @@ async function captureOrder(orderId) {
   return response.data;
 }
 
+// Finalize a popup/modal approval by visiting Spreedly's own redirect leg — the URL PayPal would
+// have sent the buyer through in redirect mode. Spreedly authorizes/captures at the gateway and
+// 302s to redirect_url; we never follow that, we just re-read the transaction to see the outcome.
+//
+//   GET https://core.spreedly.com/transaction/{transaction_token}/redirect?token={paypal_order_id}
+//
+// No auth — it is a browser endpoint. Cross-origin, so the response is opaque to us; the side
+// effect happens on Spreedly's side, which is why we confirm by re-reading the transaction.
+// Returns true only when the transaction actually reaches `succeeded`.
+// The debug panel has no dedicated row for this, so mirror the trace into `status` and the console.
+function traceRedirectLeg(message) {
+  console.log('[redirect-leg]', message);
+  updateDebug('status', message);
+}
+
+async function finalizeViaSpreedlyRedirect(result) {
+  try {
+    setStatus("Finalizing via Spreedly's redirect leg...", 'info');
+
+    // The browser is never given the Spreedly transaction token, so read it off the transaction.
+    const before = (await axios.get(`${apiBase()}/ppcp/spreedly/orders/${result.orderId}`)).data;
+    const txnToken = before?.transaction?.token;
+    if (!txnToken) {
+      traceRedirectLeg('no transaction token for that order');
+      return false;
+    }
+    traceRedirectLeg(`GET /transaction/${txnToken}/redirect`);
+
+    const url =
+      `https://core.spreedly.com/transaction/${encodeURIComponent(txnToken)}/redirect` +
+      `?token=${encodeURIComponent(result.orderId)}`;
+
+    // NAVIGATE instead of fetch — the browser follows the 302 chain visibly, exactly as it would in
+    // redirect mode. This page is destroyed here, so nothing below runs: no read-back, no capture.
+    // Spreedly redirects to the transaction's redirect_url, which is the Heroku origin (Spreedly
+    // rejects localhost), and /ppcp/ is not deployed there — so it ends on a 404. The transaction
+    // still finalizes; check it with the API.
+    traceRedirectLeg(`navigating to ${url}`);
+    window.location.assign(url);
+    return false;
+  } catch (error) {
+    traceRedirectLeg(`error: ${error.message}`);
+    return false;
+  }
+}
+
 async function handlePaymentResult(result) {
   updateDebug('state', result.state);
   updateDebug('payerId', result.payerId);
@@ -401,8 +463,29 @@ async function handlePaymentResult(result) {
   if (result.state === 'Successful') {
     try {
       // A popup approval never travels through Spreedly's return_url, so Spreedly has not
-      // finalized the transaction and capture would be refused. confirm.json is the mechanism for
-      // that case — but it only accepts an OffsitePurchase.
+      // finalized the transaction. Before falling back to confirm.json, try visiting Spreedly's
+      // own redirect leg ourselves — the same URL PayPal would have sent the buyer through.
+      if (getPresentationMode() !== 'redirect') {
+        console.log("Process step 2: After buyer approval result", result);
+        const finalized = await finalizeViaSpreedlyRedirect(result);
+        if (finalized) {
+          // Finalizing only gets the transaction to `succeeded`. In redirect mode /ppcp/return/
+          // then captures — do the same here, or the money never actually moves.
+          traceRedirectLeg('succeeded — capturing');
+          const captured = await captureOrder(result.orderId);
+          const capturedStatus = captured.status || captured.state || 'COMPLETED';
+          traceRedirectLeg(`capture: ${capturedStatus}`);
+          showResult(
+            true,
+            'Payment Successful',
+            `Order ${result.orderId} finalized via Spreedly's redirect leg, then captured ` +
+              `(status: ${capturedStatus}).`
+          );
+          setStatus('Payment complete.', 'success');
+          if (savedDuringPurchase) await refreshVaultedTokens();
+          return;
+        }
+      }
       const useConfirm = orderIsConfirmable;
       setStatus(useConfirm ? 'Confirming with Spreedly...' : 'Capturing order...', 'info');
       const capture = useConfirm
