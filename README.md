@@ -39,8 +39,8 @@ Both options provide the same security guarantees — card data never touches yo
 
 The latest released version is `1.5.1`, released on 14th August'26, available at:
 
-- Hosted Fields: `[https://core.spreedly.com/checkout/sdk/1.5.1/index.js](https://core.spreedly.com/checkout/sdk/1.5.1/index.js)`
-- Express Checkout: `[https://core.spreedly.com/checkout/elements/1.5.1/express-checkout.js](https://core.spreedly.com/checkout/elements/1.5.1/express-checkout.js)`
+- Hosted Fields: [`https://core.spreedly.com/checkout/sdk/1.5.1/index.js`](https://core.spreedly.com/checkout/sdk/1.5.1/index.js)
+- Express Checkout: [`https://core.spreedly.com/checkout/elements/1.5.1/express-checkout.js`](https://core.spreedly.com/checkout/elements/1.5.1/express-checkout.js)
 
 
 
@@ -112,7 +112,7 @@ The SDK uses certificate-based authentication. Each SDK initialization requires 
 | `certificate_token` | Your certificate token                                                                  |
 | `nonce`             | A unique value (UUID) generated per session                                             |
 | `timestamp`         | Current UTC timestamp (seconds since epoch)                                             |
-| `signature`         | HMAC signature of `nonce + timestamp + certificate_token`, signed with your private key |
+| `signature`         | SHA-256 digital signature of `nonce + timestamp + certificate_token`, signed with your certificate private key (base64) |
 
 
 
