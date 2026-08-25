@@ -1105,6 +1105,10 @@ router.post('/ppcp/vault/charge', chargePPCPVaultToken);
  *             cancel_url:
  *               type: string
  *               description: Falls back to return_url when only that is given, then to this app's /ppcp/ page.
+ *             user_action:
+ *               type: string
+ *               enum: [PAY_NOW, CONTINUE]
+ *               description: Wording on PayPal's final button — PAY_NOW renders "Pay", CONTINUE renders "Review Order". The Orders-API twin of the JS SDK's `commit`; send the two in agreement or PayPal is told both at once. Anything other than CONTINUE is treated as PAY_NOW, which is also what `commit` defaults to.
  *     responses:
  *       200:
  *         description: Order created (approve via the JS SDK checkout session)

@@ -439,8 +439,18 @@ export const chargePPCPVaultToken = async (
   }
 };
 
+// user_action is the Orders-API twin of the JS SDK's `commit`: PAY_NOW renders "Pay" on PayPal's
+// final button, CONTINUE renders "Review Order". This route used to hardcode PAY_NOW, which
+// contradicted a caller that passed `commit: false` — PayPal got told both things at once. The
+// caller now decides, and PAY_NOW stays the default because that is what `commit` itself defaults to.
+//
+// Returns a literal rather than the caller's value, matching resolveTransactionType in
+// ppcp-spreedly.ts — it keeps the request value out of the outbound payload entirely.
+const resolveUserAction = (requested: unknown): 'PAY_NOW' | 'CONTINUE' =>
+  requested === 'CONTINUE' ? 'CONTINUE' : 'PAY_NOW';
+
 // POST /api/v1/ppcp/vault/purchase-order
-// body: { amount?, currency_code?, return_url?, cancel_url? }
+// body: { amount?, currency_code?, return_url?, cancel_url?, user_action? }
 // Scenario 2 (vault WITH purchase): create a checkout order that ALSO saves the PayPal on a
 // successful capture. The buyer approves the payment + the save in one pass via the normal JS
 // SDK checkout session; the vaulted token id comes back on capture (see the capture route below).
@@ -449,6 +459,7 @@ export const createPPCPVaultPurchaseOrder = async (
   res: Response
 ): Promise<void> => {
   const { amount = '10.00', currency_code = 'USD', return_url, cancel_url } = req.body || {};
+  const userAction = resolveUserAction(req.body?.user_action);
   try {
     const accessToken = await getPayPalAccessToken();
     const origin = req.headers.origin || `${req.protocol}://${req.get('host')}`;
@@ -465,7 +476,7 @@ export const createPPCPVaultPurchaseOrder = async (
             return_url: callerReturn || `${origin}/ppcp/`,
             cancel_url: callerCancel || callerReturn || `${origin}/ppcp/`,
             shipping_preference: 'NO_SHIPPING',
-            user_action: 'PAY_NOW',
+            user_action: userAction,
           },
         },
       },

@@ -32,9 +32,9 @@ const CURRENCY = 'USD';
 // paymentElements, container clearing and the eligibility readout.
 const BUTTON_KINDS = [
   { key: 'paypal', elementId: 'paypal-button', label: 'PayPal' },
-  { key: 'venmo', elementId: 'venmo-button', label: 'Venmo' },
   { key: 'payLater', elementId: 'paylater-button', label: 'Pay Later' },
   { key: 'payPalCredit', elementId: 'paypalcredit-button', label: 'PayPal Credit' },
+  { key: 'venmo', elementId: 'venmo-button', label: 'Venmo' },
 ];
 
 const PRODUCTS = [
@@ -186,7 +186,9 @@ async function loadDependencies() {
   sdksLoaded = true;
 }
 
-// PayPal returns Pay Later OR PayPal Credit, never both, and Pay Later wins.
+// PayPal returns Pay Later OR PayPal Credit, never both, and Pay Later wins. The SDK scopes its
+// eligibility request to the kinds in paymentElements, so Credit is only reachable if Pay Later is
+// not asked for at all.
 function activeButtonKinds() {
   return cfg('show-credit') === 'on'
     ? BUTTON_KINDS.filter(({ key }) => key !== 'payLater')
@@ -216,7 +218,7 @@ function buildPPCPConfig(clientId) {
   return {
     currencyCode: CURRENCY,
     amount: getAmount(), // cart total -> Pay Later eligibility (amount-based thresholds)
-    countryCode: 'US', // Pay Later & Venmo are US-only
+    ...(cfg('country-code') ? { countryCode: cfg('country-code') } : {}),
     paymentElements: Object.fromEntries(activeButtonKinds().map(b => [b.key, b.elementId])),
     clientId,
     createOrder,
@@ -231,7 +233,9 @@ function buildPPCPConfig(clientId) {
     ...(el('save-during-purchase')?.checked ? { savePayment: true } : {}),
     // When the merchant supplies onRedirect the SDK stops navigating and hands back the URL.
     ...(cfg('on-redirect') === 'manual' ? { onRedirect: showRedirectUrl } : {}),
-    ...(getTestBuyerCountry() ? { testBuyerCountry: getTestBuyerCountry() } : {}),
+    // Sandbox only, and this whole app is sandbox. It goes on createInstance and only supplies the
+    // default for countryCode, so an explicit Buyer country above still wins.
+    testBuyerCountry: 'US',
     // This whole app is sandbox, so always point Venmo at Venmo's sandbox. Venmo has its own
     // network and its own accounts, so a Venmo sandbox buyer does not exist in production.
     venmoSandbox: true,
@@ -346,12 +350,9 @@ async function getClientId() {
   return cachedClientId;
 }
 
-// SANDBOX ONLY — overrides the buyer country PayPal uses for eligibility. Venmo is US-gated, so
-// without this findEligibleMethods filters it out when testing from outside the US. PayPal throws
-// on this in production. It does NOT influence Venmo's own check at its handoff endpoint.
-function getTestBuyerCountry() {
-  return cfg('test-buyer-country');
-}
+// Orders-API equivalent of commit. undefined means we did not send commit, and PayPal's own default
+// for it is true — so PAY_NOW is the matching value, not a guess.
+const userActionFor = commit => (commit === false ? 'CONTINUE' : 'PAY_NOW');
 
 // commit controls PayPal's final button wording. Only sent when explicitly chosen, so PayPal's
 // own default stands otherwise.
@@ -382,6 +383,10 @@ async function createOrder() {
     currency_code: CURRENCY,
     // Only a redirect needs a return URL. See createPPCPOrder in controllers/ppcp.ts.
     redirect: willRedirect,
+    // The vault-purchase order carries an experience_context, so it needs user_action to agree with
+    // the SDK's commit — otherwise PayPal is told "Review Order" and "Pay" at once. The plain order
+    // route sends no experience_context, so commit alone decides there.
+    ...(savedDuringPurchase ? { user_action: userActionFor(getCommit()) } : {}),
   });
   updateDebug('orderId', response.data.id);
   return { orderId: response.data.id };

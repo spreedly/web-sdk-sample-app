@@ -531,12 +531,12 @@
 
               <div class="cfg-group">
                 <div class="cfg-group-label">Button text <code>commit</code></div>
-                <p class="cfg-hint">Wording on PayPal's final button. Use Continue when your checkout has a review step after approval.</p>
+                <p class="cfg-hint">Wording on PayPal's final button — <strong>Pay</strong> or <strong>Review Order</strong>. Nothing else changes: neither one captures, so use Continue when your checkout has a review step after approval. PayPal's own default is <code>true</code>.</p>
                 <div class="cfg-options">
                   <label class="cfg-opt">
                     <input type="radio" name="commit" value="" checked>
-                    <span>Default</span>
-                    <span class="why">PayPal decides</span>
+                    <span>Not sent</span>
+                    <span class="why">PayPal defaults to true</span>
                   </label>
                   <label class="cfg-opt">
                     <input type="radio" name="commit" value="true">
@@ -709,25 +709,26 @@
                 </div>
               </div>
               <div class="cfg-group">
-                <div class="cfg-group-label">Test buyer country <code>testBuyerCountry</code></div>
-                <p class="cfg-hint">Sandbox only. Overrides the country PayPal uses for eligibility — Venmo is US-gated.</p>
+                <div class="cfg-group-label">Buyer country <code>countryCode</code></div>
+                <p class="cfg-hint">Goes on <code>findEligibleMethods</code> — this is what actually gates the buttons. Venmo and Pay Later are US-only.</p>
                 <div class="cfg-options">
                   <label class="cfg-opt">
-                    <input type="radio" name="test-buyer-country" value="">
-                    <span>Use real location</span>
-                  </label>
-                  <label class="cfg-opt">
-                    <input type="radio" name="test-buyer-country" value="US" checked>
+                    <input type="radio" name="country-code" value="US" checked>
                     <span>US</span>
-                    <span class="why">needed for Venmo</span>
+                    <span class="why">Venmo + Pay Later</span>
                   </label>
                   <label class="cfg-opt">
-                    <input type="radio" name="test-buyer-country" value="GB">
+                    <input type="radio" name="country-code" value="GB">
                     <span>GB</span>
                   </label>
                   <label class="cfg-opt">
-                    <input type="radio" name="test-buyer-country" value="DE">
+                    <input type="radio" name="country-code" value="DE">
                     <span>DE</span>
+                  </label>
+                  <label class="cfg-opt">
+                    <input type="radio" name="country-code" value="">
+                    <span>Not sent</span>
+                    <span class="why">PayPal falls back to US</span>
                   </label>
                 </div>
               </div>

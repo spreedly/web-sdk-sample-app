@@ -331,6 +331,10 @@ async function getClientId() {
 
 // v6 session.start presentation mode. 'auto' and 'popup' open a separate window; 'redirect'
 // navigates the whole page. 'modal' is not supported by the SDK — PayPal advises WebView only.
+// Orders-API equivalent of commit. undefined means we did not send commit, and PayPal's own default
+// for it is true — so PAY_NOW is the matching value, not a guess.
+const userActionFor = commit => (commit === false ? 'CONTINUE' : 'PAY_NOW');
+
 // commit controls PayPal's final button wording. Only sent when explicitly chosen, so PayPal's
 // own default stands otherwise.
 function getCommit() {
@@ -390,6 +394,9 @@ async function createOrder() {
     // Spreedly transacts venmo as its own payment method type.
     payment_method_type: clickedPaymentMethodType,
     transaction_type: cfg('transaction-type'),
+    // The vault-purchase order carries an experience_context, so user_action has to agree with the
+    // SDK's commit — otherwise PayPal is told "Review Order" and "Pay" at once. Only that route.
+    ...(savedDuringPurchase ? { user_action: userActionFor(getCommit()) } : {}),
   });
   orderIsConfirmable = response.data.transaction_type === 'OffsitePurchase';
   updateDebug('orderId', response.data.id);
