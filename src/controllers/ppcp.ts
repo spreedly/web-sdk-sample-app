@@ -3,25 +3,7 @@ import { Request, Response } from 'express';
 import { randomUUID } from 'crypto';
 import config from '../config';
 
-/**
- * PPCP (PayPal Complete Payments) — INTERIM direct-to-PayPal spike controller.
- *
- * Talks to PayPal Orders V2 DIRECTLY (sandbox) so the SpreedlyPPCP client SDK can be
- * built/validated before Spreedly Core's PPCP gateway backend exists. This is a
- * throwaway dev harness — NOT a production path: it bypasses Spreedly entirely (no
- * Spreedly transaction, no partner fees, no reporting). When Core's gateway lands,
- * these routes get repointed at Spreedly and the SDK contract is unchanged.
- * See ppcp/integration-plan/07-interim-direct-order-spike.md.
- *
- * Auth here is PayPal OAuth (Bearer) — deliberately separate from the Spreedly
- * Basic-auth calls in payments.ts, which is why this lives in its own controller.
- * NOTE: exact PayPal request/response shapes should be verified against the Orders V2
- * reference (developer.paypal.com/docs/api/orders/v2/) — see integration-plan/05.
- */
-
-// Spreedly's PayPal partner attribution (BN) code — sent on every Orders V2 call so PayPal
-// attributes the integration to Spreedly; matches the client-side value the SDK sends via
-// createInstance({ partnerAttributionId }). (In production this is owned by Spreedly Core's gateway.)
+// Spreedly's PayPal partner attribution (BN) code — sent on every Orders V2 call
 const PAYPAL_PARTNER_ATTRIBUTION_ID = 'spreedly_pcp';
 
 // In-memory OAuth access-token cache (server-internal; refreshed ~1 min before expiry).
@@ -40,6 +22,18 @@ const paypalBasicAuth = () => ({
   password: config.paypalPpcpClientSecret,
 });
 
+const MAX_URL_LENGTH = 2000;
+const UNSAFE_SCHEMES = /^(javascript|data|vbscript|file):/i;
+export const callerUrl = (value: unknown): string | null => {
+  if (typeof value !== 'string' || !value || value.length > MAX_URL_LENGTH) return null;
+  if (UNSAFE_SCHEMES.test(value.trim())) return null;
+  try {
+    return new URL(value).href ? value : null;
+  } catch {
+    return null;
+  }
+};
+
 const handleError = (error: unknown, res: Response): void => {
   const apiError = error as AxiosError;
   res
@@ -47,10 +41,7 @@ const handleError = (error: unknown, res: Response): void => {
     .json(apiError.response?.data || { error: (error as Error).message });
 };
 
-// Exchange client id/secret for a PayPal OAuth access token (cached until near expiry).
-// Exported so the Spreedly controller can reuse it: PayPal vaulting requires buyer approval in
-// the browser, and Spreedly has no equivalent browser-save flow, so the setup-token exchange
-// stays a direct PayPal call even on the Spreedly path. See ppcp-spreedly.ts.
+// Exchange client id/secret for a PayPal OAuth access token
 export const getPayPalAccessToken = async (): Promise<string> => {
   assertPPCPConfigured();
   if (cachedAccessToken && cachedAccessToken.expiresAt > Date.now() + 60_000) {
@@ -68,34 +59,8 @@ export const getPayPalAccessToken = async (): Promise<string> => {
   return cachedAccessToken.value;
 };
 
-// GET /api/v1/ppcp/client-token
-// Mint a browser-safe client token for the PayPal JS SDK v6: createInstance({ clientToken }).
-export const getPPCPClientToken = async (
-  _req: Request,
-  res: Response
-): Promise<void> => {
-  try {
-    assertPPCPConfigured();
-    const response = await axios.post(
-      `${config.paypalApiBaseUrl}/v1/oauth2/token`,
-      new URLSearchParams({
-        grant_type: 'client_credentials',
-        response_type: 'client_token',
-      }),
-      { auth: paypalBasicAuth() }
-    );
-    res.json({ clientToken: response.data.access_token });
-  } catch (error) {
-    handleError(error, res);
-  }
-};
-
 // GET /api/v1/ppcp/config
 // The PayPal client ID for initialising the JS SDK v6 — `createInstance({ clientId })`.
-//
-// This is a PUBLIC, static value that PayPal documents as safe to embed in front-end code, so a
-// real merchant would simply inline it in their page. This endpoint exists only because the demo
-// keeps it in .env rather than committing it.
 export const getPPCPConfig = async (_req: Request, res: Response): Promise<void> => {
   if (!config.paypalPpcpClientId) {
     res.status(500).json({ error: 'PAYPAL_PPCP_CLIENT_ID_NEW is not configured' });
@@ -104,7 +69,8 @@ export const getPPCPConfig = async (_req: Request, res: Response): Promise<void>
   res.json({ clientId: config.paypalPpcpClientId });
 };
 
-// POST /api/v1/ppcp/orders   body: { amount?, currency_code?, intent? }
+// POST /api/v1/ppcp/orders
+// body: { amount?, currency_code?, intent?, redirect?, return_url?, cancel_url? }
 // Create a PayPal order (Orders V2). The SDK's createOrder() maps the response to { orderId: id }.
 export const createPPCPOrder = async (
   req: Request,
@@ -117,6 +83,10 @@ export const createPPCPOrder = async (
     // The caller says whether the buyer will be navigated away from the page. Only then does the
     // order need somewhere to come back to.
     redirect = false,
+    // Where PayPal sends the buyer afterwards. Mobile passes a deep link; web omits both and gets
+    // the pages below.
+    return_url,
+    cancel_url,
   } = req.body || {};
   try {
     const accessToken = await getPayPalAccessToken();
@@ -142,13 +112,21 @@ export const createPPCPOrder = async (
     //
     // In redirect mode the buyer leaves the page. Without a return URL they approve and then sit
     // on PayPal's page with nowhere to go — that was the hanging spinner.
-    if (redirect) {
+    //
+    // A caller-supplied return_url also counts as "the buyer is leaving": a mobile app that sends
+    // its deep link wants PayPal to use it, and has no `redirect` flag to set.
+    const callerReturn = callerUrl(return_url);
+    const callerCancel = callerUrl(cancel_url);
+    if (redirect || callerReturn) {
       body.payment_source = {
         paypal: {
           experience_context: {
-            return_url: `${origin}/ppcp/spike/`,
+            return_url: callerReturn || `${origin}/ppcp/spike/`,
             // Same page, but flagged, so the page can tell "approved" from "backed out".
-            cancel_url: `${origin}/ppcp/spike/?ppcp_cancelled=1`,
+            // If the caller gave a return URL but no cancel URL, reuse theirs — sending them to
+            // our web page on cancel would drop a mobile buyer out of their app.
+            cancel_url:
+              callerCancel || callerReturn || `${origin}/ppcp/spike/?ppcp_cancelled=1`,
           },
         },
       };
@@ -248,24 +226,27 @@ const paypalHeaders = (accessToken: string, idempotent = false) => ({
   ...(idempotent ? { 'PayPal-Request-Id': randomUUID() } : {}),
 });
 
-// POST /api/v1/ppcp/vault/setup-token
+// POST /api/v1/ppcp/vault/setup-token   body: { return_url?, cancel_url? }
 // Create a PayPal vault setup token (the buyer approves it via the JS SDK). Returns { setupToken }.
 export const createPPCPVaultSetupToken = async (
   req: Request,
   res: Response
 ): Promise<void> => {
+  const { return_url, cancel_url } = req.body || {};
   try {
     const accessToken = await getPayPalAccessToken();
     // Use the app's REAL origin so the approval popup can hand control back to the opener.
     // Placeholder (example.com) URLs make PayPal bail during the popup's loading stage.
     const origin = req.headers.origin || `${req.protocol}://${req.get('host')}`;
+    const callerReturn = callerUrl(return_url);
+    const callerCancel = callerUrl(cancel_url);
     const body = {
       payment_source: {
         paypal: {
           usage_type: 'MERCHANT',
           experience_context: {
-            return_url: `${origin}/ppcp/`,
-            cancel_url: `${origin}/ppcp/`,
+            return_url: callerReturn || `${origin}/ppcp/`,
+            cancel_url: callerCancel || callerReturn || `${origin}/ppcp/`,
           },
         },
       },
@@ -458,7 +439,18 @@ export const chargePPCPVaultToken = async (
   }
 };
 
-// POST /api/v1/ppcp/vault/purchase-order   body: { amount?, currency_code? }
+// user_action is the Orders-API twin of the JS SDK's `commit`: PAY_NOW renders "Pay" on PayPal's
+// final button, CONTINUE renders "Review Order". This route used to hardcode PAY_NOW, which
+// contradicted a caller that passed `commit: false` — PayPal got told both things at once. The
+// caller now decides, and PAY_NOW stays the default because that is what `commit` itself defaults to.
+//
+// Returns a literal rather than the caller's value, matching resolveTransactionType in
+// ppcp-spreedly.ts — it keeps the request value out of the outbound payload entirely.
+const resolveUserAction = (requested: unknown): 'PAY_NOW' | 'CONTINUE' =>
+  requested === 'CONTINUE' ? 'CONTINUE' : 'PAY_NOW';
+
+// POST /api/v1/ppcp/vault/purchase-order
+// body: { amount?, currency_code?, return_url?, cancel_url?, user_action? }
 // Scenario 2 (vault WITH purchase): create a checkout order that ALSO saves the PayPal on a
 // successful capture. The buyer approves the payment + the save in one pass via the normal JS
 // SDK checkout session; the vaulted token id comes back on capture (see the capture route below).
@@ -466,10 +458,13 @@ export const createPPCPVaultPurchaseOrder = async (
   req: Request,
   res: Response
 ): Promise<void> => {
-  const { amount = '10.00', currency_code = 'USD' } = req.body || {};
+  const { amount = '10.00', currency_code = 'USD', return_url, cancel_url } = req.body || {};
+  const userAction = resolveUserAction(req.body?.user_action);
   try {
     const accessToken = await getPayPalAccessToken();
     const origin = req.headers.origin || `${req.protocol}://${req.get('host')}`;
+    const callerReturn = callerUrl(return_url);
+    const callerCancel = callerUrl(cancel_url);
     const body = {
       intent: 'CAPTURE',
       purchase_units: [{ amount: { currency_code, value: String(amount) } }],
@@ -478,10 +473,10 @@ export const createPPCPVaultPurchaseOrder = async (
           // store_in_vault: ON_SUCCESS → vault the PayPal only if the payment succeeds.
           attributes: { vault: { store_in_vault: 'ON_SUCCESS', usage_type: 'MERCHANT' } },
           experience_context: {
-            return_url: `${origin}/ppcp/`,
-            cancel_url: `${origin}/ppcp/`,
+            return_url: callerReturn || `${origin}/ppcp/`,
+            cancel_url: callerCancel || callerReturn || `${origin}/ppcp/`,
             shipping_preference: 'NO_SHIPPING',
-            user_action: 'PAY_NOW',
+            user_action: userAction,
           },
         },
       },

@@ -222,6 +222,21 @@ async function loadAndMountPPCP() {
       // PayPal shows a grey overlay over the page while the buyer is away. Only an explicit
       // false turns it off, so only send it then.
       ...(cfg('full-page-overlay') === 'off' ? { fullPageOverlay: false } : {}),
+      // Pay Later promotional messaging — independent of the buttons, rendered into its own
+      // element. Off unless the panel asks for it, so the default demo looks unchanged.
+      ...(cfg('paylater-messaging') === 'on'
+        ? {
+            payLaterMessaging: {
+              elementId: 'paylater-message',
+              ...(cfgText('message-logo-type') ? { logoType: cfgText('message-logo-type') } : {}),
+              ...(cfgText('message-text-color') ? { textColor: cfgText('message-text-color') } : {}),
+              ...(cfgText('message-presentation-mode')
+                ? { presentationMode: cfgText('message-presentation-mode') }
+                : {}),
+              onContentReady: () => console.log('[paylater-message] content ready'),
+            },
+          }
+        : {}),
     });
 
     const result = await ppcpInstance.mount();
@@ -276,22 +291,30 @@ function getAmount() {
   return getCartTotal().toFixed(2); // Orders V2 expects a decimal string, e.g. "229.98"
 }
 
-// Read the button-appearance selectors -> SpreedlyPPCP buttonStyle ({ label?, shape? }).
-// (v6 exposes no button color, so there is no color control here.)
 // The SDK config panel uses radios, one group per SpreedlyPPCP option.
 function cfg(name) {
   const picked = document.querySelector(`input[name="${name}"]:checked`);
   return picked ? picked.value : '';
 }
 
+// Non-radio config controls — the corner-radius text boxes and the messaging dropdowns.
+// Checks select first so a <select> is not missed by an input-only query.
+function cfgText(name) {
+  const field = document.querySelector(`select[name="${name}"], input[name="${name}"]`);
+  return field ? field.value.trim() : '';
+}
+
+// Read the button-appearance controls -> SpreedlyPPCP buttonStyle.
 function getButtonStyle() {
   const label = cfg('btn-label');
-  const shape = cfg('btn-shape');
   const color = cfg('btn-color');
+  const paypalRadius = cfgText('paypal-radius');
+  const venmoRadius = cfgText('venmo-radius');
   const style = {};
   if (label) style.label = label;
-  if (shape) style.shape = shape;
   if (color) style.color = color;
+  if (paypalRadius) style.paypalBorderRadius = paypalRadius;
+  if (venmoRadius) style.venmoBorderRadius = venmoRadius;
   return Object.keys(style).length ? style : undefined;
 }
 
@@ -306,8 +329,12 @@ async function getClientId() {
   return cachedClientId;
 }
 
-// v6 session.start presentation mode. 'auto' and 'popup' open a separate window; 'modal' is the
-// in-page overlay; 'redirect' navigates the whole page.
+// v6 session.start presentation mode. 'auto' and 'popup' open a separate window; 'redirect'
+// navigates the whole page. 'modal' is not supported by the SDK — PayPal advises WebView only.
+// Orders-API equivalent of commit. undefined means we did not send commit, and PayPal's own default
+// for it is true — so PAY_NOW is the matching value, not a guess.
+const userActionFor = commit => (commit === false ? 'CONTINUE' : 'PAY_NOW');
+
 // commit controls PayPal's final button wording. Only sent when explicitly chosen, so PayPal's
 // own default stands otherwise.
 function getCommit() {
@@ -367,6 +394,9 @@ async function createOrder() {
     // Spreedly transacts venmo as its own payment method type.
     payment_method_type: clickedPaymentMethodType,
     transaction_type: cfg('transaction-type'),
+    // The vault-purchase order carries an experience_context, so user_action has to agree with the
+    // SDK's commit — otherwise PayPal is told "Review Order" and "Pay" at once. Only that route.
+    ...(savedDuringPurchase ? { user_action: userActionFor(getCommit()) } : {}),
   });
   orderIsConfirmable = response.data.transaction_type === 'OffsitePurchase';
   updateDebug('orderId', response.data.id);
@@ -386,6 +416,52 @@ async function captureOrder(orderId) {
   return response.data;
 }
 
+// Finalize a popup/modal approval by visiting Spreedly's own redirect leg — the URL PayPal would
+// have sent the buyer through in redirect mode. Spreedly authorizes/captures at the gateway and
+// 302s to redirect_url; we never follow that, we just re-read the transaction to see the outcome.
+//
+//   GET https://core.spreedly.com/transaction/{transaction_token}/redirect?token={paypal_order_id}
+//
+// No auth — it is a browser endpoint. Cross-origin, so the response is opaque to us; the side
+// effect happens on Spreedly's side, which is why we confirm by re-reading the transaction.
+// Returns true only when the transaction actually reaches `succeeded`.
+// The debug panel has no dedicated row for this, so mirror the trace into `status` and the console.
+function traceRedirectLeg(message) {
+  console.log('[redirect-leg]', message);
+  updateDebug('status', message);
+}
+
+async function finalizeViaSpreedlyRedirect(result) {
+  try {
+    setStatus("Finalizing via Spreedly's redirect leg...", 'info');
+
+    // The browser is never given the Spreedly transaction token, so read it off the transaction.
+    const before = (await axios.get(`${apiBase()}/ppcp/spreedly/orders/${result.orderId}`)).data;
+    const txnToken = before?.transaction?.token;
+    if (!txnToken) {
+      traceRedirectLeg('no transaction token for that order');
+      return false;
+    }
+    traceRedirectLeg(`GET /transaction/${txnToken}/redirect`);
+
+    const url =
+      `https://core.spreedly.com/transaction/${encodeURIComponent(txnToken)}/redirect` +
+      `?token=${encodeURIComponent(result.orderId)}`;
+
+    // NAVIGATE instead of fetch — the browser follows the 302 chain visibly, exactly as it would in
+    // redirect mode. This page is destroyed here, so nothing below runs: no read-back, no capture.
+    // Spreedly redirects to the transaction's redirect_url, which is the Heroku origin (Spreedly
+    // rejects localhost), and /ppcp/ is not deployed there — so it ends on a 404. The transaction
+    // still finalizes; check it with the API.
+    traceRedirectLeg(`navigating to ${url}`);
+    window.location.assign(url);
+    return false;
+  } catch (error) {
+    traceRedirectLeg(`error: ${error.message}`);
+    return false;
+  }
+}
+
 async function handlePaymentResult(result) {
   updateDebug('state', result.state);
   updateDebug('payerId', result.payerId);
@@ -393,9 +469,30 @@ async function handlePaymentResult(result) {
 
   if (result.state === 'Successful') {
     try {
-      // A popup/modal approval never travels through Spreedly's return_url, so Spreedly has not
-      // finalized the transaction and capture would be refused. confirm.json is the mechanism for
-      // that case — but it only accepts an OffsitePurchase.
+      // A popup approval never travels through Spreedly's return_url, so Spreedly has not
+      // finalized the transaction. Before falling back to confirm.json, try visiting Spreedly's
+      // own redirect leg ourselves — the same URL PayPal would have sent the buyer through.
+      if (getPresentationMode() !== 'redirect') {
+        console.log("Process step 2: After buyer approval result", result);
+        const finalized = await finalizeViaSpreedlyRedirect(result);
+        if (finalized) {
+          // Finalizing only gets the transaction to `succeeded`. In redirect mode /ppcp/return/
+          // then captures — do the same here, or the money never actually moves.
+          traceRedirectLeg('succeeded — capturing');
+          const captured = await captureOrder(result.orderId);
+          const capturedStatus = captured.status || captured.state || 'COMPLETED';
+          traceRedirectLeg(`capture: ${capturedStatus}`);
+          showResult(
+            true,
+            'Payment Successful',
+            `Order ${result.orderId} finalized via Spreedly's redirect leg, then captured ` +
+              `(status: ${capturedStatus}).`
+          );
+          setStatus('Payment complete.', 'success');
+          if (savedDuringPurchase) await refreshVaultedTokens();
+          return;
+        }
+      }
       const useConfirm = orderIsConfirmable;
       setStatus(useConfirm ? 'Confirming with Spreedly...' : 'Capturing order...', 'info');
       const capture = useConfirm
@@ -656,7 +753,7 @@ window.payWithSaved = async function (ref) {
 };
 
 // "Give me the URL" only does something in a flow that navigates — redirect, or the mobile
-// app-switch. In popup/modal PayPal completes in place, so onRedirect never fires and picking it
+// app-switch. In popup PayPal completes in place, so onRedirect never fires and picking it
 // would silently do nothing. Grey it out and say why, rather than letting the combination exist.
 function syncRedirectHandlingAvailability() {
   const manual = document.querySelector('input[name="on-redirect"][value="manual"]');

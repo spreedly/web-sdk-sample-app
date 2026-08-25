@@ -22,7 +22,6 @@ import {
   createPazePaymentMethod,
 } from './controllers/payments';
 import {
-  getPPCPClientToken,
   getPPCPConfig,
   createPPCPOrder,
   capturePPCPOrder,
@@ -700,27 +699,6 @@ router.post('/ach-purchase', createAchPurchase);
 
 /**
  * @swagger
- * /api/v1/ppcp/client-token:
- *   get:
- *     description: (PPCP interim spike) Mint a browser-safe PayPal client token for the JS SDK v6 createInstance({ clientToken }). Talks to PayPal sandbox directly.
- *     tags: [PPCP]
- *     produces:
- *       - application/json
- *     responses:
- *       200:
- *         description: Client token minted
- *         schema:
- *           type: object
- *           properties:
- *             clientToken:
- *               type: string
- *       500:
- *         description: Error minting client token
- */
-router.get('/ppcp/client-token', getPPCPClientToken);
-
-/**
- * @swagger
  * /api/v1/ppcp/config:
  *   get:
  *     description: Public PayPal client ID for initialising the JS SDK v6 (createInstance({ clientId })). Static and browser-safe — a real merchant would inline it; this exists because the demo keeps it in .env.
@@ -760,6 +738,15 @@ router.get('/ppcp/config', getPPCPConfig);
  *             intent:
  *               type: string
  *               description: CAPTURE or AUTHORIZE (default CAPTURE)
+ *             redirect:
+ *               type: boolean
+ *               description: True when the buyer will be navigated away, so PayPal needs somewhere to send them back to (default false)
+ *             return_url:
+ *               type: string
+ *               description: Where PayPal sends the buyer after approval. Any absolute URL, including a mobile deep link such as myapp://paypalreturn. Supplying it also turns on the redirect behaviour. Defaults to this app's spike page.
+ *             cancel_url:
+ *               type: string
+ *               description: Where PayPal sends the buyer if they back out. Falls back to return_url when only that is given, then to this app's spike page.
  *     responses:
  *       200:
  *         description: Order created
@@ -814,6 +801,12 @@ router.post('/ppcp/orders/:orderId/capture', capturePPCPOrder);
  *             currency_code:
  *               type: string
  *               description: ISO 4217 currency code (default USD)
+ *             redirect_url:
+ *               type: string
+ *               description: Where Spreedly sends the buyer after approval. Spreedly validates this itself and rejects anything that is not a public https URL, so a custom scheme comes back as errors.invalid_url. Defaults to this app's /ppcp/return/ page.
+ *             callback_url:
+ *               type: string
+ *               description: Spreedly's offsite callback target. Defaults to this app's /api/v1/offsite-callback.
  *     responses:
  *       200:
  *         description: Order created (id = PayPal order id, status = Spreedly transaction state)
@@ -981,6 +974,20 @@ router.post(
  *     tags: [PPCP]
  *     produces:
  *       - application/json
+ *     parameters:
+ *       - name: body
+ *         description: Where PayPal returns the buyer after approving the save. Omit both on web.
+ *         in: body
+ *         required: false
+ *         schema:
+ *           type: object
+ *           properties:
+ *             return_url:
+ *               type: string
+ *               description: Any absolute URL, including a mobile deep link such as myapp://paypalreturn. Defaults to this app's /ppcp/ page, which strands a mobile buyer in a browser.
+ *             cancel_url:
+ *               type: string
+ *               description: Falls back to return_url when only that is given, then to this app's /ppcp/ page.
  *     responses:
  *       200:
  *         description: Setup token created
@@ -1092,6 +1099,16 @@ router.post('/ppcp/vault/charge', chargePPCPVaultToken);
  *             currency_code:
  *               type: string
  *               description: ISO 4217 currency (default USD)
+ *             return_url:
+ *               type: string
+ *               description: Where PayPal sends the buyer after approval. Any absolute URL, including a mobile deep link such as myapp://paypalreturn. Defaults to this app's /ppcp/ page.
+ *             cancel_url:
+ *               type: string
+ *               description: Falls back to return_url when only that is given, then to this app's /ppcp/ page.
+ *             user_action:
+ *               type: string
+ *               enum: [PAY_NOW, CONTINUE]
+ *               description: Wording on PayPal's final button — PAY_NOW renders "Pay", CONTINUE renders "Review Order". The Orders-API twin of the JS SDK's `commit`; send the two in agreement or PayPal is told both at once. Anything other than CONTINUE is treated as PAY_NOW, which is also what `commit` defaults to.
  *     responses:
  *       200:
  *         description: Order created (approve via the JS SDK checkout session)
