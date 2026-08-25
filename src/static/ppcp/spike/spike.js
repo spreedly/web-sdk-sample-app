@@ -32,9 +32,9 @@ const CURRENCY = 'USD';
 // paymentElements, container clearing and the eligibility readout.
 const BUTTON_KINDS = [
   { key: 'paypal', elementId: 'paypal-button', label: 'PayPal' },
+  { key: 'venmo', elementId: 'venmo-button', label: 'Venmo' },
   { key: 'payLater', elementId: 'paylater-button', label: 'Pay Later' },
   { key: 'payPalCredit', elementId: 'paypalcredit-button', label: 'PayPal Credit' },
-  { key: 'venmo', elementId: 'venmo-button', label: 'Venmo' },
 ];
 
 const PRODUCTS = [
@@ -186,6 +186,13 @@ async function loadDependencies() {
   sdksLoaded = true;
 }
 
+// PayPal returns Pay Later OR PayPal Credit, never both, and Pay Later wins.
+function activeButtonKinds() {
+  return cfg('show-credit') === 'on'
+    ? BUTTON_KINDS.filter(({ key }) => key !== 'payLater')
+    : BUTTON_KINDS;
+}
+
 function clearButtonContainers() {
   BUTTON_KINDS.forEach(({ elementId }) => {
     const container = el(elementId);
@@ -210,7 +217,7 @@ function buildPPCPConfig(clientId) {
     currencyCode: CURRENCY,
     amount: getAmount(), // cart total -> Pay Later eligibility (amount-based thresholds)
     countryCode: 'US', // Pay Later & Venmo are US-only
-    paymentElements: Object.fromEntries(BUTTON_KINDS.map(b => [b.key, b.elementId])),
+    paymentElements: Object.fromEntries(activeButtonKinds().map(b => [b.key, b.elementId])),
     clientId,
     createOrder,
     onPaymentResult: handlePaymentResult,
@@ -238,14 +245,19 @@ function buildPPCPConfig(clientId) {
 }
 
 function renderEligibility(rendered) {
-  el('eligibility-result').innerHTML = BUTTON_KINDS.map(
-    ({ key, label }) =>
-      `<span class="elig-result ${rendered[key] ? 'ok' : 'no'}">${label}: ${
-        rendered[key] ? '✓ rendered' : '✗ not eligible'
-      }</span>`
-  ).join('');
+  const requested = activeButtonKinds();
+  const notRequested = BUTTON_KINDS.filter(b => !requested.includes(b));
+  el('eligibility-result').innerHTML = [
+    ...requested.map(
+      ({ key, label }) =>
+        `<span class="elig-result ${rendered[key] ? 'ok' : 'no'}">${label}: ${
+          rendered[key] ? '✓ rendered' : '✗ not eligible'
+        }</span>`
+    ),
+    ...notRequested.map(({ label }) => `<span class="elig-result no">${label}: — not requested</span>`),
+  ].join('');
 
-  const names = BUTTON_KINDS.filter(({ key }) => rendered[key]).map(({ label }) => label);
+  const names = requested.filter(({ key }) => rendered[key]).map(({ label }) => label);
   if (names.length) {
     updateDebug('status', `Rendered: ${names.join(', ')}`);
     setStatus(
