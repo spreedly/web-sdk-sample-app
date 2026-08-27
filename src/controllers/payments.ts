@@ -244,7 +244,6 @@ export const createPurchaseWith3DS = async (req: Request, res: Response): Promis
       currency_code,
     },
   };
-  console.log("Spreedly 3ds body:", body);
   try {
     const response = await axios.post(
       `${config.spreedlyUrl}/v1/gateways/${gateway_key}/purchase.json`, body,
