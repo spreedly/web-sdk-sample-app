@@ -3,6 +3,9 @@ import { Request, Response } from 'express';
 import { randomUUID } from 'crypto';
 import config from '../config';
 
+// PPCP by calling PayPal directly — Orders V2 and Vault v3. Does not go through Spreedly, so
+// there is no Spreedly transaction and no reporting. The Spreedly-brokered twin is ppcp-spreedly.ts.
+
 // Spreedly's PayPal partner attribution (BN) code — sent on every Orders V2 call
 const PAYPAL_PARTNER_ATTRIBUTION_ID = 'spreedly_pcp';
 
@@ -80,11 +83,8 @@ export const createPPCPOrder = async (
     amount = '10.00',
     currency_code = 'USD',
     intent = 'CAPTURE',
-    // The caller says whether the buyer will be navigated away from the page. Only then does the
-    // order need somewhere to come back to.
     redirect = false,
-    // Where PayPal sends the buyer afterwards. Mobile passes a deep link; web omits both and gets
-    // the pages below.
+    // Where PayPal sends the buyer afterwards. Mobile passes a deep link; web omits both.
     return_url,
     cancel_url,
   } = req.body || {};
@@ -103,18 +103,9 @@ export const createPPCPOrder = async (
       ],
     };
 
-    // Only send a return URL when the buyer is actually going to be navigated away.
-    //
-    // In a popup or modal PayPal talks straight back to the page that opened it, so there is
-    // nothing to return to and the order does not need this. Sending it anyway is not harmless:
-    // adding a payment_source block makes PayPal answer PAYER_ACTION_REQUIRED instead of CREATED,
-    // which changes a flow that already works.
-    //
-    // In redirect mode the buyer leaves the page. Without a return URL they approve and then sit
-    // on PayPal's page with nowhere to go — that was the hanging spinner.
-    //
-    // A caller-supplied return_url also counts as "the buyer is leaving": a mobile app that sends
-    // its deep link wants PayPal to use it, and has no `redirect` flag to set.
+    // Only send a return URL when the buyer is navigated away. In a popup PayPal talks back to
+    // the opener, and adding a payment_source block makes PayPal answer PAYER_ACTION_REQUIRED
+    // instead of CREATED.
     const callerReturn = callerUrl(return_url);
     const callerCancel = callerUrl(cancel_url);
     if (redirect || callerReturn) {
@@ -122,9 +113,8 @@ export const createPPCPOrder = async (
         paypal: {
           experience_context: {
             return_url: callerReturn || `${origin}/ppcp/spike/`,
-            // Same page, but flagged, so the page can tell "approved" from "backed out".
-            // If the caller gave a return URL but no cancel URL, reuse theirs — sending them to
-            // our web page on cancel would drop a mobile buyer out of their app.
+            // Reuse the caller's return URL on cancel — sending a mobile buyer to a web page
+            // would drop them out of their app.
             cancel_url:
               callerCancel || callerReturn || `${origin}/ppcp/spike/?ppcp_cancelled=1`,
           },
@@ -142,7 +132,6 @@ export const createPPCPOrder = async (
         },
       }
     );
-    // Response includes { id, status, links }.
     res.json(response.data);
   } catch (error) {
     handleError(error, res);
@@ -156,7 +145,6 @@ export const capturePPCPOrder = async (
   res: Response
 ): Promise<void> => {
   const orderId = req.params.orderId || '';
-  // PayPal order ids are alphanumeric; guard the path param.
   if (!/^[a-zA-Z0-9]+$/.test(orderId)) {
     res.status(400).json({ error: 'Invalid order id format' });
     return;
@@ -180,16 +168,12 @@ export const capturePPCPOrder = async (
   }
 };
 
-// ── Vault / recurring (interim) ───────────────────────────────────────────────
-// In-memory store of vaulted PayPal payment tokens. Throwaway demo state — in production
-// Spreedly Core owns token storage; a real integration NEVER exposes raw token ids to the browser.
-/**
- * The two wallets PayPal vaults separately.
- *
- * `paylater` and `paypal_credit` come out of the SDK as distinct payment_method_types, but they are
- * funding sources ON a PayPal account rather than wallets of their own — they vault as `paypal`.
- * Returning a literal rather than the caller's value keeps user input out of the payment_source key.
- */
+// ── Vault / recurring ─────────────────────────────────────────────────────────
+// Vault tokens are long-lived: store them server-side and never expose the raw id to the browser.
+// Kept in memory here for the demo.
+
+// PayPal vaults paypal and venmo separately. 'paylater' and 'paypal_credit' are funding sources on
+// a PayPal account, so they vault as paypal. Return a literal — this becomes a payment_source key.
 const resolveWallet = (requested: unknown): 'paypal' | 'venmo' =>
   requested === 'venmo' ? 'venmo' : 'paypal';
 
@@ -198,20 +182,13 @@ interface VaultedToken {
   wallet: 'paypal' | 'venmo';
   createdAt: string;
   label?: string; // buyer email, if PayPal returns it
-  // Everything else PayPal told us about the buyer. Kept as whatever actually came back rather
-  // than a fixed shape, so the demo displays truth instead of assumed field names.
   details?: Record<string, string>;
   completeDetails?: unknown;
 }
 const vaultedTokens: VaultedToken[] = [];
 
-/**
- * Flatten a PayPal payer object into label -> value pairs for display.
- *
- * PayPal's payer payloads nest inconsistently across endpoints (name.given_name,
- * address.address_line_1, shipping.address.*), and the exact fields returned vary by account and
- * call. Rather than hardcode a shape we walk whatever arrived and keep the scalars.
- */
+// Flatten a PayPal payer object for display. The fields returned vary by endpoint and account, so
+// walk whatever arrived rather than assuming a shape.
 const flattenPayerDetails = (
   source: unknown,
   prefix = '',
@@ -246,8 +223,7 @@ export const createPPCPVaultSetupToken = async (
   const { return_url, cancel_url } = req.body || {};
   try {
     const accessToken = await getPayPalAccessToken();
-    // Use the app's REAL origin so the approval popup can hand control back to the opener.
-    // Placeholder (example.com) URLs make PayPal bail during the popup's loading stage.
+    // Use a real origin — PayPal bails during the popup's loading stage on placeholder URLs.
     const origin = req.headers.origin || `${req.protocol}://${req.get('host')}`;
     const callerReturn = callerUrl(return_url);
     const callerCancel = callerUrl(cancel_url);
@@ -267,7 +243,6 @@ export const createPPCPVaultSetupToken = async (
       body,
       { headers: paypalHeaders(accessToken, true) }
     );
-    // The SDK's createVaultSetupToken() expects { setupToken: <id> }.
     res.json({ setupToken: response.data.id, status: response.data.status });
   } catch (error) {
     handleError(error, res);
@@ -297,17 +272,13 @@ export const createPPCPVaultPaymentToken = async (
     );
     const paypalSource = response.data?.payment_source?.paypal;
     const email = paypalSource?.email_address;
-    // Long-lived token — store server-side; do NOT return it to the browser in a real
-    // integration. Here we keep an in-memory list for the demo.
     vaultedTokens.unshift({
       id: response.data.id,
-      // The setup-token path is PayPal-only: /v3/vault/setup-tokens is created with a paypal
-      // payment_source, and the SDK's vault flow mounts the PayPal button alone.
+      // Setup tokens are PayPal-only — the SDK's vault flow mounts the PayPal button alone.
       wallet: 'paypal',
       createdAt: new Date().toISOString(),
       label: email,
-      // Whatever PayPal returned about the buyer on the payment-token response. Note this is
-      // identity only — no shipping address; that appears on the ORDER, not the vault token.
+      // Identity only — shipping address appears on the ORDER, not the vault token.
       details: flattenPayerDetails(paypalSource),
       completeDetails: response.data,
     });
@@ -317,7 +288,7 @@ export const createPPCPVaultPaymentToken = async (
   }
 };
 
-// GET /api/v1/ppcp/vault/tokens — list saved payment methods (demo only; never leak raw ids).
+// GET /api/v1/ppcp/vault/tokens — saved methods for the demo list. Never leaks the raw token id.
 export const listPPCPVaultTokens = async (_req: Request, res: Response): Promise<void> => {
   res.json({
     tokens: vaultedTokens.map((t, index) => ({
@@ -325,7 +296,6 @@ export const listPPCPVaultTokens = async (_req: Request, res: Response): Promise
       createdAt: t.createdAt,
       wallet: t.wallet,
       label: t.label || (t.wallet === 'venmo' ? 'Venmo account' : 'PayPal account'),
-      // Buyer details PayPal returned, for the demo's accordion. Never includes the token id.
       details: t.details || {},
       completeDetails: t.completeDetails || {},
     })),
@@ -333,9 +303,8 @@ export const listPPCPVaultTokens = async (_req: Request, res: Response): Promise
 };
 
 // POST /api/v1/ppcp/vault/charge   body: { ref, amount?, currency_code?, initiator? }
-// Charge a saved payment token. initiator 'MERCHANT' (default) = merchant-initiated recurring
-// MIT, buyer NOT present (scenario 4). initiator 'CUSTOMER' = return buyer PRESENT, one-click
-// (scenario 3). Both reuse the same vaulted token; only stored_credential differs.
+// Charge a saved wallet. initiator 'MERCHANT' (default) = recurring MIT, buyer not present;
+// 'CUSTOMER' = return buyer present, one-click. Only stored_credential differs.
 export const chargePPCPVaultToken = async (
   req: Request,
   res: Response
@@ -352,14 +321,12 @@ export const chargePPCPVaultToken = async (
     const body = {
       intent: 'CAPTURE',
       purchase_units: [{ amount: { currency_code, value: String(amount) } }],
-      // Charged against whichever wallet was vaulted — PayPal and Venmo tokens are not
-      // interchangeable, and a Venmo vault_id under `paypal` is rejected as an unknown token.
+      // Charge against whichever wallet was vaulted — a Venmo vault_id under `paypal` is
+      // rejected as an unknown token.
       payment_source: {
         [token.wallet]: {
           vault_id: token.id,
-          // Buyer present → CUSTOMER-initiated one-click (unscheduled); buyer not present →
-          // MERCHANT-initiated recurring (subscription). Both are follow-up (SUBSEQUENT)
-          // charges on the same stored payment source.
+          // Both are follow-up (SUBSEQUENT) charges on the same stored payment source.
           stored_credential: buyerPresent
             ? {
                 payment_initiator: 'CUSTOMER',
@@ -377,13 +344,10 @@ export const chargePPCPVaultToken = async (
     const response = await axios.post(
       `${config.paypalApiBaseUrl}/v2/checkout/orders`,
       body,
-      // A create-order that carries a payment_source (the vaulted token) REQUIRES a
-      // PayPal-Request-Id (idempotency key) — PayPal rejects it otherwise with
-      // PAYPAL_REQUEST_ID_REQUIRED. (Plain orders without a payment_source don't need it.)
+      // An order carrying a payment_source requires a PayPal-Request-Id (idempotency key).
       { headers: paypalHeaders(accessToken, true) }
     );
-    // intent=CAPTURE with a vaulted MERCHANT token auto-captures. Fallback: if it came back
-    // approved-but-not-captured, capture it so the demo shows COMPLETED.
+    // intent=CAPTURE with a vaulted MERCHANT token auto-captures; capture explicitly if not.
     let order = response.data;
     let captureError: string | undefined;
     if (order?.id && order.status && order.status !== 'COMPLETED') {
@@ -395,16 +359,13 @@ export const chargePPCPVaultToken = async (
         );
         order = captured.data;
       } catch (err) {
-        // Surface it rather than swallowing — a failed follow-up capture used to render as a
-        // neutral success, which hid real failures.
         const apiError = err as AxiosError;
         const body = apiError.response?.data as { message?: string } | undefined;
         captureError = body?.message || (err as Error).message;
       }
     }
 
-    // The ORDER carries payer + shipping, which the vault token does not. Fold it into the
-    // stored details so the saved-methods accordion can show it after a charge.
+    // The order carries payer + shipping, which the vault token does not.
     const payer = order?.payment_source?.[token.wallet] || order?.payer;
     const shipping = order?.purchase_units?.[0]?.shipping;
     if (payer || shipping) {
@@ -434,20 +395,14 @@ export const chargePPCPVaultToken = async (
 };
 
 // user_action is the Orders-API twin of the JS SDK's `commit`: PAY_NOW renders "Pay" on PayPal's
-// final button, CONTINUE renders "Review Order". This route used to hardcode PAY_NOW, which
-// contradicted a caller that passed `commit: false` — PayPal got told both things at once. The
-// caller now decides, and PAY_NOW stays the default because that is what `commit` itself defaults to.
-//
-// Returns a literal rather than the caller's value, matching resolveTransactionType in
-// ppcp-spreedly.ts — it keeps the request value out of the outbound payload entirely.
+// final button, CONTINUE renders "Review Order". Keep it in step with `commit` or PayPal is told
+// both things at once.
 const resolveUserAction = (requested: unknown): 'PAY_NOW' | 'CONTINUE' =>
   requested === 'CONTINUE' ? 'CONTINUE' : 'PAY_NOW';
 
 // POST /api/v1/ppcp/vault/purchase-order
-// body: { amount?, currency_code?, return_url?, cancel_url?, user_action? }
-// Scenario 2 (vault WITH purchase): create a checkout order that ALSO saves the PayPal on a
-// successful capture. The buyer approves the payment + the save in one pass via the normal JS
-// SDK checkout session; the vaulted token id comes back on capture (see the capture route below).
+// Vault WITH purchase: a checkout order that also saves the wallet on a successful capture. One
+// approval covers both. The vaulted token id comes back on capture.
 export const createPPCPVaultPurchaseOrder = async (
   req: Request,
   res: Response
@@ -455,8 +410,7 @@ export const createPPCPVaultPurchaseOrder = async (
   const { amount = '10.00', currency_code = 'USD', return_url, cancel_url } = req.body || {};
   const userAction = resolveUserAction(req.body?.user_action);
   // Which button the buyer pressed, from the SDK's createOrder context. PayPal and Venmo vault
-  // under different payment_source keys, so putting the attributes under the wrong one saves
-  // nothing — silently.
+  // under different payment_source keys, and the wrong one saves nothing.
   const wallet = resolveWallet(req.body?.wallet);
   try {
     const accessToken = await getPayPalAccessToken();
@@ -467,8 +421,7 @@ export const createPPCPVaultPurchaseOrder = async (
       return_url: callerReturn || `${origin}/ppcp/`,
       cancel_url: callerCancel || callerReturn || `${origin}/ppcp/`,
       shipping_preference: 'NO_SHIPPING',
-      // user_action drives PayPal's own review page ("Pay Now" vs "Continue"). Venmo has no
-      // equivalent screen, so it is only sent for paypal.
+      // Venmo has no review screen, so user_action is only sent for paypal.
       ...(wallet === 'paypal' ? { user_action: userAction } : {}),
     };
     const source = {
@@ -484,10 +437,8 @@ export const createPPCPVaultPurchaseOrder = async (
     const response = await axios.post(
       `${config.paypalApiBaseUrl}/v2/checkout/orders`,
       body,
-      // Carries a payment_source → PayPal requires a PayPal-Request-Id (idempotency key).
       { headers: paypalHeaders(accessToken, true) }
     );
-    // { id, status, links } — the SDK's createOrder() maps this to { orderId: id }.
     res.json(response.data);
   } catch (error) {
     handleError(error, res);
@@ -495,8 +446,7 @@ export const createPPCPVaultPurchaseOrder = async (
 };
 
 // POST /api/v1/ppcp/vault/purchase-order/:orderId/capture
-// Capture a vault-with-purchase order (scenario 2) and store the PayPal token it vaulted so it
-// shows up in the saved list (reusable for scenario 3 one-click / scenario 4 recurring).
+// Captures a vault-with-purchase order and stores the wallet token it vaulted.
 export const capturePPCPVaultPurchaseOrder = async (
   req: Request,
   res: Response
@@ -514,9 +464,8 @@ export const capturePPCPVaultPurchaseOrder = async (
       { headers: paypalHeaders(accessToken, true) }
     );
     const data = response.data;
-    // On a successful vault-with-purchase the capture response carries the vaulted token id at
-    // payment_source.<wallet>.attributes.vault.id — store it (mirrors the setup→payment-token path).
-    // Read whichever wallet actually came back rather than assuming paypal.
+    // The capture response carries the vaulted token id at
+    // payment_source.<wallet>.attributes.vault.id. Read whichever wallet came back.
     const source = data?.payment_source?.venmo ? 'venmo' : 'paypal';
     const returned = data?.payment_source?.[source];
     const vaulted = returned?.attributes?.vault;

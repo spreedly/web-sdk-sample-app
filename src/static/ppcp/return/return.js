@@ -1,17 +1,12 @@
 /**
- * PPCP redirect return handler.
+ * PPCP redirect return handler — the page Spreedly's `redirect_url` points at.
  *
- * Spreedly's `redirect_url` points here. With presentationMode 'redirect' the buyer navigates
- * away from the checkout page, so the SpreedlyPPCP instance no longer exists when the payment
- * resolves — onApprove, and therefore the merchant's onPaymentResult, never fire for the
- * success path. Spreedly finalizes the authorization from its own return leg and then sends the
- * buyer here with ?transaction_token=<token>, which is the only handle this page has.
+ * In redirect mode the buyer navigates away from the checkout page, so onPaymentResult never
+ * fires for the success path. Spreedly finalizes the transaction on its own return leg and sends
+ * the buyer here with ?transaction_token=, which is the only handle this page gets.
  *
- * This mirrors how Spreedly's other offsite flows work (see SpreedlyStripeAPM.confirmPayment):
- * the SDK starts the redirect, the merchant owns the landing.
- *
- * NOTE: Spreedly rejects localhost redirect URLs, so the buyer lands on the deployed Heroku
- * origin. Swap the host for localhost:3000 by hand to capture against a local server.
+ * Spreedly rejects localhost redirect URLs, so the buyer lands on the deployed origin. Swap the
+ * host for localhost:3000 by hand to capture against a local server.
  */
 
 const el = id => document.getElementById(id);
@@ -31,8 +26,7 @@ function showResult(isSuccess, title, message) {
   el('result-message').textContent = message;
 }
 
-// Values here come from the query string, so they are attacker-controlled. Build the nodes and
-// assign textContent instead of interpolating into innerHTML.
+// Query-string values are attacker-controlled: assign textContent, never innerHTML.
 function showDetails(rows) {
   const list = el('detail-list');
   list.textContent = '';
@@ -81,8 +75,8 @@ async function captureReturn() {
   // Drop the token from the address bar so a refresh cannot attempt a second capture.
   window.history.replaceState({}, '', window.location.pathname);
 
-  // Saving a PayPal without paying lands here too, and the token is all Spreedly puts on the URL.
-  // Ask what kind of transaction it is before deciding whether to capture or record.
+  // Saving a PayPal without paying lands here too, so ask what kind of transaction it is before
+  // deciding whether to capture or record.
   let transactionType;
   try {
     const info = await axios.get(`${apiBase()}/ppcp/spreedly/transactions/${transactionToken}`);
@@ -104,8 +98,6 @@ async function captureReturn() {
     );
     const data = response.data;
 
-    // Vault with purchase: the buyer ticked "save my PayPal" and never comes back to the checkout
-    // page, so this is the only screen that can tell them it worked.
     const saved = data.savedPaymentMethod;
 
     setStatus('Payment complete.', 'success');
@@ -141,12 +133,8 @@ async function captureReturn() {
   }
 }
 
-/**
- * The buyer approved saving a PayPal rather than paying for something.
- *
- * Spreedly finalized the verification on its own redirect leg before sending them here, so the
- * wallet is already vaulted. This files it in the demo's saved list and reports the reference.
- */
+// The buyer approved saving a PayPal rather than paying. Spreedly finalized the verification
+// before sending them here, so the wallet is already vaulted — this only records it.
 async function recordVault(transactionToken) {
   setStatus('<span class="spinner"></span> Saving your PayPal&hellip;', 'info');
   try {

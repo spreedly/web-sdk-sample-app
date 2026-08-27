@@ -534,14 +534,14 @@
                 <p class="cfg-hint">Which Spreedly endpoint creates the order. <code>purchase</code> takes the money when Spreedly finalizes it — one leg, no capture. <code>authorize</code> holds the funds and needs a separate capture.</p>
                 <div class="cfg-options">
                   <label class="cfg-opt">
-                    <input type="radio" name="transaction-type" value="purchase" checked>
-                    <span>purchase</span>
-                    <span class="why">single leg</span>
-                  </label>
-                  <label class="cfg-opt">
-                    <input type="radio" name="transaction-type" value="authorize">
+                    <input type="radio" name="transaction-type" value="authorize" checked>
                     <span>authorize</span>
                     <span class="why">then capture</span>
+                  </label>
+                  <label class="cfg-opt">
+                    <input type="radio" name="transaction-type" value="purchase">
+                    <span>purchase</span>
+                    <span class="why">single leg</span>
                   </label>
                 </div>
               </div>

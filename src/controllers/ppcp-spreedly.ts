@@ -9,11 +9,8 @@ import { callerUrl } from './ppcp';
 const toMinorUnits = (amount: string | number): number =>
   Math.round(Number(amount) * 100);
 
-/**
- * An OffsitePurchase takes the money the moment Spreedly finalizes it, so there is no second leg —
- * capture.json rejects it. An OffsiteAuthorization does need capturing. Returns the transaction
- * that represents the money movement either way.
- */
+// An OffsitePurchase is already paid when Spreedly finalizes it; only an OffsiteAuthorization
+// needs capturing.
 const captureIfNeeded = async (authorization: {
   transaction_type?: string;
   token?: string;
@@ -29,8 +26,8 @@ const captureIfNeeded = async (authorization: {
   return response.data?.transaction;
 };
 
-// PayPal order id -> Spreedly transaction token. The SDK's callbacks only carry the PayPal order
-// id, but capture addresses the Spreedly transaction. Demo-only: a real merchant persists this.
+// The SDK's callbacks carry the PayPal order id, but capture addresses the Spreedly transaction.
+// Kept in memory for the demo; persist this against your own order record.
 const orderToTransaction = new Map<string, string>();
 
 const getAuthorizationHeader = (): string => {
@@ -78,24 +75,19 @@ const publicOrigin = (req: Request): string => {
 const PAYMENT_METHOD_TYPES = ['paypal', 'venmo'] as const;
 type SpreedlyWalletType = (typeof PAYMENT_METHOD_TYPES)[number];
 
-// `purchase` exists so confirm.json can be tested — it rejects the OffsiteAuthorization that
-// authorize.json produces. Default stays 'authorize'.
+// authorize holds the funds and needs a capture; purchase takes them when Spreedly finalizes.
 const TRANSACTION_TYPES = ['authorize', 'purchase'] as const;
 type SpreedlyTransactionType = (typeof TRANSACTION_TYPES)[number];
 
-// Both return a literal rather than the caller's value: transactionType goes into the Spreedly
-// URL, and returning the request value keeps it linked to user input for CodeQL's SSRF check.
-// They do NOT widen automatically — adding a value above needs a case added here too.
+// Return a literal, never the caller's value — transactionType goes into the Spreedly URL.
 const resolveTransactionType = (requested: unknown): SpreedlyTransactionType =>
-  requested === 'authorize' ? 'authorize' : 'purchase';
+  requested === 'purchase' ? 'purchase' : 'authorize';
 
 const resolvePaymentMethodType = (requested: unknown): SpreedlyWalletType =>
   requested === 'venmo' ? 'venmo' : 'paypal';
 
 // POST /api/v1/ppcp/spreedly/orders
-// body: { amount?, currency_code?, payment_method_type?, transaction_type?, redirect_url?,
-//         callback_url? }
-// Creates the PayPal order THROUGH Spreedly and returns its id for the SDK's createOrder().
+// Creates the PayPal order through Spreedly and returns its id for the SDK's createOrder().
 export const createSpreedlyPPCPOrder = async (
   req: Request,
   res: Response
@@ -113,7 +105,7 @@ export const createSpreedlyPPCPOrder = async (
   try {
     assertGatewayConfigured();
 
-    // The offsite authorize needs a payment method even though the buyer's wallet identity
+    // The offsite transaction needs a payment method even though the buyer's wallet identity
     // only materializes at approval.
     const paymentMethodResponse = await axios.post(
       `${config.spreedlyUrl}/v1/payment_methods.json`,
@@ -129,7 +121,7 @@ export const createSpreedlyPPCPOrder = async (
     }
 
     const origin = publicOrigin(req);
-    // Caller-supplied URLs win over the computed origin, so mobile can send its own deep links.
+    // Caller-supplied URLs win, so a mobile client can send its own deep links.
     const callerRedirect = callerUrl(redirect_url);
     const callerCallback = callerUrl(callback_url);
     const transactionResponse = await axios.post(
@@ -141,7 +133,6 @@ export const createSpreedlyPPCPOrder = async (
           currency_code,
           // Where Spreedly lands the buyer, with ?transaction_token= appended.
           redirect_url: callerRedirect || `${origin}/ppcp/return/`,
-          // Required by Spreedly, but not load-bearing: the redirect leg is what finalizes.
           callback_url: callerCallback || `${origin}/api/v1/offsite-callback`,
           // Without retain_on_success the payment method lands in storage_state 'used'.
           retain_on_success: true,
@@ -203,8 +194,6 @@ export const captureSpreedlyPPCPOrder = async (
     return;
   }
   try {
-    // Capture only works after approval. Capturing earlier returns Spreedly's opaque
-    // "errors.reference_transaction_failed", so check first and report what is actually wrong.
     const current = await axios.get(
       `${config.spreedlyUrl}/v1/transactions/${transactionToken}.json`,
       { headers: spreedlyHeaders() }
@@ -240,14 +229,10 @@ export const captureSpreedlyPPCPOrder = async (
   }
 };
 
-/**
- * POST /api/v1/ppcp/spreedly/transactions/:transactionToken/capture
- *
- * Capture by SPREEDLY transaction token — the redirect-flow counterpart. The buyer navigates
- * away, so ?transaction_token= on the return URL is the only handle the landing page has.
- *
- * Demo-only: a real merchant checks this token against their own order record before capturing.
- */
+// POST /api/v1/ppcp/spreedly/transactions/:transactionToken/capture
+// Captures by Spreedly transaction token, for the redirect flow — the buyer navigates away, so
+// ?transaction_token= on the return URL is the only handle the landing page has. Check that token
+// against your own order record before capturing.
 export const captureSpreedlyPPCPByTransaction = async (
   req: Request,
   res: Response
@@ -278,7 +263,6 @@ export const captureSpreedlyPPCPByTransaction = async (
       (capture?.payment_method as { token?: string } | undefined)?.token
     );
     const paypal = authorization.gateway_specific_response_fields?.paypal_commerce_platform || {};
-    // An OffsitePurchase is its own capture, so these two ids are the same transaction.
     res.json({
       status: capture?.state,
       succeeded: capture?.succeeded,
@@ -292,7 +276,6 @@ export const captureSpreedlyPPCPByTransaction = async (
       paypalAuthorizationId: authorization.gateway_transaction_id,
       paypalCaptureId: capture?.gateway_transaction_id,
       payer: paypal.payer,
-      // Null when nothing vaulted — the return page is the only screen that can report a save.
       savedPaymentMethod: savedPaymentMethodPayload(savedByTransaction),
     });
   } catch (error) {
@@ -301,7 +284,6 @@ export const captureSpreedlyPPCPByTransaction = async (
 };
 
 // GET /api/v1/ppcp/spreedly/orders/:orderId
-// Demo helper: inspect the underlying Spreedly transaction (state, payer details, PayPal ids).
 export const getSpreedlyPPCPTransaction = async (
   req: Request,
   res: Response
@@ -324,7 +306,7 @@ export const getSpreedlyPPCPTransaction = async (
 
 // ── Vault / recurring via Spreedly ────────────────────────────────────────────
 // A vaulted wallet keeps payment_method_type 'paypal' and gains reference 'vault#<id>'. Charging
-// it uses the Spreedly payment method token, never the vault id — Spreedly resolves that itself.
+// it uses the Spreedly payment method token, not the vault id — Spreedly resolves that itself.
 interface SpreedlyVaultedToken {
   paymentMethodToken: string;
   createdAt: string;
@@ -333,8 +315,7 @@ interface SpreedlyVaultedToken {
 }
 const spreedlyVaultedTokens: SpreedlyVaultedToken[] = [];
 
-// A wallet counts as vaulted only when Spreedly gives it a `vault#…` reference — better an empty
-// list than a saved method that cannot be charged.
+// A wallet counts as vaulted only once Spreedly gives it a `vault#…` reference.
 const recordVaultedWallet = (
   paymentMethod: SpreedlyPaymentMethod | undefined
 ): SpreedlyVaultedToken | null => {
@@ -373,7 +354,6 @@ const recordVaultedWalletByToken = async (
   }
 };
 
-// Null when nothing vaulted, so callers can tell "saved" from "paid but not saved".
 const savedPaymentMethodPayload = (saved: SpreedlyVaultedToken | null) =>
   saved
     ? {
@@ -392,16 +372,7 @@ interface SpreedlyPaymentMethod {
   storage_state?: string;
 }
 
-/**
- * POST /api/v1/ppcp/spreedly/vault/setup   body: { redirect_url?, callback_url? }
- *
- * Vault a PayPal wallet WITHOUT taking a payment. Returns the approval URL to send the buyer to —
- * there is no PayPal setup token in this flow, Spreedly mints the approval session itself, so the
- * browser does not run a vault-mode SpreedlyPPCP at all.
- *
- * Gateway verify only, not smart-routing inline verify. Venmo has no verify path; Venmo can only
- * be vaulted with a purchase.
- */
+// Vault without a purchase.
 export const createSpreedlyPPCPVaultSetup = async (
   req: Request,
   res: Response
@@ -410,12 +381,12 @@ export const createSpreedlyPPCPVaultSetup = async (
   try {
     assertGatewayConfigured();
 
-    // `retained` so the payment method survives the verification.
     const pmResponse = await axios.post(
       `${config.spreedlyUrl}/v1/payment_methods.json`,
       { payment_method: { payment_method_type: 'paypal', retained: true } },
       { headers: spreedlyHeaders() }
     );
+  
     const paymentMethodToken =
       pmResponse.data?.transaction?.payment_method?.token ||
       pmResponse.data?.payment_method?.token;
@@ -465,8 +436,9 @@ export const createSpreedlyPPCPVaultSetup = async (
   }
 };
 
-// Record a verification the buyer already approved. Spreedly finalizes on its own redirect leg
-// before landing the buyer, so this only reads the transaction back and files the payment method.
+// POST /api/v1/ppcp/spreedly/vault/complete
+// Records a verification the buyer already approved. Spreedly finalizes on its own redirect leg
+// before landing the buyer, so the wallet is vaulted by the time this runs.
 export const completeSpreedlyPPCPVaultSetup = async (
   req: Request,
   res: Response
@@ -506,8 +478,8 @@ export const completeSpreedlyPPCPVaultSetup = async (
   }
 };
 
-// Lets a return page tell a payment to capture from a verification to record — Spreedly puts only
-// `transaction_token` on the URL.
+// GET /api/v1/ppcp/spreedly/transactions/:transactionToken
+// Lets a return page tell a payment to capture from a verification to record.
 export const getSpreedlyPPCPTransactionByToken = async (
   req: Request,
   res: Response
@@ -538,7 +510,7 @@ export const getSpreedlyPPCPTransactionByToken = async (
   }
 };
 
-// GET /api/v1/ppcp/spreedly/vault/tokens — saved methods for the demo list.
+// saved methods list.
 export const listSpreedlyPPCPVaultTokens = async (_req: Request, res: Response): Promise<void> => {
   res.json({
     tokens: spreedlyVaultedTokens.map((t, index) => ({
@@ -550,7 +522,7 @@ export const listSpreedlyPPCPVaultTokens = async (_req: Request, res: Response):
   });
 };
 
-// Charge a saved method through Spreedly. initiator 'CUSTOMER' = buyer present (one-click);
+// Charge a saved method through Spreedly. initiator 'CUSTOMER' = buyer present
 // 'MERCHANT' (default) = buyer absent (recurring MIT).
 export const chargeSpreedlyPPCPVaultToken = async (
   req: Request,
@@ -591,50 +563,6 @@ export const chargeSpreedlyPPCPVaultToken = async (
       gatewayTransactionId: transaction?.gateway_transaction_id,
       storedCredentialInitiator: transaction?.stored_credential_initiator,
       storedCredentialReasonType: transaction?.stored_credential_reason_type,
-    });
-  } catch (error) {
-    handleError(error, res);
-  }
-};
-
-// Finalize an in-page approval that did not come back through the redirect. Requires the order to 
-// have been created with transaction_type 'purchase'.
-export const confirmSpreedlyPPCPOrder = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  const orderId = req.params.orderId || '';
-  if (!/^[a-zA-Z0-9]+$/.test(orderId)) {
-    res.status(400).json({ error: 'Invalid order id format' });
-    return;
-  }
-  const transactionToken = orderToTransaction.get(orderId);
-  if (!transactionToken) {
-    res.status(404).json({ error: 'No Spreedly transaction for that order id' });
-    return;
-  }
-  try {
-    const response = await axios.post(
-      `${config.spreedlyUrl}/v1/transactions/${transactionToken}/confirm.json`,
-      {
-        state: 'Successful',
-        nonce: orderId, // the approved PayPal order id stands in for Braintree's nonce
-        payment_method: {
-          payment_method_type: resolvePaymentMethodType(req.body?.payment_method_type),
-        },
-      },
-      { headers: spreedlyHeaders() }
-    );
-    const transaction = response.data?.transaction;
-    res.json({
-      id: orderId,
-      status: transaction?.state,
-      succeeded: !!transaction?.succeeded,
-      message: transaction?.message,
-      transaction_type: transaction?.transaction_type,
-      confirmToken: transaction?.token,
-      authorizationToken: transactionToken,
-      gatewayTransactionId: transaction?.gateway_transaction_id,
     });
   } catch (error) {
     handleError(error, res);
