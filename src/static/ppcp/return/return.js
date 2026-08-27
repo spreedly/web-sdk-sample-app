@@ -81,6 +81,21 @@ async function captureReturn() {
   // Drop the token from the address bar so a refresh cannot attempt a second capture.
   window.history.replaceState({}, '', window.location.pathname);
 
+  // Saving a PayPal without paying lands here too, and the token is all Spreedly puts on the URL.
+  // Ask what kind of transaction it is before deciding whether to capture or record.
+  let transactionType;
+  try {
+    const info = await axios.get(`${apiBase()}/ppcp/spreedly/transactions/${transactionToken}`);
+    transactionType = info.data.transaction_type;
+  } catch (error) {
+    /* fall through to capture — the capture call reports its own failure */
+  }
+
+  if (transactionType === 'OffsiteVerification') {
+    await recordVault(transactionToken);
+    return;
+  }
+
   setStatus('<span class="spinner"></span> Capturing payment through Spreedly&hellip;', 'info');
 
   try {
@@ -89,12 +104,17 @@ async function captureReturn() {
     );
     const data = response.data;
 
+    // Vault with purchase: the buyer ticked "save my PayPal" and never comes back to the checkout
+    // page, so this is the only screen that can tell them it worked.
+    const saved = data.savedPaymentMethod;
+
     setStatus('Payment complete.', 'success');
     showResult(
       true,
       'Payment Successful',
       `Captured ${formatAmount(data.amount, data.currency_code)} through Spreedly's ` +
-        `paypal_commerce_platform gateway.${data.payer ? ` Payer: ${data.payer}.` : ''}`
+        `paypal_commerce_platform gateway.${data.payer ? ` Payer: ${data.payer}.` : ''}` +
+        (saved ? ' Your PayPal was also saved for future purchases.' : '')
     );
     showChain(data.paypalOrderId, data.paypalAuthorizationId, data.paypalCaptureId);
     showDetails([
@@ -106,6 +126,7 @@ async function captureReturn() {
       ['PayPal order', data.paypalOrderId],
       ['PayPal authorization', data.paypalAuthorizationId],
       ['PayPal capture', data.paypalCaptureId],
+      ['Saved PayPal', saved ? saved.reference : undefined],
     ]);
   } catch (error) {
     const body = error.response && error.response.data;
@@ -114,6 +135,44 @@ async function captureReturn() {
     showResult(false, 'Capture Failed', detail);
     showDetails([
       ['Spreedly authorization', transactionToken],
+      ['Transaction state', body && body.state],
+      ['Gateway message', body && body.message],
+    ]);
+  }
+}
+
+/**
+ * The buyer approved saving a PayPal rather than paying for something.
+ *
+ * Spreedly finalized the verification on its own redirect leg before sending them here, so the
+ * wallet is already vaulted. This files it in the demo's saved list and reports the reference.
+ */
+async function recordVault(transactionToken) {
+  setStatus('<span class="spinner"></span> Saving your PayPal&hellip;', 'info');
+  try {
+    const { data } = await axios.post(`${apiBase()}/ppcp/spreedly/vault/complete`, {
+      transactionToken,
+    });
+    setStatus('PayPal saved.', 'success');
+    showResult(
+      true,
+      'PayPal Saved',
+      `${data.label || 'Your PayPal account'} is saved and can now be charged without ` +
+        'another approval.'
+    );
+    showDetails([
+      ['Vault reference', data.reference],
+      ['Payment method type', data.payment_method_type],
+      ['Storage state', data.storage_state],
+      ['Spreedly verification', transactionToken],
+    ]);
+  } catch (error) {
+    const body = error.response && error.response.data;
+    const detail = (body && (body.error || body.message)) || error.message;
+    setStatus('Save failed.', 'error');
+    showResult(false, 'Save Failed', detail);
+    showDetails([
+      ['Spreedly verification', transactionToken],
       ['Transaction state', body && body.state],
       ['Gateway message', body && body.message],
     ]);

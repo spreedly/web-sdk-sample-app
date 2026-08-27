@@ -183,8 +183,19 @@ export const capturePPCPOrder = async (
 // ── Vault / recurring (interim) ───────────────────────────────────────────────
 // In-memory store of vaulted PayPal payment tokens. Throwaway demo state — in production
 // Spreedly Core owns token storage; a real integration NEVER exposes raw token ids to the browser.
+/**
+ * The two wallets PayPal vaults separately.
+ *
+ * `paylater` and `paypal_credit` come out of the SDK as distinct payment_method_types, but they are
+ * funding sources ON a PayPal account rather than wallets of their own — they vault as `paypal`.
+ * Returning a literal rather than the caller's value keeps user input out of the payment_source key.
+ */
+const resolveWallet = (requested: unknown): 'paypal' | 'venmo' =>
+  requested === 'venmo' ? 'venmo' : 'paypal';
+
 interface VaultedToken {
   id: string; // PayPal payment-token id (long-lived)
+  wallet: 'paypal' | 'venmo';
   createdAt: string;
   label?: string; // buyer email, if PayPal returns it
   // Everything else PayPal told us about the buyer. Kept as whatever actually came back rather
@@ -290,6 +301,9 @@ export const createPPCPVaultPaymentToken = async (
     // integration. Here we keep an in-memory list for the demo.
     vaultedTokens.unshift({
       id: response.data.id,
+      // The setup-token path is PayPal-only: /v3/vault/setup-tokens is created with a paypal
+      // payment_source, and the SDK's vault flow mounts the PayPal button alone.
+      wallet: 'paypal',
       createdAt: new Date().toISOString(),
       label: email,
       // Whatever PayPal returned about the buyer on the payment-token response. Note this is
@@ -303,36 +317,14 @@ export const createPPCPVaultPaymentToken = async (
   }
 };
 
-/**
- * Exchange an approved PayPal vault SETUP token for a permanent PAYMENT token.
- *
- * Shared by both delivery paths. The PayPal-direct path stores the result locally; the Spreedly
- * path hands it to Spreedly as a `third_party_token` payment method (see ppcp-spreedly.ts).
- */
-export const exchangeVaultSetupToken = async (
-  vaultSetupToken: string
-): Promise<{ id: string; email?: string; details: Record<string, string> }> => {
-  const accessToken = await getPayPalAccessToken();
-  const response = await axios.post(
-    `${config.paypalApiBaseUrl}/v3/vault/payment-tokens`,
-    { payment_source: { token: { id: vaultSetupToken, type: 'SETUP_TOKEN' } } },
-    { headers: paypalHeaders(accessToken, true) }
-  );
-  const paypalSource = response.data?.payment_source?.paypal;
-  return {
-    id: response.data.id,
-    email: paypalSource?.email_address,
-    details: flattenPayerDetails(paypalSource),
-  };
-};
-
 // GET /api/v1/ppcp/vault/tokens — list saved payment methods (demo only; never leak raw ids).
 export const listPPCPVaultTokens = async (_req: Request, res: Response): Promise<void> => {
   res.json({
     tokens: vaultedTokens.map((t, index) => ({
       ref: index, // opaque handle the browser uses to charge; the real id stays server-side
       createdAt: t.createdAt,
-      label: t.label || 'PayPal account',
+      wallet: t.wallet,
+      label: t.label || (t.wallet === 'venmo' ? 'Venmo account' : 'PayPal account'),
       // Buyer details PayPal returned, for the demo's accordion. Never includes the token id.
       details: t.details || {},
       completeDetails: t.completeDetails || {},
@@ -360,8 +352,10 @@ export const chargePPCPVaultToken = async (
     const body = {
       intent: 'CAPTURE',
       purchase_units: [{ amount: { currency_code, value: String(amount) } }],
+      // Charged against whichever wallet was vaulted — PayPal and Venmo tokens are not
+      // interchangeable, and a Venmo vault_id under `paypal` is rejected as an unknown token.
       payment_source: {
-        paypal: {
+        [token.wallet]: {
           vault_id: token.id,
           // Buyer present → CUSTOMER-initiated one-click (unscheduled); buyer not present →
           // MERCHANT-initiated recurring (subscription). Both are follow-up (SUBSEQUENT)
@@ -411,7 +405,7 @@ export const chargePPCPVaultToken = async (
 
     // The ORDER carries payer + shipping, which the vault token does not. Fold it into the
     // stored details so the saved-methods accordion can show it after a charge.
-    const payer = order?.payment_source?.paypal || order?.payer;
+    const payer = order?.payment_source?.[token.wallet] || order?.payer;
     const shipping = order?.purchase_units?.[0]?.shipping;
     if (payer || shipping) {
       token.details = {
@@ -460,26 +454,32 @@ export const createPPCPVaultPurchaseOrder = async (
 ): Promise<void> => {
   const { amount = '10.00', currency_code = 'USD', return_url, cancel_url } = req.body || {};
   const userAction = resolveUserAction(req.body?.user_action);
+  // Which button the buyer pressed, from the SDK's createOrder context. PayPal and Venmo vault
+  // under different payment_source keys, so putting the attributes under the wrong one saves
+  // nothing — silently.
+  const wallet = resolveWallet(req.body?.wallet);
   try {
     const accessToken = await getPayPalAccessToken();
     const origin = req.headers.origin || `${req.protocol}://${req.get('host')}`;
     const callerReturn = callerUrl(return_url);
     const callerCancel = callerUrl(cancel_url);
+    const experienceContext = {
+      return_url: callerReturn || `${origin}/ppcp/`,
+      cancel_url: callerCancel || callerReturn || `${origin}/ppcp/`,
+      shipping_preference: 'NO_SHIPPING',
+      // user_action drives PayPal's own review page ("Pay Now" vs "Continue"). Venmo has no
+      // equivalent screen, so it is only sent for paypal.
+      ...(wallet === 'paypal' ? { user_action: userAction } : {}),
+    };
+    const source = {
+      // store_in_vault: ON_SUCCESS → vault the wallet only if the payment succeeds.
+      attributes: { vault: { store_in_vault: 'ON_SUCCESS', usage_type: 'MERCHANT' } },
+      experience_context: experienceContext,
+    };
     const body = {
       intent: 'CAPTURE',
       purchase_units: [{ amount: { currency_code, value: String(amount) } }],
-      payment_source: {
-        paypal: {
-          // store_in_vault: ON_SUCCESS → vault the PayPal only if the payment succeeds.
-          attributes: { vault: { store_in_vault: 'ON_SUCCESS', usage_type: 'MERCHANT' } },
-          experience_context: {
-            return_url: callerReturn || `${origin}/ppcp/`,
-            cancel_url: callerCancel || callerReturn || `${origin}/ppcp/`,
-            shipping_preference: 'NO_SHIPPING',
-            user_action: userAction,
-          },
-        },
-      },
+      payment_source: wallet === 'venmo' ? { venmo: source } : { paypal: source },
     };
     const response = await axios.post(
       `${config.paypalApiBaseUrl}/v2/checkout/orders`,
@@ -514,15 +514,23 @@ export const capturePPCPVaultPurchaseOrder = async (
       { headers: paypalHeaders(accessToken, true) }
     );
     const data = response.data;
-    // On a successful vault-with-purchase, the capture response carries the vaulted token id at
-    // payment_source.paypal.attributes.vault.id — store it (mirrors the setup→payment-token path).
-    const vaulted = data?.payment_source?.paypal?.attributes?.vault;
+    // On a successful vault-with-purchase the capture response carries the vaulted token id at
+    // payment_source.<wallet>.attributes.vault.id — store it (mirrors the setup→payment-token path).
+    // Read whichever wallet actually came back rather than assuming paypal.
+    const source = data?.payment_source?.venmo ? 'venmo' : 'paypal';
+    const returned = data?.payment_source?.[source];
+    const vaulted = returned?.attributes?.vault;
     if (vaulted?.id) {
-      const email = data?.payment_source?.paypal?.email_address || data?.payer?.email_address;
       vaultedTokens.unshift({
         id: vaulted.id,
+        wallet: source,
         createdAt: new Date().toISOString(),
-        label: email,
+        // Venmo identifies the buyer by handle; PayPal by email. Take whichever arrived.
+        label:
+          returned?.email_address ||
+          (returned?.user_name ? `@${returned.user_name}` : undefined) ||
+          data?.payer?.email_address,
+        details: flattenPayerDetails(returned),
       });
     }
     res.json(data);

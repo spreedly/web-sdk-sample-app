@@ -367,11 +367,24 @@ function getPresentationMode() {
   return cfg('presentation-mode') || 'auto';
 }
 
-async function createOrder() {
-  // Scenario 2 (vault WITH purchase): if "save my PayPal" is ticked, use the vault-purchase
-  // order route so the PayPal is also saved on capture. Same checkout session either way.
+// 'paylater' and 'paypal_credit' are funding sources on a PayPal account, not wallets of their
+// own — they vault as paypal. Only Venmo is a separate vault.
+function walletFor(context) {
+  return context?.payment_method?.payment_method_type === 'venmo' ? 'venmo' : 'paypal';
+}
+
+// `context` comes from the SDK and names the button that was clicked. The vault-purchase order
+// needs it: PayPal and Venmo vault under different payment_source keys.
+async function createOrder(context) {
+  // Scenario 2 (vault WITH purchase): if "save this wallet" is ticked, use the vault-purchase
+  // order route so the wallet is also saved on capture. Same checkout session either way.
   savedDuringPurchase = !!el('save-during-purchase')?.checked;
-  setStatus(savedDuringPurchase ? 'Creating PayPal order (+ save)...' : 'Creating PayPal order...', 'info');
+  const wallet = walletFor(context);
+  const walletName = wallet === 'venmo' ? 'Venmo' : 'PayPal';
+  setStatus(
+    savedDuringPurchase ? `Creating ${walletName} order (+ save)...` : `Creating ${walletName} order...`,
+    'info'
+  );
   const path = savedDuringPurchase ? '/ppcp/vault/purchase-order' : '/ppcp/orders';
   const willRedirect = getPresentationMode() === 'redirect';
   // A redirect reloads this page, so anything we need afterwards has to outlive it.
@@ -386,7 +399,7 @@ async function createOrder() {
     // The vault-purchase order carries an experience_context, so it needs user_action to agree with
     // the SDK's commit — otherwise PayPal is told "Review Order" and "Pay" at once. The plain order
     // route sends no experience_context, so commit alone decides there.
-    ...(savedDuringPurchase ? { user_action: userActionFor(getCommit()) } : {}),
+    ...(savedDuringPurchase ? { user_action: userActionFor(getCommit()), wallet } : {}),
   });
   updateDebug('orderId', response.data.id);
   return { orderId: response.data.id };
@@ -578,6 +591,7 @@ function renderSavedMethod(t, mode) {
     <div class="saved-method" data-ref="${t.ref}">
       <div class="saved-method-head">
         <span class="saved-method-label">${SpreedlyUtils.escapeHtml(t.label)}</span>
+        <span class="elig-badge info">${t.wallet === 'venmo' ? 'Venmo' : 'PayPal'}</span>
         <span class="saved-method-meta">saved ${SpreedlyUtils.escapeHtml(saved)}</span>
       </div>
       ${renderBuyerDetails(t.details)}
