@@ -7,7 +7,7 @@ import config from '../config';
 // there is no Spreedly transaction and no reporting. The Spreedly-brokered twin is ppcp-spreedly.ts.
 
 // Spreedly's PayPal partner attribution (BN) code — sent on every Orders V2 call
-const PAYPAL_PARTNER_ATTRIBUTION_ID = 'spreedly_pcp';
+const PAYPAL_PARTNER_ATTRIBUTION_ID = 'Spreedly_PCP';
 
 // In-memory OAuth access-token cache (server-internal; refreshed ~1 min before expiry).
 let cachedAccessToken: { value: string; expiresAt: number } | null = null;
