@@ -18,6 +18,7 @@ const config = {
   eligibleForCardUpdater: false,
   showCardTypeIcon: true,
   ecExtraFields: [],
+  ecExtraFieldsRequired: false,
   hostedCatalogueFields: [],
   hostedCatalogueRequired: false,
   hostedSubmitButton: false,
@@ -249,6 +250,11 @@ function setupConfigCheckboxListeners() {
     config.hostedCatalogueRequired = this.checked;
   });
 
+  // Express Checkout twin of the Hosted Fields toggle above — same `isRequired` flag name.
+  document.getElementById('ec-fields-required')?.addEventListener('change', function () {
+    config.ecExtraFieldsRequired = this.checked;
+  });
+
   document.getElementById('hf-catalogue-select-all')?.addEventListener('click', () => {
     setAllHostedCatalogueCheckboxes(true);
   });
@@ -292,6 +298,7 @@ function syncEcExtraFieldsFromCheckboxes() {
   config.ecExtraFields = EC_EXTRA_FIELD_KEYS.filter(
     (key) => document.getElementById(`ec-field-${key}`)?.checked
   );
+  config.ecExtraFieldsRequired = document.getElementById('ec-fields-required')?.checked || false;
 }
 
 /**
@@ -329,6 +336,12 @@ const EC_EXTRA_FIELD_DEFAULTS = Object.freeze({
   shipping_phone_number_area_code: { label: 'Shipping Phone Area Code', placeholder: '415' },
 });
 
+/**
+ * Builds `uiConfig.cardPaymentFormFields` entries for the ticked Express Checkout fields.
+ * `isRequired` is the same flag Hosted Fields takes on `inAppElements()`: it gates every
+ * additional field, including `full_name` (only `first_name` / `last_name` and the date fields
+ * are required by default in either product).
+ */
 function buildEcExtraFieldsConfig(fieldKeys) {
   const out = {};
   fieldKeys.forEach((fieldName) => {
@@ -336,7 +349,7 @@ function buildEcExtraFieldsConfig(fieldKeys) {
     if (!defaults) return;
     out[fieldName] = {
       fieldName,
-      isRequired: false,
+      isRequired: config.ecExtraFieldsRequired,
       label: defaults.label,
       placeholder: defaults.placeholder,
       size: 6,
@@ -985,8 +998,8 @@ window.openHostedFieldsForm = function () {
 
 /**
  * Builds the `inAppElements` config: the mandatory number and cvv fields plus one entry per
- * catalogue field ticked in the SDK Configuration panel. `required` only gates the optional
- * granular fields — name and date fields are required by default whenever mounted.
+ * catalogue field ticked in the SDK Configuration panel. `isRequired` gates every field except
+ * first_name / last_name and the date fields, which are required by default whenever mounted.
  */
 function buildHostedFieldsElementsConfig() {
   const elementsConfig = {
@@ -996,7 +1009,7 @@ function buildHostedFieldsElementsConfig() {
   mountedCatalogueFields.forEach((type) => {
     elementsConfig[type] = {
       containerId: hostedCatalogueContainerId(type),
-      ...(config.hostedCatalogueRequired ? { required: true } : {}),
+      ...(config.hostedCatalogueRequired ? { isRequired: true } : {}),
       ...(type === 'full_name' ? { styles: HOSTED_INPUT_STYLE } : {}),
     };
   });

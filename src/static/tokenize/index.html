@@ -404,6 +404,19 @@
                     input for each ticked field; the value is included in the tokenization request.
                   </p>
 
+                  <div class="config-option-row">
+                    <div class="config-option">
+                      <input type="checkbox" id="ec-fields-required" class="config-checkbox">
+                      <div class="config-option-content">
+                        <label for="ec-fields-required" class="config-option-label">Add with
+                          <code>isRequired: true</code></label>
+                        <span class="config-option-desc">Blocks submission when a ticked field is blank — the same flag
+                          Hosted Fields takes on <code>inAppElements()</code>. First name, last name and the date fields
+                          are required by default in both products.</span>
+                      </div>
+                    </div>
+                  </div>
+
                   <h4 style="margin-top:.5rem; margin-bottom:.25rem;">Cardholder</h4>
                   <div class="config-option-row">
                     <div class="config-option">
@@ -632,9 +645,10 @@
                         <input type="checkbox" id="hf-catalogue-required" class="config-checkbox">
                         <div class="config-option-content">
                           <label for="hf-catalogue-required" class="config-option-label">Mount with
-                            <code>required: true</code></label>
-                          <span class="config-option-desc">Blocks tokenization when a mounted email / company / phone /
-                            address field is blank. Name and date fields are required by default regardless.</span>
+                            <code>isRequired: true</code></label>
+                          <span class="config-option-desc">Blocks tokenization when a mounted full name / email / company
+                            / phone / address field is blank. First name, last name and the date fields are required by
+                            default regardless.</span>
                         </div>
                       </div>
                     </div>
