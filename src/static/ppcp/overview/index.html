@@ -175,7 +175,7 @@ const { rendered, error } = await ppcp.mount();</code></pre>
   clientId,
   components: ['paypal-payments', 'venmo-payments'],   // derived from requested buttons
   pageType: 'checkout',
-  partnerAttributionId: 'Spreedly_PCP',                // BN attribution
+  partnerAttributionId: 'spreedly_pcp',                // BN attribution
   locale,
 })</code></pre>
         <p><code>components</code> is computed from which buttons the merchant asked for, so we only load what's needed.</p>
