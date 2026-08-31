@@ -221,10 +221,11 @@ sdk.inAppElements({
   cvv: { containerId: 'cvv-field' },
 
   // Optional granular catalogue fields — include only the ones you want hosted.
-  // Name & date fields are required by default; the others are optional unless `required: true`.
+  // first_name / last_name and the date fields are required by default; every other field
+  // (including full_name) is optional unless `isRequired: true`.
   expiry: { containerId: 'expiry-field' }, // or: month + year
   full_name: { containerId: 'name-field' },
-  address1: { containerId: 'address1-field', required: true },
+  address1: { containerId: 'address1-field', isRequired: true },
   city: { containerId: 'city-field' },
   zip: { containerId: 'zip-field' }
 });
@@ -247,15 +248,17 @@ sdk.inAppElements({
   secure iframe at `submit()` time. Any value you pass to `submit()` for a parameter that
   field owns (e.g. `first_name` when the `first_name` field is mounted) is ignored and a
   warning is logged.
-- **Name & date are required by default.** When a **name** field (`first_name` / `last_name` /
-  `full_name`) or a **date** field (`expiry` / `month` / `year`) is mounted, it is required —
+- **Name & date are required by default.** When a **name** field (`first_name` / `last_name`)
+  or a **date** field (`expiry` / `month` / `year`) is mounted, it is required —
   leaving it blank blocks tokenization with a `validation` then `error` event. This is
-  independent of the `required` option below. To allow blanks, pass `allow_blank_name` (name)
+  independent of the `isRequired` option below. To allow blanks, pass `allow_blank_name` (name)
   or `allow_blank_date` (date) to `submit()`; `allow_expired_date` similarly permits a past date.
-- **`required` (optional, default `false`).** Applies to the other granular fields (email /
-  company / phone / address). When `true`, tokenization is blocked with a `validation` then
-  `error` event if that field is left blank. (Ignored for name/date fields, which are always
-  required by default as described above.)
+- **`isRequired` (optional, default `false`).** Applies to every other field — `full_name`,
+  email, company, phone and the address fields. When `true`, tokenization is blocked with a
+  `validation` then `error` event if that field is left blank. (Ignored for the
+  `first_name` / `last_name` and date fields, which are always required by default as described
+  above.) `full_name` is opt-in here, matching Express Checkout; `allow_blank_name` does not
+  relax it in either product.
 - **Styling & configuration.** The field-configuration methods accept the granular catalogue
   types too, e.g. `sdk.setPlaceholder('expiry', 'MM/YY')` or `sdk.setStyles('full_name', { … })`.
 
