@@ -41,7 +41,12 @@ export const SELECTORS = {
   HOSTED_NUMBER_FIELD: "#spreedly-hosted-number-input",
   HOSTED_CVV_FIELD: "#spreedly-hosted-cvv-input",
   HOSTED_SHIPPING_ADDRESS_FIELD: "input-shipping-address",
-
+  // Catalogue fields share formField.html; title is unique per type.
+  HOSTED_FIRST_NAME_FIELD_IFRAME: 'iframe[title="Spreedly hosted field iframe - spreedly-hosted-first_name"]',
+  HOSTED_LAST_NAME_FIELD_IFRAME: 'iframe[title="Spreedly hosted field iframe - spreedly-hosted-last_name"]',
+  HOSTED_MONTH_FIELD_IFRAME: 'iframe[title="Spreedly hosted field iframe - spreedly-hosted-month"]',
+  HOSTED_YEAR_FIELD_IFRAME: 'iframe[title="Spreedly hosted field iframe - spreedly-hosted-year"]',
+  HOSTED_TWO_DIGIT_EXPIRY_FIELD_IFRAME: 'iframe[title="Spreedly hosted field iframe - spreedly-hosted-expiry"]',
   // Form Fields(hosted fields data-testid)
   EXPIRY_MONTH: "#expiry_month, #month",
   EXPIRY_YEAR: "#expiry_year, #year",
@@ -117,6 +122,7 @@ export const SELECTORS = {
   ORDER_STATUS_BODY: '.toast-body',
   PAY_BUTTON_PAYPAL: 'Complete Purchase',
   PAY_BUTTON_PAYPAL_LATER: 'submit-button-initial',
+  HOSTED_CATALOGUE_FIELDS_DROPDOWN: 'Hosted catalogue fields'
 } as const;
 
 export const THREE_DS_SELECTORS = {
@@ -186,6 +192,11 @@ export const PLACEHOLDERS = {
 export const LABELS = {
   FIRST_NAME: "First Name",
   LAST_NAME: "Last Name",
+  FIRST_NAME_CATALOGUE_FIELDS: "First name",
+  LAST_NAME_CATALOGUE_FIELDS: "Last name",
+  MONTH_CATALOGUE_FIELDS: "Expiration month",
+  YEAR_CATALOGUE_FIELDS: "Expiration year",
+  TWO_DIGIT_EXPIRY_CATALOGUE_FIELDS: "Expiration date",
   SHIPPING_ADDRESS: "Shipping Address",
   CARD_NUMBER: "Card number",
   CVV_NUMBER: "CVV security code",
@@ -311,6 +322,11 @@ export const ERROR_MESSAGES = {
   TOKENIZATION_FAILED_MESSAGE: "Tokenization failed. Please try again.",
   ACH_INVALID_ROUTING_NUMBER: "Routing number is invalid",
   ACH_INVALID_ACCOUNT_NUMBER: "Request failed with status code 422",
+  FIRST_NAME_REQUIRED_HOSTED_FIELDS: "First name is required",
+  CARD_EXPIRED_HOSTED_FIELDS: "Card has expired",
+  MONTH_REQUIRED_HOSTED_FIELDS: "Month is required",
+  YEAR_REQUIRED_HOSTED_FIELDS: "Year is required",
+  INVALID_CARD_NUMBER_HOSTED_FIELDS: "Invalid card number",
 };
 
 export const ERROR_SELECTORS = {
@@ -355,6 +371,10 @@ export const getValidYearString = (): string => {
   return getValidYear().toString();
 };
 
+export const getValidTwoDigitExpiryString = (): string => {
+  const year = getValidYear().toString().slice(-2);
+  return `12/${year}`;
+};
 /**
  * Returns a valid two-digit year for testing (current year + 1)
  * Example usage: await mmyyField.fill(`12/${getValidTwoDigitYear()}`);

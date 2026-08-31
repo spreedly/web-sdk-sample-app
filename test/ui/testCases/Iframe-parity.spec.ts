@@ -6,8 +6,6 @@ import { tokenizePage } from "../pages/tokenizePage";
 import { helperFunctions } from "../util/utils";
 
 
-
-
 test.describe('Iframe Parity tests', () => {
     test('should verify placeholder color', async ({ page }) => {
         await page.goto(MONOREPO_URLS.BASE);
@@ -93,9 +91,14 @@ test.describe('Iframe Parity tests', () => {
     await page.goto(MONOREPO_URLS.BASE);
     await landingPage.clickOnTokenizeButton(page);
     await waitForAuthParams(page);
+    await tokenizePage.clickOnHostedCatalogueFieldsDropdown(page);
+    await tokenizePage.selectFieldsByName(page, 'first_name');
+    await tokenizePage.selectFieldsByName(page, 'last_name');
+    await tokenizePage.selectFieldsByName(page, 'month');
+    await tokenizePage.selectFieldsByName(page, 'year');
     await tokenizePage.clickOnOpenPaymentFormButtonHostedFields(page);
     await page.locator(SELECTORS.PARITY_OPTION_CARD_UPDATER).check();
-    await helperFunctions.fillHostedFieldsForm(page, TEST_DATA.CARD_NUMBER, {
+    await helperFunctions.fillHostedFieldsFormWithCatalogueFields(page, TEST_DATA.CARD_NUMBER, {
       firstName: TEST_DATA.FIRST_NAME,
       lastName: TEST_DATA.LAST_NAME,
       cvv: TEST_DATA.CVV,
@@ -103,7 +106,7 @@ test.describe('Iframe Parity tests', () => {
       expiryYear: getValidYearString(),
     });
     
-    await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.CARD_NUMBER_FORMATTED, {
+    await helperFunctions.verifyFormFieldsHostedFieldsWithCatalogueFields(page, TEST_DATA.CARD_NUMBER_FORMATTED, {
       cvv: TEST_DATA.CVV,
       firstName: TEST_DATA.FIRST_NAME,
       lastName: TEST_DATA.LAST_NAME,
@@ -166,3 +169,4 @@ test.describe('Iframe Parity tests', () => {
 
 
 })
+
