@@ -110,7 +110,10 @@ export const SELECTORS = {
   ACH_ROUTING_NUMBER_INPUT: '#ach-routing',
   ACH_ERROR_MESSAGE: '.status-message',
   STRIPE_RADAR_BUTTON: '[data-flow="stripe-radar"]',
-  STRIPE_RADAR_PAY_BUTTON: '#pay-btn'
+  STRIPE_RADAR_PAY_BUTTON: '#pay-btn',
+  PPCP_DIRECT_BUTTON: '[data-flow="ppcp/spike"]',
+  PAYPAL_NEXT_BUTTON: '#btnNext',
+  PAYPAL_PASSWORD_SUBMIT_BUTTON: 'Log In',
 } as const;
 
 export const THREE_DS_SELECTORS = {
@@ -173,6 +176,8 @@ export const PLACEHOLDERS = {
   STRIPE_APM_IBAN: "DE00 0000 0000 0000 0000 00",
   STRIPE_APM_NAME: "First and last name",
   STRIPE_APM_EMAIL: "you@example.com",
+  PAYPAL_EMAIL: "Email or mobile number",
+  PAYPAL_PASSWORD: "Password",
 };
 
 export const LABELS = {
@@ -181,6 +186,10 @@ export const LABELS = {
   SHIPPING_ADDRESS: "Shipping Address",
   CARD_NUMBER: "Card number",
   CVV_NUMBER: "CVV security code",
+  PAYPAL_BUTTON: "PayPal",
+  VENMO_BUTTON: "Pay with Venmo",
+  PAY_LATER_BUTTON: "Pay later",
+  PAYPAL_CREDIT_BUTTON: "PayPal Credit",
 };
 
 export const TEST_DATA = {
