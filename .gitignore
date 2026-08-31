@@ -10,6 +10,7 @@ log/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+/test/ui/credentials.env
 
 .cursor
 .DS_Store
