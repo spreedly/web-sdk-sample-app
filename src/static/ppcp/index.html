@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../../shared/styles.css">
+  <link rel="stylesheet" href="../shared/styles.css">
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <style>
     /* Stepper */
@@ -82,6 +82,8 @@
       flex-shrink: 0; font-size: 0.6875rem; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 999px;
       background: var(--color-gray-100); color: var(--color-gray-600); white-space: nowrap;
     }
+    .elig-badge.ok { background: #dcfce7; color: #166534; }
+    .elig-badge.warn { background: #fef3c7; color: #92400e; }
     .elig-badge.info { background: #e0e7ff; color: #3730a3; }
     #eligibility-result { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.75rem 0; }
     .elig-result { font-size: 0.75rem; font-weight: 600; padding: 0.2rem 0.55rem; border-radius: 999px; }
@@ -94,78 +96,6 @@
       margin-bottom: 1.5rem; font-size: 0.8125rem; color: #92400e; line-height: 1.5;
     }
     .dev-note code { background: rgba(0, 0, 0, 0.06); padding: 0.1rem 0.3rem; border-radius: 4px; }
-
-    /* Accordion (step 1) */
-    .accordion { border: 1px solid var(--color-gray-200); border-radius: var(--radius-lg); background: var(--color-white); overflow: hidden; }
-    .accordion + .accordion { margin-top: 1rem; }
-    .accordion-head {
-      display: flex; align-items: center; gap: 0.875rem; width: 100%; padding: 1.25rem 1.5rem;
-      background: none; border: 0; cursor: pointer; text-align: left; font: inherit;
-      transition: background var(--transition);
-    }
-    .accordion-head:hover { background: var(--color-gray-50); }
-    .accordion-icon {
-      width: 2.25rem; height: 2.25rem; flex-shrink: 0; border-radius: var(--radius-md);
-      background: var(--color-gray-100); display: flex; align-items: center; justify-content: center; font-size: 1.125rem;
-    }
-    .accordion-text { flex: 1; min-width: 0; }
-    .accordion-title { font-weight: 600; color: var(--color-gray-900); font-size: 0.9375rem; }
-    .accordion-sub { font-size: 0.8125rem; color: var(--color-gray-500); margin-top: 0.125rem; }
-    .accordion-chevron {
-      flex-shrink: 0; width: 1.25rem; height: 1.25rem; color: var(--color-gray-400);
-      transition: transform var(--transition);
-    }
-    .accordion.open .accordion-chevron { transform: rotate(180deg); }
-    .accordion-body { display: none; padding: 0 1.5rem 1.5rem; }
-    .accordion.open .accordion-body { display: block; }
-
-    /* Step 1 spans the full width — the config panel is payment-only. */
-    .step-1-active .config-panel { display: none; }
-
-    /* Collapsible config sections. .config-section-title is display:flex, which drops the default
-       disclosure triangle, so the chevron in the markup is the only affordance. */
-    summary.config-section-title { list-style: none; }
-    summary.config-section-title::-webkit-details-marker { display: none; }
-    details[open] > summary .accordion-chevron { transform: rotate(180deg); }
-
-    /* Toasts — every outcome. Manually dismissed; they carry order/capture ids worth copying. */
-    .toast-stack {
-      position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 1000;
-      display: flex; flex-direction: column; gap: 0.75rem; max-width: min(26rem, calc(100vw - 3rem));
-    }
-    .toast {
-      display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.875rem 1rem;
-      border-radius: var(--radius-lg); border: 1px solid var(--color-gray-200);
-      background: var(--color-white); box-shadow: var(--shadow-lg, 0 10px 25px rgba(0,0,0,0.12));
-      font-size: 0.8125rem; line-height: 1.5; animation: toast-in 0.18s ease-out;
-    }
-    @keyframes toast-in { from { opacity: 0; transform: translateY(0.5rem); } to { opacity: 1; transform: none; } }
-    .toast.ok { background: #f0fdf4; border-color: #bbf7d0; color: #166534; }
-    .toast.err { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
-    .toast.pending { background: var(--color-gray-50); color: var(--color-gray-600); }
-    .toast-body { flex: 1; min-width: 0; overflow-wrap: anywhere; }
-    .toast-title { font-weight: 600; margin-bottom: 0.125rem; }
-    .toast-close {
-      flex-shrink: 0; background: none; border: 0; cursor: pointer; padding: 0; line-height: 1;
-      font-size: 1.125rem; color: currentColor; opacity: 0.5; transition: opacity var(--transition);
-    }
-    .toast-close:hover { opacity: 1; }
-
-    /* Payment method options (step 2). The two are alternatives, not steps — the divider carries
-       an "or" so they do not read as a sequence. */
-    .pay-option + .pay-option { margin-top: 2rem; padding-top: 2rem; border-top: 2px solid var(--color-gray-300); position: relative; }
-    .pay-option + .pay-option::before {
-      content: 'or'; position: absolute; top: 0; left: 50%; transform: translate(-50%, -50%);
-      background: var(--color-white); padding: 0 0.75rem; font-size: 0.6875rem; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-gray-400);
-    }
-    .pay-option-title {
-      font-size: 0.9375rem; font-weight: 700; color: var(--color-gray-900);
-      margin-bottom: 0.875rem; display: flex; align-items: center; gap: 0.5rem;
-    }
-    .pay-option-title::before {
-      content: ''; width: 3px; height: 1.05em; border-radius: 2px; background: var(--color-primary);
-    }
 
     /* Payment buttons */
     .section-title { font-size: 1rem; font-weight: 600; color: var(--color-gray-700); margin-bottom: 1rem; }
@@ -202,6 +132,14 @@
       display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.625rem;
     }
     .saved-method-actions .btn { padding: 0.35rem 0.7rem; font-size: 0.8125rem; }
+    .saved-method-result {
+      margin-top: 0.625rem; font-size: 0.8125rem; padding: 0.5rem 0.625rem;
+      border-radius: var(--radius-sm); display: none;
+    }
+    .saved-method-result.show { display: block; }
+    .saved-method-result.ok { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+    .saved-method-result.err { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+    .saved-method-result.pending { background: var(--color-gray-50); color: var(--color-gray-600); }
     /* Buyer-details accordion */
     .buyer-details { margin-top: 0.625rem; }
     .buyer-details > summary {
@@ -245,6 +183,11 @@
     .cfg-opt input:disabled + span { color: var(--color-gray-400); }
     .cfg-opt.disabled { cursor: not-allowed; }
     .cfg-opt .why { font-size: 0.65rem; color: var(--color-gray-400); }
+    .cfg-note {
+      font-size: 0.65rem; color: #92400e; background: #fffbeb; border: 1px solid #fde68a;
+      border-radius: var(--radius-sm); padding: 0.35rem 0.5rem; margin-top: 0.35rem; line-height: 1.4;
+    }
+
 
     /* Full-width buttons. PayPal's components set a fixed width from inside their shadow DOM
        (:host{width:135px}, or 225px once a label is set). Rules in the page beat :host rules for
@@ -257,15 +200,22 @@
     #save-paypal-button paypal-button {
       width: 100%;
     }
+
+    /* Result card */
+    .result-card {
+      background: var(--color-gray-50); border: 1px solid var(--color-gray-200); border-radius: 8px;
+      padding: 1rem; margin-top: 1rem;
+    }
+    .result-card.success { border-color: var(--color-success); background: #f0fdf4; }
+    .result-card.error { border-color: var(--color-error); background: #fef2f2; }
   </style>
 </head>
-<!-- Step 1 is the landing step, so start full-width; goToStep() keeps this in sync after that. -->
-<body class="step-1-active">
+<body>
   <div class="page-wrapper">
     <!-- Header -->
     <header class="header">
       <div class="container header-inner">
-        <a href="../../index.html" class="logo">
+        <a href="../index.html" class="logo">
           <span class="logo-icon">S</span>
           Spreedly Web SDK
         </a>
@@ -279,7 +229,7 @@
         <div class="tokenize-layout">
           <!-- Left Column - Flow -->
           <div class="tokenize-form">
-            <a href="../../index.html" class="back-link">
+            <a href="../index.html" class="back-link">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
               </svg>
@@ -287,6 +237,9 @@
             </a>
 
             <h1 class="mb-2">PayPal Complete Payments (PPCP)</h1>
+            <p class="mb-6" style="color: var(--color-gray-500);">
+              Brokered through Spreedly’s <code>paypal_commerce_platform</code> gateway. The browser half is identical to the <a href="./spike/index.html">PayPal-direct spike</a> — only the merchant backend differs.
+            </p>
 
             <!-- Stepper -->
             <div class="stepper" id="stepper">
@@ -300,81 +253,62 @@
               </div>
             </div>
 
-            <!-- Step 1: products + vault setup. Full width — the config panel is payment-only. -->
+            <!-- Step 1: Product Selection -->
             <div class="step-content active" id="step-1">
-              <div class="dev-note">
-                <strong>PPCP through Spreedly.</strong> The order is created by Spreedly's
-                <code>paypal_commerce_platform</code> gateway, not by calling PayPal directly — the browser
-                half (<code>SpreedlyPPCP</code> + PayPal's JS SDK v6) is identical either way. The
-                PayPal-direct spike lives at <a href="./spike/">PPCP via PayPal Direct</a>.
-                <div style="margin-top: 0.5rem;">
-                  Uses the PayPal v6 SDK + the <strong>local</strong> Spreedly SDK build, so it needs
-                  <code>npm run dev</code> in <code>checkout-web-sdk</code> (SDK on :5000).
+              <div class="card">
+                <div class="section-title">Select Products</div>
+                <div class="products-grid" id="products-grid"></div>
+
+
+                <!-- Cart summary -->
+                <div class="order-summary" id="cart-summary" style="display: none;">
+                  <div class="order-summary-title">Your Cart</div>
+                  <div id="cart-items"></div>
+                  <div class="order-total">
+                    <span>Total</span>
+                    <span id="cart-total">$0.00</span>
+                  </div>
                 </div>
+
+                <button id="proceed-to-payment" class="btn btn-primary btn-block" disabled>
+                  Proceed to Payment
+                </button>
               </div>
 
-              <!-- Accordion 1 — buy something -->
-              <div class="accordion open" id="acc-products">
-                <button class="accordion-head" type="button" onclick="toggleAccordion('acc-products')">
-                  <span class="accordion-icon">🛒</span>
-                  <span class="accordion-text">
-                    <span class="accordion-title">Select products</span>
-                    <span class="accordion-sub">Build a cart, then pay with PayPal, Venmo, Pay Later or Credit.</span>
-                  </span>
-                  <svg class="accordion-chevron" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-                  </svg>
-                </button>
-                <div class="accordion-body">
-                  <div class="products-grid" id="products-grid"></div>
+              <!-- Save PayPal & recurring (Vault) — independent of the cart -->
+              <div class="card" style="margin-top: 1.5rem;">
+                <div class="section-title">Save PayPal &amp; recurring (Vault)</div>
+                <p style="font-size: 0.8125rem; color: var(--color-gray-500); margin-bottom: 1rem;">
+                  Save a PayPal <strong>without a purchase</strong>, then reuse it two ways:
+                  <strong>one-click</strong> when the buyer returns (buyer present) or a
+                  <strong>merchant-initiated recurring</strong> charge (buyer not present). You can also
+                  tick "save my PayPal" during checkout (vault <em>with</em> purchase).
+                </p>
 
-                  <div class="order-summary" id="cart-summary" style="display: none;">
-                    <div class="order-summary-title">Your Cart</div>
-                    <div id="cart-items"></div>
-                    <div class="order-total">
-                      <span>Total</span>
-                      <span id="cart-total">$0.00</span>
-                    </div>
-                  </div>
-
-                  <button id="proceed-to-payment" class="btn btn-primary btn-block" disabled>
-                    Proceed to Payment →
-                  </button>
+                <button id="save-trigger" class="btn btn-secondary btn-block">＋ Save a PayPal for later</button>
+                <div id="save-loading" class="payment-buttons-container loading hidden">
+                  <span class="spinner-inline"></span>
+                  <span style="margin-left: 0.5rem;">Loading PayPal SDK...</span>
                 </div>
-              </div>
+                <div id="save-paypal-button"></div>
+                <div id="vault-status" class="status-message"></div>
 
-              <!-- Accordion 2 — buyer-absent operations: vault without purchase, and MIT -->
-              <div class="accordion" id="acc-vault">
-                <button class="accordion-head" type="button" onclick="toggleAccordion('acc-vault')">
-                  <span class="accordion-icon">🔒</span>
-                  <span class="accordion-text">
-                    <span class="accordion-title">Save a payment method &amp; recurring</span>
-                    <span class="accordion-sub">Vault a PayPal without a purchase, then charge it merchant-initiated.</span>
-                  </span>
-                  <svg class="accordion-chevron" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-                  </svg>
-                </button>
-                <div class="accordion-body">
-                  <p style="font-size: 0.8125rem; color: var(--color-gray-500); margin-bottom: 1rem;">
-                    No money moves here. The buyer approves once and the token is charged later without them
-                    present — a <strong>merchant-initiated</strong> (MIT) recurring charge, fixed at $10.
-                    To pay <em>and</em> save in one go, use "Also save my PayPal" on the payment step.
-                  </p>
-
-                  <button id="save-trigger" class="btn btn-secondary btn-block">＋ Save a PayPal for later</button>
-                  <div id="save-loading" class="payment-buttons-container loading hidden">
-                    <span class="spinner-inline"></span>
-                    <span style="margin-left: 0.5rem;">Loading PayPal SDK...</span>
+                <div class="order-summary" style="margin-top: 1.5rem;">
+                  <div class="dev-note" style="margin-bottom: 1rem;">
+                    <strong>Saved methods live in Spreedly.</strong> The vault id is imported as a
+                    <code>third_party_token</code> payment method, and both charge buttons run through
+                    Spreedly&rsquo;s gateway with <code>stored_credential_initiator</code> /
+                    <code>stored_credential_reason_type</code>.
+                    <br><br>
+                    The <em>save</em> itself is still a direct PayPal call: vaulting a PayPal wallet needs
+                    the buyer to approve in the browser, and Spreedly&rsquo;s <code>store.json</code> has no
+                    offsite approval leg. So we mint the vault token at PayPal, then import it.
+                    &ldquo;Also save my PayPal&rdquo; during checkout (vault <em>with</em> purchase) remains
+                    PayPal-direct end to end.
                   </div>
-                  <div id="save-paypal-button"></div>
-                  <div id="vault-status" class="status-message"></div>
-
-                  <div class="order-summary" style="margin-top: 1.5rem;">
-                    <div class="order-summary-title">Saved payment methods</div>
-                    <div id="saved-methods-list">
-                      <p style="color: var(--color-gray-500); font-size: 0.8125rem;">None saved yet.</p>
-                    </div>
+                  <div class="order-summary-title">Saved payment methods</div>
+                  <div id="saved-methods-list">
+                    <p style="color: var(--color-gray-500); font-size: 0.8125rem;">None saved yet.</p>
                   </div>
                 </div>
               </div>
@@ -382,6 +316,13 @@
 
             <!-- Step 2: Payment -->
             <div class="step-content" id="step-2">
+              <div class="dev-note">
+                <strong>Interim spike (sandbox).</strong> This step loads the PayPal v6 SDK + the
+                <strong>local</strong> Spreedly SDK build and drives <code>SpreedlyPPCP</code> against routes
+                that call PayPal Orders V2 <strong>directly</strong>. Requires <code>npm run dev</code> in
+                <code>checkout-web-sdk</code> (SDK on :5000).
+              </div>
+
               <!-- Order summary -->
               <div class="order-summary">
                 <div class="order-summary-title">Order Summary</div>
@@ -390,59 +331,43 @@
                   <span>Total</span>
                   <span id="summary-total">$0.00</span>
                 </div>
+                <!-- Pay Later promotional messaging renders here (payLaterMessaging.elementId).
+                     Not a button: no eligibility gate, no click — PayPal decides what to show. -->
+                <div id="paylater-message"></div>
               </div>
 
               <div class="card">
                 <div class="section-title">Choose Payment Method</div>
 
-                <!-- Option A — pay now with a PayPal button, optionally saving as you go -->
-                <div class="pay-option">
-                  <div class="pay-option-title">Pay with PayPal</div>
 
-                  <!-- Buttons loading -->
-                  <div id="payment-buttons-loading" class="payment-buttons-container loading">
-                    <span class="spinner-inline"></span>
-                    <span style="margin-left: 0.5rem;">Loading payment buttons...</span>
-                  </div>
+                <!-- Scenario 2: vault WITH purchase -->
+                <label for="save-during-purchase" style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8125rem; color: var(--color-gray-600); margin: 0 0 1rem; cursor: pointer;">
+                  <input type="checkbox" id="save-during-purchase" style="width: auto; margin: 0;">
+                  Also save my PayPal for future purchases
+                  <span class="elig-badge info">vault with purchase</span>
+                </label>
 
-                  <!-- Scenario 2: vault WITH purchase -->
-                  <label for="save-during-purchase" style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8125rem; color: var(--color-gray-600); margin: 0 0 1rem; cursor: pointer;">
-                    <input type="checkbox" id="save-during-purchase" style="width: auto; margin: 0;">
-                    Also save my PayPal for future purchases
-                    <span class="elig-badge info">vault with purchase</span>
-                  </label>
-
-                  <!-- Button containers — SpreedlyPPCP inserts the v6 custom elements into these.
-                       Pay Later and PayPal Credit sit last; they are mutually exclusive, so
-                       whichever one renders is the bottom button. -->
-                  <div id="payment-buttons-container" class="payment-buttons-section hidden">
-                    <div id="paypal-button"></div>
-                    <div id="venmo-button"></div>
-                    <div id="paylater-button"></div>
-                    <div id="paypalcredit-button"></div>
-                  </div>
-
-                  <!-- Pay Later promotional messaging (payLaterMessaging.elementId). Kept OUTSIDE
-                       the container above: that one is display:none while mount() runs, and
-                       PayPal's message component has never been rendered into a hidden subtree. -->
-                  <div id="paylater-message"></div>
-
-                  <!-- Which buttons rendered vs not eligible (populated after mount) -->
-                  <div id="eligibility-result"></div>
+                <!-- Buttons loading -->
+                <div id="payment-buttons-loading" class="payment-buttons-container loading">
+                  <span class="spinner-inline"></span>
+                  <span style="margin-left: 0.5rem;">Loading payment buttons...</span>
                 </div>
 
-                <!-- Option B — charge a token the buyer already approved. Buyer present, so CIT. -->
-                <div class="pay-option">
-                  <div class="pay-option-title">Use a saved PayPal</div>
-                  <p style="font-size: 0.8125rem; color: var(--color-gray-500); margin: 0 0 1rem;">
-                    One click, no PayPal popup — the method was authorized when it was saved. Charges the
-                    cart total as a <strong>customer-initiated</strong> (CIT) payment.
-                  </p>
-                  <div id="checkout-saved-methods">
-                    <p style="color: var(--color-gray-500); font-size: 0.8125rem;">
-                      Nothing saved yet — save one from the products step.
-                    </p>
-                  </div>
+                <!-- Button containers — SpreedlyPPCP inserts the v6 custom elements into these -->
+                <div id="payment-buttons-container" class="payment-buttons-section hidden">
+                  <div id="paypal-button"></div>
+                  <div id="paylater-button"></div>
+                  <div id="paypalcredit-button"></div>
+                  <div id="venmo-button"></div>
+                </div>
+
+                <!-- Which buttons rendered vs not eligible (populated after mount) -->
+                <div id="eligibility-result"></div>
+
+                <!-- Result -->
+                <div id="result-card" class="result-card hidden">
+                  <h4 id="result-title" style="margin-bottom: 0.5rem;"></h4>
+                  <p id="result-message" style="font-size: 0.875rem; color: var(--color-gray-600);"></p>
                 </div>
 
                 <div id="status-message" class="status-message"></div>
@@ -457,27 +382,22 @@
           <!-- Right Column - Info -->
           <div class="config-panel" id="config-panel">
 
-            <details class="config-section">
-              <summary class="config-section-title" style="cursor: pointer; margin-bottom: 0;">
+            <div class="config-section">
+              <div class="config-section-title">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 0 1 0 3.75H5.625a1.875 1.875 0 0 1 0-3.75Z" />
                 </svg>
                 Flow Steps
-                <svg class="accordion-chevron" style="margin-left: auto; width: 1rem; height: 1rem;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-                </svg>
-              </summary>
-              <ol style="font-size: 0.875rem; color: var(--color-gray-600); padding-left: 1.25rem; line-height: 1.8; margin-top: 1rem;">
+              </div>
+              <ol style="font-size: 0.875rem; color: var(--color-gray-600); padding-left: 1.25rem; line-height: 1.8;">
                 <li>Select products → cart total = amount</li>
                 <li>Proceed → load PayPal v6 + local Spreedly SDK</li>
                 <li><code>SpreedlyPPCP.mount()</code> → createInstance + findEligibleMethods</li>
                 <li>Render eligible buttons for the total</li>
-                <li>Click → <code>createOrder()</code> → <code>/ppcp/spreedly/orders</code></li>
-                <li>Spreedly: <code>payment_methods.json</code> → <code>authorize.json</code> → PayPal order id</li>
-                <li>Approve → capture → <code>/ppcp/spreedly/orders/:id/capture</code></li>
-                <li>Redirect mode lands on <code>/ppcp/return/</code>, which captures</li>
+                <li>Click → <code>createOrder()</code> → <code>/ppcp/spreedly/orders</code> (or <code>/ppcp/orders</code> for PayPal direct)</li>
+                <li>Approve → capture → <code>&hellip;/orders/:id/capture</code></li>
               </ol>
-            </details>
+            </div>
 
             <div class="config-section" id="sdk-config">
               <div class="config-section-title">
@@ -488,11 +408,34 @@
               </div>
               <p class="cfg-hint" style="margin-top:0;"><code>SpreedlyPPCP</code> config options. Changing one re-mounts the buttons.</p>
               <div class="cfg-group">
+                <div class="cfg-group-label">Spreedly transaction <code>authorize / purchase</code></div>
+                <p class="cfg-hint">Only an <code>OffsitePurchase</code> can be finalized with <code>confirm.json</code>, which is what a popup approval needs.</p>
+                <div class="cfg-options">
+                  <label class="cfg-opt">
+                    <input type="radio" name="transaction-type" value="authorize" checked>
+                    <span>authorize.json</span>
+                    <span class="why">redirect flow</span>
+                  </label>
+                  <label class="cfg-opt">
+                    <input type="radio" name="transaction-type" value="purchase">
+                    <span>purchase.json</span>
+                    <span class="why">confirmable</span>
+                  </label>
+                </div>
+                <p class="cfg-note">TEST: pick <code>purchase.json</code> + a popup-family mode to exercise <code>confirm.json</code>.</p>
+              </div>
+
+              <div class="cfg-group">
                 <div class="cfg-group-label">Presentation mode <code>presentationMode</code></div>
                 <p class="cfg-hint">How PayPal shows the approval step.</p>
                 <div class="cfg-options">
                   <label class="cfg-opt">
-                    <input type="radio" name="presentation-mode" value="auto" checked>
+                    <input type="radio" name="presentation-mode" value="redirect" checked>
+                    <span>redirect</span>
+                    <span class="why">required here</span>
+                  </label>
+                  <label class="cfg-opt">
+                    <input type="radio" name="presentation-mode" value="auto">
                     <span>auto</span>
                     <span class="why">PayPal picks</span>
                   </label>
@@ -502,60 +445,21 @@
                     <span class="why">separate window</span>
                   </label>
                   <label class="cfg-opt">
-                    <input type="radio" name="presentation-mode" value="redirect">
-                    <span>redirect</span>
-                    <span class="why">full page</span>
-                  </label>
-                  <label class="cfg-opt">
                     <input type="radio" name="presentation-mode" value="payment-handler">
                     <span>payment-handler</span>
                     <span class="why">experimental</span>
                   </label>
                 </div>
               </div>
-
-              <div class="cfg-group">
-                <div class="cfg-group-label">Show PayPal Credit <code>paymentElements</code></div>
-                <p class="cfg-hint">PayPal returns Pay Later <strong>or</strong> PayPal Credit, never both, and Pay Later always wins. So the only way to see Credit is to stop asking for Pay Later — turning this on drops <code>payLater</code> from <code>paymentElements</code> and the Pay Later button disappears.</p>
-                <div class="cfg-options">
-                  <label class="cfg-opt">
-                    <input type="radio" name="show-credit" value="" checked>
-                    <span>Off</span>
-                    <span class="why">Pay Later renders</span>
-                  </label>
-                  <label class="cfg-opt">
-                    <input type="radio" name="show-credit" value="on">
-                    <span>Show Credit</span>
-                    <span class="why">hides Pay Later</span>
-                  </label>
-                </div>
-              </div>
-
-              <div class="cfg-group">
-                <div class="cfg-group-label">Transaction type <code>Spreedly only</code></div>
-                <p class="cfg-hint">Which Spreedly endpoint creates the order. <code>purchase</code> takes the money when Spreedly finalizes it — one leg, no capture. <code>authorize</code> holds the funds and needs a separate capture.</p>
-                <div class="cfg-options">
-                  <label class="cfg-opt">
-                    <input type="radio" name="transaction-type" value="authorize" checked>
-                    <span>authorize</span>
-                    <span class="why">then capture</span>
-                  </label>
-                  <label class="cfg-opt">
-                    <input type="radio" name="transaction-type" value="purchase">
-                    <span>purchase</span>
-                    <span class="why">single leg</span>
-                  </label>
-                </div>
-              </div>
-
+                <p class="cfg-note">Spreedly only learns the buyer approved when they come back through its return URL. Popup-family modes leave the payment pending.</p>
               <div class="cfg-group">
                 <div class="cfg-group-label">Button text <code>commit</code></div>
-                <p class="cfg-hint">Wording on PayPal's final button — <strong>Pay</strong> or <strong>Review Order</strong>. Nothing else changes: neither one captures, so use Continue when your checkout has a review step after approval. PayPal's own default is <code>true</code>.</p>
+                <p class="cfg-hint">Wording on PayPal's final button. Use Continue when your checkout has a review step after approval.</p>
                 <div class="cfg-options">
                   <label class="cfg-opt">
                     <input type="radio" name="commit" value="" checked>
-                    <span>Not sent</span>
-                    <span class="why">PayPal defaults to true</span>
+                    <span>Default</span>
+                    <span class="why">PayPal decides</span>
                   </label>
                   <label class="cfg-opt">
                     <input type="radio" name="commit" value="true">
@@ -585,6 +489,7 @@
                     <span class="why">shows a button</span>
                   </label>
                 </div>
+                <p class="cfg-note">Only applies to redirect and mobile app-switch. Popup never navigates, so nothing fires.</p>
               </div>
 
               <div class="cfg-group">
@@ -634,6 +539,7 @@
                     </select>
                   </label>
                 </div>
+                <p class="cfg-note">Style values pass straight through as attributes on <code>&lt;paypal-message&gt;</code>; an unrecognised value is a console warning, not an error. <code>presentationMode</code> here controls how the <em>learn-more terms</em> open — not the payment approval UI.</p>
               </div>
 
               <div class="cfg-group">
@@ -651,6 +557,7 @@
                     <span class="why">fullPageOverlay: false</span>
                   </label>
                 </div>
+                <p class="cfg-note">Works in redirect as well as popup — PayPal checks it on both.</p>
               </div>
 
               <div class="cfg-group">
@@ -727,30 +634,6 @@
                   </label>
                 </div>
               </div>
-              <div class="cfg-group">
-                <div class="cfg-group-label">Buyer country <code>countryCode</code></div>
-                <p class="cfg-hint">Goes on <code>findEligibleMethods</code> — this is what actually gates the buttons. Venmo and Pay Later are US-only.</p>
-                <div class="cfg-options">
-                  <label class="cfg-opt">
-                    <input type="radio" name="country-code" value="US" checked>
-                    <span>US</span>
-                    <span class="why">Venmo + Pay Later</span>
-                  </label>
-                  <label class="cfg-opt">
-                    <input type="radio" name="country-code" value="GB">
-                    <span>GB</span>
-                  </label>
-                  <label class="cfg-opt">
-                    <input type="radio" name="country-code" value="DE">
-                    <span>DE</span>
-                  </label>
-                  <label class="cfg-opt">
-                    <input type="radio" name="country-code" value="">
-                    <span>Not sent</span>
-                    <span class="why">PayPal falls back to US</span>
-                  </label>
-                </div>
-              </div>
             </div>
 
             <details class="config-section" style="font-size: 0.75rem;">
@@ -758,7 +641,6 @@
                 Debug Information
               </summary>
               <div class="mt-3" style="font-family: var(--font-mono); color: var(--color-gray-500); word-break: break-all;">
-                <div class="mb-2"><strong>Backend:</strong> <span id="debug-backend">—</span></div>
                 <div class="mb-2"><strong>Order ID:</strong> <span id="debug-order-id">—</span></div>
                 <div class="mb-2"><strong>Payer ID:</strong> <span id="debug-payer-id">—</span></div>
                 <div class="mb-2"><strong>State:</strong> <span id="debug-state">—</span></div>
@@ -782,10 +664,7 @@
   </div>
 
   <!-- Scripts -->
-  <!-- Saved-method outcomes land here as dismissable toasts. -->
-  <div class="toast-stack" id="toast-stack"></div>
-
-  <script src="../../shared/utils.js"></script>
+  <script src="../shared/utils.js"></script>
   <script src="./ppcp.js"></script>
 </body>
 </html>

@@ -1,15 +1,35 @@
+/**
+ * PPCP Demo — brokered through SPREEDLY (the production path).
+ *
+ * Two-step flow:
+ *   1. Product selection — pick products; the total decides the amount. Shows the
+ *      button-rendering eligibility criteria (PayPal / Pay Later / Venmo).
+ *   2. Payment — on "Proceed to Payment", the PayPal JS SDK v6 + local Spreedly SDK
+ *      are loaded and SpreedlyPPCP mounts the eligible buttons for the cart total.
+ *
+ * Drives SpreedlyPPCP against the sample-app /ppcp/spreedly/* routes, which talk ONLY to
+ * Spreedly's paypal_commerce_platform gateway. Spreedly creates the PayPal order server-side and
+ * returns its id, so the browser half is identical to the direct-PayPal version.
+ *
+ * presentationMode defaults to 'redirect': Spreedly's offsite gateway only finalizes an
+ * authorization when the buyer returns through its own return_url, which a popup never does.
+ * The redirect lands on /ppcp/return/, which captures. See doc 14 §7ZZZ.
+ *
+ * The PayPal-direct version of this same flow lives at /ppcp/spike/.
+ *
+ * Requires the LOCAL dev loop:
+ *   - checkout-web-sdk:   `npm run dev`  (serves the SDK with SpreedlyPPCP on :5000)
+ *   - web-sdk-sample-app: `npm run dev`  (this server on :3000, PayPal sandbox creds in .env)
+ * SpreedlyPPCP is NOT on the CDN rc channel yet, so the SDK is loaded from localhost:5000.
+ */
 
+// The local SDK build exposes window.SpreedlyPPCP (the CDN rc bundle does not yet).
 const LOCAL_SDK_URL = 'http://localhost:5000/index.js';
+// PayPal JS SDK v6 core (sandbox).
 const PAYPAL_V6_SDK_URL = 'https://www.sandbox.paypal.com/web-sdk/v6/core';
+// Products are priced in USD (Venmo & Pay Later are US/USD only).
 const CURRENCY = 'USD';
 
-// SDK config key, container element, display name.
-const BUTTON_KINDS = [
-  { key: 'paypal', elementId: 'paypal-button', label: 'PayPal' },
-  { key: 'payLater', elementId: 'paylater-button', label: 'Pay Later' },
-  { key: 'payPalCredit', elementId: 'paypalcredit-button', label: 'PayPal Credit' },
-  { key: 'venmo', elementId: 'venmo-button', label: 'Venmo' },
-];
 
 const PRODUCTS = [
   { id: 'prod_1', name: 'Wireless Headphones', description: 'Premium noise-canceling headphones', price: 149.99, emoji: '🎧' },
@@ -23,20 +43,12 @@ let cart = {}; // { productId: quantity }
 let ppcpInstance = null;
 let vaultInstance = null;
 let sdksLoaded = false;
-let savedDuringPurchase = false; // was "save my PayPal" ticked for the current order?
+let savedDuringPurchase = false; // scenario 2: was "save my PayPal" ticked for the current order?
+let orderIsConfirmable = false; // was the order an OffsitePurchase? (confirm.json only takes those)
 
+// /ppcp/* routes are local-only (not deployed to Heroku), so use the local API base.
 const apiBase = () => window.SpreedlyUtils.LOCAL_API_URL;
 const el = id => document.getElementById(id);
-const errorText = error =>
-  error.response?.data ? JSON.stringify(error.response.data) : error.message;
-
-function destroyInstance(instance) {
-  try {
-    instance?.destroy();
-  } catch (e) {
-    /* already torn down */
-  }
-}
 
 // ── Step 1: products & cart ───────────────────────────────────────────────────
 
@@ -103,6 +115,7 @@ function updateCartSummary() {
   }
 }
 
+
 // ── Step navigation ───────────────────────────────────────────────────────────
 
 window.goToStep = function (step) {
@@ -115,18 +128,11 @@ window.goToStep = function (step) {
   document.querySelectorAll('.step-content').forEach(c => c.classList.remove('active'));
   el(`step-${step}`).classList.add('active');
 
-  document.body.classList.toggle('step-1-active', step === 1);
-
   if (step === 2) {
     el('summary-items').innerHTML = cartItemsHtml();
     el('summary-total').textContent = SpreedlyUtils.formatCurrency(getCartTotal());
-    refreshVaultedTokens();
     loadAndMountPPCP();
   }
-};
-
-window.toggleAccordion = function (id) {
-  el(id)?.classList.toggle('open');
 };
 
 // ── Step 2: load SDKs + mount SpreedlyPPCP ────────────────────────────────────
@@ -157,92 +163,17 @@ async function loadDependencies() {
   sdksLoaded = true;
 }
 
-// PayPal returns Pay Later OR PayPal Credit, never both, and Pay Later wins. Credit is only
-// reachable if Pay Later is not requested at all.
-function activeButtonKinds() {
-  return cfg('show-credit') === 'on'
-    ? BUTTON_KINDS.filter(({ key }) => key !== 'payLater')
-    : BUTTON_KINDS;
-}
-
 function clearButtonContainers() {
-  BUTTON_KINDS.forEach(({ elementId }) => {
-    const container = el(elementId);
+  ['paypal-button', 'paylater-button', 'paypalcredit-button', 'venmo-button'].forEach(id => {
+    const container = el(id);
     if (container) container.innerHTML = '';
   });
-}
-
-function buildMessagingConfig() {
-  return {
-    elementId: 'paylater-message',
-    ...(cfgText('message-logo-type') ? { logoType: cfgText('message-logo-type') } : {}),
-    ...(cfgText('message-text-color') ? { textColor: cfgText('message-text-color') } : {}),
-    ...(cfgText('message-presentation-mode')
-      ? { presentationMode: cfgText('message-presentation-mode') }
-      : {}),
-    onContentReady: () => console.log('[paylater-message] content ready'),
-  };
-}
-
-function buildPPCPConfig(clientId) {
-  return {
-    currencyCode: CURRENCY,
-    amount: getAmount(), // cart total -> Pay Later eligibility (amount-based thresholds)
-    ...(cfg('country-code') ? { countryCode: cfg('country-code') } : {}),
-    paymentElements: Object.fromEntries(activeButtonKinds().map(b => [b.key, b.elementId])),
-    clientId,
-    createOrder,
-    onPaymentResult: handlePaymentResult,
-    buttonStyle: getButtonStyle(),
-    presentationMode: getPresentationMode(),
-    ...(getCommit() === undefined ? {} : { commit: getCommit() }),
-    // Tells PayPal this purchase also saves the payment method, so the buyer is asked to agree.
-    ...(el('save-during-purchase')?.checked ? { savePayment: true } : {}),
-    ...(cfg('on-redirect') === 'manual' ? { onRedirect: showRedirectUrl } : {}),
-    // Sandbox only. Supplies the default for countryCode, so an explicit countryCode still wins.
-    testBuyerCountry: 'US',
-    // Venmo has its own sandbox network and its own accounts.
-    venmoSandbox: true,
-    // PayPal's waiting overlay. Only an explicit false turns it off.
-    ...(cfg('full-page-overlay') === 'off' ? { fullPageOverlay: false } : {}),
-    // Pay Later promotional messaging — independent of the buttons, rendered into its own element.
-    ...(cfg('paylater-messaging') === 'on' ? { payLaterMessaging: buildMessagingConfig() } : {}),
-  };
-}
-
-function renderEligibility(rendered) {
-  const requested = activeButtonKinds();
-  const notRequested = BUTTON_KINDS.filter(b => !requested.includes(b));
-  el('eligibility-result').innerHTML = [
-    ...requested.map(
-      ({ key, label }) =>
-        `<span class="elig-result ${rendered[key] ? 'ok' : 'no'}">${label}: ${
-          rendered[key] ? '✓ rendered' : '✗ not eligible'
-        }</span>`
-    ),
-    ...notRequested.map(({ label }) => `<span class="elig-result no">${label}: — not requested</span>`),
-  ].join('');
-
-  const names = requested.filter(({ key }) => rendered[key]).map(({ label }) => label);
-  if (names.length) {
-    updateDebug('status', `Rendered: ${names.join(', ')}`);
-    setStatus(
-      `Ready: ${names.join(', ')}. Click a button to pay ${SpreedlyUtils.formatCurrency(getCartTotal())}.`,
-      'success'
-    );
-  } else {
-    updateDebug('status', 'No eligible buttons');
-    setStatus(
-      'No eligible buttons for this order (check account/region; Venmo & Pay Later are US/USD).',
-      'info'
-    );
-  }
 }
 
 async function loadAndMountPPCP() {
   el('payment-buttons-loading').classList.remove('hidden');
   el('payment-buttons-container').classList.add('hidden');
-  dismissToast('payment');
+  el('result-card').classList.add('hidden');
   el('eligibility-result').textContent = '';
   setStatus('', 'info');
   updateDebug('status', 'Loading PayPal & Spreedly SDKs...');
@@ -250,46 +181,136 @@ async function loadAndMountPPCP() {
   try {
     await loadDependencies();
 
-    destroyInstance(ppcpInstance);
+    // Fresh instance each time (the cart/amount may have changed since last mount).
+    if (ppcpInstance) {
+      try {
+        ppcpInstance.destroy();
+      } catch (e) {
+        /* ignore */
+      }
+    }
     clearButtonContainers();
 
-    ppcpInstance = new window.SpreedlyPPCP(buildPPCPConfig(await getClientId()));
+    const clientId = await getClientId();
+
+    ppcpInstance = new window.SpreedlyPPCP({
+      currencyCode: CURRENCY,
+      amount: getAmount(), // cart total -> Pay Later eligibility (amount-based thresholds)
+      countryCode: 'US', // Pay Later & Venmo are US-only
+      paymentElements: {
+        paypal: 'paypal-button',
+        payLater: 'paylater-button',
+        payPalCredit: 'paypalcredit-button',
+        venmo: 'venmo-button',
+      },
+      clientId,
+      createOrder,
+      onPaymentResult: handlePaymentResult,
+      buttonStyle: getButtonStyle(),
+      // 'auto' pops up; a full-page redirect mode instead returns the buyer through the
+      // gateway's own return_url, which is what Spreedly's offsite flow needs to finalize.
+      presentationMode: getPresentationMode(),
+      ...(getCommit() === undefined ? {} : { commit: getCommit() }),
+      // "Also save my PayPal" — tells PayPal this purchase also saves the payment method, so the
+      // buyer is asked to agree. Read at mount time, not click time, so the checkbox re-mounts.
+      ...(el('save-during-purchase')?.checked ? { savePayment: true } : {}),
+      // When the merchant supplies onRedirect the SDK stops navigating and hands back the URL.
+      ...(cfg('on-redirect') === 'manual' ? { onRedirect: showRedirectUrl } : {}),
+      // This whole app is sandbox, so always point Venmo at Venmo's sandbox. Venmo has its own
+      // network and its own accounts, so a Venmo sandbox buyer does not exist in production.
+      venmoSandbox: true,
+      // PayPal shows a grey overlay over the page while the buyer is away. Only an explicit
+      // false turns it off, so only send it then.
+      ...(cfg('full-page-overlay') === 'off' ? { fullPageOverlay: false } : {}),
+      // Pay Later promotional messaging — independent of the buttons, rendered into its own
+      // element. Off unless the panel asks for it, so the default demo looks unchanged.
+      ...(cfg('paylater-messaging') === 'on'
+        ? {
+            payLaterMessaging: {
+              elementId: 'paylater-message',
+              ...(cfgText('message-logo-type') ? { logoType: cfgText('message-logo-type') } : {}),
+              ...(cfgText('message-text-color') ? { textColor: cfgText('message-text-color') } : {}),
+              ...(cfgText('message-presentation-mode')
+                ? { presentationMode: cfgText('message-presentation-mode') }
+                : {}),
+              onContentReady: () => console.log('[paylater-message] content ready'),
+            },
+          }
+        : {}),
+    });
 
     const result = await ppcpInstance.mount();
     if (result.error) throw new Error(result.error);
 
+    // Buttons now exist in their containers — start recording which wallet gets clicked.
+    trackClickedWallet();
+
     el('payment-buttons-loading').classList.add('hidden');
     el('payment-buttons-container').classList.remove('hidden');
-    renderEligibility(result.rendered || {});
+
+    // Show which buttons actually rendered vs were not eligible for this order.
+    const rendered = result.rendered || {};
+    const labels = {
+      paypal: 'PayPal',
+      payLater: 'Pay Later',
+      payPalCredit: 'PayPal Credit',
+      venmo: 'Venmo',
+    };
+    el('eligibility-result').innerHTML = Object.keys(labels)
+      .map(
+        k =>
+          `<span class="elig-result ${rendered[k] ? 'ok' : 'no'}">${labels[k]}: ${
+            rendered[k] ? '✓ rendered' : '✗ not eligible'
+          }</span>`
+      )
+      .join('');
+
+    const renderedNames = Object.keys(labels).filter(k => rendered[k]).map(k => labels[k]);
+    if (renderedNames.length) {
+      updateDebug('status', `Rendered: ${renderedNames.join(', ')}`);
+      setStatus(
+        `Ready: ${renderedNames.join(', ')}. Click a button to pay ${SpreedlyUtils.formatCurrency(getCartTotal())}.`,
+        'success'
+      );
+    } else {
+      updateDebug('status', 'No eligible buttons');
+      setStatus(
+        'No eligible buttons for this order (check account/region; Venmo & Pay Later are US/USD).',
+        'info'
+      );
+    }
   } catch (error) {
     console.error('PPCP mount error:', error);
-    showError(errorText(error));
+    showError(error.response?.data ? JSON.stringify(error.response.data) : error.message);
   }
 }
 
-// ── SpreedlyPPCP callbacks ────────────────────────────────────────────────────
+// ── SpreedlyPPCP callbacks — wired to the /ppcp/* routes (which call PayPal directly) ──
 
 function getAmount() {
   return getCartTotal().toFixed(2); // Orders V2 expects a decimal string, e.g. "229.98"
 }
 
+// The SDK config panel uses radios, one group per SpreedlyPPCP option.
 function cfg(name) {
   const picked = document.querySelector(`input[name="${name}"]:checked`);
   return picked ? picked.value : '';
 }
 
-// Non-radio config controls. Checks select first so a <select> is not missed.
+// Non-radio config controls — the corner-radius text boxes and the messaging dropdowns.
+// Checks select first so a <select> is not missed by an input-only query.
 function cfgText(name) {
   const field = document.querySelector(`select[name="${name}"], input[name="${name}"]`);
   return field ? field.value.trim() : '';
 }
 
+// Read the button-appearance controls -> SpreedlyPPCP buttonStyle.
 function getButtonStyle() {
-  const style = {};
   const label = cfg('btn-label');
   const color = cfg('btn-color');
   const paypalRadius = cfgText('paypal-radius');
   const venmoRadius = cfgText('venmo-radius');
+  const style = {};
   if (label) style.label = label;
   if (color) style.color = color;
   if (paypalRadius) style.paypalBorderRadius = paypalRadius;
@@ -297,8 +318,9 @@ function getButtonStyle() {
   return Object.keys(style).length ? style : undefined;
 }
 
-// The PayPal client ID is a static, public value — inline it in your page. The demo fetches it
-// only because it lives in .env.
+// PayPal's recommended auth for the JS SDK v6: a static, public client ID — nothing to mint.
+// A real merchant inlines this string in their page; the demo reads it from the server only
+// because it lives in .env. Cached so a re-mount does not refetch.
 let cachedClientId = null;
 async function getClientId() {
   if (cachedClientId) return cachedClientId;
@@ -307,105 +329,135 @@ async function getClientId() {
   return cachedClientId;
 }
 
-// commit controls PayPal's final button wording. Only sent when explicitly chosen.
+// v6 session.start presentation mode. 'auto' and 'popup' open a separate window; 'redirect'
+// navigates the whole page. 'modal' is not supported by the SDK — PayPal advises WebView only.
+// Orders-API equivalent of commit. undefined means we did not send commit, and PayPal's own default
+// for it is true — so PAY_NOW is the matching value, not a guess.
+const userActionFor = commit => (commit === false ? 'CONTINUE' : 'PAY_NOW');
+
+// commit controls PayPal's final button wording. Only sent when explicitly chosen, so PayPal's
+// own default stands otherwise.
 function getCommit() {
   const v = cfg('commit');
   return v === '' ? undefined : v === 'true';
 }
 
-// 'auto' and 'popup' open a separate window; 'redirect' navigates the whole page.
 function getPresentationMode() {
-  return cfg('presentation-mode') || 'auto';
+  return cfg('presentation-mode') || 'redirect';
 }
 
-// Spreedly transacts venmo as its own payment method type. 'paylater' and 'paypal_credit' are
-// funding sources on a PayPal account, so they transact as paypal.
-function walletFor(context) {
-  return context?.payment_method?.payment_method_type === 'venmo' ? 'venmo' : 'paypal';
+// Which wallet the buyer clicked, as a Spreedly payment_method_type.
+// SpreedlyPPCP's createOrder() callback is NOT told which funding source triggered it, so we
+// record it ourselves: a capture-phase listener on each button's container fires before the
+// SDK's own click handler (which is bound to the button element inside it) calls createOrder().
+// Pay Later and PayPal Credit are PayPal *funding sources*, not separate Spreedly payment
+// methods, so they transact as 'paypal'.
+const CONTAINER_PAYMENT_METHOD_TYPE = {
+  'paypal-button': 'paypal',
+  'paylater-button': 'paypal',
+  'paypalcredit-button': 'paypal',
+  'venmo-button': 'venmo',
+};
+let clickedPaymentMethodType = 'paypal';
+
+function trackClickedWallet() {
+  Object.entries(CONTAINER_PAYMENT_METHOD_TYPE).forEach(([containerId, type]) => {
+    const container = el(containerId);
+    if (!container || container.dataset.walletTracked) return;
+    container.dataset.walletTracked = 'true';
+    container.addEventListener(
+      'click',
+      () => {
+        clickedPaymentMethodType = type;
+      },
+      true // capture phase — must run before the SDK's handler on the button element
+    );
+  });
 }
 
-// `context` is the SDK reporting which button was clicked.
-async function createOrder(context) {
-  savedDuringPurchase = !!el('save-during-purchase')?.checked;
+
+async function createOrder() {
+  // Scenario 2 (vault WITH purchase) has no Spreedly path yet, so ticking "save my PayPal"
+  // still routes to the PayPal-direct vault-purchase order. Everything else goes to Spreedly.
+  const saveEl = el('save-during-purchase');
+  savedDuringPurchase = !!(saveEl && saveEl.checked);
   setStatus(
-    savedDuringPurchase ? 'Creating order via Spreedly (+ save)...' : 'Creating order via Spreedly...',
+    savedDuringPurchase
+      ? 'Creating PayPal order (+ save, PayPal-direct)...'
+      : 'Creating order via Spreedly...',
     'info'
   );
-  const response = await axios.post(`${apiBase()}/ppcp/spreedly/orders`, {
+  const path = savedDuringPurchase ? '/ppcp/vault/purchase-order' : '/ppcp/spreedly/orders';
+  const response = await axios.post(`${apiBase()}${path}`, {
     amount: getAmount(),
     currency_code: CURRENCY,
-    payment_method_type: walletFor(context),
+    // Spreedly transacts venmo as its own payment method type.
+    payment_method_type: clickedPaymentMethodType,
     transaction_type: cfg('transaction-type'),
-    // Vault with purchase — one offsite flow that pays and saves.
-    ...(savedDuringPurchase ? { store_in_vault: true } : {}),
+    // The vault-purchase order carries an experience_context, so user_action has to agree with the
+    // SDK's commit — otherwise PayPal is told "Review Order" and "Pay" at once. Only that route.
+    ...(savedDuringPurchase ? { user_action: userActionFor(getCommit()) } : {}),
   });
+  orderIsConfirmable = response.data.transaction_type === 'OffsitePurchase';
   updateDebug('orderId', response.data.id);
-  updateDebug('backend', 'Spreedly gateway');
+  updateDebug('backend', savedDuringPurchase ? 'PayPal direct (vault)' : 'Spreedly gateway');
   return { orderId: response.data.id };
 }
 
 async function captureOrder(orderId) {
-  const response = await axios.post(
-    `${apiBase()}/ppcp/spreedly/orders/${orderId}/capture`
-  );
+  // NOTE: in the default 'redirect' mode this is never reached — the page is destroyed by the
+  // navigation and /ppcp/return/ does the capture instead. It only runs if you switch to a
+  // popup-family presentation mode, where Spreedly is never told the buyer approved, so it will
+  // report that the authorization is still pending. That is the known gateway gap, not a bug here.
+  const path = savedDuringPurchase
+    ? `/ppcp/vault/purchase-order/${orderId}/capture`
+    : `/ppcp/spreedly/orders/${orderId}/capture`;
+  const response = await axios.post(`${apiBase()}${path}`);
   return response.data;
 }
 
-// Captures in-page. Only reached when the redirect leg could not run — the normal path navigates
-// to /ppcp/return/, which captures there instead.
-async function captureAndReport(orderId, describe, finalize) {
-  try {
-    const capture = finalize ? await finalize() : await captureOrder(orderId);
-    const status = capture.status || 'COMPLETED';
-    updateDebug('status', `Captured: ${status}`);
-    showResult(true, 'Payment Successful', describe(status));
-    setStatus('Payment complete.', 'success');
-    // Refresh on what the server actually vaulted, not on what the checkbox asked for.
-    if (capture.savedPaymentMethod) await refreshVaultedTokens();
-  } catch (error) {
-    updateDebug('status', 'Capture failed');
-    showResult(false, 'Capture Failed', errorText(error));
-    setStatus('Failed to capture order', 'error');
-  }
-}
-
-function savedNote() {
-  return savedDuringPurchase ? ' PayPal also saved for future purchases.' : '';
-}
-
+// Finalize a popup/modal approval by visiting Spreedly's own redirect leg — the URL PayPal would
+// have sent the buyer through in redirect mode. Spreedly authorizes/captures at the gateway and
+// 302s to redirect_url; we never follow that, we just re-read the transaction to see the outcome.
+//
+//   GET https://core.spreedly.com/transaction/{transaction_token}/redirect?token={paypal_order_id}
+//
+// No auth — it is a browser endpoint. Cross-origin, so the response is opaque to us; the side
+// effect happens on Spreedly's side, which is why we confirm by re-reading the transaction.
+// Returns true only when the transaction actually reaches `succeeded`.
+// The debug panel has no dedicated row for this, so mirror the trace into `status` and the console.
 function traceRedirectLeg(message) {
   console.log('[redirect-leg]', message);
   updateDebug('status', message);
 }
 
-/**
- * Finalize a popup approval by visiting Spreedly's redirect leg — the URL PayPal would have sent
- * the buyer through in redirect mode.
- *
- *   GET {SPREEDLY_URL}/transaction/{transaction_token}/redirect?token={paypal_order_id}
- *
- * Navigate rather than fetch, so the browser follows the 302 chain. Nothing after this runs:
- * Spreedly lands the buyer on redirect_url, and that page captures.
- */
 async function finalizeViaSpreedlyRedirect(result) {
   try {
     setStatus("Finalizing via Spreedly's redirect leg...", 'info');
 
+    // The browser is never given the Spreedly transaction token, so read it off the transaction.
     const before = (await axios.get(`${apiBase()}/ppcp/spreedly/orders/${result.orderId}`)).data;
     const txnToken = before?.transaction?.token;
     if (!txnToken) {
       traceRedirectLeg('no transaction token for that order');
       return false;
     }
+    traceRedirectLeg(`GET /transaction/${txnToken}/redirect`);
 
     const url =
       `https://core.spreedly.com/transaction/${encodeURIComponent(txnToken)}/redirect` +
       `?token=${encodeURIComponent(result.orderId)}`;
+
+    // NAVIGATE instead of fetch — the browser follows the 302 chain visibly, exactly as it would in
+    // redirect mode. This page is destroyed here, so nothing below runs: no read-back, no capture.
+    // Spreedly redirects to the transaction's redirect_url, which is the Heroku origin (Spreedly
+    // rejects localhost), and /ppcp/ is not deployed there — so it ends on a 404. The transaction
+    // still finalizes; check it with the API.
     traceRedirectLeg(`navigating to ${url}`);
     window.location.assign(url);
-    return true;
+    return false;
   } catch (error) {
-    traceRedirectLeg(`error: ${errorText(error)}`);
+    traceRedirectLeg(`error: ${error.message}`);
     return false;
   }
 }
@@ -416,19 +468,57 @@ async function handlePaymentResult(result) {
   const method = result.payment_method?.payment_method_type || 'paypal';
 
   if (result.state === 'Successful') {
-    // A popup approval never travels through Spreedly's redirect_url, so Spreedly has not
-    // finalized the transaction. Visiting the redirect leg does it, and navigates away.
-    if (getPresentationMode() !== 'redirect') {
-      if (await finalizeViaSpreedlyRedirect(result)) return;
+    try {
+      // A popup approval never travels through Spreedly's return_url, so Spreedly has not
+      // finalized the transaction. Before falling back to confirm.json, try visiting Spreedly's
+      // own redirect leg ourselves — the same URL PayPal would have sent the buyer through.
+      if (getPresentationMode() !== 'redirect') {
+        console.log("Process step 2: After buyer approval result", result);
+        const finalized = await finalizeViaSpreedlyRedirect(result);
+        if (finalized) {
+          // Finalizing only gets the transaction to `succeeded`. In redirect mode /ppcp/return/
+          // then captures — do the same here, or the money never actually moves.
+          traceRedirectLeg('succeeded — capturing');
+          const captured = await captureOrder(result.orderId);
+          const capturedStatus = captured.status || captured.state || 'COMPLETED';
+          traceRedirectLeg(`capture: ${capturedStatus}`);
+          showResult(
+            true,
+            'Payment Successful',
+            `Order ${result.orderId} finalized via Spreedly's redirect leg, then captured ` +
+              `(status: ${capturedStatus}).`
+          );
+          setStatus('Payment complete.', 'success');
+          if (savedDuringPurchase) await refreshVaultedTokens();
+          return;
+        }
+      }
+      const useConfirm = orderIsConfirmable;
+      setStatus(useConfirm ? 'Confirming with Spreedly...' : 'Capturing order...', 'info');
+      const capture = useConfirm
+        ? await (await axios.post(`${apiBase()}/ppcp/spreedly/orders/${result.orderId}/confirm`, {
+            payment_method_type: clickedPaymentMethodType,
+          })).data
+        : await captureOrder(result.orderId);
+      const status = capture.status || 'COMPLETED';
+      updateDebug('status', `Captured: ${status}`);
+      const savedNote = savedDuringPurchase ? ' PayPal also saved for future purchases.' : '';
+      showResult(
+        true,
+        'Payment Successful',
+        `Order ${result.orderId} captured via ${method} (status: ${status}).${savedNote}`
+      );
+      setStatus('Payment complete.', 'success');
+      // Scenario 2: a vault-with-purchase capture stores the token — refresh the saved list.
+      if (savedDuringPurchase) await refreshVaultedTokens();
+    } catch (error) {
+      const msg = error.response?.data ? JSON.stringify(error.response.data) : error.message;
+      showResult(false, 'Capture Failed', msg);
+      setStatus('Failed to capture order', 'error');
     }
-
-    setStatus('Capturing order...', 'info');
-    await captureAndReport(
-      result.orderId,
-      status => `Order ${result.orderId} captured via ${method} (status: ${status}).${savedNote()}`
-    );
   } else if (result.state === 'Cancelled') {
     setStatus('Payment cancelled.', 'info');
+    // onCancel carries the order id, so the merchant can void the order they already created.
     showResult(
       false,
       'Payment Cancelled',
@@ -436,6 +526,7 @@ async function handlePaymentResult(result) {
         (result.orderId ? ` Order ${result.orderId} was created and can be voided.` : '')
     );
   } else {
+    // Surface the structured error code (from onError) alongside the message when present.
     const detail = result.code
       ? `[${result.code}] ${result.message || ''}`.trim()
       : result.message || `${method} payment failed.`;
@@ -446,44 +537,46 @@ async function handlePaymentResult(result) {
 
 // ── Vault / recurring (save a PayPal, then charge it later) ───────────────────
 
-/**
- * Save a PayPal without paying.
- *
- * Spreedly's gateway verify creates the approval session; `createVaultSetupToken` hands its
- * approval_session_id to the SDK where PayPal's save session expects a Vault v3 setup token.
- * PayPal accepts it, so the buyer gets a real PayPal button rather than a bare redirect.
- *
- * The transaction token is held for the popup path: PayPal returns the buyer through Spreedly's
- * own redirect leg, which finalizes the verification, but a popup never travels through it.
- */
+function setVaultStatus(message, type = 'info') {
+  const statusEl = el('vault-status');
+  if (!statusEl) return;
+  statusEl.textContent = message;
+  statusEl.className = `status-message ${type}`;
+}
+
+function vaultError(error) {
+  return error.response?.data ? JSON.stringify(error.response.data) : error.message;
+}
+
+// Mount a vault-mode SpreedlyPPCP that renders a "save PayPal" button (no purchase).
 async function mountVault() {
-  el('save-trigger')?.classList.add('hidden');
+  const trigger = el('save-trigger');
+  if (trigger) trigger.classList.add('hidden');
   el('save-loading').classList.remove('hidden');
   setVaultStatus('Loading PayPal SDK...', 'info');
 
   try {
     await loadDependencies();
-    destroyInstance(vaultInstance);
+    if (vaultInstance) {
+      try {
+        vaultInstance.destroy();
+      } catch (e) {
+        /* ignore */
+      }
+    }
     el('save-paypal-button').innerHTML = '';
+
+    const clientId = await getClientId();
 
     vaultInstance = new window.SpreedlyPPCP({
       flow: 'vault',
       currencyCode: CURRENCY,
       countryCode: 'US',
-      testBuyerCountry: 'US',
       paymentElements: { paypal: 'save-paypal-button' },
-      clientId: await getClientId(),
-      // Redirect, not the panel's presentationMode. Spreedly bakes its redirect_url into the
-      // approval session, so PayPal finishes by navigating rather than handing the result back to
-      // the opener. In a popup the wallet still vaults — inside the popup — but onPaymentResult
-      // never fires and this page would show the buyer nothing.
-      presentationMode: 'redirect',
+      clientId,
       createVaultSetupToken: async () => {
-        const res = await axios.post(`${apiBase()}/ppcp/spreedly/vault/setup`);
-        if (!res.data.approval_session_id) {
-          throw new Error('Spreedly did not return an approval session.');
-        }
-        return { setupToken: res.data.approval_session_id };
+        const res = await axios.post(`${apiBase()}/ppcp/vault/setup-token`);
+        return { setupToken: res.data.setupToken };
       },
       onPaymentResult: handleVaultResult,
     });
@@ -492,61 +585,64 @@ async function mountVault() {
     el('save-loading').classList.add('hidden');
     if (result.error) throw new Error(result.error);
 
-    setVaultStatus(
-      result.rendered?.paypal
-        ? 'Click the PayPal button to save it for later.'
-        : 'Saving a PayPal is not eligible for this session.',
-      'info'
-    );
+    if (result.rendered && result.rendered.paypal) {
+      setVaultStatus('Click the PayPal button to save it for later.', 'info');
+    } else {
+      setVaultStatus('PayPal save is not eligible for this session.', 'info');
+    }
   } catch (error) {
     el('save-loading').classList.add('hidden');
-    el('save-trigger')?.classList.remove('hidden');
-    setVaultStatus(errorText(error), 'error');
+    console.error('Vault mount error:', error);
+    setVaultStatus(vaultError(error), 'error');
   }
 }
 
-/**
- * Only cancellation and failure reach this. On success PayPal navigates the buyer away, Spreedly
- * finalizes on its redirect leg, and /ppcp/return/ records the saved method.
- */
+// On approval, exchange the setup token for a stored payment token, then refresh the list.
 async function handleVaultResult(result) {
-  if (result.state === 'Cancelled') {
+  if (result.state === 'Successful') {
+    try {
+      setVaultStatus('Saving payment method...', 'info');
+      // Exchange at PayPal, then import the vault id into Spreedly as a third_party_token
+      // payment method — charges then run through Spreedly's gateway.
+      await axios.post(`${apiBase()}/ppcp/spreedly/vault/payment-token`, {
+        vaultSetupToken: result.vaultSetupToken,
+      });
+      setVaultStatus('PayPal saved and imported into Spreedly — you can now charge it.', 'success');
+      await refreshVaultedTokens();
+    } catch (error) {
+      setVaultStatus(vaultError(error), 'error');
+    }
+  } else if (result.state === 'Cancelled') {
     setVaultStatus('Save cancelled.', 'info');
-  } else if (result.state !== 'Successful') {
+  } else {
     setVaultStatus(result.message || 'Save failed.', 'error');
   }
 }
-
-// The same tokens appear twice with different actions: the products step charges
-// merchant-initiated, the payment step charges buyer-present for the cart total.
-const SAVED_METHOD_LISTS = [
-  { elementId: 'saved-methods-list', mode: 'mit', empty: 'None saved yet.' },
-  {
-    elementId: 'checkout-saved-methods',
-    mode: 'cit',
-    empty: 'Nothing saved yet — save one from the products step.',
-  },
-];
 
 async function refreshVaultedTokens() {
   try {
     const res = await axios.get(`${apiBase()}/ppcp/spreedly/vault/tokens`);
     const tokens = res.data.tokens || [];
-    SAVED_METHOD_LISTS.forEach(({ elementId, mode, empty }) => {
-      const node = el(elementId);
-      if (!node) return;
-      node.innerHTML = tokens.length
-        ? tokens.map(t => renderSavedMethod(t, mode)).join('')
-        : `<p style="color: var(--color-gray-500); font-size: 0.8125rem;">${empty}</p>`;
-    });
+    const list = el('saved-methods-list');
+    if (!tokens.length) {
+      list.innerHTML =
+        '<p style="color: var(--color-gray-500); font-size: 0.8125rem;">None saved yet.</p>';
+      return;
+    }
+    list.innerHTML = tokens.map(renderSavedMethod).join('');
   } catch (error) {
-    /* ignore — leave the lists as-is */
+    /* ignore — leave the list as-is */
   }
 }
 
-// Render whatever keys arrived rather than a fixed set.
+// PayPal returns whatever it returns, so render the keys that actually arrived rather than a
+// fixed set. Dotted paths (name.given_name) become readable labels.
 function prettyDetailLabel(key) {
-  return key.replace(/\./g, ' ').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  return key
+    .split('.')
+    .join(' ')
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, c => c.toUpperCase());
 }
 
 function renderBuyerDetails(details) {
@@ -566,14 +662,8 @@ function renderBuyerDetails(details) {
     </details>`;
 }
 
-function renderSavedMethod(t, mode) {
+function renderSavedMethod(t) {
   const saved = t.createdAt ? new Date(t.createdAt).toLocaleString() : '';
-  const action =
-    mode === 'cit'
-      ? `<button class="btn btn-primary" onclick="payWithSaved(${t.ref})"
-           title="Buyer present — one-click (CUSTOMER-initiated)">Pay ${SpreedlyUtils.formatCurrency(getCartTotal())} (1-click)</button>`
-      : `<button class="btn btn-secondary" onclick="chargeSaved(${t.ref})"
-           title="Buyer not present — recurring MIT (MERCHANT-initiated)">Charge $10 (recurring)</button>`;
   return `
     <div class="saved-method" data-ref="${t.ref}">
       <div class="saved-method-head">
@@ -581,125 +671,90 @@ function renderSavedMethod(t, mode) {
         <span class="saved-method-meta">saved ${SpreedlyUtils.escapeHtml(saved)}</span>
       </div>
       ${renderBuyerDetails(t.details)}
-      <div class="saved-method-actions">${action}</div>
+      <div class="saved-method-actions">
+        <button class="btn btn-primary" onclick="payWithSaved(${t.ref})"
+          title="Return buyer present — one-click (CUSTOMER-initiated)">Pay $10 (1-click)</button>
+        <button class="btn btn-secondary" onclick="chargeSaved(${t.ref})"
+          title="Buyer not present — recurring MIT (MERCHANT-initiated)">Charge $10 (recurring)</button>
+      </div>
+      <div class="saved-method-result" id="saved-result-${t.ref}"></div>
     </div>`;
 }
 
-// Toasts are dismissed by hand, not on a timer — they carry ids worth reading. `key` decides what
-// replaces what, so a pending toast is replaced by its own result.
-const toasts = new Map();
-
-function showToast(key, kind, message, title) {
-  const stack = el('toast-stack');
-  if (!stack) return;
-
-  let toast = toasts.get(key);
-  if (!toast) {
-    toast = document.createElement('div');
-    const content = document.createElement('div');
-    content.className = 'toast-body';
-    const heading = document.createElement('div');
-    heading.className = 'toast-title';
-    const body = document.createElement('div');
-    content.append(heading, body);
-    const close = document.createElement('button');
-    close.className = 'toast-close';
-    close.type = 'button';
-    close.setAttribute('aria-label', 'Dismiss');
-    close.textContent = '×';
-    close.addEventListener('click', () => {
-      toast.remove();
-      toasts.delete(key);
-    });
-    toast.append(content, close);
-    stack.appendChild(toast);
-    toasts.set(key, toast);
-  }
-
-  toast.className = `toast ${kind}`;
-  const heading = toast.querySelector('.toast-title');
-  heading.textContent = title || '';
-  heading.style.display = title ? '' : 'none';
-  toast.querySelector('.toast-body > div:last-child').textContent = message;
+// Result shown next to the buttons that produced it — the shared vault status sits above the
+// list, where a click at the bottom of the page is easy to miss.
+function setSavedResult(ref, kind, message) {
+  const node = el(`saved-result-${ref}`);
+  if (!node) return;
+  node.className = `saved-method-result show ${kind}`;
+  node.textContent = message;
 }
 
-function dismissToast(key) {
-  toasts.get(key)?.remove();
-  toasts.delete(key);
-}
-
-// Keyed by ref+mode, so a charge on one list never overwrites one on the other.
-function setSavedResult(ref, kind, message, mode) {
-  showToast(`${mode}-${ref}`, kind, message);
-}
-
-// The two ways to spend a saved token. Same endpoint; they differ in who initiated it, which
-// decides the stored_credential fields the server sends.
-const CHARGE_MODES = {
-  mit: {
-    initiator: 'MERCHANT',
-    amount: () => '10.00',
-    pending: 'Charging (recurring, buyer not present)…',
-    label: 'Recurring charge',
-  },
-  // Return buyer present, one-click. No PayPal popup — the wallet was authorized when vaulted.
-  cit: {
-    initiator: 'CUSTOMER',
-    amount: () => getCartTotal().toFixed(2),
-    pending: 'Paying (one-click, buyer present)…',
-    label: 'One-click payment',
-  },
-};
-
-async function chargeSavedToken(ref, mode) {
-  const { initiator, amount, pending, label } = CHARGE_MODES[mode];
-  const value = amount();
-  if (Number(value) <= 0) {
-    setSavedResult(ref, 'err', 'Cart is empty — add products before paying.', mode);
-    return;
-  }
-
-  setSavedResult(ref, 'pending', pending, mode);
+// Charge a saved token as a merchant-initiated recurring payment (buyer not present).
+window.chargeSaved = async function (ref) {
+  setSavedResult(ref, 'pending', 'Charging (recurring, buyer not present)…');
   try {
-    const { data } = await axios.post(`${apiBase()}/ppcp/spreedly/vault/charge`, {
+    const res = await axios.post(`${apiBase()}/ppcp/spreedly/vault/charge`, {
       ref,
-      amount: value,
+      amount: '10.00',
       currency_code: CURRENCY,
-      initiator,
     });
+    const d = res.data;
+    const amount = d.amount ? `$${d.amount} ${d.currency_code || ''}`.trim() : '$10.00';
+    // Refresh first — re-rendering the list replaces the result node, so write it after.
     await refreshVaultedTokens();
-
-    const charged = data.amount ? `$${data.amount} ${data.currency_code || ''}`.trim() : `$${value}`;
-    if (data.succeeded) {
-      setSavedResult(
-        ref,
-        'ok',
-        `${label} succeeded — ${charged} captured. Order ${data.id}` +
-          (data.captureId ? `, capture ${data.captureId}.` : '.'),
-        mode
-      );
-      setVaultStatus(`${label} succeeded.`, 'success');
+    if (d.succeeded) {
+      setSavedResult(ref, 'ok',
+        `Recurring charge succeeded — ${amount} through Spreedly. Transaction ${d.id}` +
+          (d.gatewayTransactionId ? `, PayPal ${d.gatewayTransactionId}.` : '.'));
+      setVaultStatus('Recurring charge succeeded.', 'success');
     } else {
-      setSavedResult(
-        ref,
-        'err',
-        `${label} did not complete — order status ${data.status || 'unknown'}` +
-          (data.captureError ? ` (${data.captureError})` : '') + '.',
-        mode
-      );
-      setVaultStatus(`${label} did not complete.`, 'error');
+      setSavedResult(ref, 'err',
+        `Recurring charge did not complete — Spreedly state ${d.status || 'unknown'}` +
+          (d.message ? ` (${d.message})` : '') + '.');
+      setVaultStatus('Recurring charge did not complete.', 'error');
     }
   } catch (error) {
-    setSavedResult(ref, 'err', errorText(error), mode);
-    setVaultStatus(errorText(error), 'error');
+    setSavedResult(ref, 'err', vaultError(error));
+    setVaultStatus(vaultError(error), 'error');
   }
-}
+};
 
-window.chargeSaved = ref => chargeSavedToken(ref, 'mit');
-window.payWithSaved = ref => chargeSavedToken(ref, 'cit');
+// Scenario 3 — return buyer present: pay with a saved token in one click (buyer present,
+// CUSTOMER-initiated). No PayPal popup: the method was already authorized when it was vaulted.
+window.payWithSaved = async function (ref) {
+  setSavedResult(ref, 'pending', 'Paying (one-click, buyer present)…');
+  try {
+    const res = await axios.post(`${apiBase()}/ppcp/spreedly/vault/charge`, {
+      ref,
+      amount: '10.00',
+      currency_code: CURRENCY,
+      initiator: 'CUSTOMER',
+    });
+    const d = res.data;
+    const amount = d.amount ? `$${d.amount} ${d.currency_code || ''}`.trim() : '$10.00';
+    // Refresh first — re-rendering the list replaces the result node, so write it after.
+    await refreshVaultedTokens();
+    if (d.succeeded) {
+      setSavedResult(ref, 'ok',
+        `One-click payment succeeded — ${amount} through Spreedly. Transaction ${d.id}` +
+          (d.gatewayTransactionId ? `, PayPal ${d.gatewayTransactionId}.` : '.'));
+      setVaultStatus('One-click payment succeeded.', 'success');
+    } else {
+      setSavedResult(ref, 'err',
+        `One-click payment did not complete — Spreedly state ${d.status || 'unknown'}` +
+          (d.message ? ` (${d.message})` : '') + '.');
+      setVaultStatus('One-click payment did not complete.', 'error');
+    }
+  } catch (error) {
+    setSavedResult(ref, 'err', vaultError(error));
+    setVaultStatus(vaultError(error), 'error');
+  }
+};
 
-// onRedirect only fires in a flow that navigates. In popup mode PayPal completes in place, so the
-// option is disabled rather than left to do nothing.
+// "Give me the URL" only does something in a flow that navigates — redirect, or the mobile
+// app-switch. In popup PayPal completes in place, so onRedirect never fires and picking it
+// would silently do nothing. Grey it out and say why, rather than letting the combination exist.
 function syncRedirectHandlingAvailability() {
   const manual = document.querySelector('input[name="on-redirect"][value="manual"]');
   if (!manual) return;
@@ -711,14 +766,16 @@ function syncRedirectHandlingAvailability() {
   const why = manual.parentElement?.querySelector('.why');
   if (why) why.textContent = navigates ? 'shows a button' : `not in ${mode} mode`;
 
+  // If it was selected and the mode changed out from under it, fall back to the default.
   if (!navigates && manual.checked) {
     const auto = document.querySelector('input[name="on-redirect"][value=""]');
     if (auto) auto.checked = true;
   }
 }
 
-// The SDK hands back the approval URL instead of navigating — the hook a mobile app uses to open
-// it somewhere it can handle the return from.
+// onRedirect handler. The SDK gives us the approval URL rather than navigating, so we show it and
+// let the buyer choose when to go — the same hook a mobile app would use to open it somewhere it
+// can handle the return from.
 function showRedirectUrl(url) {
   updateDebug('status', 'Redirect URL received (SDK did not navigate)');
   setStatus('SDK handed back the approval URL instead of navigating.', 'info');
@@ -757,23 +814,19 @@ function updateDebug(field, value) {
   if (target) target.textContent = value || '—';
 }
 
-function setMessage(elementId, message, type) {
-  const node = el(elementId);
-  if (!node) return;
-  node.textContent = message;
-  node.className = `status-message ${type}`;
-}
-
 function setStatus(message, type = 'info') {
-  setMessage('status-message', message, type);
-}
-
-function setVaultStatus(message, type = 'info') {
-  setMessage('vault-status', message, type);
+  const statusEl = el('status-message');
+  if (!statusEl) return;
+  statusEl.textContent = message;
+  statusEl.className = `status-message ${type}`;
 }
 
 function showResult(isSuccess, title, message) {
-  showToast('payment', isSuccess ? 'ok' : 'err', message, title);
+  const card = el('result-card');
+  card.classList.remove('hidden', 'success', 'error');
+  card.classList.add(isSuccess ? 'success' : 'error');
+  el('result-title').textContent = title;
+  el('result-message').textContent = message;
 }
 
 function showError(message) {
@@ -791,10 +844,12 @@ function init() {
   el('proceed-to-payment').addEventListener('click', () => goToStep(2));
   el('back-to-products').addEventListener('click', () => goToStep(1));
   el('save-trigger').addEventListener('click', mountVault);
+  // savePayment is read when the SDK is built, so changing this has to rebuild it.
   el('save-during-purchase')?.addEventListener('change', () => {
     if (sdksLoaded && ppcpInstance) loadAndMountPPCP();
   });
-  // Re-mount when any SDK config radio changes.
+  // Re-mount when any SDK config radio changes. One delegated listener on the panel, so
+  // adding an option to the panel needs no JS change.
   const cfgPanel = el('sdk-config');
   if (cfgPanel) {
     cfgPanel.addEventListener('change', () => {
