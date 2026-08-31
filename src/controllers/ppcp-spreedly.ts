@@ -62,6 +62,14 @@ const handleError = (error: unknown, res: Response): void => {
     .json(apiError.response?.data || { error: (error as Error).message });
 };
 
+const approvalSessionId = (checkoutUrl: string): string | undefined => {
+  try {
+    return new URL(checkoutUrl).searchParams.get('approval_session_id') || undefined;
+  } catch {
+    return undefined;
+  }
+};
+
 // Spreedly rejects localhost redirect/callback URLs, so fall back to the deployed sample app.
 const publicOrigin = (req: Request): string => {
   const origin = req.headers.origin || `${req.protocol}://${req.get('host')}`;
@@ -425,6 +433,7 @@ export const createSpreedlyPPCPVaultSetup = async (
     }
 
     res.json({
+      approval_session_id: approvalSessionId(checkoutUrl),
       checkout_url: checkoutUrl,
       transaction_token: transaction.token,
       state: transaction.state,

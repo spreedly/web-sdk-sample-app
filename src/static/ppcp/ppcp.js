@@ -21,6 +21,7 @@ const PRODUCTS = [
 // State
 let cart = {}; // { productId: quantity }
 let ppcpInstance = null;
+let vaultInstance = null;
 let sdksLoaded = false;
 let savedDuringPurchase = false; // was "save my PayPal" ticked for the current order?
 
@@ -448,26 +449,71 @@ async function handlePaymentResult(result) {
 /**
  * Save a PayPal without paying.
  *
- * No SpreedlyPPCP instance: Spreedly's gateway verify creates the PayPal approval session and
- * returns its URL, so the buyer goes there directly. PayPal returns them through Spreedly, which
- * finalizes the verification and lands them on redirect_url with ?transaction_token=.
+ * Spreedly's gateway verify creates the approval session; `createVaultSetupToken` hands its
+ * approval_session_id to the SDK where PayPal's save session expects a Vault v3 setup token.
+ * PayPal accepts it, so the buyer gets a real PayPal button rather than a bare redirect.
+ *
+ * The transaction token is held for the popup path: PayPal returns the buyer through Spreedly's
+ * own redirect leg, which finalizes the verification, but a popup never travels through it.
  */
-async function startVault() {
+async function mountVault() {
   el('save-trigger')?.classList.add('hidden');
   el('save-loading').classList.remove('hidden');
-  setVaultStatus('Starting PayPal approval...', 'info');
+  setVaultStatus('Loading PayPal SDK...', 'info');
 
   try {
-    const res = await axios.post(`${apiBase()}/ppcp/spreedly/vault/setup`);
-    const checkoutUrl = res.data.checkout_url;
-    if (!checkoutUrl) throw new Error('Spreedly did not return an approval URL.');
+    await loadDependencies();
+    destroyInstance(vaultInstance);
+    el('save-paypal-button').innerHTML = '';
 
-    setVaultStatus('Redirecting to PayPal...', 'info');
-    window.location.assign(checkoutUrl);
+    vaultInstance = new window.SpreedlyPPCP({
+      flow: 'vault',
+      currencyCode: CURRENCY,
+      countryCode: 'US',
+      testBuyerCountry: 'US',
+      paymentElements: { paypal: 'save-paypal-button' },
+      clientId: await getClientId(),
+      // Redirect, not the panel's presentationMode. Spreedly bakes its redirect_url into the
+      // approval session, so PayPal finishes by navigating rather than handing the result back to
+      // the opener. In a popup the wallet still vaults — inside the popup — but onPaymentResult
+      // never fires and this page would show the buyer nothing.
+      presentationMode: 'redirect',
+      createVaultSetupToken: async () => {
+        const res = await axios.post(`${apiBase()}/ppcp/spreedly/vault/setup`);
+        if (!res.data.approval_session_id) {
+          throw new Error('Spreedly did not return an approval session.');
+        }
+        return { setupToken: res.data.approval_session_id };
+      },
+      onPaymentResult: handleVaultResult,
+    });
+
+    const result = await vaultInstance.mount();
+    el('save-loading').classList.add('hidden');
+    if (result.error) throw new Error(result.error);
+
+    setVaultStatus(
+      result.rendered?.paypal
+        ? 'Click the PayPal button to save it for later.'
+        : 'Saving a PayPal is not eligible for this session.',
+      'info'
+    );
   } catch (error) {
     el('save-loading').classList.add('hidden');
     el('save-trigger')?.classList.remove('hidden');
     setVaultStatus(errorText(error), 'error');
+  }
+}
+
+/**
+ * Only cancellation and failure reach this. On success PayPal navigates the buyer away, Spreedly
+ * finalizes on its redirect leg, and /ppcp/return/ records the saved method.
+ */
+async function handleVaultResult(result) {
+  if (result.state === 'Cancelled') {
+    setVaultStatus('Save cancelled.', 'info');
+  } else if (result.state !== 'Successful') {
+    setVaultStatus(result.message || 'Save failed.', 'error');
   }
 }
 
@@ -744,7 +790,7 @@ function init() {
   refreshVaultedTokens();
   el('proceed-to-payment').addEventListener('click', () => goToStep(2));
   el('back-to-products').addEventListener('click', () => goToStep(1));
-  el('save-trigger').addEventListener('click', startVault);
+  el('save-trigger').addEventListener('click', mountVault);
   el('save-during-purchase')?.addEventListener('change', () => {
     if (sdksLoaded && ppcpInstance) loadAndMountPPCP();
   });
