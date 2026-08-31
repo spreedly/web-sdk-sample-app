@@ -37,7 +37,7 @@ Follow [this guide](https://developer.spreedly.com/docs/using-certificates-ifram
 | `certificate_token` | `string` | Certificate token for iframe security |
 | `nonce` | `string` | One-time random string |
 | `timestamp` | `string` | UTC timestamp |
-| `signature` | `string` | Server-generated HMAC signature |
+| `signature` | `string` | SHA-256 digital signature of `nonce + timestamp + certificate_token`, signed with your certificate private key |
 
 ---
 
