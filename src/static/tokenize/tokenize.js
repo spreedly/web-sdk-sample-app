@@ -22,7 +22,75 @@ const config = {
   hostedCatalogueFields: [],
   hostedCatalogueRequired: false,
   hostedSubmitButton: false,
+  customValidators: [],
 };
+
+/**
+ * Demo validators for `sdk.addValidation()`. Identical in both products, so the same list drives
+ * the Hosted Fields and Express Checkout panels.
+ *
+ * Each runs on the merchant page after the SDK's own checks have passed, and receives the field's
+ * value plus the form's other non-sensitive values (`fields`) — never the PAN or CVV.
+ */
+const CUSTOM_VALIDATOR_DEMOS = [
+  {
+    checkboxId: 'cv-zip-format',
+    field: 'zip',
+    // The documented return shape: an explicit verdict with a message.
+    validate: (value) => {
+      const isValid = /^\d{5}(-\d{4})?$/.test(value);
+      return { isValid, errorMessage: isValid ? '' : 'Enter a valid US ZIP code (12345 or 12345-6789)' };
+    },
+  },
+  {
+    checkboxId: 'cv-state-country',
+    field: 'state',
+    // Cross-field: the rule only applies to US addresses. Returning a string is shorthand for
+    // "invalid, show this message"; returning true passes.
+    validate: (value, fields) => {
+      if (fields.country?.trim().toUpperCase() !== 'US') return true;
+      return /^[A-Za-z]{2}$/.test(value.trim()) ? true : 'Use a two-letter state code for US addresses';
+    },
+  },
+  {
+    checkboxId: 'cv-conditional-zip',
+    field: 'zip',
+    // Conditional requirement. Validators run on empty values, so a field that is not marked
+    // required can still be made mandatory for some shoppers.
+    validate: (value, fields) => {
+      if (fields.country?.trim().toUpperCase() !== 'US') return true;
+      return value.trim() ? true : 'ZIP is required for US addresses';
+    },
+  },
+  {
+    checkboxId: 'cv-broken',
+    field: 'city',
+    validate: () => {
+      throw new Error('Deliberately broken validator — the SDK should fail open');
+    },
+  },
+];
+
+/** Reads the ticked demo validators. Later entries win, since a field holds one validator. */
+function syncCustomValidatorsFromCheckboxes() {
+  config.customValidators = CUSTOM_VALIDATOR_DEMOS.filter(
+    ({ checkboxId }) => document.getElementById(checkboxId)?.checked
+  );
+}
+
+/**
+ * Registers the ticked validators and clears any that were unticked, so reopening the form
+ * reflects the current selection rather than accumulating registrations.
+ */
+function applyCustomValidators(sdkInstance) {
+  const active = new Set(config.customValidators.map(({ field }) => field));
+  CUSTOM_VALIDATOR_DEMOS.forEach(({ field }) => {
+    if (!active.has(field)) sdkInstance.removeValidation(field);
+  });
+  config.customValidators.forEach(({ field, validate }) => {
+    sdkInstance.addValidation(field, validate);
+  });
+}
 
 /**
  * The composable catalogue fields `inAppElements` can mount, in the order they are rendered. The
@@ -521,6 +589,7 @@ function syncConfigFromCheckboxes() {
   config.showCardTypeIcon = ecCardTypeIcon ? ecCardTypeIcon.checked : true;
   syncEcExtraFieldsFromCheckboxes();
   syncHostedCatalogueFromCheckboxes();
+  syncCustomValidatorsFromCheckboxes();
   config.hostedSubmitButton = document.getElementById('hf-hosted-submit')?.checked || false;
 }
 
@@ -951,6 +1020,7 @@ window.openHostedFieldsForm = function () {
   }
 
   syncConfigFromCheckboxes();
+  applyCustomValidators(sdk);
   mountedCatalogueFields = resolveHostedCatalogueSelection(config.hostedCatalogueFields);
 
   // Containers must exist in the DOM before inAppElements runs or the field is skipped.
@@ -1055,6 +1125,8 @@ window.openExpressCheckoutForm = function () {
 
   // Sync config state from checkboxes before building checkout config
   syncConfigFromCheckboxes();
+  // Registered before expressCheckout() so the field names ride along in the init config.
+  applyCustomValidators(sdk);
 
   const displayMode = document.querySelector('input[name="display-mode"]:checked')?.value || 'embedded';
 

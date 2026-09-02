@@ -376,6 +376,81 @@
                 </div>
               </div>
 
+              <!-- Shared: merchant-owned validators registered with addValidation(). Identical API
+                   in both products, so this block is outside the per-SDK panels. -->
+              <details id="custom-validation-section"
+                style="border:1px solid var(--color-gray-200); border-radius:6px; padding:.5rem .75rem; margin-bottom:.75rem;">
+                <summary style="cursor:pointer; font-weight:600;">Custom field validators</summary>
+                <p style="font-size:.85rem; color: var(--color-gray-500); margin-top:.5rem;">
+                  <code>sdk.addValidation(field, fn)</code> attaches your own rule to a non-sensitive field. It runs
+                  after the SDK's built-in checks and only for values that already passed them, so it can make
+                  validation stricter but never looser. Your function stays on this page — it is never sent into a
+                  payment iframe, and it never receives the card number or CVV.
+                </p>
+                <p style="font-size:.85rem; color: var(--color-gray-500);">
+                  Tick a rule, then mount or add the field it targets (<code>zip</code>, <code>state</code>,
+                  <code>country</code>, <code>city</code>) in the section for your SDK below.
+                </p>
+
+                <div class="config-option-row">
+                  <div class="config-option">
+                    <input type="checkbox" id="cv-zip-format" class="config-checkbox">
+                    <div class="config-option-content">
+                      <label for="cv-zip-format" class="config-option-label">US ZIP format on
+                        <code>zip</code></label>
+                      <span class="config-option-desc">Rejects anything that is not <code>12345</code> or
+                        <code>12345-6789</code>. Returns <code>{ isValid, errorMessage }</code>.</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="config-option-row">
+                  <div class="config-option">
+                    <input type="checkbox" id="cv-state-country" class="config-checkbox">
+                    <div class="config-option-content">
+                      <label for="cv-state-country" class="config-option-label">Cross-field rule on
+                        <code>state</code></label>
+                      <span class="config-option-desc">Reads <code>fields.country</code> — when it is
+                        <code>US</code>, requires a two-letter state code and otherwise passes. Shows how the second
+                        argument carries the form's other values.</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="config-option-row">
+                  <div class="config-option">
+                    <input type="checkbox" id="cv-conditional-zip" class="config-checkbox">
+                    <div class="config-option-content">
+                      <label for="cv-conditional-zip" class="config-option-label">Conditional requirement on
+                        <code>zip</code></label>
+                      <span class="config-option-desc">Requires <code>zip</code> only when
+                        <code>fields.country</code> is <code>US</code>. Validators run on empty values too, which is
+                        what makes this possible without marking the field required. Replaces the format rule above if
+                        both are ticked — one validator per field.</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="config-option-row">
+                  <div class="config-option">
+                    <input type="checkbox" id="cv-broken" class="config-checkbox">
+                    <div class="config-option-content">
+                      <label for="cv-broken" class="config-option-label">Broken validator on
+                        <code>city</code></label>
+                      <span class="config-option-desc">Throws on purpose. The SDK fails open — the field passes and
+                        an <code>error</code> plus <code>consoleError</code> is emitted — so a bug in merchant code
+                        cannot block every checkout.</span>
+                    </div>
+                  </div>
+                </div>
+
+                <p style="font-size:.8rem; color: var(--color-gray-500); margin-top:.5rem;">
+                  Read when you open the payment form; reopen to apply changes. Hosted Fields reports failures on the
+                  <code>validation</code> event under <code>formFields[field].error</code> (rendered inline below by
+                  this demo); Express Checkout renders them inside its own form.
+                </p>
+              </details>
+
               <!-- Express Checkout only: extra fields rendered inside the iframe -->
               <div id="express-checkout-only-panel" class="hidden">
                 <div class="config-option-row">
