@@ -18,6 +18,133 @@ const config = {
   eligibleForCardUpdater: false,
   showCardTypeIcon: true,
   ecExtraFields: [],
+  ecExtraFieldsRequired: false,
+  hostedCatalogueFields: [],
+  hostedCatalogueRequired: false,
+  hostedSubmitButton: false,
+  customValidators: [],
+};
+
+/**
+ * Demo validators for `sdk.addValidation()`. Identical in both products, so the same list drives
+ * the Hosted Fields and Express Checkout panels.
+ *
+ * Each runs on the merchant page after the SDK's own checks have passed, and receives the field's
+ * value plus the form's other non-sensitive values (`fields`) — never the PAN or CVV.
+ */
+const CUSTOM_VALIDATOR_DEMOS = [
+  {
+    checkboxId: 'cv-zip-format',
+    field: 'zip',
+    // The documented return shape: an explicit verdict with a message.
+    validate: (value) => {
+      const isValid = /^\d{5}(-\d{4})?$/.test(value);
+      return { isValid, errorMessage: isValid ? '' : 'Enter a valid US ZIP code (12345 or 12345-6789)' };
+    },
+  },
+  {
+    checkboxId: 'cv-state-country',
+    field: 'state',
+    // Cross-field: the rule only applies to US addresses.
+    validate: (value, fields) => {
+      if (fields.country?.trim().toUpperCase() !== 'US') return { isValid: true };
+      const ok = /^[A-Za-z]{2}$/.test(value.trim());
+      return { isValid: ok, errorMessage: ok ? undefined : 'Use a two-letter state code for US addresses' };
+    },
+  },
+  {
+    checkboxId: 'cv-conditional-zip',
+    field: 'zip',
+    // Conditional requirement. Validators run on empty values, so a field that is not marked
+    // required can still be made mandatory for some shoppers.
+    validate: (value, fields) => {
+      if (fields.country?.trim().toUpperCase() !== 'US') return { isValid: true };
+      const ok = Boolean(value.trim());
+      return { isValid: ok, errorMessage: ok ? undefined : 'ZIP is required for US addresses' };
+    },
+  },
+  {
+    checkboxId: 'cv-broken',
+    field: 'city',
+    validate: () => {
+      throw new Error('Deliberately broken validator — the SDK should fail open');
+    },
+  },
+];
+
+/** Reads the ticked demo validators. Later entries win, since a field holds one validator. */
+function syncCustomValidatorsFromCheckboxes() {
+  config.customValidators = CUSTOM_VALIDATOR_DEMOS.filter(
+    ({ checkboxId }) => document.getElementById(checkboxId)?.checked
+  );
+}
+
+/**
+ * Registers the ticked validators and clears any that were unticked, so reopening the form
+ * reflects the current selection rather than accumulating registrations.
+ */
+function applyCustomValidators(sdkInstance) {
+  const active = new Set(config.customValidators.map(({ field }) => field));
+  CUSTOM_VALIDATOR_DEMOS.forEach(({ field }) => {
+    if (!active.has(field)) sdkInstance.removeValidation(field);
+  });
+  config.customValidators.forEach(({ field, validate }) => {
+    sdkInstance.addValidation(field, validate);
+  });
+}
+
+/**
+ * The composable catalogue fields `inAppElements` can mount, in the order they are rendered. The
+ * payment form is built from the merchant's selection: alongside the mandatory number and cvv
+ * fields it shows exactly the ticked fields and nothing else, each as its own Spreedly-hosted
+ * iframe whose value is read from inside that iframe at `submit()`. `wide` fields span both
+ * columns of the form grid.
+ */
+const HOSTED_FIELD_CATALOGUE = Object.freeze([
+  { type: 'expiry', label: 'Expiration date', group: 'Expiration date' },
+  { type: 'month', label: 'Expiration month', group: 'Expiration date' },
+  { type: 'year', label: 'Expiration year', group: 'Expiration date' },
+  { type: 'first_name', label: 'First name', group: 'Cardholder' },
+  { type: 'last_name', label: 'Last name', group: 'Cardholder' },
+  { type: 'full_name', label: 'Name on card', group: 'Cardholder', wide: true },
+  { type: 'email', label: 'Email', group: 'Cardholder', wide: true },
+  { type: 'company', label: 'Company', group: 'Cardholder', wide: true },
+  { type: 'address1', label: 'Address line 1', group: 'Billing address', wide: true },
+  { type: 'address2', label: 'Address line 2', group: 'Billing address', wide: true },
+  { type: 'city', label: 'City', group: 'Billing address' },
+  { type: 'state', label: 'State', group: 'Billing address' },
+  { type: 'zip', label: 'ZIP / Postal code', group: 'Billing address' },
+  { type: 'country', label: 'Country', group: 'Billing address' },
+  { type: 'phone_number', label: 'Phone', group: 'Billing address', wide: true },
+  { type: 'house_number_or_name', label: 'House number or name', group: 'Billing address' },
+  { type: 'street', label: 'Street', group: 'Billing address', wide: true },
+  { type: 'street_line2', label: 'Street line 2', group: 'Billing address', wide: true },
+  { type: 'phone_number_country_code', label: 'Phone country code', group: 'Billing address' },
+  { type: 'phone_number_area_code', label: 'Phone area code', group: 'Billing address' },
+  { type: 'shipping_address1', label: 'Address line 1', group: 'Shipping address', wide: true },
+  { type: 'shipping_address2', label: 'Address line 2', group: 'Shipping address', wide: true },
+  { type: 'shipping_city', label: 'City', group: 'Shipping address' },
+  { type: 'shipping_state', label: 'State', group: 'Shipping address' },
+  { type: 'shipping_zip', label: 'ZIP / Postal code', group: 'Shipping address' },
+  { type: 'shipping_country', label: 'Country', group: 'Shipping address' },
+  { type: 'shipping_phone_number', label: 'Phone', group: 'Shipping address', wide: true },
+  { type: 'shipping_house_number_or_name', label: 'House number or name', group: 'Shipping address' },
+  { type: 'shipping_street', label: 'Street', group: 'Shipping address', wide: true },
+  { type: 'shipping_street_line2', label: 'Street line 2', group: 'Shipping address', wide: true },
+  { type: 'shipping_phone_number_country_code', label: 'Phone country code', group: 'Shipping address' },
+  { type: 'shipping_phone_number_area_code', label: 'Phone area code', group: 'Shipping address' },
+]);
+
+/** Catalogue field types actually mounted by the current `inAppElements` call. */
+let mountedCatalogueFields = [];
+
+/** Styles pushed into each catalogue iframe's input so it matches the demo's plain inputs. */
+const HOSTED_INPUT_STYLE = {
+  fontSize: '1rem',
+  color: '#0a0a0a',
+  padding: '0 1rem',
+  height: '100%',
+  width: '100%',
 };
 
 const EC_EXTRA_FIELD_KEYS = Object.freeze([
@@ -31,6 +158,11 @@ const EC_EXTRA_FIELD_KEYS = Object.freeze([
   'state',
   'zip',
   'country',
+  'house_number_or_name',
+  'street',
+  'street_line2',
+  'phone_number_country_code',
+  'phone_number_area_code',
   'shipping_address1',
   'shipping_address2',
   'shipping_city',
@@ -38,6 +170,11 @@ const EC_EXTRA_FIELD_KEYS = Object.freeze([
   'shipping_zip',
   'shipping_country',
   'shipping_phone_number',
+  'shipping_house_number_or_name',
+  'shipping_street',
+  'shipping_street_line2',
+  'shipping_phone_number_country_code',
+  'shipping_phone_number_area_code',
 ]);
 
 /** SDK instance that already has `validation` / `fieldStateChange` listeners registered. */
@@ -98,6 +235,11 @@ async function init() {
 
   updateConfigPanelForSdkType();
 
+  // Build the catalogue checkboxes before wiring listeners — they are generated from
+  // HOSTED_FIELD_CATALOGUE rather than hand-written into the page.
+  renderHostedCatalogueCheckboxes();
+  updateHostedCatalogueSummary();
+
   // Set up config checkbox listeners on page load (so they work before SDK is ready)
   setupConfigCheckboxListeners();
 
@@ -129,28 +271,19 @@ function updateConfigPanelForSdkType() {
 
 // Set up config checkbox listeners (called on page load)
 function setupConfigCheckboxListeners() {
+  // Express Checkout renders its own expiry input; Hosted Fields gets a combined MM/YY input by
+  // mounting the `expiry` catalogue field instead.
   document.getElementById('config-two-digit-expiry')?.addEventListener('change', function () {
     config.twoDigitExpiryYear = this.checked;
-    if (isReady && sdkType === 'hosted-fields') {
-      updateExpiryFieldDisplay();
-      updateFormState();
-    }
   });
 
+  // The allow_* flags are read at submit(), so they can be toggled while the form is open.
   document.getElementById('config-allow-blank-name')?.addEventListener('change', function () {
     config.allowBlankName = this.checked;
-    if (isReady && sdkType === 'hosted-fields') {
-      updateNameFieldsRequired();
-      updateFormState();
-    }
   });
 
   document.getElementById('config-allow-blank-date')?.addEventListener('change', function () {
     config.allowBlankDate = this.checked;
-    if (isReady && sdkType === 'hosted-fields') {
-      updateDateFieldsRequired();
-      updateFormState();
-    }
   });
 
   document.getElementById('config-allow-expired-date')?.addEventListener('change', function () {
@@ -171,6 +304,58 @@ function setupConfigCheckboxListeners() {
       syncEcExtraFieldsFromCheckboxes();
     });
   });
+
+  // Hosted catalogue fields are mounted by inAppElements, so the selection is only read when the
+  // form is opened — the summary keeps the current choice visible until then.
+  document.querySelectorAll('input[data-hosted-field]').forEach((checkbox) => {
+    checkbox.addEventListener('change', () => {
+      enforceExpiryCheckboxExclusivity();
+      syncHostedCatalogueFromCheckboxes();
+      updateHostedCatalogueSummary();
+    });
+  });
+
+  document.getElementById('hf-catalogue-required')?.addEventListener('change', function () {
+    config.hostedCatalogueRequired = this.checked;
+  });
+
+  // Express Checkout twin of the Hosted Fields toggle above — same `isRequired` flag name.
+  document.getElementById('ec-fields-required')?.addEventListener('change', function () {
+    config.ecExtraFieldsRequired = this.checked;
+  });
+
+  document.getElementById('hf-catalogue-select-all')?.addEventListener('click', () => {
+    setAllHostedCatalogueCheckboxes(true);
+  });
+
+  document.getElementById('hf-catalogue-clear')?.addEventListener('click', () => {
+    setAllHostedCatalogueCheckboxes(false);
+  });
+}
+
+/** Ticks or clears every catalogue checkbox at once (`month`/`year` lose to the combined expiry). */
+function setAllHostedCatalogueCheckboxes(checked) {
+  document.querySelectorAll('input[data-hosted-field]').forEach((checkbox) => {
+    const type = checkbox.dataset.hostedField;
+    checkbox.checked = checked && type !== 'month' && type !== 'year';
+  });
+  enforceExpiryCheckboxExclusivity();
+  syncHostedCatalogueFromCheckboxes();
+  updateHostedCatalogueSummary();
+}
+
+/**
+ * Mirrors the SDK's expiry exclusivity in the panel: the combined `expiry` field and the separate
+ * `month` / `year` fields own the same params, so ticking `expiry` disables the other two.
+ */
+function enforceExpiryCheckboxExclusivity() {
+  const combinedChecked = document.getElementById('hf-catalogue-expiry')?.checked || false;
+  ['month', 'year'].forEach((type) => {
+    const checkbox = document.getElementById(`hf-catalogue-${type}`);
+    if (!checkbox) return;
+    checkbox.disabled = combinedChecked;
+    if (combinedChecked) checkbox.checked = false;
+  });
 }
 
 /**
@@ -182,6 +367,7 @@ function syncEcExtraFieldsFromCheckboxes() {
   config.ecExtraFields = EC_EXTRA_FIELD_KEYS.filter(
     (key) => document.getElementById(`ec-field-${key}`)?.checked
   );
+  config.ecExtraFieldsRequired = document.getElementById('ec-fields-required')?.checked || false;
 }
 
 /**
@@ -200,6 +386,11 @@ const EC_EXTRA_FIELD_DEFAULTS = Object.freeze({
   state:                   { label: 'State',               placeholder: 'NY' },
   zip:                     { label: 'Zip',                 placeholder: '10001' },
   country:                 { label: 'Country',             placeholder: 'US' },
+  house_number_or_name:    { label: 'House Number or Name', placeholder: '123' },
+  street:                  { label: 'Street',              placeholder: 'Main St' },
+  street_line2:            { label: 'Street Line 2',       placeholder: 'Apt 1' },
+  phone_number_country_code: { label: 'Phone Country Code', placeholder: '1' },
+  phone_number_area_code:  { label: 'Phone Area Code',     placeholder: '415' },
   shipping_address1:       { label: 'Shipping Address 1',  placeholder: '456 Park Ave' },
   shipping_address2:       { label: 'Shipping Address 2',  placeholder: 'Suite 9' },
   shipping_city:           { label: 'Shipping City',       placeholder: 'Boston' },
@@ -207,8 +398,19 @@ const EC_EXTRA_FIELD_DEFAULTS = Object.freeze({
   shipping_zip:            { label: 'Shipping Zip',        placeholder: '02101' },
   shipping_country:        { label: 'Shipping Country',    placeholder: 'US' },
   shipping_phone_number:   { label: 'Shipping Phone',      placeholder: '5559876543' },
+  shipping_house_number_or_name: { label: 'Shipping House Number or Name', placeholder: '123' },
+  shipping_street:         { label: 'Shipping Street',     placeholder: 'Main St' },
+  shipping_street_line2:   { label: 'Shipping Street Line 2', placeholder: 'Apt 1' },
+  shipping_phone_number_country_code: { label: 'Shipping Phone Country Code', placeholder: '1' },
+  shipping_phone_number_area_code: { label: 'Shipping Phone Area Code', placeholder: '415' },
 });
 
+/**
+ * Builds `uiConfig.cardPaymentFormFields` entries for the ticked Express Checkout fields.
+ * `isRequired` is the same flag Hosted Fields takes on `inAppElements()`: it gates every
+ * additional field, including `full_name` (only `first_name` / `last_name` and the date fields
+ * are required by default in either product).
+ */
 function buildEcExtraFieldsConfig(fieldKeys) {
   const out = {};
   fieldKeys.forEach((fieldName) => {
@@ -216,7 +418,7 @@ function buildEcExtraFieldsConfig(fieldKeys) {
     if (!defaults) return;
     out[fieldName] = {
       fieldName,
-      isRequired: false,
+      isRequired: config.ecExtraFieldsRequired,
       label: defaults.label,
       placeholder: defaults.placeholder,
       size: 6,
@@ -225,6 +427,156 @@ function buildEcExtraFieldsConfig(fieldKeys) {
     };
   });
   return out;
+}
+
+function hostedCatalogueEntry(type) {
+  return HOSTED_FIELD_CATALOGUE.find((entry) => entry.type === type);
+}
+
+/** Element id of the container a catalogue field's iframe is mounted into. */
+function hostedCatalogueContainerId(type) {
+  return `hosted-field-${type}`;
+}
+
+/** Element id of the inline error label under a catalogue field. */
+function hostedCatalogueErrorId(type) {
+  return `hosted-field-${type}-error`;
+}
+
+/** Renders one checkbox per catalogue field into the SDK Configuration panel, grouped by section. */
+function renderHostedCatalogueCheckboxes() {
+  const list = document.getElementById('hf-catalogue-field-list');
+  if (!list) return;
+
+  list.innerHTML = '';
+  let currentGroup = null;
+  let currentRow = null;
+
+  HOSTED_FIELD_CATALOGUE.forEach((entry) => {
+    if (entry.group !== currentGroup) {
+      currentGroup = entry.group;
+      const title = document.createElement('h4');
+      title.className = 'hf-catalogue-group-title';
+      title.textContent = currentGroup;
+      list.appendChild(title);
+      currentRow = null;
+    }
+
+    if (!currentRow || currentRow.childElementCount >= 2) {
+      currentRow = document.createElement('div');
+      currentRow.className = 'config-option-row';
+      list.appendChild(currentRow);
+    }
+
+    const option = document.createElement('div');
+    option.className = 'config-option';
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.className = 'config-checkbox';
+    checkbox.id = `hf-catalogue-${entry.type}`;
+    checkbox.dataset.hostedField = entry.type;
+
+    const content = document.createElement('div');
+    content.className = 'config-option-content';
+    const label = document.createElement('label');
+    label.className = 'config-option-label';
+    label.setAttribute('for', checkbox.id);
+    const code = document.createElement('code');
+    code.textContent = entry.type;
+    label.appendChild(code);
+    content.appendChild(label);
+
+    option.append(checkbox, content);
+    currentRow.appendChild(option);
+  });
+}
+
+/** Reads the ticked catalogue checkboxes into `config.hostedCatalogueFields` (catalogue order). */
+function syncHostedCatalogueFromCheckboxes() {
+  config.hostedCatalogueFields = HOSTED_FIELD_CATALOGUE.filter(
+    (entry) => document.getElementById(`hf-catalogue-${entry.type}`)?.checked
+  ).map((entry) => entry.type);
+  config.hostedCatalogueRequired =
+    document.getElementById('hf-catalogue-required')?.checked || false;
+}
+
+/**
+ * Applies the SDK's expiry exclusivity rule to the ticked selection: the combined `expiry` field
+ * and the separate `month`/`year` fields own the same params, so `expiry` wins and the separate
+ * fields are dropped (the SDK does the same, with a warning).
+ */
+function resolveHostedCatalogueSelection(selected) {
+  if (!selected.includes('expiry')) return selected;
+  return selected.filter((type) => type !== 'month' && type !== 'year');
+}
+
+/** Describes the current selection above the Open Payment Form button. */
+function updateHostedCatalogueSummary() {
+  const summary = document.getElementById('hosted-catalogue-summary');
+  if (!summary) return;
+
+  const selected = resolveHostedCatalogueSelection(config.hostedCatalogueFields);
+  summary.textContent = selected.length
+    ? `The form will show: number, cvv, ${selected.join(', ')}`
+    : 'The form will show: number, cvv — tick fields in the SDK Configuration panel to add more.';
+}
+
+/**
+ * Rebuilds the selected part of the payment form: a labelled container per selected catalogue
+ * field, grouped under its section heading, for the hosted iframes to be appended into. Fields
+ * arrive in catalogue order, so each group is contiguous.
+ */
+function renderHostedFieldContainers(types) {
+  const host = document.getElementById('hosted-catalogue-fields');
+  if (!host) return;
+
+  host.innerHTML = '';
+  host.classList.toggle('hidden', types.length === 0);
+  if (!types.length) return;
+
+  const grid = document.createElement('div');
+  grid.className = 'hf-catalogue-grid';
+  let currentGroup = null;
+
+  types.forEach((type) => {
+    const entry = hostedCatalogueEntry(type);
+    if (!entry) return;
+
+    if (entry.group !== currentGroup) {
+      currentGroup = entry.group;
+      const heading = document.createElement('div');
+      heading.className = 'hf-catalogue-heading';
+      heading.textContent = currentGroup;
+      grid.appendChild(heading);
+    }
+
+    const group = document.createElement('div');
+    group.className = entry.wide ? 'form-group hf-catalogue-wide' : 'form-group';
+
+    const label = document.createElement('label');
+    label.className = 'form-label';
+    label.textContent = `${entry.label} `;
+    const badge = document.createElement('span');
+    badge.className = 'hf-hosted-badge';
+    badge.textContent = 'hosted';
+    label.appendChild(badge);
+
+    const container = document.createElement('div');
+    container.className = 'hosted-field-container';
+    container.id = hostedCatalogueContainerId(type);
+
+    const errorEl = document.createElement('div');
+    errorEl.id = hostedCatalogueErrorId(type);
+    errorEl.className = 'hf-field-error';
+    errorEl.setAttribute('role', 'alert');
+    errorEl.setAttribute('aria-live', 'polite');
+
+    group.append(label, container, errorEl);
+    grid.appendChild(group);
+  });
+
+  host.appendChild(grid);
 }
 
 // Sync config state from checkbox values (called when SDK becomes ready)
@@ -237,6 +589,9 @@ function syncConfigFromCheckboxes() {
   const ecCardTypeIcon = document.getElementById('ec-demo-card-type-icon');
   config.showCardTypeIcon = ecCardTypeIcon ? ecCardTypeIcon.checked : true;
   syncEcExtraFieldsFromCheckboxes();
+  syncHostedCatalogueFromCheckboxes();
+  syncCustomValidatorsFromCheckboxes();
+  config.hostedSubmitButton = document.getElementById('hf-hosted-submit')?.checked || false;
 }
 
 /** Clears demo panel output and resets SDK Configuration controls to defaults. */
@@ -259,10 +614,13 @@ function clearHostedFieldsDemoPanelUi() {
   clearHostedFieldsValidationErrors();
 }
 
-/** Clears both hosted-field inline error labels. */
+/** Clears number, CVV, and mounted catalogue-field inline error labels. */
 function clearHostedFieldsValidationErrors() {
   setHostedFieldError('card-number-field', 'card-number-error', '');
   setHostedFieldError('cvv-field', 'cvv-error', '');
+  mountedCatalogueFields.forEach((type) => {
+    setHostedFieldError(hostedCatalogueContainerId(type), hostedCatalogueErrorId(type), '');
+  });
 }
 
 /** Shows/clears an inline error label under a hosted field and flags the container. */
@@ -290,10 +648,23 @@ function updateHostedFieldsDemoLastValidation(payload) {
 
   setHostedFieldError('card-number-field', 'card-number-error', numberError);
   setHostedFieldError('cvv-field', 'cvv-error', cvvError);
+  updateHostedCatalogueValidationErrors(payload?.formFields);
 
   const pre = document.getElementById('hf-demo-last-validation');
   if (!pre) return;
   pre.textContent = JSON.stringify(payload, null, 2);
+}
+
+/**
+ * Applies `payload.formFields[<type>]` to each mounted catalogue field. Uses the SDK error
+ * string when `valid` is false; clears the label when the field is valid or missing.
+ */
+function updateHostedCatalogueValidationErrors(formFields) {
+  mountedCatalogueFields.forEach((type) => {
+    const result = formFields?.[type];
+    const message = result && result.valid === false ? result.error || 'Invalid' : '';
+    setHostedFieldError(hostedCatalogueContainerId(type), hostedCatalogueErrorId(type), message);
+  });
 }
 
 /** Writes the latest `consoleError` event payload as formatted JSON into the demo panel. */
@@ -331,6 +702,7 @@ function setupHostedFieldsSdkDemoPanel(sdkInstance) {
       sdkInstance.validate({
         allow_blank_name: config.allowBlankName,
         allow_expired_date: config.allowExpiredDate,
+        allow_blank_date: config.allowBlankDate,
       });
     };
   }
@@ -349,11 +721,31 @@ function setupHostedFieldsSdkDemoPanel(sdkInstance) {
 function configureHostedFieldsOnReady(sdkInstance) {
   sdkInstance.setTitle('number', 'Credit card number');
   sdkInstance.setTitle('cvv', 'Security code');
+  sdkInstance.setStyles('cvv', HOSTED_INPUT_STYLE);
   sdkInstance.setPlaceholderStyles(HOSTED_FIELDS_PLACEHOLDER_STYLES.default);
   sdkInstance.setNumberFormat('prettyFormat');
+  applyHostedCatalogueStyles(sdkInstance);
   // Respect the card-type-icon checkbox even if toggled before the form was opened.
   const cardTypeIcon = document.getElementById('hf-demo-card-type-icon');
   sdkInstance.setShowCardTypeIcon(cardTypeIcon ? cardTypeIcon.checked : true);
+}
+
+/**
+ * Catalogue iframes render an unstyled input, so push the demo's styles in to match the plain
+ * inputs. `ready` tracks the number/cvv handshake and field messages are not queued, so a
+ * catalogue frame still loading at that point would drop the message — re-apply once it loads.
+ */
+function applyHostedCatalogueStyles(sdkInstance) {
+  mountedCatalogueFields.forEach((type) => {
+    if (type === 'full_name') return;
+    sdkInstance.setStyles(type, HOSTED_INPUT_STYLE);
+    const iframe = document.querySelector(`#${hostedCatalogueContainerId(type)} iframe`);
+    iframe?.addEventListener(
+      'load',
+      () => sdkInstance.setStyles(type, HOSTED_INPUT_STYLE),
+      { once: true }
+    );
+  });
 }
 
 /** Wires SDK Configuration panel controls to hosted fields SDK methods. */
@@ -517,7 +909,8 @@ function registerHostedFieldsSdkHandlers(sdkInstance) {
 
     setupHostedFieldsSdkDemoPanel(sdkInstance);
     setupHostedFieldsEventListeners();
-    updateFormState();
+    // Nothing on this form is validated by the page — the hosted fields gate tokenization.
+    elements.submitBtn().disabled = false;
     hideStatus();
     SpreedlyUtils.setButtonLoading('open-hosted-fields-btn', false);
     elements.hostedFieldsOpenSection().classList.add('hidden');
@@ -527,6 +920,10 @@ function registerHostedFieldsSdkHandlers(sdkInstance) {
 
   sdkInstance.on('tokenGenerated', (response) => {
     console.log('Token generated:', response);
+    if (config.hostedSubmitButton) {
+      sdkInstance.setDisable('submit', false);
+      sdkInstance.setText('submit', 'Pay');
+    }
     handleTokenSuccess({
       ...response,
       shouldRetain: document.getElementById('retain-payment-method')?.checked || false,
@@ -535,6 +932,10 @@ function registerHostedFieldsSdkHandlers(sdkInstance) {
 
   sdkInstance.on('error', (error) => {
     console.error('SDK error:', error);
+    if (config.hostedSubmitButton) {
+      sdkInstance.setDisable('submit', false);
+      sdkInstance.setText('submit', 'Pay');
+    }
     SpreedlyUtils.setButtonLoading('open-hosted-fields-btn', false);
     handleTokenError(error);
   });
@@ -570,6 +971,11 @@ function destroyHostedFieldsInstance() {
   hostedFieldsConfigPanelWiredFor = null;
   hostedFieldsSdkDemoEventHandlersWiredFor = null;
   clearHostedFieldsDemoPanelUi();
+
+  // The catalogue iframes are gone with the instance — drop their containers so the next
+  // Open Payment Form rebuilds the form from the current selection.
+  mountedCatalogueFields = [];
+  renderHostedFieldContainers([]);
 }
 
 async function loadAndInitializeSDK() {
@@ -614,12 +1020,84 @@ window.openHostedFieldsForm = function () {
     sdk = createHostedFieldsSdk(storedAuthParams);
   }
 
+  syncConfigFromCheckboxes();
+  applyCustomValidators(sdk);
+  mountedCatalogueFields = resolveHostedCatalogueSelection(config.hostedCatalogueFields);
+
+  // Containers must exist in the DOM before inAppElements runs or the field is skipped.
+  renderHostedFieldContainers(mountedCatalogueFields);
+
+  const merchantSubmit = document.getElementById('submit-btn');
+  const hostedSubmit = document.getElementById('hosted-submit-button-field');
+  if (config.hostedSubmitButton) {
+    merchantSubmit?.classList.add('hidden');
+    hostedSubmit?.classList.remove('hidden');
+  } else {
+    merchantSubmit?.classList.remove('hidden');
+    hostedSubmit?.classList.add('hidden');
+  }
+
   SpreedlyUtils.setButtonLoading('open-hosted-fields-btn', true, 'Loading...');
 
-  sdk.inAppElements({
+  const inAppElementsConfig = buildHostedFieldsElementsConfig();
+  console.log('inAppElementsConfig', inAppElementsConfig);
+
+  if (config.hostedSubmitButton) {
+    sdk.on('submitClick', (formFields) => {
+      console.log('submitClick catalogue values:', formFields);
+      sdk.setDisable('submit', true);
+      sdk.setText('submit', 'Please wait...');
+      sdk.submit(
+        {},
+        {
+          metadata: {
+            source: 'tokenize-flow-demo',
+            timestamp: new Date().toISOString(),
+            hostedSubmitButton: true,
+          },
+          allow_blank_date: config.allowBlankDate,
+          allow_expired_date: config.allowExpiredDate,
+          allow_blank_name: config.allowBlankName,
+          ...(config.eligibleForCardUpdater ? { eligible_for_card_updater: true } : {}),
+        }
+      );
+    });
+  }
+
+  sdk.inAppElements(inAppElementsConfig);
+}
+
+/**
+ * Builds the `inAppElements` config: the mandatory number and cvv fields plus one entry per
+ * catalogue field ticked in the SDK Configuration panel. `isRequired` gates every field except
+ * first_name / last_name and the date fields, which are required by default whenever mounted.
+ */
+function buildHostedFieldsElementsConfig() {
+  const elementsConfig = {
     cvv: { containerId: 'cvv-field' },
-    number: { containerId: 'card-number-field' },
+    number: { containerId: 'card-number-field', styles: HOSTED_INPUT_STYLE },
+  };
+  mountedCatalogueFields.forEach((type) => {
+    elementsConfig[type] = {
+      containerId: hostedCatalogueContainerId(type),
+      ...(config.hostedCatalogueRequired ? { isRequired: true } : {}),
+      ...(type === 'full_name' ? { styles: HOSTED_INPUT_STYLE } : {}),
+    };
   });
+  if (config.hostedSubmitButton) {
+    elementsConfig.submit = {
+      containerId: 'hosted-submit-button-field',
+      text: 'Pay',
+      styles: {
+        backgroundColor: '#0a0a0a',
+        color: '#fff',
+        fontSize: '16px',
+        fontWeight: '600',
+        borderRadius: '6px',
+      },
+    };
+  }
+  return elementsConfig;
 }
 
 // Express Checkout Initialization
@@ -648,6 +1126,8 @@ window.openExpressCheckoutForm = function () {
 
   // Sync config state from checkboxes before building checkout config
   syncConfigFromCheckboxes();
+  // Registered before expressCheckout() so the field names ride along in the init config.
+  applyCustomValidators(sdk);
 
   const displayMode = document.querySelector('input[name="display-mode"]:checked')?.value || 'embedded';
 
@@ -730,23 +1210,6 @@ function setupHostedFieldsEventListeners() {
     form.addEventListener('submit', handleFormSubmit);
   }
 
-  const fieldIds = ['first_name', 'last_name', 'expiry_month', 'expiry_year', 'expiry_date'];
-  fieldIds.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) {
-      el.addEventListener('input', updateFormState);
-      el.addEventListener('change', updateFormState);
-    }
-  });
-
-  const expiryDateInput = document.getElementById('expiry_date');
-  if (expiryDateInput) {
-    expiryDateInput.addEventListener('input', function () {
-      formatExpiryDate(this);
-      updateFormState();
-    });
-  }
-
   const hostedCardNumberLabel = document.getElementById('hosted-field-label-card-number');
   if (hostedCardNumberLabel && sdk) {
     hostedCardNumberLabel.addEventListener('click', () => {
@@ -775,79 +1238,6 @@ function setupHostedFieldsEventListeners() {
 
   // Sync config state from checkboxes (in case user checked them before SDK was ready)
   syncConfigFromCheckboxes();
-
-  // Apply initial config state to UI
-  updateNameFieldsRequired();
-  updateDateFieldsRequired();
-  updateExpiryFieldDisplay();
-}
-
-// Update required attribute on name fields based on allowBlankName config
-function updateNameFieldsRequired() {
-  const firstNameInput = document.getElementById('first_name');
-  const lastNameInput = document.getElementById('last_name');
-  const firstNameLabel = document.querySelector('label[for="first_name"]');
-  const lastNameLabel = document.querySelector('label[for="last_name"]');
-
-  if (config.allowBlankName) {
-    firstNameInput?.removeAttribute('required');
-    lastNameInput?.removeAttribute('required');
-    if (firstNameLabel) firstNameLabel.textContent = 'First Name (optional)';
-    if (lastNameLabel) lastNameLabel.textContent = 'Last Name (optional)';
-  } else {
-    firstNameInput?.setAttribute('required', '');
-    lastNameInput?.setAttribute('required', '');
-    if (firstNameLabel) firstNameLabel.textContent = 'First Name';
-    if (lastNameLabel) lastNameLabel.textContent = 'Last Name';
-  }
-}
-
-// Update required attribute on date fields based on allowBlankDate config
-function updateDateFieldsRequired() {
-  const monthInput = document.getElementById('expiry_month');
-  const yearInput = document.getElementById('expiry_year');
-  const expiryDateInput = document.getElementById('expiry_date');
-  const monthLabel = document.querySelector('label[for="expiry_month"]');
-  const yearLabel = document.querySelector('label[for="expiry_year"]');
-  const expiryDateLabel = document.querySelector('label[for="expiry_date"]');
-
-  if (config.allowBlankDate) {
-    monthInput?.removeAttribute('required');
-    yearInput?.removeAttribute('required');
-    expiryDateInput?.removeAttribute('required');
-    if (monthLabel) monthLabel.textContent = 'Expiry Month (optional)';
-    if (yearLabel) yearLabel.textContent = 'Expiry Year (optional)';
-    if (expiryDateLabel) expiryDateLabel.textContent = 'Expiry Date (optional)';
-  } else {
-    // Don't set required on these - the JS validation handles it
-    if (monthLabel) monthLabel.textContent = 'Expiry Month';
-    if (yearLabel) yearLabel.textContent = 'Expiry Year';
-    if (expiryDateLabel) expiryDateLabel.textContent = 'Expiry Date';
-  }
-}
-
-/**
- * Reads the optional billing/shipping/eligible_for_card_updater inputs from the demo form.
- * Mirrors legacy `Spreedly.setParam(name, value)`: only includes fields the merchant actually filled in.
- * Empty strings are omitted so the SDK's soft-validation warning won't list "noise" keys.
- */
-function collectOptionalSetParamFields() {
-  const stringFieldIds = [
-    'full_name',
-    'company',
-    'address1', 'address2', 'city', 'state', 'zip', 'country', 'phone_number',
-    'shipping_address1', 'shipping_address2', 'shipping_city', 'shipping_state',
-    'shipping_zip', 'shipping_country', 'shipping_phone_number',
-  ];
-  const out = {};
-  stringFieldIds.forEach((id) => {
-    const value = document.getElementById(id)?.value.trim();
-    if (value) out[id] = value;
-  });
-  if (document.getElementById('eligible_for_card_updater')?.checked) {
-    out.eligible_for_card_updater = true;
-  }
-  return out;
 }
 
 // Form Handling (Hosted Fields Only)
@@ -860,89 +1250,21 @@ function handleFormSubmit(e) {
   setLoading(true);
   showStatus('Creating payment method...', 'info');
 
-  const expiry = getExpiryData();
-
-  const formData = {
-    first_name: document.getElementById('first_name')?.value.trim() || '',
-    last_name: document.getElementById('last_name')?.value.trim() || '',
-    month: expiry.month,
-    year: expiry.year,
-    email: document.getElementById('email')?.value.trim() || '',
-    ...collectOptionalSetParamFields(),
-  };
-
-  sdk.submit(formData, {
-    metadata: {
-      source: 'tokenize-flow-demo',
-      timestamp: new Date().toISOString(),
-    },
-    allow_blank_date: config.allowBlankDate,
-    allow_expired_date: config.allowExpiredDate,
-    allow_blank_name: config.allowBlankName,
-    ...(config.eligibleForCardUpdater ? { eligible_for_card_updater: true } : {}),
-  });
-}
-
-function updateFormState() {
-  // Only applies to Hosted Fields - Express Checkout handles its own form state
-  if (!isReady || sdkType !== 'hosted-fields') return;
-
-  const firstName = document.getElementById('first_name')?.value.trim() || '';
-  const lastName = document.getElementById('last_name')?.value.trim() || '';
-
-  let expiryValid = false;
-
-  if (config.allowBlankDate) {
-    expiryValid = true;
-  } else if (config.twoDigitExpiryYear) {
-    const expiryDate = document.getElementById('expiry_date')?.value.trim() || '';
-    expiryValid = /^\d{2}\/\d{2}$/.test(expiryDate);
-  } else {
-    const month = document.getElementById('expiry_month')?.value.trim() || '';
-    const year = document.getElementById('expiry_year')?.value.trim() || '';
-    expiryValid = month.length >= 1 && year.length >= 2;
-  }
-
-  const nameValid = config.allowBlankName || (firstName && lastName);
-  const isValid = nameValid && expiryValid;
-
-  elements.submitBtn().disabled = !isValid;
-}
-
-function getExpiryData() {
-  if (config.twoDigitExpiryYear) {
-    const expiryDate = document.getElementById('expiry_date')?.value.trim() || '';
-    const parts = expiryDate.split('/');
-    return {
-      month: parts[0] || '',
-      year: parts[1] ? '20' + parts[1] : ''
-    };
-  }
-  return {
-    month: document.getElementById('expiry_month')?.value.trim() || '',
-    year: document.getElementById('expiry_year')?.value.trim() || ''
-  };
-}
-
-function formatExpiryDate(input) {
-  let value = input.value.replace(/\D/g, '');
-  if (value.length >= 2) {
-    value = value.substring(0, 2) + '/' + value.substring(2, 4);
-  }
-  input.value = value;
-}
-
-function updateExpiryFieldDisplay() {
-  const separateFields = document.getElementById('expiry-separate-fields');
-  const combinedField = document.getElementById('expiry-combined-field');
-
-  if (config.twoDigitExpiryYear) {
-    separateFields?.classList.add('hidden');
-    combinedField?.classList.remove('hidden');
-  } else {
-    separateFields?.classList.remove('hidden');
-    combinedField?.classList.add('hidden');
-  }
+  // Every value on this form lives in a hosted iframe, so `submit()` carries no form data — the
+  // number frame reads each mounted field, validates, and tokenizes.
+  sdk.submit(
+    {},
+    {
+      metadata: {
+        source: 'tokenize-flow-demo',
+        timestamp: new Date().toISOString(),
+      },
+      allow_blank_date: config.allowBlankDate,
+      allow_expired_date: config.allowExpiredDate,
+      allow_blank_name: config.allowBlankName,
+      ...(config.eligibleForCardUpdater ? { eligible_for_card_updater: true } : {}),
+    }
+  );
 }
 
 // Response Handlers
@@ -1011,7 +1333,11 @@ async function handleTokenSuccess(response) {
 function handleTokenError(error) {
   setLoading(false);
 
-  const message = error?.message || error?.errors?.[0]?.message || 'Tokenization failed. Please try again.';
+  // Client-side validation / guard failures arrive as a bare string; API failures are objects.
+  const message =
+    typeof error === 'string' && error.trim()
+      ? error
+      : error?.message || error?.errors?.[0]?.message || 'Tokenization failed. Please try again.';
   showStatus(message, 'error');
 
   console.error('Token error:', error);

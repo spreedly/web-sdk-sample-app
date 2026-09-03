@@ -131,6 +131,26 @@ export const PLACEHOLDERS = {
     getHostedFieldsFirstNameField: async (page: Page) => {
         return page.getByLabel(LABELS.FIRST_NAME);
     },
+
+    getHostedFieldsIframeFirstNameField: async (page: Page) => {
+        return page.frameLocator(SELECTORS.HOSTED_FIRST_NAME_FIELD_IFRAME).getByLabel(LABELS.FIRST_NAME_CATALOGUE_FIELDS);
+    },
+
+    getHostedFieldsIframeLastNameField: async (page: Page) => {
+        return page.frameLocator(SELECTORS.HOSTED_LAST_NAME_FIELD_IFRAME).getByLabel(LABELS.LAST_NAME_CATALOGUE_FIELDS);
+    },
+
+    getHostedFieldsIframeExpiryMonthField: async (page: Page) => {
+        return page.frameLocator(SELECTORS.HOSTED_MONTH_FIELD_IFRAME).getByLabel(LABELS.MONTH_CATALOGUE_FIELDS);
+    },
+
+    getHostedFieldsIframeExpiryYearField: async (page: Page) => {
+        return page.frameLocator(SELECTORS.HOSTED_YEAR_FIELD_IFRAME).getByLabel(LABELS.YEAR_CATALOGUE_FIELDS);
+    },
+    getHostedFieldsIframeTwoDigitExpiryField: async (page: Page) => {
+        return page.frameLocator(SELECTORS.HOSTED_TWO_DIGIT_EXPIRY_FIELD_IFRAME).getByLabel(LABELS.TWO_DIGIT_EXPIRY_CATALOGUE_FIELDS);
+    },
+
     getHostedFieldsLastNameField: async (page: Page) => {
         return page.getByLabel(LABELS.LAST_NAME);
     },
@@ -193,6 +213,35 @@ export const PLACEHOLDERS = {
         }
     },
 
+    verifyFormFieldsHostedFieldsWithCatalogueFields: async (page: Page, cardNumber: string, options?: {
+        firstName?: string;
+        lastName?: string;
+        cvv?: string;
+        expiryMonth?: string;
+        expiryYear?: string;
+        twoDigitExpiry?: string;
+    }) => {
+        await expect(await helperFunctions.getHostedFieldsCardNumberField(page)).toHaveValue(cardNumber);
+        if (options?.firstName) {
+            await expect(await helperFunctions.getHostedFieldsIframeFirstNameField(page)).toHaveValue(options.firstName);
+        }
+        if (options?.lastName) {
+            await expect(await helperFunctions.getHostedFieldsIframeLastNameField(page)).toHaveValue(options.lastName);
+        }
+        if (options?.expiryMonth) {
+            await expect(await helperFunctions.getHostedFieldsIframeExpiryMonthField(page)).toHaveValue(options.expiryMonth);
+        }
+        if (options?.expiryYear) {
+            await expect(await helperFunctions.getHostedFieldsIframeExpiryYearField(page)).toHaveValue(options.expiryYear);
+        }
+        if (options?.cvv) {
+            await expect(await helperFunctions.getHostedFieldsCvvField(page)).toHaveValue(options.cvv);
+        }
+        if (options?.twoDigitExpiry) {
+            await expect(await helperFunctions.getHostedFieldsIframeTwoDigitExpiryField(page)).toHaveValue(options.twoDigitExpiry);
+        }
+    },
+
     verifyFormFieldsExpressCheckout: async (page: Page, cardNumber: string,
         options?: {
             firstName?: string;
@@ -250,6 +299,44 @@ export const PLACEHOLDERS = {
         await cvvField.fill(options.cvv);
     }
     },
+
+    fillHostedFieldsFormWithCatalogueFields: async (page: Page, cardNumber: string, options?: {
+        firstName?: string;
+        lastName?: string;
+        cvv?: string;
+        expiryMonth?: string;
+        expiryYear?: string;
+        twoDigitExpiry?: string;
+    }) => {
+    const firstNameField = await helperFunctions.getHostedFieldsIframeFirstNameField(page);
+    const lastNameField = await helperFunctions.getHostedFieldsIframeLastNameField(page);
+    const expiryMonthField = await helperFunctions.getHostedFieldsIframeExpiryMonthField(page);
+    const expiryYearField = await helperFunctions.getHostedFieldsIframeExpiryYearField(page);
+    const cardNumberField = await helperFunctions.getHostedFieldsCardNumberField(page);
+    const cvvField = await helperFunctions.getHostedFieldsCvvField(page);
+    const twoDigitExpiryField = await helperFunctions.getHostedFieldsIframeTwoDigitExpiryField(page);
+    await cardNumberField.type(cardNumber, { delay: 50 });
+    if (options?.firstName) {
+        await firstNameField.fill(options.firstName);
+    }
+    if (options?.lastName) {
+        await lastNameField.fill(options.lastName);
+    }
+    if (options?.expiryMonth) {
+        await expiryMonthField.fill(options.expiryMonth);
+    }
+    if (options?.expiryYear) {
+        await expiryYearField.fill(options.expiryYear);
+    }
+    if (options?.cvv) {
+        await cvvField.fill(options.cvv);
+    }
+    if (options?.twoDigitExpiry) {
+        await twoDigitExpiryField.fill(options.twoDigitExpiry);
+    }
+    },
+    
+
 
     formatExpiryYear: (year: string, month: string) => {
         return `${month}/${year.slice(-2)}`;
