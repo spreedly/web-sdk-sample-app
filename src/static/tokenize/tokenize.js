@@ -45,11 +45,11 @@ const CUSTOM_VALIDATOR_DEMOS = [
   {
     checkboxId: 'cv-state-country',
     field: 'state',
-    // Cross-field: the rule only applies to US addresses. Returning a string is shorthand for
-    // "invalid, show this message"; returning true passes.
+    // Cross-field: the rule only applies to US addresses.
     validate: (value, fields) => {
-      if (fields.country?.trim().toUpperCase() !== 'US') return true;
-      return /^[A-Za-z]{2}$/.test(value.trim()) ? true : 'Use a two-letter state code for US addresses';
+      if (fields.country?.trim().toUpperCase() !== 'US') return { isValid: true };
+      const ok = /^[A-Za-z]{2}$/.test(value.trim());
+      return { isValid: ok, errorMessage: ok ? undefined : 'Use a two-letter state code for US addresses' };
     },
   },
   {
@@ -58,8 +58,9 @@ const CUSTOM_VALIDATOR_DEMOS = [
     // Conditional requirement. Validators run on empty values, so a field that is not marked
     // required can still be made mandatory for some shoppers.
     validate: (value, fields) => {
-      if (fields.country?.trim().toUpperCase() !== 'US') return true;
-      return value.trim() ? true : 'ZIP is required for US addresses';
+      if (fields.country?.trim().toUpperCase() !== 'US') return { isValid: true };
+      const ok = Boolean(value.trim());
+      return { isValid: ok, errorMessage: ok ? undefined : 'ZIP is required for US addresses' };
     },
   },
   {
