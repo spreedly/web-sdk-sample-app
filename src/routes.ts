@@ -33,12 +33,13 @@ import {
   capturePPCPVaultPurchaseOrder,
 } from './controllers/ppcp';
 import {
+  createSpreedlyPPCPVaultSetup,
+  completeSpreedlyPPCPVaultSetup,
+  getSpreedlyPPCPTransactionByToken,
   createSpreedlyPPCPOrder,
   captureSpreedlyPPCPOrder,
   captureSpreedlyPPCPByTransaction,
   getSpreedlyPPCPTransaction,
-  confirmSpreedlyPPCPOrder,
-  importSpreedlyPPCPVaultToken,
   listSpreedlyPPCPVaultTokens,
   chargeSpreedlyPPCPVaultToken,
 } from './controllers/ppcp-spreedly';
@@ -867,41 +868,64 @@ router.get('/ppcp/spreedly/orders/:orderId', getSpreedlyPPCPTransaction);
 
 /**
  * @swagger
- * /api/v1/ppcp/spreedly/orders/{orderId}/confirm:
+ * /api/v1/ppcp/spreedly/vault/setup:
  *   post:
- *     description: (TEST) Finalize a popup/modal approval via Spreedly's confirm.json. Requires transaction_type 'purchase'.
+ *     description: (PPCP via Spreedly) Start vaulting a PayPal wallet without a payment. Creates an unvaulted paypal payment method, runs gateway verify, and returns the PayPal approval URL to send the buyer to. There is no PayPal setup token in this flow — Spreedly mints the approval session itself. Venmo has no verify path — use vault-with-purchase.
  *     tags: [PPCP]
+ *     produces:
+ *       - application/json
  *     parameters:
- *       - name: orderId
- *         in: path
- *         required: true
- *         type: string
+ *       - name: body
+ *         description: Where Spreedly returns the buyer. Omit both on web.
+ *         in: body
+ *         required: false
+ *         schema:
+ *           type: object
+ *           properties:
+ *             redirect_url:
+ *               type: string
+ *               description: Spreedly validates this and rejects anything that is not a public https URL. Defaults to this app's /ppcp/return/ page.
+ *             callback_url:
+ *               type: string
+ *               description: Defaults to this app's /api/v1/offsite-callback.
  *     responses:
- *       200: { description: Confirmed }
- *       404: { description: No Spreedly transaction for that order id }
+ *       200:
+ *         description: Pending OffsiteVerification with checkout_url and transaction_token
+ *       500:
+ *         description: Error starting the verification
+ *       502:
+ *         description: Spreedly did not return a payment method or checkout_url
  */
-router.post('/ppcp/spreedly/orders/:orderId/confirm', confirmSpreedlyPPCPOrder);
+router.post('/ppcp/spreedly/vault/setup', createSpreedlyPPCPVaultSetup);
 
 /**
  * @swagger
- * /api/v1/ppcp/spreedly/vault/payment-token:
+ * /api/v1/ppcp/spreedly/vault/complete:
  *   post:
- *     description: (PPCP via Spreedly) Exchange an approved PayPal vault setup token for a permanent vault token, then import it into Spreedly as a third_party_token payment method. The save leg stays a direct PayPal call because vaulting a PayPal wallet needs browser approval, which Spreedly's store.json cannot drive.
+ *     description: (PPCP via Spreedly) Record a verification the buyer already approved. Spreedly finalizes on its own redirect leg before landing the buyer on redirect_url, so this only reads the transaction back and files the vaulted payment method.
  *     tags: [PPCP]
+ *     produces:
+ *       - application/json
  *     parameters:
  *       - name: body
  *         in: body
  *         required: true
  *         schema:
  *           type: object
+ *           required: [transactionToken]
  *           properties:
- *             vaultSetupToken: { type: string }
+ *             transactionToken:
+ *               type: string
+ *               description: The Spreedly transaction token, from ?transaction_token on the return URL.
  *     responses:
- *       200: { description: Imported into Spreedly }
- *       400: { description: vaultSetupToken missing }
- *       502: { description: Spreedly did not return a payment method token }
+ *       200:
+ *         description: Vaulted; the payment method keeps type paypal and gains reference vault#<id>
+ *       400:
+ *         description: transactionToken missing
+ *       502:
+ *         description: Verification did not succeed
  */
-router.post('/ppcp/spreedly/vault/payment-token', importSpreedlyPPCPVaultToken);
+router.post('/ppcp/spreedly/vault/complete', completeSpreedlyPPCPVaultSetup);
 
 /**
  * @swagger
@@ -935,6 +959,28 @@ router.get('/ppcp/spreedly/vault/tokens', listSpreedlyPPCPVaultTokens);
  *       404: { description: No saved payment method for that ref }
  */
 router.post('/ppcp/spreedly/vault/charge', chargeSpreedlyPPCPVaultToken);
+
+/**
+ * @swagger
+ * /api/v1/ppcp/spreedly/transactions/{transactionToken}:
+ *   get:
+ *     description: (PPCP via Spreedly) What kind of transaction a return URL is landing from. Spreedly puts only transaction_token on the URL, so a return page cannot otherwise tell an OffsitePurchase to capture from an OffsiteVerification to record.
+ *     tags: [PPCP]
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: transactionToken
+ *         description: Spreedly transaction token from the return URL's transaction_token param
+ *         in: path
+ *         required: true
+ *         type: string
+ *     responses:
+ *       200:
+ *         description: Transaction type, state and vault reference
+ *       500:
+ *         description: Error reading the transaction
+ */
+router.get('/ppcp/spreedly/transactions/:transactionToken', getSpreedlyPPCPTransactionByToken);
 
 
 /**
