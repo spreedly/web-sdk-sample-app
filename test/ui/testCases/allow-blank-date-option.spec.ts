@@ -81,19 +81,14 @@ test.describe("Allow Blank Date Option", () => {
     await landingPage.clickOnTokenizeButton(page);
     await waitForAuthParams(page);
     await tokenizePage.clickOnAllowBlankDateCheckbox(page);
-    await tokenizePage.clickOnHostedCatalogueFieldsDropdown(page);
-    await tokenizePage.selectFieldsByName(page, 'first_name');
-    await tokenizePage.selectFieldsByName(page, 'last_name');
-    await tokenizePage.selectFieldsByName(page, 'month');
-    await tokenizePage.selectFieldsByName(page, 'year');
     await tokenizePage.clickOnOpenPaymentFormButtonHostedFields(page);
-    await helperFunctions.fillHostedFieldsFormWithCatalogueFields(page, TEST_DATA.CARD_NUMBER, {
+    await helperFunctions.fillHostedFieldsForm(page, TEST_DATA.CARD_NUMBER, {
       firstName: TEST_DATA.FIRST_NAME,
       lastName: TEST_DATA.LAST_NAME,
       cvv: TEST_DATA.CVV,
     }
   );
-   await helperFunctions.verifyFormFieldsHostedFieldsWithCatalogueFields(page, TEST_DATA.CARD_NUMBER_FORMATTED, {
+   await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.CARD_NUMBER_FORMATTED, {
     firstName: TEST_DATA.FIRST_NAME,
     lastName: TEST_DATA.LAST_NAME,
     cvv: TEST_DATA.CVV,
@@ -113,26 +108,19 @@ test.describe("Allow Blank Date Option", () => {
     await page.goto(MONOREPO_URLS.BASE);
     await landingPage.clickOnTokenizeButton(page);
     await waitForAuthParams(page);
-    await tokenizePage.clickOnHostedCatalogueFieldsDropdown(page);
-    await tokenizePage.selectFieldsByName(page, 'first_name');
-    await tokenizePage.selectFieldsByName(page, 'last_name');
-    await tokenizePage.selectFieldsByName(page, 'month');
-    await tokenizePage.selectFieldsByName(page, 'year');
     await tokenizePage.clickOnOpenPaymentFormButtonHostedFields(page);
-    await helperFunctions.fillHostedFieldsFormWithCatalogueFields(page, TEST_DATA.CARD_NUMBER, {
+    await helperFunctions.fillHostedFieldsForm(page, TEST_DATA.CARD_NUMBER, {
       cvv: TEST_DATA.CVV,
       firstName: TEST_DATA.FIRST_NAME,
       lastName: TEST_DATA.LAST_NAME
     }
   );
-   await helperFunctions.verifyFormFieldsHostedFieldsWithCatalogueFields(page, TEST_DATA.CARD_NUMBER_FORMATTED, {
+   await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.CARD_NUMBER_FORMATTED, {
     firstName: TEST_DATA.FIRST_NAME,
     lastName: TEST_DATA.LAST_NAME,
     cvv: TEST_DATA.CVV
    });
-   await helperFunctions.clickOnHostedFieldsSubmitButton(page);
-   await expect(page.locator(SELECTORS.TOKENIZATION_FAILED_MESSAGE_SELECTOR)).toBeVisible();
-   expect(await helperFunctions.getTokenizationFailedMessage(page)).toHaveText(ERROR_MESSAGES.MONTH_REQUIRED_HOSTED_FIELDS);
+   await expect(await helperFunctions.getHostedFieldsSubmitButton(page)).toBeDisabled();
   });
 
   test("should allow blank date when option is enabled in tokenize flow with Express Checkout dialog mode", async ({

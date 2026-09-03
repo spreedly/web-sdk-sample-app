@@ -87,20 +87,15 @@ test.describe('Token Generation', () => {
     await waitForAuthParams(page);
     await tokenizePage.clickOnAllowExpiredDateCheckbox(page);
     await tokenizePage.clickOnAllowBlankNameCheckbox(page);
-    await tokenizePage.clickOnHostedCatalogueFieldsDropdown(page);
-    await tokenizePage.selectFieldsByName(page, 'first_name');
-    await tokenizePage.selectFieldsByName(page, 'last_name');
-    await tokenizePage.selectFieldsByName(page, 'month');
-    await tokenizePage.selectFieldsByName(page, 'year');
     await tokenizePage.clickOnOpenPaymentFormButtonHostedFields(page);
     
-    await helperFunctions.fillHostedFieldsFormWithCatalogueFields(page, TEST_DATA.CARD_NUMBER, {
+    await helperFunctions.fillHostedFieldsForm(page, TEST_DATA.CARD_NUMBER, {
       cvv: TEST_DATA.CVV,
       expiryMonth: TEST_DATA.EXPIRY_MONTH,
       expiryYear: getExpiredYearString(),
     });
     
-    await helperFunctions.verifyFormFieldsHostedFieldsWithCatalogueFields(page, TEST_DATA.CARD_NUMBER_FORMATTED, {
+    await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.CARD_NUMBER_FORMATTED, {
       cvv: TEST_DATA.CVV,
       firstName: "",
       lastName: "",
@@ -224,13 +219,8 @@ test.describe('Token Generation', () => {
     await page.goto(MONOREPO_URLS.BASE);
     await landingPage.clickOnTokenizeButton(page);
     await waitForAuthParams(page);
-    await tokenizePage.clickOnHostedCatalogueFieldsDropdown(page);
-    await tokenizePage.selectFieldsByName(page, 'first_name');
-    await tokenizePage.selectFieldsByName(page, 'last_name');
-    await tokenizePage.selectFieldsByName(page, 'month');
-    await tokenizePage.selectFieldsByName(page, 'year');
     await tokenizePage.clickOnOpenPaymentFormButtonHostedFields(page);
-    await helperFunctions.fillHostedFieldsFormWithCatalogueFields(page, TEST_DATA.CARD_NUMBER, {
+    await helperFunctions.fillHostedFieldsForm(page, TEST_DATA.CARD_NUMBER, {
       firstName: TEST_DATA.FIRST_NAME,
       lastName: TEST_DATA.LAST_NAME,
       cvv: TEST_DATA.CVV,
@@ -238,7 +228,7 @@ test.describe('Token Generation', () => {
       expiryYear: getValidYearString(),
     });
     
-    await helperFunctions.verifyFormFieldsHostedFieldsWithCatalogueFields(page, TEST_DATA.CARD_NUMBER_FORMATTED, {
+    await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.CARD_NUMBER_FORMATTED, {
       cvv: TEST_DATA.CVV,
       firstName: TEST_DATA.FIRST_NAME,
       lastName: TEST_DATA.LAST_NAME,
@@ -424,16 +414,11 @@ test.describe('Token Generation', () => {
     await waitForAuthParams(page);
     await tokenizePage.clickOnAllowBlankDateCheckbox(page);
     await tokenizePage.clickOnAllowBlankNameCheckbox(page);
-    await tokenizePage.clickOnHostedCatalogueFieldsDropdown(page);
-    await tokenizePage.selectFieldsByName(page, 'first_name');
-    await tokenizePage.selectFieldsByName(page, 'last_name');
-    await tokenizePage.selectFieldsByName(page, 'month');
-    await tokenizePage.selectFieldsByName(page, 'year');
     await tokenizePage.clickOnOpenPaymentFormButtonHostedFields(page);
-    await helperFunctions.fillHostedFieldsFormWithCatalogueFields(page, TEST_DATA.CARD_NUMBER, {
+    await helperFunctions.fillHostedFieldsForm(page, TEST_DATA.CARD_NUMBER, {
       cvv: TEST_DATA.CVV,
     });
-    await helperFunctions.verifyFormFieldsHostedFieldsWithCatalogueFields(page, TEST_DATA.CARD_NUMBER_FORMATTED, {
+    await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.CARD_NUMBER_FORMATTED, {
       cvv: TEST_DATA.CVV,
   })
   let apiResponse: any = null;

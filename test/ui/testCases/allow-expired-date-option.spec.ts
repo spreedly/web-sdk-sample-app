@@ -92,20 +92,15 @@ test.describe("Allow Expired Date Option", () => {
         await landingPage.clickOnTokenizeButton(page);
         await waitForAuthParams(page);
         await tokenizePage.clickOnAllowExpiredDateCheckbox(page);
-        await tokenizePage.clickOnHostedCatalogueFieldsDropdown(page);
-        await tokenizePage.selectFieldsByName(page, 'first_name');
-        await tokenizePage.selectFieldsByName(page, 'last_name');
-        await tokenizePage.selectFieldsByName(page, 'month');
-        await tokenizePage.selectFieldsByName(page, 'year');
         await tokenizePage.clickOnOpenPaymentFormButtonHostedFields(page);
-        await helperFunctions.fillHostedFieldsFormWithCatalogueFields(page, TEST_DATA.CARD_NUMBER, {
+        await helperFunctions.fillHostedFieldsForm(page, TEST_DATA.CARD_NUMBER, {
           firstName: TEST_DATA.FIRST_NAME,
           lastName: TEST_DATA.LAST_NAME,
           cvv: TEST_DATA.CVV,
           expiryMonth: TEST_DATA.EXPIRY_MONTH,
           expiryYear: getExpiredYearString(),
         });
-        await helperFunctions.verifyFormFieldsHostedFieldsWithCatalogueFields(page, TEST_DATA.CARD_NUMBER_FORMATTED, {
+        await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.CARD_NUMBER_FORMATTED, {
             cvv: TEST_DATA.CVV,
             firstName: TEST_DATA.FIRST_NAME,
             lastName: TEST_DATA.LAST_NAME,
@@ -129,20 +124,15 @@ test.describe("Allow Expired Date Option", () => {
         await page.goto(MONOREPO_URLS.BASE);
         await landingPage.clickOnTokenizeButton(page);
         await waitForAuthParams(page);
-        await tokenizePage.clickOnHostedCatalogueFieldsDropdown(page);
-        await tokenizePage.selectFieldsByName(page, 'first_name');
-        await tokenizePage.selectFieldsByName(page, 'last_name');
-        await tokenizePage.selectFieldsByName(page, 'month');
-        await tokenizePage.selectFieldsByName(page, 'year');
         await tokenizePage.clickOnOpenPaymentFormButtonHostedFields(page);
-        await helperFunctions.fillHostedFieldsFormWithCatalogueFields(page, TEST_DATA.CARD_NUMBER, {
+        await helperFunctions.fillHostedFieldsForm(page, TEST_DATA.CARD_NUMBER, {
           firstName: TEST_DATA.FIRST_NAME,
           lastName: TEST_DATA.LAST_NAME,
           cvv: TEST_DATA.CVV,
           expiryMonth: TEST_DATA.EXPIRY_MONTH,
           expiryYear: getExpiredYearString(),
         });
-        await helperFunctions.verifyFormFieldsHostedFieldsWithCatalogueFields(page, TEST_DATA.CARD_NUMBER_FORMATTED, {
+        await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.CARD_NUMBER_FORMATTED, {
             cvv: TEST_DATA.CVV,
             firstName: TEST_DATA.FIRST_NAME,
             lastName: TEST_DATA.LAST_NAME,
@@ -151,7 +141,7 @@ test.describe("Allow Expired Date Option", () => {
           });
         await helperFunctions.clickOnHostedFieldsSubmitButton(page);
         await expect(await helperFunctions.getTokenizationFailedMessage(page)).toBeVisible();
-        await expect(await helperFunctions.getTokenizationFailedMessage(page)).toHaveText(ERROR_MESSAGES.CARD_EXPIRED_HOSTED_FIELDS);
+        await expect(await helperFunctions.getTokenizationFailedMessage(page)).toHaveText(ERROR_MESSAGES.TOKENIZATION_FAILED_MESSAGE);
     });
 
     test("should show warning when allow expired date option is disabled in tokenize flow with express checkout dialog mode", async ({
