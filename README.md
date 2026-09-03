@@ -256,7 +256,8 @@ This sample app demonstrates the following payment flows:
 
 | Flow | Description | Documentation |
 |------|-------------|---------------|
-| **Tokenize a Card** | Collect card details and create a payment method token | [Hosted Fields Guide](./docs/tokenization/hosted-fields/INTEGRATION_GUIDE.md), [Express Checkout Guide](./docs/tokenization/express-checkout/INTEGRATION_GUIDE.md) |
+| **Tokenize a Card** | Merchant-hosted form — collect name/expiry/address on the page; only card number and CVV are Spreedly iframes | [Hosted Fields Guide](./docs/tokenization/hosted-fields/INTEGRATION_GUIDE.md), [Express Checkout Guide](./docs/tokenization/express-checkout/INTEGRATION_GUIDE.md) |
+| **Tokenize with SDK Hosted Fields** | Mount catalogue fields as Spreedly-hosted iframes via `inAppElements()`, plus custom validators | [Hosted Fields Guide](./docs/tokenization/hosted-fields/INTEGRATION_GUIDE.md) |
 | **Recache CVV** | Update the CVV for a previously retained payment method | [Recaching Guide](./docs/recaching/INTEGRATION_GUIDE.md) |
 | **Purchase with 3DS (Global)** | Purchase with Spreedly-managed 3D Secure authentication | [3DS Global Guide](./docs/three-ds/global/INTEGRATION_GUIDE.md) |
 | **Purchase with 3DS (Gateway Specific)** | Purchase with gateway-managed 3D Secure | [3DS Gateway Specific Guide](./docs/three-ds/gateway-specific/INTEGRATION_GUIDE.md) |

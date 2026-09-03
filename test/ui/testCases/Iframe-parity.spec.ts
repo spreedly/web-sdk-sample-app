@@ -91,14 +91,9 @@ test.describe('Iframe Parity tests', () => {
     await page.goto(MONOREPO_URLS.BASE);
     await landingPage.clickOnTokenizeButton(page);
     await waitForAuthParams(page);
-    await tokenizePage.clickOnHostedCatalogueFieldsDropdown(page);
-    await tokenizePage.selectFieldsByName(page, 'first_name');
-    await tokenizePage.selectFieldsByName(page, 'last_name');
-    await tokenizePage.selectFieldsByName(page, 'month');
-    await tokenizePage.selectFieldsByName(page, 'year');
     await tokenizePage.clickOnOpenPaymentFormButtonHostedFields(page);
     await page.locator(SELECTORS.PARITY_OPTION_CARD_UPDATER).check();
-    await helperFunctions.fillHostedFieldsFormWithCatalogueFields(page, TEST_DATA.CARD_NUMBER, {
+    await helperFunctions.fillHostedFieldsForm(page, TEST_DATA.CARD_NUMBER, {
       firstName: TEST_DATA.FIRST_NAME,
       lastName: TEST_DATA.LAST_NAME,
       cvv: TEST_DATA.CVV,
@@ -106,7 +101,7 @@ test.describe('Iframe Parity tests', () => {
       expiryYear: getValidYearString(),
     });
     
-    await helperFunctions.verifyFormFieldsHostedFieldsWithCatalogueFields(page, TEST_DATA.CARD_NUMBER_FORMATTED, {
+    await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.CARD_NUMBER_FORMATTED, {
       cvv: TEST_DATA.CVV,
       firstName: TEST_DATA.FIRST_NAME,
       lastName: TEST_DATA.LAST_NAME,

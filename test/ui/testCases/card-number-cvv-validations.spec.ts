@@ -38,20 +38,15 @@ test.describe('Card Number and CVV Validation', () => {
     await page.goto(MONOREPO_URLS.BASE);
     await landingPage.clickOnTokenizeButton(page);
     await waitForAuthParams(page);
-    await tokenizePage.clickOnHostedCatalogueFieldsDropdown(page);
-    await tokenizePage.selectFieldsByName(page, 'first_name');
-    await tokenizePage.selectFieldsByName(page, 'last_name');
-    await tokenizePage.selectFieldsByName(page, 'month');
-    await tokenizePage.selectFieldsByName(page, 'year');
     await tokenizePage.clickOnOpenPaymentFormButtonHostedFields(page);
-    await helperFunctions.fillHostedFieldsFormWithCatalogueFields(page, TEST_DATA.INVALID_CARD_NUMBER, {
+    await helperFunctions.fillHostedFieldsForm(page, TEST_DATA.INVALID_CARD_NUMBER, {
       firstName: TEST_DATA.FIRST_NAME,
       lastName: TEST_DATA.LAST_NAME,
       cvv: TEST_DATA.CVV,
       expiryMonth: TEST_DATA.EXPIRY_MONTH,
       expiryYear: getValidYearString(),
     });
-    await helperFunctions.verifyFormFieldsHostedFieldsWithCatalogueFields(page, TEST_DATA.INVALID_CARD_NUMBER_FORMATTED, {
+    await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.INVALID_CARD_NUMBER_FORMATTED, {
       cvv: TEST_DATA.CVV,
       firstName: TEST_DATA.FIRST_NAME,
       lastName: TEST_DATA.LAST_NAME,
@@ -60,7 +55,7 @@ test.describe('Card Number and CVV Validation', () => {
     });
     await helperFunctions.clickOnHostedFieldsSubmitButton(page);
     await expect(page.locator(SELECTORS.TOKENIZATION_FAILED_MESSAGE_SELECTOR)).toBeVisible();
-    await expect(page.locator(SELECTORS.TOKENIZATION_FAILED_MESSAGE_SELECTOR)).toHaveText(ERROR_MESSAGES.INVALID_CARD_NUMBER_HOSTED_FIELDS);
+    await expect(page.locator(SELECTORS.TOKENIZATION_FAILED_MESSAGE_SELECTOR)).toHaveText(ERROR_MESSAGES.TOKENIZATION_FAILED_MESSAGE);
   });
 
   test('CVV validation for express checkout', async ({ page }) => {

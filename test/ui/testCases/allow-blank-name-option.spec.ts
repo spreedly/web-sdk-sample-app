@@ -89,19 +89,14 @@ test.describe("Allow Blank Name Option - Monorepo", () => {
     await landingPage.clickOnTokenizeButton(page);
     await waitForAuthParams(page);
     await tokenizePage.clickOnAllowBlankNameCheckbox(page);
-    await tokenizePage.clickOnHostedCatalogueFieldsDropdown(page);
-    await tokenizePage.selectFieldsByName(page, 'first_name');
-    await tokenizePage.selectFieldsByName(page, 'last_name');
-    await tokenizePage.selectFieldsByName(page, 'month');
-    await tokenizePage.selectFieldsByName(page, 'year');
     await tokenizePage.clickOnOpenPaymentFormButtonHostedFields(page);
-    await helperFunctions.fillHostedFieldsFormWithCatalogueFields(page, TEST_DATA.CARD_NUMBER, {
+    await helperFunctions.fillHostedFieldsForm(page, TEST_DATA.CARD_NUMBER, {
       cvv: TEST_DATA.CVV,
       expiryMonth: TEST_DATA.EXPIRY_MONTH,
       expiryYear: getValidYearString(),
     }
   );
-   await helperFunctions.verifyFormFieldsHostedFieldsWithCatalogueFields(page, TEST_DATA.CARD_NUMBER_FORMATTED, {
+   await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.CARD_NUMBER_FORMATTED, {
     firstName: "",
     lastName: "",
     cvv: TEST_DATA.CVV,
@@ -125,28 +120,21 @@ test.describe("Allow Blank Name Option - Monorepo", () => {
     await page.goto(MONOREPO_URLS.BASE);
     await landingPage.clickOnTokenizeButton(page);
     await waitForAuthParams(page);
-    await tokenizePage.clickOnHostedCatalogueFieldsDropdown(page);
-    await tokenizePage.selectFieldsByName(page, 'first_name');
-    await tokenizePage.selectFieldsByName(page, 'last_name');
-    await tokenizePage.selectFieldsByName(page, 'month');
-    await tokenizePage.selectFieldsByName(page, 'year');
     await tokenizePage.clickOnOpenPaymentFormButtonHostedFields(page);
-    await helperFunctions.fillHostedFieldsFormWithCatalogueFields(page, TEST_DATA.CARD_NUMBER, {
+    await helperFunctions.fillHostedFieldsForm(page, TEST_DATA.CARD_NUMBER, {
       cvv: TEST_DATA.CVV,
       expiryMonth: TEST_DATA.EXPIRY_MONTH,
       expiryYear: getValidYearString(),
     }
   );
-   await helperFunctions.verifyFormFieldsHostedFieldsWithCatalogueFields(page, TEST_DATA.CARD_NUMBER_FORMATTED, {
+   await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.CARD_NUMBER_FORMATTED, {
     firstName: "",
     lastName: "",
     cvv: TEST_DATA.CVV,
     expiryMonth: TEST_DATA.EXPIRY_MONTH,
     expiryYear: getValidYearString(),
    });
-   await helperFunctions.clickOnHostedFieldsSubmitButton(page);
-   await expect(page.locator(SELECTORS.TOKENIZATION_FAILED_MESSAGE_SELECTOR)).toBeVisible();
-   expect(await helperFunctions.getTokenizationFailedMessage(page)).toHaveText(ERROR_MESSAGES.FIRST_NAME_REQUIRED_HOSTED_FIELDS);
+   await expect(await helperFunctions.getHostedFieldsSubmitButton(page)).toBeDisabled();
   });
 
   test("should show warning when blank name option is enabled in tokenize flow with Express Checkout dialog mode", async ({

@@ -72,7 +72,7 @@
             <div class="section-title">Select a Flow</div>
             
             <div class="flow-cards">
-              <!-- Tokenize Card -->
+              <!-- Tokenize Card (merchant-hosted form) -->
               <a href="#" class="flow-card" data-flow="tokenize">
                 <div class="flow-card-icon">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -81,7 +81,25 @@
                 </div>
                 <div class="flow-card-content">
                   <h3>Tokenize a Card</h3>
-                  <p>Create a payment method token from card details</p>
+                  <p>Merchant-hosted form — only card number and CVV are Spreedly iframes</p>
+                </div>
+                <div class="flow-card-arrow">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                  </svg>
+                </div>
+              </a>
+
+              <!-- Tokenize Card (SDK hosted catalogue fields) -->
+              <a href="#" class="flow-card" data-flow="tokenize-catalogue">
+                <div class="flow-card-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                  </svg>
+                </div>
+                <div class="flow-card-content">
+                  <h3>Tokenize with SDK Hosted Fields</h3>
+                  <p>Mount catalogue fields as Spreedly-hosted iframes, plus custom validators</p>
                 </div>
                 <div class="flow-card-arrow">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
