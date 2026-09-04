@@ -41,6 +41,7 @@ import {
   captureSpreedlyPPCPByTransaction,
   getSpreedlyPPCPTransaction,
   listSpreedlyPPCPVaultTokens,
+  deleteSpreedlyPPCPVaultToken,
   chargeSpreedlyPPCPVaultToken,
 } from './controllers/ppcp-spreedly';
 
@@ -937,6 +938,23 @@ router.post('/ppcp/spreedly/vault/complete', completeSpreedlyPPCPVaultSetup);
  *       200: { description: Saved methods }
  */
 router.get('/ppcp/spreedly/vault/tokens', listSpreedlyPPCPVaultTokens);
+
+/**
+ * @swagger
+ * /api/v1/ppcp/spreedly/vault/tokens/{ref}:
+ *   delete:
+ *     description: (PPCP via Spreedly) Remove a saved method from the demo list. Does not redact the payment method in Spreedly or unvault it at PayPal.
+ *     tags: [PPCP]
+ *     parameters:
+ *       - name: ref
+ *         in: path
+ *         required: true
+ *         description: Opaque handle from GET /ppcp/spreedly/vault/tokens
+ *     responses:
+ *       200: { description: Removed from the list }
+ *       404: { description: No saved payment method for that ref }
+ */
+router.delete('/ppcp/spreedly/vault/tokens/:ref', deleteSpreedlyPPCPVaultToken);
 
 /**
  * @swagger

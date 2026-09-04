@@ -221,7 +221,7 @@ export const captureSpreedlyPPCPOrder = async (
 
     const transaction = await captureIfNeeded(authorization);
     const savedByOrder = await recordVaultedWalletByToken(
-      (transaction?.payment_method as { token?: string } | undefined)?.token
+      (authorization?.payment_method as { token?: string } | undefined)?.token
     );
     res.json({
       id: orderId,
@@ -267,7 +267,7 @@ export const captureSpreedlyPPCPByTransaction = async (
 
     const capture = (await captureIfNeeded(authorization)) as Record<string, string | undefined>;
     const savedByTransaction = await recordVaultedWalletByToken(
-      (capture?.payment_method as { token?: string } | undefined)?.token
+      (authorization?.payment_method as { token?: string } | undefined)?.token
     );
     const paypal = authorization.gateway_specific_response_fields?.paypal_commerce_platform || {};
     res.json({
@@ -528,6 +528,28 @@ export const listSpreedlyPPCPVaultTokens = async (_req: Request, res: Response):
       label: t.label || 'PayPal account',
       details: t.details || {},
     })),
+  });
+};
+
+// DELETE /api/v1/ppcp/spreedly/vault/tokens/:ref
+// Forgets a saved wallet from the demo list only. The payment method stays retained in Spreedly
+// and vaulted at PayPal — redact it in Spreedly if it should be unusable too.
+export const deleteSpreedlyPPCPVaultToken = (req: Request, res: Response): void => {
+  const index = Number(req.params.ref);
+  if (!Number.isInteger(index) || index < 0 || index >= spreedlyVaultedTokens.length) {
+    res.status(404).json({ error: 'No saved payment method for that ref' });
+    return;
+  }
+  const removed = spreedlyVaultedTokens.splice(index, 1)[0];
+  if (!removed) {
+    res.status(404).json({ error: 'No saved payment method for that ref' });
+    return;
+  }
+  res.json({
+    removed: {
+      label: removed.label || 'PayPal account',
+      reference: removed.details?.reference,
+    },
   });
 };
 
