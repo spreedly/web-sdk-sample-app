@@ -581,7 +581,11 @@ function renderSavedMethod(t, mode) {
         <span class="saved-method-meta">saved ${SpreedlyUtils.escapeHtml(saved)}</span>
       </div>
       ${renderBuyerDetails(t.details)}
-      <div class="saved-method-actions">${action}</div>
+      <div class="saved-method-actions">
+        ${action}
+        <button class="btn btn-secondary" onclick="removeSaved(${t.ref})"
+          title="Remove from this demo's saved list (stays vaulted at PayPal)">Remove</button>
+      </div>
     </div>`;
 }
 
@@ -669,7 +673,9 @@ async function chargeSavedToken(ref, mode) {
     });
     await refreshVaultedTokens();
 
-    const charged = data.amount ? `$${data.amount} ${data.currency_code || ''}`.trim() : `$${value}`;
+    const charged = data.amount
+      ? `$${(data.amount / 100).toFixed(2)} ${data.currency_code || ''}`.trim()
+      : `$${value}`;
     if (data.succeeded) {
       setSavedResult(
         ref,
@@ -697,6 +703,17 @@ async function chargeSavedToken(ref, mode) {
 
 window.chargeSaved = ref => chargeSavedToken(ref, 'mit');
 window.payWithSaved = ref => chargeSavedToken(ref, 'cit');
+
+window.removeSaved = async function (ref) {
+  showToast(`remove-${ref}`, 'pending', 'Removing saved PayPal…');
+  try {
+    await axios.delete(`${apiBase()}/ppcp/spreedly/vault/tokens/${ref}`);
+    dismissToast(`remove-${ref}`);
+    await refreshVaultedTokens();
+  } catch (error) {
+    showToast(`remove-${ref}`, 'err', errorText(error), 'Remove failed');
+  }
+};
 
 // onRedirect only fires in a flow that navigates. In popup mode PayPal completes in place, so the
 // option is disabled rather than left to do nothing.
