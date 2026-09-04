@@ -18,19 +18,69 @@ import { paypalUserId, paypalUserPassword, venmoUserId, venmoUserPassword} from 
 
 test.describe('PPCP Payment flows', () => {
     test('PPCP paypal payment flow success', async ({ page }) => {
-     await page.goto(MONOREPO_URLS.BASE);
-     await landingPage.clickOnPPCPDirectButton(page);
-     //await waitForAuthParams(page);
-     const prod1 = page.locator(`.product-card[data-id="prod_1"] .quantity-btn`);
-     await prod1.getByText(`+`).click();
-     console.log('paypalUserId', paypalUserId);
-     console.log('paypalUserPassword', paypalUserPassword);
-     await purchasePage.clickOnProceedToPaymentButton(page);
-     await page.locator('label.cfg-opt', {hasText: 'popup' }).locator('input').first().click();
-     //await ppcpPage.clickOnPayPalButton(page);
-     const paypalPopup = await helperFunctions.waitForPaypalPopupToBeVisible(page);
-     await helperFunctions.loginToPaypal(paypalPopup, paypalUserId, paypalUserPassword);
+        await page.goto(MONOREPO_URLS.BASE);
+        await landingPage.clickOnPPCPDirectButton(page);
+        await ppcpPage.clickOnProductIncreaseButton(page, TEST_DATA.PRODUCT_ID_WIRELESS_HEADPHONE);
+        await purchasePage.clickOnProceedToPaymentButton(page);
+        await ppcpPage.clickOnCheckbox(page, 'popup');
+        const paypalPopup = await helperFunctions.waitForPaypalPopupToBeVisible(page, ppcpPage.clickOnPayPalButton);
+        await helperFunctions.loginToPaypal(paypalPopup, paypalUserId, paypalUserPassword);
+        await ppcpPage.clickOnPayPalCompletePurchaseButton(paypalPopup, SELECTORS.PAY_BUTTON_PAYPAL);
+        // const orderStatus = await ppcpPage.verifyOrderStatus(page);
+        // expect(orderStatus).toContain(TEST_DATA.ORDER_STATUS_SUCCESS);
+    });
+
+    test('PPCP payment flow failure', async ({ page }) => {
+        await page.goto(MONOREPO_URLS.BASE);
+        await landingPage.clickOnPPCPDirectButton(page);
+        await ppcpPage.clickOnProductIncreaseButton(page, TEST_DATA.PRODUCT_ID_WIRELESS_HEADPHONE);
+        await purchasePage.clickOnProceedToPaymentButton(page);
+        await ppcpPage.clickOnCheckbox(page, 'popup');
+        const paypalPopup = await helperFunctions.waitForPaypalPopupToBeVisible(page, ppcpPage.clickOnPayPalButton);
+        await helperFunctions.loginToPaypal(paypalPopup, paypalUserId, paypalUserPassword);
+        await paypalPopup.close();
+        const orderStatus = await ppcpPage.verifyOrderStatus(page);
+        expect(orderStatus).toContain(TEST_DATA.ORDER_STATUS_CANCELLED);
+    });
+
+    test('PPCP paypal paylater payment flow success', async ({ page }) => {
+        await page.goto(MONOREPO_URLS.BASE);
+        await landingPage.clickOnPPCPDirectButton(page);
+        await ppcpPage.clickOnProductIncreaseButton(page, TEST_DATA.PRODUCT_ID_WIRELESS_HEADPHONE);
+        await purchasePage.clickOnProceedToPaymentButton(page);
+        await ppcpPage.clickOnCheckbox(page, 'popup');
+        const paypalPopup = await helperFunctions.waitForPaypalPopupToBeVisible(page, ppcpPage.clickOnPayLaterButton);
+        await helperFunctions.loginToPaypal(paypalPopup, paypalUserId, paypalUserPassword);
+        const fundingOption = paypalPopup.locator('#hermione-container > div:nth-child(1) > main > div.PaymentOptions_container_1ELkE > section.PayWith_container_1uz6G > div:nth-child(4) > div:nth-child(2) > div > div.FundingInstrument_item_3lQ2z > div > div > label > span');
+        await expect(fundingOption).toBeVisible();
+        await fundingOption.click();
+        await ppcpPage.clickOnPayPalCompletePurchaseButton(paypalPopup, SELECTORS.PAY_BUTTON_PAYPAL);
+        // const orderStatus = await ppcpPage.verifyOrderStatus(page);
+        // expect(orderStatus).toContain(TEST_DATA.ORDER_STATUS_SUCCESS);
+    });
+
+    test('PPCP paypal paylater payment flow failure', async ({ page }) => {
+        await page.goto(MONOREPO_URLS.BASE);
+        await landingPage.clickOnPPCPDirectButton(page);
+        await ppcpPage.clickOnProductIncreaseButton(page, TEST_DATA.PRODUCT_ID_WIRELESS_HEADPHONE);
+        await purchasePage.clickOnProceedToPaymentButton(page);
+        await ppcpPage.clickOnCheckbox(page, 'popup');
+        const paypalPopup = await helperFunctions.waitForPaypalPopupToBeVisible(page, ppcpPage.clickOnPayLaterButton);
+        await helperFunctions.loginToPaypal(paypalPopup, paypalUserId, paypalUserPassword);
+        await paypalPopup.close();
+        const orderStatus = await ppcpPage.verifyOrderStatus(page);
+        expect(orderStatus).toContain(TEST_DATA.ORDER_STATUS_CANCELLED_PAYLATER);
+    });
+
+    test('PPCP venmo payment flow success', async ({ page }) => {
+        await page.goto(MONOREPO_URLS.BASE);
+        await landingPage.clickOnPPCPDirectButton(page);
+        await ppcpPage.clickOnProductIncreaseButton(page, TEST_DATA.PRODUCT_ID_WIRELESS_HEADPHONE);
+        await purchasePage.clickOnProceedToPaymentButton(page);
+        await ppcpPage.clickOnCheckbox(page, 'popup');
+        await ppcpPage.clickOnVenmoButton(page);
     });
 
 
 });
+
