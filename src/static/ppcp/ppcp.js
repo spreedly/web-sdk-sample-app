@@ -1,5 +1,4 @@
 
-const LOCAL_SDK_URL = 'http://localhost:5000/index.js';
 const PAYPAL_V6_SDK_URL = 'https://www.sandbox.paypal.com/web-sdk/v6/core';
 const CURRENCY = 'USD';
 
@@ -147,11 +146,11 @@ async function loadDependencies() {
   if (!window.paypal || typeof window.paypal.createInstance !== 'function') {
     throw new Error('PayPal Web SDK v6 failed to load (window.paypal.createInstance missing).');
   }
-  await loadScript(LOCAL_SDK_URL);
+  await loadScript(SpreedlyUtils.getSDKScriptUrl());
   if (typeof window.SpreedlyPPCP === 'undefined') {
     throw new Error(
-      'SpreedlyPPCP is not available. Is the local SDK dev server running on :5000 ' +
-        '(in checkout-web-sdk run `npm run dev`)?'
+      'SpreedlyPPCP is not available in the loaded SDK bundle. The rc channel only ' +
+        "carries it once the PPCP branch is merged to the SDK's main."
     );
   }
   sdksLoaded = true;
