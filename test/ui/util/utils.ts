@@ -387,13 +387,26 @@ export const PLACEHOLDERS = {
         await expect(page.locator('.result-card')).toBeVisible({ timeout: 10000 });
     },
 
-    waitForPaypalPopupToBeVisible: async (page: Page) => {
-        const [paypalPopup] = await Promise.all([
+    // waitForPaypalPopupToBeVisible: async (page: Page) => {
+    //     const [paypalPopup] = await Promise.all([
+    //         page.waitForEvent('popup'),
+    //         await ppcpPage.clickOnPayPalButton(page)
+    //       ]);
+    //       await paypalPopup.waitForLoadState();
+    //       return paypalPopup;
+    // },
+
+    waitForPaypalPopupToBeVisible: async (
+        page: Page,
+        clickButton: (page: Page) => Promise<void>
+    ) => {
+        const [popup] = await Promise.all([
             page.waitForEvent('popup'),
-            await ppcpPage.clickOnPayPalButton(page)
-          ]);
-          await paypalPopup.waitForLoadState();
-          return paypalPopup;
+            clickButton(page)
+        ]);
+    
+        await popup.waitForLoadState();
+        return popup;
     },
 
     loginToPaypal: async (page: Page, email: string, password: string) => {
@@ -405,9 +418,13 @@ export const PLACEHOLDERS = {
         await page.getByPlaceholder(TEST_PLACEHOLDERS.PAYPAL_PASSWORD).fill(password);
         const paypalPasswordSubmit = page.getByRole('button').getByText(SELECTORS.PAYPAL_PASSWORD_SUBMIT_BUTTON);
         await expect(paypalPasswordSubmit).toBeEnabled();
-        await paypalPasswordSubmit.click(); 
-        await expect(page.getByTestId('submit-button-initial')).toBeVisible();
-        await page.getByTestId('submit-button-initial').click();
+        await paypalPasswordSubmit.click();
+    },
+
+    clickOnPaypalPayNowButton: async (page: Page) => {
+        const payNowButton = page.getByTestId('one-time-cta');
+        await expect(payNowButton).toBeEnabled();
+        await payNowButton.click();
     },
 }
 
