@@ -1,7 +1,8 @@
 import { Page } from "@playwright/test";
 import { expect } from "../util/fixtures";
-import { getMaskedCardNumber, LABELS, ERROR_MESSAGES, getValidYearString } from "../util/test-constants";
-import { SELECTORS, TEST_DATA } from "../util/test-constants";
+import { getMaskedCardNumber, ERROR_MESSAGES,  getValidYearString } from "../util/test-constants";
+import { SELECTORS, TEST_DATA, LABELS, PLACEHOLDERS as TEST_PLACEHOLDERS } from "../util/test-constants";
+import { ppcpPage } from "../pages/ppcpPage";
 
 export const TEST_ID = {
     EXPRESS_CHECKOUT_SUBMIT_BUTTON: 'express-checkout-submit-btn',
@@ -385,6 +386,45 @@ export const PLACEHOLDERS = {
     waitForResultCardToBeVisible: async (page: Page) => {
         await expect(page.locator('.result-card')).toBeVisible({ timeout: 10000 });
     },
-        
+
+    // waitForPaypalPopupToBeVisible: async (page: Page) => {
+    //     const [paypalPopup] = await Promise.all([
+    //         page.waitForEvent('popup'),
+    //         await ppcpPage.clickOnPayPalButton(page)
+    //       ]);
+    //       await paypalPopup.waitForLoadState();
+    //       return paypalPopup;
+    // },
+
+    waitForPaypalPopupToBeVisible: async (
+        page: Page,
+        clickButton: (page: Page) => Promise<void>
+    ) => {
+        const [popup] = await Promise.all([
+            page.waitForEvent('popup'),
+            clickButton(page)
+        ]);
+    
+        await popup.waitForLoadState();
+        return popup;
+    },
+
+    loginToPaypal: async (page: Page, email: string, password: string) => {
+        await page.getByPlaceholder(TEST_PLACEHOLDERS.PAYPAL_EMAIL).fill(email);
+        const nextButton = page.locator(SELECTORS.PAYPAL_NEXT_BUTTON);
+        if (await nextButton.isVisible()) {
+            await nextButton.click();
+        }
+        await page.getByPlaceholder(TEST_PLACEHOLDERS.PAYPAL_PASSWORD).fill(password);
+        const paypalPasswordSubmit = page.getByRole('button').getByText(SELECTORS.PAYPAL_PASSWORD_SUBMIT_BUTTON);
+        await expect(paypalPasswordSubmit).toBeEnabled();
+        await paypalPasswordSubmit.click();
+    },
+
+    clickOnPaypalPayNowButton: async (page: Page) => {
+        const payNowButton = page.getByTestId('one-time-cta');
+        await expect(payNowButton).toBeEnabled();
+        await payNowButton.click();
+    },
 }
 
