@@ -304,13 +304,7 @@
             <div class="step-content active" id="step-1">
               <div class="dev-note">
                 <strong>PPCP through Spreedly.</strong> The order is created by Spreedly's
-                <code>paypal_commerce_platform</code> gateway, not by calling PayPal directly — the browser
-                half (<code>SpreedlyPPCP</code> + PayPal's JS SDK v6) is identical either way. The
-                PayPal-direct spike lives at <a href="./spike/">PPCP via PayPal Direct</a>.
-                <div style="margin-top: 0.5rem;">
-                  Uses the PayPal v6 SDK + the <strong>local</strong> Spreedly SDK build, so it needs
-                  <code>npm run dev</code> in <code>checkout-web-sdk</code> (SDK on :5000).
-                </div>
+                <code>paypal_commerce_platform</code> gateway.
               </div>
 
               <!-- Accordion 1 — buy something -->

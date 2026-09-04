@@ -4,13 +4,8 @@
  * SpreedlyPPCP against a backend that calls PayPal Orders V2 and Vault v3 directly. This path
  * does not go through Spreedly at all: no Spreedly transaction, no reporting. The
  * Spreedly-brokered version of the same flow is at /ppcp/.
- *
- * Requires the local dev loop:
- *   - checkout-web-sdk:   `npm run dev`  (SpreedlyPPCP on :5000)
- *   - web-sdk-sample-app: `npm run dev`  (:3000, PayPal sandbox credentials in .env)
  */
 
-const LOCAL_SDK_URL = 'http://localhost:5000/index.js';
 const PAYPAL_V6_SDK_URL = 'https://www.sandbox.paypal.com/web-sdk/v6/core';
 // Venmo and Pay Later are US/USD only.
 const CURRENCY = 'USD';
@@ -159,11 +154,10 @@ async function loadDependencies() {
   if (!window.paypal || typeof window.paypal.createInstance !== 'function') {
     throw new Error('PayPal Web SDK v6 failed to load (window.paypal.createInstance missing).');
   }
-  await loadScript(LOCAL_SDK_URL);
+  await loadScript(SpreedlyUtils.getSDKScriptUrl());
   if (typeof window.SpreedlyPPCP === 'undefined') {
     throw new Error(
-      'SpreedlyPPCP is not available. Is the local SDK dev server running on :5000 ' +
-        '(in checkout-web-sdk run `npm run dev`)?'
+      'SpreedlyPPCP is not available in the loaded SDK bundle.'
     );
   }
   sdksLoaded = true;
