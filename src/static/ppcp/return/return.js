@@ -10,7 +10,7 @@
  */
 
 const el = id => document.getElementById(id);
-const apiBase = () => window.SpreedlyUtils.LOCAL_API_URL;
+const apiBase = () => window.SpreedlyUtils.API_BASE_URL;
 
 function setStatus(html, type) {
   const node = el('return-status');

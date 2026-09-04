@@ -25,7 +25,7 @@ let vaultInstance = null;
 let sdksLoaded = false;
 let savedDuringPurchase = false; // was "save my PayPal" ticked for the current order?
 
-const apiBase = () => window.SpreedlyUtils.LOCAL_API_URL;
+const apiBase = () => window.SpreedlyUtils.API_BASE_URL;
 const el = id => document.getElementById(id);
 const errorText = error =>
   error.response?.data ? JSON.stringify(error.response.data) : error.message;
