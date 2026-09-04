@@ -69,7 +69,10 @@ export const getPPCPConfig = async (_req: Request, res: Response): Promise<void>
     res.status(500).json({ error: 'PAYPAL_PPCP_CLIENT_ID_NEW is not configured' });
     return;
   }
-  res.json({ clientId: config.paypalPpcpClientId });
+  res.json({
+    clientId: config.paypalPpcpClientId,
+    environmentKey: config.spreedlyEnvironmentKey,
+  });
 };
 
 // POST /api/v1/ppcp/orders

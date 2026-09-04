@@ -196,13 +196,14 @@ function buildMessagingConfig() {
   };
 }
 
-function buildPPCPConfig(clientId) {
+function buildPPCPConfig({ clientId, environmentKey }) {
   return {
+    clientId,
+    environmentKey,
     currencyCode: CURRENCY,
     amount: getAmount(), // cart total -> Pay Later eligibility (amount-based thresholds)
     ...(cfg('country-code') ? { countryCode: cfg('country-code') } : {}),
     paymentElements: Object.fromEntries(activeButtonKinds().map(b => [b.key, b.elementId])),
-    clientId,
     createOrder,
     onPaymentResult: handlePaymentResult,
     buttonStyle: getButtonStyle(),
@@ -265,7 +266,7 @@ async function loadAndMountPPCP() {
     destroyInstance(ppcpInstance);
     clearButtonContainers();
 
-    ppcpInstance = new window.SpreedlyPPCP(buildPPCPConfig(await getClientId()));
+    ppcpInstance = new window.SpreedlyPPCP(buildPPCPConfig(await getPPCPConfig()));
 
     const result = await ppcpInstance.mount();
     if (result.error) throw new Error(result.error);
@@ -311,12 +312,12 @@ function getButtonStyle() {
 
 // The PayPal client ID is a static, public value — inline it in your page. The demo fetches it
 // only because it lives in .env.
-let cachedClientId = null;
-async function getClientId() {
-  if (cachedClientId) return cachedClientId;
+let cachedConfig = null;
+async function getPPCPConfig() {
+  if (cachedConfig) return cachedConfig;
   const response = await axios.get(`${apiBase()}/ppcp/config`);
-  cachedClientId = response.data.clientId;
-  return cachedClientId;
+  cachedConfig = response.data;
+  return cachedConfig;
 }
 
 // Orders-API equivalent of commit. PayPal's own default for commit is true, so PAY_NOW matches.
@@ -444,7 +445,7 @@ async function mountVault() {
       currencyCode: CURRENCY,
       countryCode: 'US',
       paymentElements: { paypal: 'save-paypal-button' },
-      clientId: await getClientId(),
+      ...(await getPPCPConfig()),
       createVaultSetupToken: async () => {
         const res = await axios.post(`${apiBase()}/ppcp/vault/setup-token`);
         return { setupToken: res.data.setupToken };

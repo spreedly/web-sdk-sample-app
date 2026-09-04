@@ -141,7 +141,6 @@ export const createSpreedlyPPCPOrder = async (
           currency_code,
           // Where Spreedly lands the buyer, with ?transaction_token= appended.
           redirect_url: callerRedirect || `${origin}/ppcp/return/`,
-          callback_url: callerCallback || `${origin}/api/v1/offsite-callback`,
           // Without retain_on_success the payment method lands in storage_state 'used'.
           retain_on_success: true,
           // Vault WITH purchase. ON_SUCCESS = only vault if the payment goes through.
@@ -433,6 +432,7 @@ export const createSpreedlyPPCPVaultSetup = async (
     }
 
     res.json({
+      // PayPal's SDK save session takes this where it documents a Vault v3 setup token
       approval_session_id: approvalSessionId(checkoutUrl),
       checkout_url: checkoutUrl,
       transaction_token: transaction.token,
