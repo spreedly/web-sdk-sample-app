@@ -5,17 +5,21 @@ All notable changes to the Spreedly Web SDK will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.5.1] - 2026-08-14
+## [1.6.0] - Unreleased
+
+### Added
+- **PayPal Complete Payments (PPCP)**: new standalone `SpreedlyPPCP` entry point (exposed from both the Hosted Fields and Express Checkout bundles as `window.SpreedlyPPCP`) for checkout with PayPal's JS SDK v6. The merchant loads PayPal's `web-sdk/v6/core`; the SDK runs the paypal instance, renders the eligible branded buttons as PayPal's web components (`paypal`, `venmo`, `payLater`, `payPalCredit`) → drives the payment session on click. The merchant's backend creates the order, and captures it after approval. Supports vaulting with and without purchase. See `docs/ppcp/` ( integration guide, API reference). Also supports Pay Later messaging.
+
+### Security
+- **3DS1 redirect/fallback:** gateway-supplied `checkout_form` HTML is now rendered inside an isolated iframe.
+
+## [1.5.1] - 2026-08-13
 
 ### Added
 
 - **Paze digital wallet demo** (HC-1633): new `/paze` flow using `SpreedlyPaze` (merchant-loaded Paze sandbox script, eligibility via `canCheckout`, Review & Pay vs Express Pay, change card/shipping, retain + provision network token) and `POST /api/v1/paze-payment-method` to create a Spreedly `third_party_network_token` payment method from `securedPayload`. CSP allows Paze sandbox and production hosts. See `docs/paze/` (integration guide + API reference).
 
-
-
 ## [1.4.1] - 2026-07-31
-
-
 
 ### Added
 
@@ -23,35 +27,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Test SCA provider 3DS Global support**: transactions created with Spreedly's test SCA provider (`sca_provider_type: "test"`) now run the 3DS Global flow. These transactions carry no `managed_order_token`, so Forter is not involved — the SDK presents the challenge when the transaction supplies one and completes authentication server-side otherwise, emitting the same `onChallenge`/`onSuccess`/`onError` callbacks as the Forter flow.
 - **Mandate passthrough** (AC-62): optional `mandate` field on the tokenization APIs — `SubmitParams` (Hosted Fields `submit()` and Express Checkout `submitParams`/`updateSubmitParams`) and the `setupACHPayment` config. Forwarded verbatim to Spreedly Core at `payment_method.mandate` alongside the tokenized payment method, and omitted from the request when empty. Opaque by design via a new exported `Mandate` type (`Record<string, unknown>`) — Spreedly Core owns the mandate schema and validation.
 
-
-
 ## [1.3.1] - 2026-07-23
-
-
 
 ### Added
 
 - **ACH payments**: `setupACHPayment(config)`, `submitACHPayment()`, and `clearACHPayment()` methods (available from both Hosted Fields and Express Checkout), plus `achTokenGenerated` and `achPaymentError` events, for tokenizing US and Canadian bank accounts. See `docs/ach-payments/INTEGRATION_GUIDE.md`
 - **Stripe Radar**: `stripeRadar(publishableKey, options?)` method (available from both Hosted Fields and Express Checkout) that wraps `Stripe.createRadarSession()` and resolves with the Radar session id (or `null` on failure) to forward with a Stripe Payment Intents charge. Legacy parity for `Spreedly.stripeRadar(...)` (callback → Promise). See `docs/stripe-radar/INTEGRATION_GUIDE.md`.
 
-
-
 ### Changed
 
 - **Breaking (offsite):** `offsitePaymentError` **payload shape changed**. The payload was `{ message, error }` in 1.2.0 and is now `{ message, status, errors }`. Refer to `docs/offsite-payments/general/INTEGRATION_GUIDE.md` for complete details.
-
-
 
 ### Fixed
 
 - **Hosted Fields cardholder name typing/docs**: `HostedFieldsFormData.first_name` and `last_name` are now correctly typed as optional. Provide **either** `full_name` **or** both `first_name` + `last_name` — the SDK forwards whatever is supplied and Spreedly Core enforces the requirement. API reference, migration guide, and the Hosted Fields integration guide updated accordingly. (Express Checkout's prebuilt form is unchanged — it still renders `first_name`/`last_name` by default.)
 - **Hosted Fields integration guide** now documents `sdk.validate()` and the `validation` event (structured field-level validation), which previously only appeared in the migration guide.
 
-
-
 ## [1.2.0] - 2026-06-05
-
-
 
 ### Added
 
@@ -66,23 +58,15 @@ hosted iframe) (HC-1450).
 on Hosted Fields and `uiConfig.showCardTypeIcon: false` on Express Checkout. Shown by
 default. Useful when rendering your own brand icon from the `cardType` field.
 
-
-
 ### Fixed
 
 - CVV frame tab event not firing (HC-1450).
-
-
 
 ### Changed
 
 - Tightened the CI bundle-size budget for the CVV iframe bundle (max 140 KB).
 
-
-
 ## [1.1.0] - 2026-05-26
-
-
 
 ### Added
 
@@ -99,40 +83,26 @@ SCA-provider flow (HC-1073).
 - New Recache config options: `allow_blank_name`, `allow_expired_date`,
 `allow_blank_date` (HC-1139).
 
-
-
 ### Fixed
 
 - `maskedFormat` input defect on the card-number field (HC-1450).
 
-
-
 ## [1.0.1] - 2026-01-12
-
-
 
 ### Added
 
 - `allow_blank_date` configuration option to the SDK.
-
-
 
 ### Fixed
 
 - `allow_blank_name` configuration option.
 - `allow_expired_date` configuration option.
 
-
-
 ### Removed
 
 - Incorrect integration comments from the 3DS code.
 
-
-
 ## [1.0.0] - 2026-01-02
-
-
 
 ### Added
 
@@ -190,8 +160,6 @@ metrics across SDK flows, with an events reference doc.
 - Manual stable promotion via tags (`stable-hf`, `stable-ec`)
 - Automated GitHub Release creation with security artifacts
 
-
-
 ### Changed
 
 - **Breaking:** Class names updated:
@@ -205,8 +173,6 @@ metrics across SDK flows, with an events reference doc.
 - Improved cross-frame message validation with origin checks
 - Enhanced logging with Datadog integration
 
-
-
 ### Documentation
 
 - Updated `API_REFERENCE.md` - Complete API for both SDKs
@@ -218,11 +184,7 @@ metrics across SDK flows, with an events reference doc.
 
 ---
 
-
-
 ## [0.0.5] - 2025-12-03
-
-
 
 ### Added
 
@@ -235,8 +197,6 @@ metrics across SDK flows, with an events reference doc.
 - Card number field auto-populated and disabled in recache mode
 - Support for retained payment method CVV updates
 
-
-
 ### Changed
 
 - Enhanced form state management for recache mode
@@ -244,11 +204,7 @@ metrics across SDK flows, with an events reference doc.
 
 ---
 
-
-
 ## [0.0.1] - 2025-0X-XX
-
-
 
 ### Added
 
@@ -267,8 +223,6 @@ metrics across SDK flows, with an events reference doc.
 
 ---
 
-
-
 ## Versioning Strategy
 
 We follow [Semantic Versioning](https://semver.org/):
@@ -276,8 +230,6 @@ We follow [Semantic Versioning](https://semver.org/):
 - **MAJOR** (X.0.0): Breaking changes (architecture, API changes)
 - **MINOR** (0.X.0): New features, backwards-compatible
 - **PATCH** (0.0.X): Bug fixes, backwards-compatible
-
-
 
 ## Release Process
 
@@ -290,25 +242,17 @@ We follow [Semantic Versioning](https://semver.org/):
 5. For production, push a `hosted-fields-vX.Y.Z` and/or `express-checkout-vX.Y.Z`
   tag — the tag version must exactly match `package.json`
 
-
-
 ## CDN URLs
-
-
 
 ### Production
 
 - Hosted Fields: `https://core.spreedly.com/checkout/sdk/{version}/index.js`
 - Express Checkout: `https://core.spreedly.com/checkout/elements/{version}/express-checkout.js`
 
-
-
 ### Staging
 
 - Hosted Fields: `https://core-test.spreedly.com/checkout/sdk/{version}/index.js`
 - Express Checkout: `https://core-test.spreedly.com/checkout/elements/{version}/express-checkout.js`
-
-
 
 ## Change Categories
 
@@ -320,4 +264,3 @@ Changes are grouped as follows:
 - **Removed**: Removed features
 - **Fixed**: Bug fixes
 - **Security**: Security improvements or fixes
-
