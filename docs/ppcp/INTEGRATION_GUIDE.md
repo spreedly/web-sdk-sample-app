@@ -875,6 +875,18 @@ Everything else is identical: same `createOrder`, same return page, same capture
   can decline the save on its own. After the capture, re-read the payment method by token and check
   for a `vault#…` reference — exactly as in the vault-without-payment flow. Report that, not what the
   checkbox asked for.
+- **Take the payment-method token from the authorization.** 
+  ```js
+  // In the capture endpoint, after the capture succeeds:
+  const pm = await axios.get(
+    `${SPREEDLY}/v1/payment_methods/${authorization.payment_method.token}.json`,
+    { headers }
+  );
+  const paymentMethod = pm.data?.payment_method;
+  const saved = paymentMethod?.reference?.startsWith('vault#')
+    ? paymentMethod
+    : null; // the payment went through but the save did not
+  ```
 
 ---
 
