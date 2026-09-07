@@ -36,6 +36,11 @@ jobs:
       run: npm run test:install
 
     - name: Run E2E tests
+      env:
+        PAYPAL_USER_ID: ${{ secrets.PAYPAL_USER_ID }}
+        PAYPAL_USER_PASSWORD: ${{ secrets.PAYPAL_USER_PASSWORD }}
+        VENMO_USER_ID: ${{ secrets.VENMO_USER_ID }}
+        VENMO_USER_PASSWORD: ${{ secrets.VENMO_USER_PASSWORD }}
       run: npm run test:e2e
 
     - name: Upload test results to Datadog

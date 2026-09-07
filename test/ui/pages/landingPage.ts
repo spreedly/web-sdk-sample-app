@@ -41,4 +41,9 @@ export const landingPage = {
         await expect(stripeRadarButton).toBeVisible();
         await stripeRadarButton.click();
 },
+    clickOnPPCPDirectButton: async (page: Page) => {
+        const ppcpDirectButton = page.locator(SELECTORS.PPCP_DIRECT_BUTTON);
+        await expect(ppcpDirectButton).toBeVisible();
+        await ppcpDirectButton.click();
+},
 }

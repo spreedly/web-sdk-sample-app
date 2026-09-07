@@ -110,7 +110,13 @@ export const SELECTORS = {
   ACH_ROUTING_NUMBER_INPUT: '#ach-routing',
   ACH_ERROR_MESSAGE: '.status-message',
   STRIPE_RADAR_BUTTON: '[data-flow="stripe-radar"]',
-  STRIPE_RADAR_PAY_BUTTON: '#pay-btn'
+  STRIPE_RADAR_PAY_BUTTON: '#pay-btn',
+  PPCP_DIRECT_BUTTON: '[data-flow="ppcp"]',
+  PAYPAL_NEXT_BUTTON: '#btnNext',
+  PAYPAL_PASSWORD_SUBMIT_BUTTON: 'Log In',
+  ORDER_STATUS_BODY: '.toast-body',
+  PAY_BUTTON_PAYPAL: 'Complete Purchase',
+  PAY_BUTTON_PAYPAL_LATER: 'submit-button-initial',
 } as const;
 
 export const THREE_DS_SELECTORS = {
@@ -173,6 +179,8 @@ export const PLACEHOLDERS = {
   STRIPE_APM_IBAN: "DE00 0000 0000 0000 0000 00",
   STRIPE_APM_NAME: "First and last name",
   STRIPE_APM_EMAIL: "you@example.com",
+  PAYPAL_EMAIL: "Email or mobile number",
+  PAYPAL_PASSWORD: "Password",
 };
 
 export const LABELS = {
@@ -181,6 +189,10 @@ export const LABELS = {
   SHIPPING_ADDRESS: "Shipping Address",
   CARD_NUMBER: "Card number",
   CVV_NUMBER: "CVV security code",
+  PAYPAL_BUTTON: "PayPal",
+  VENMO_BUTTON: "Pay with Venmo",
+  PAY_LATER_BUTTON: "Pay later",
+  PAYPAL_CREDIT_BUTTON: "PayPal Credit",
 };
 
 export const TEST_DATA = {
@@ -243,6 +255,19 @@ export const TEST_DATA = {
   ACH_FIRST_NAME: "Bob",
   ACH_LAST_NAME: "Smith",
   ACH_BANK_NAME: "First Bank of Elbonia",
+  PAYPAL_GOLD_BUTTON_COLOR: "rgb(255, 196, 57)",
+  PAYPAL_LATER_GOLD_BUTTON_COLOR: "rgb(255, 196, 57)",
+  PAYPAL_BLUE_BUTTON_COLOR: "rgb(0, 112, 186)",
+  PAYPAL_LATER_BLUE_BUTTON_COLOR: "rgb(0, 112, 186)",
+  PAYPAL_WHITE_BUTTON_COLOR: "rgb(255, 255, 255)",
+  PAYPAL_LATER_WHITE_BUTTON_COLOR: "rgb(255, 255, 255)",
+  PAYPAL_BLACK_BUTTON_COLOR: "rgb(44, 46, 47)",
+  PAYPAL_LATER_BLACK_BUTTON_COLOR: "rgb(44, 46, 47)",
+  VENMO_BLUE_BUTTON_COLOR: "rgb(0, 140, 255)",
+  VENMO_BLACK_BUTTON_COLOR: "rgb(44, 46, 47)",
+  ORDER_STATUS_SUCCESS: "Payment SuccessfulOrder",
+  ORDER_STATUS_CANCELLED: "paypal payment was cancelled",
+  ORDER_STATUS_CANCELLED_PAYLATER: "paylater payment was cancelled",
 };
 
 export const HEADINGS = {
