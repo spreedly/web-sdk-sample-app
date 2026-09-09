@@ -41,4 +41,9 @@ export const landingPage = {
         await expect(stripeRadarButton).toBeVisible();
         await stripeRadarButton.click();
 },
+    clickOnTokenizeWithSDKButton: async (page: Page) => {
+        const tokenizeWithSDKButton = page.locator(SELECTORS.TOKENIZE_WITH_SDK_BUTTON);
+        await expect(tokenizeWithSDKButton).toBeVisible();
+        await tokenizeWithSDKButton.click();
+},
 }

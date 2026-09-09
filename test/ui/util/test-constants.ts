@@ -116,7 +116,8 @@ export const SELECTORS = {
   ACH_ERROR_MESSAGE: '.status-message',
   STRIPE_RADAR_BUTTON: '[data-flow="stripe-radar"]',
   STRIPE_RADAR_PAY_BUTTON: '#pay-btn',
-  HOSTED_CATALOGUE_FIELDS_DROPDOWN: 'Hosted catalogue fields'
+  HOSTED_CATALOGUE_FIELDS_DROPDOWN: 'Hosted catalogue fields',
+  TOKENIZE_WITH_SDK_BUTTON: '[data-flow="tokenize-catalogue"]',
 } as const;
 
 export const THREE_DS_SELECTORS = {
