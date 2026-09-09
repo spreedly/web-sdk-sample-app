@@ -5,10 +5,13 @@ All notable changes to the Spreedly Web SDK will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.6.0] - Unreleased
+## [1.6.1] - 2026-09-09
 
 ### Added
 - **PayPal Complete Payments (PPCP)**: new standalone `SpreedlyPPCP` entry point (exposed from both the Hosted Fields and Express Checkout bundles as `window.SpreedlyPPCP`) for checkout with PayPal's JS SDK v6. The merchant loads PayPal's `web-sdk/v6/core`; the SDK runs the paypal instance, renders the eligible branded buttons as PayPal's web components (`paypal`, `venmo`, `payLater`, `payPalCredit`) → drives the payment session on click. The merchant's backend creates the order, and captures it after approval. Supports vaulting with and without purchase. See `docs/ppcp/` ( integration guide, API reference). Also supports Pay Later messaging.
+
+### Fixed
+- ACH and offsite tokenization now POST to `payment_methods.json` so they work from the merchant page (CORS). Card iframe tokenize is unchanged.
 
 ### Security
 - **3DS1 redirect/fallback:** gateway-supplied `checkout_form` HTML is now rendered inside an isolated iframe.
