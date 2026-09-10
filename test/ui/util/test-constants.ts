@@ -129,6 +129,12 @@ export const SELECTORS = {
   CUSTOM_CROSS_FIELD_VALIDATION: 'cv-state-country',
   CONDITIONAL_REQUIREMENT_ON_ZIP_VALIDATION: 'cv-conditional-zip',
   DESTROY_SDK_BUTTON: 'Destroy SDK',
+  HOSTED_HOUSE_NUMBER_OR_NAME_FIELD_IFRAME: 'iframe[title="Spreedly hosted field iframe - spreedly-hosted-house_number_or_name"]',
+  HOSTED_STREET_FIELD_IFRAME: 'iframe[title="Spreedly hosted field iframe - spreedly-hosted-street"]',
+  HOSTED_STREET_LINE2_FIELD_IFRAME: 'iframe[title="Spreedly hosted field iframe - spreedly-hosted-street_line2"]',
+  HOSTED_SHIPPING_HOUSE_NUMBER_OR_NAME_FIELD_IFRAME: 'iframe[title="Spreedly hosted field iframe - spreedly-hosted-shipping_house_number_or_name"]',
+  HOSTED_SHIPPING_STREET_FIELD_IFRAME: 'iframe[title="Spreedly hosted field iframe - spreedly-hosted-shipping_street"]',
+  HOSTED_SHIPPING_STREET_LINE2_FIELD_IFRAME: 'iframe[title="Spreedly hosted field iframe - spreedly-hosted-shipping_street_line2"]',                           
 } as const;
 
 export const THREE_DS_SELECTORS = {
@@ -207,6 +213,12 @@ export const LABELS = {
   ZIP_CATALOGUE_FIELDS: "ZIP / Postal code",
   COUNTRY_CATALOGUE_FIELDS: "Country",
   STATE_CATALOGUE_FIELDS: "State",
+  HOUSE_NUMBER_OR_NAME_CATALOGUE_FIELDS: "House number or name",
+  STREET_CATALOGUE_FIELDS: "Street",
+  STREET_LINE2_CATALOGUE_FIELDS: "Street line 2",
+  SHIPPING_HOUSE_NUMBER_OR_NAME_CATALOGUE_FIELDS: "Shipping house number or name",
+  SHIPPING_STREET_CATALOGUE_FIELDS: "Shipping street",
+  SHIPPING_STREET_LINE2_CATALOGUE_FIELDS: "Shipping street line 2",
 };
 
 export const TEST_DATA = {
@@ -275,6 +287,12 @@ export const TEST_DATA = {
   STATE_VALID_FORMAT: "CA",
   COUNTRY_NON_US: "IND",
   STATE_INVALID_FORMAT: "California",
+  HOUSE_NUMBER_OR_NAME: "HouseName",
+  STREET: "StreetName",
+  STREET_LINE2: "StreetLine2Name",
+  SHIPPING_HOUSE_NUMBER_OR_NAME: "ShippingHouseName",
+  SHIPPING_STREET: "ShippingStreetName",
+  SHIPPING_STREET_LINE2: "ShippingStreetLine2Name",
 };
 
 export const HEADINGS = {

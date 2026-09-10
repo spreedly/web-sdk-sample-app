@@ -21,6 +21,12 @@ export const PLACEHOLDERS = {
     EXPRESS_ZIP: "10001",
     EXPRESS_COUNTRY: "US",
     EXPRESS_STATE: "NY",
+    EXPRESS_HOUSE_NUMBER_OR_NAME: "123",
+    EXPRESS_STREET: "Main St",
+    EXPRESS_STREET_LINE2: "Apt 1",
+    EXPRESS_SHIPPING_HOUSE_NUMBER_OR_NAME: "123",
+    EXPRESS_SHIPPING_STREET: "Main St",
+    EXPRESS_SHIPPING_STREET_LINE2: "Apt 1",
   };
 
   export const helperFunctions = {
@@ -36,6 +42,12 @@ export const PLACEHOLDERS = {
             zip?: string;
             country?: string;
             state?: string;
+            house_number_or_name?: string;
+            street?: string;
+            street_line2?: string;
+            shipping_house_number_or_name?: string;
+            shipping_street?: string;
+            shipping_street_line2?: string;
         }
     ) => {
         await expect(page.locator(SELECTORS.EXPRESS_IFRAME)).toBeVisible();
@@ -57,7 +69,7 @@ export const PLACEHOLDERS = {
         
         if (options?.cvv) {
             await expressCheckoutIframe
-                .locator(`input[placeholder="${PLACEHOLDERS.EXPRESS_CVV}"]`)
+                .getByTestId('verification_value').locator('input')
                 .fill(options.cvv);
         }
         
@@ -86,6 +98,36 @@ export const PLACEHOLDERS = {
             await expressCheckoutIframe
                 .locator(`input[placeholder="${PLACEHOLDERS.EXPRESS_STATE}"]`)
                 .fill(options.state);
+        }
+        if (options?.house_number_or_name) {
+            await expressCheckoutIframe
+                .getByTestId('house_number_or_name').locator('input')
+                .fill(options.house_number_or_name);
+        }
+        if (options?.street) {
+            await expressCheckoutIframe
+                .getByTestId('street').locator('input')
+                .fill(options.street);
+        }
+        if (options?.street_line2) {
+            await expressCheckoutIframe
+                .getByTestId('street_line2').locator('input')
+                .fill(options.street_line2);
+        }
+        if (options?.shipping_house_number_or_name) {
+            await expressCheckoutIframe
+                .getByTestId('shipping_house_number_or_name').locator('input')
+                .fill(options.shipping_house_number_or_name);
+        }
+        if (options?.shipping_street) {
+            await expressCheckoutIframe
+                .getByTestId('shipping_street').locator('input')
+                .fill(options.shipping_street);
+        }
+        if (options?.shipping_street_line2) {
+            await expressCheckoutIframe
+                .getByTestId('shipping_street_line2').locator('input')
+                .fill(options.shipping_street_line2);
         }
     },
 
@@ -180,7 +222,24 @@ export const PLACEHOLDERS = {
     getHostedFieldsIframeStateField: async (page: Page) => {
         return page.frameLocator(SELECTORS.HOSTED_STATE_FIELD_IFRAME).getByLabel(LABELS.STATE_CATALOGUE_FIELDS);
     },
-
+    getHostedFieldsIframeHouseNumberOrNameField: async (page: Page) => {
+        return page.frameLocator(SELECTORS.HOSTED_HOUSE_NUMBER_OR_NAME_FIELD_IFRAME).getByLabel(LABELS.HOUSE_NUMBER_OR_NAME_CATALOGUE_FIELDS);
+    },
+    getHostedFieldsIframeStreetField: async (page: Page) => {
+        return page.frameLocator(SELECTORS.HOSTED_STREET_FIELD_IFRAME).getByLabel(LABELS.STREET_CATALOGUE_FIELDS);
+    },
+    getHostedFieldsIframeStreetLine2Field: async (page: Page) => {
+        return page.frameLocator(SELECTORS.HOSTED_STREET_LINE2_FIELD_IFRAME).getByLabel(LABELS.STREET_LINE2_CATALOGUE_FIELDS);
+    },
+    getHostedFieldsIframeShippingHouseNumberOrNameField: async (page: Page) => {
+        return page.frameLocator(SELECTORS.HOSTED_SHIPPING_HOUSE_NUMBER_OR_NAME_FIELD_IFRAME).getByLabel(LABELS.SHIPPING_HOUSE_NUMBER_OR_NAME_CATALOGUE_FIELDS);
+    },
+    getHostedFieldsIframeShippingStreetField: async (page: Page) => {
+        return page.frameLocator(SELECTORS.HOSTED_SHIPPING_STREET_FIELD_IFRAME).getByLabel(LABELS.SHIPPING_STREET_CATALOGUE_FIELDS);
+    },
+    getHostedFieldsIframeShippingStreetLine2Field: async (page: Page) => {
+        return page.frameLocator(SELECTORS.HOSTED_SHIPPING_STREET_LINE2_FIELD_IFRAME).getByLabel(LABELS.SHIPPING_STREET_LINE2_CATALOGUE_FIELDS);
+    },
     getHostedFieldsLastNameField: async (page: Page) => {
         return page.getByLabel(LABELS.LAST_NAME);
     },
@@ -340,6 +399,12 @@ export const PLACEHOLDERS = {
         zip?: string;
         country?: string;
         state?: string;
+        house_number_or_name?: string;
+        street?: string;
+        street_line2?: string;
+        shipping_house_number_or_name?: string;
+        shipping_street?: string;
+        shipping_street_line2?: string;
     }) => {
     const firstNameField = await helperFunctions.getHostedFieldsIframeFirstNameField(page);
     const lastNameField = await helperFunctions.getHostedFieldsIframeLastNameField(page);
@@ -351,6 +416,12 @@ export const PLACEHOLDERS = {
     const zipField = await helperFunctions.getHostedFieldsIframeZipField(page);
     const countryField = await helperFunctions.getHostedFieldsIframeCountryField(page);
     const stateField = await helperFunctions.getHostedFieldsIframeStateField(page);
+    const houseNumberOrNameField = await helperFunctions.getHostedFieldsIframeHouseNumberOrNameField(page);
+    const streetField = await helperFunctions.getHostedFieldsIframeStreetField(page);
+    const streetLine2Field = await helperFunctions.getHostedFieldsIframeStreetLine2Field(page);
+    const shippingHouseNumberOrNameField = await helperFunctions.getHostedFieldsIframeShippingHouseNumberOrNameField(page);
+    const shippingStreetField = await helperFunctions.getHostedFieldsIframeShippingStreetField(page);
+    const shippingStreetLine2Field = await helperFunctions.getHostedFieldsIframeShippingStreetLine2Field(page);
     await cardNumberField.type(cardNumber, { delay: 50 });
     if (options?.firstName) {
         await firstNameField.fill(options.firstName);
@@ -378,6 +449,24 @@ export const PLACEHOLDERS = {
     }
     if (options?.state) {
         await stateField.fill(options.state);
+    }
+    if (options?.house_number_or_name) {
+        await houseNumberOrNameField.fill(options.house_number_or_name);
+    }
+    if (options?.street) {
+        await streetField.fill(options.street);
+    }
+    if (options?.street_line2) {
+        await streetLine2Field.fill(options.street_line2);
+    }
+    if (options?.shipping_house_number_or_name) {
+        await shippingHouseNumberOrNameField.fill(options.shipping_house_number_or_name);
+    }
+    if (options?.shipping_street) {
+        await shippingStreetField.fill(options.shipping_street);
+    }
+    if (options?.shipping_street_line2) {
+        await shippingStreetLine2Field.fill(options.shipping_street_line2);
     }
     },
     
