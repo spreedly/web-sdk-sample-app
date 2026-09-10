@@ -690,7 +690,7 @@ function setupHostedFieldsSdkDemoPanel(sdkInstance) {
       console.warn('Hosted Fields consoleError:', payload);
       updateHostedFieldsDemoLastConsoleError(payload);
     });
-    sdkInstance.setFieldStateReporting({ includeIin: false });
+    sdkInstance.setFieldStateReporting({ includeIin: false, includeValue: true });
     if (includeIin) {
       includeIin.checked = false;
     }
