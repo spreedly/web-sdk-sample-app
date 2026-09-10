@@ -5,6 +5,16 @@ All notable changes to the Spreedly Web SDK will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Composable Hosted Fields catalogue** (HC-1680): mount optional non-PCI fields as individual Spreedly-hosted iframes via `inAppElements()` — `expiry` (combined `MM/YY`) or separate `month`/`year`, `first_name`, `last_name`, `full_name`, billing address keys (`address1`…`country`, plus `email` / `company` / `phone_number`), canonical address/phone keys (`house_number_or_name`, `street`, `street_line2`, `phone_number_country_code`, `phone_number_area_code`) and their `shipping_*` twins. Values are collected inside the iframes at `submit()`; `fieldStateChange` / `validation.formFields` cover the same surface as number/CVV. Catalogue `fieldStateChange` omits the raw `value` unless the merchant opts in with `setFieldStateReporting({ includeValue: true })`. The per-field required flag is `isRequired` — the same name Express Checkout uses in its field config — and `full_name` is required only when mounted with `isRequired: true` (only `first_name` / `last_name` and the date fields are required by default, relaxed by `allow_blank_name` / `allow_blank_date`). See `docs/tokenization/hosted-fields/INTEGRATION_GUIDE.md`.
+- **Optional hosted submit button** (HC-1680): `inAppElements({ submit: { containerId, text? } })` mounts a customizable button iframe. Clicks emit `submitClick` with catalogue values (never PAN/CVV); merchants must call `submit()` from that handler. Control appearance with `setStyles('submit', …)`, `setText` / `setLabel`, and `setDisable`.
+- **Styling Guide** (HC-1680): standalone `docs/tokenization/STYLING_GUIDE.md` covering Hosted Fields runtime styling APIs and Express Checkout `uiConfig` themes.
+- **Custom field validators** (HC-1717): `addValidation(fieldName, validator)` and `removeValidation(fieldName)` on both `SpreedlyHostedFields` and `SpreedlyExpressCheckout`, for attaching merchant-owned rules to non-sensitive fields. Validators are layered on top of the SDK's own validation rather than replacing it. They run on the merchant page (never injected into a payment iframe), receive `(value, fields)` where PAN, CVV, month, year, and expiry are always absent, and return `{ isValid: boolean, errorMessage?: string }`. Date fields and PCI fields are rejected with a warning. A validator that throws or returns something unusable fails open. See the tokenization integration guides for both products.
+- **Tokenize-catalogue demo** (`/tokenize-catalogue`): sample-app flow that mounts catalogue iframes, the optional hosted submit button, HC-1688 canonical address/phone fields, and `addValidation` / `removeValidation` on both Hosted Fields and Express Checkout.
+
 ## [1.6.2] - 2026-09-10
 
 ### Added
