@@ -18,6 +18,9 @@ export const PLACEHOLDERS = {
     RECACHE_CVV: "•••",
     EXPRESS_MONTH: "MM",
     EXPRESS_YEAR: "YYYY",
+    EXPRESS_ZIP: "10001",
+    EXPRESS_COUNTRY: "US",
+    EXPRESS_STATE: "NY",
   };
 
   export const helperFunctions = {
@@ -30,6 +33,9 @@ export const PLACEHOLDERS = {
             cvv?: string;
             expiryMonth?: string;
             expiryYear?: string;
+            zip?: string;
+            country?: string;
+            state?: string;
         }
     ) => {
         await expect(page.locator(SELECTORS.EXPRESS_IFRAME)).toBeVisible();
@@ -65,6 +71,21 @@ export const PLACEHOLDERS = {
             await expressCheckoutIframe
                 .locator(`input[placeholder="${PLACEHOLDERS.EXPRESS_YEAR}"]`)
                 .fill(options.expiryYear);
+        }
+        if (options?.zip) {
+            await expressCheckoutIframe
+                .locator(`input[placeholder="${PLACEHOLDERS.EXPRESS_ZIP}"]`)
+                .fill(options.zip);
+        }
+        if (options?.country) {
+            await expressCheckoutIframe
+                .locator(`input[placeholder="${PLACEHOLDERS.EXPRESS_COUNTRY}"]`)
+                .fill(options.country);
+        }
+        if (options?.state) {
+            await expressCheckoutIframe
+                .locator(`input[placeholder="${PLACEHOLDERS.EXPRESS_STATE}"]`)
+                .fill(options.state);
         }
     },
 
@@ -149,6 +170,15 @@ export const PLACEHOLDERS = {
     },
     getHostedFieldsIframeTwoDigitExpiryField: async (page: Page) => {
         return page.frameLocator(SELECTORS.HOSTED_TWO_DIGIT_EXPIRY_FIELD_IFRAME).getByLabel(LABELS.TWO_DIGIT_EXPIRY_CATALOGUE_FIELDS);
+    },
+    getHostedFieldsIframeZipField: async (page: Page) => {
+        return page.frameLocator(SELECTORS.HOSTED_ZIP_FIELD_IFRAME).getByLabel(LABELS.ZIP_CATALOGUE_FIELDS);
+    },
+    getHostedFieldsIframeCountryField: async (page: Page) => {
+        return page.frameLocator(SELECTORS.HOSTED_COUNTRY_FIELD_IFRAME).getByLabel(LABELS.COUNTRY_CATALOGUE_FIELDS);
+    },
+    getHostedFieldsIframeStateField: async (page: Page) => {
+        return page.frameLocator(SELECTORS.HOSTED_STATE_FIELD_IFRAME).getByLabel(LABELS.STATE_CATALOGUE_FIELDS);
     },
 
     getHostedFieldsLastNameField: async (page: Page) => {
@@ -307,6 +337,9 @@ export const PLACEHOLDERS = {
         expiryMonth?: string;
         expiryYear?: string;
         twoDigitExpiry?: string;
+        zip?: string;
+        country?: string;
+        state?: string;
     }) => {
     const firstNameField = await helperFunctions.getHostedFieldsIframeFirstNameField(page);
     const lastNameField = await helperFunctions.getHostedFieldsIframeLastNameField(page);
@@ -315,6 +348,9 @@ export const PLACEHOLDERS = {
     const cardNumberField = await helperFunctions.getHostedFieldsCardNumberField(page);
     const cvvField = await helperFunctions.getHostedFieldsCvvField(page);
     const twoDigitExpiryField = await helperFunctions.getHostedFieldsIframeTwoDigitExpiryField(page);
+    const zipField = await helperFunctions.getHostedFieldsIframeZipField(page);
+    const countryField = await helperFunctions.getHostedFieldsIframeCountryField(page);
+    const stateField = await helperFunctions.getHostedFieldsIframeStateField(page);
     await cardNumberField.type(cardNumber, { delay: 50 });
     if (options?.firstName) {
         await firstNameField.fill(options.firstName);
@@ -333,6 +369,15 @@ export const PLACEHOLDERS = {
     }
     if (options?.twoDigitExpiry) {
         await twoDigitExpiryField.fill(options.twoDigitExpiry);
+    }
+    if (options?.zip) {
+        await zipField.fill(options.zip);
+    }
+    if (options?.country) {
+        await countryField.fill(options.country);
+    }
+    if (options?.state) {
+        await stateField.fill(options.state);
     }
     },
     
@@ -471,6 +516,12 @@ export const PLACEHOLDERS = {
 
     waitForResultCardToBeVisible: async (page: Page) => {
         await expect(page.locator('.result-card')).toBeVisible({ timeout: 10000 });
+    },
+
+    clickOnValidateButton: async (page: Page) => {
+        const validateButton = page.getByText(SELECTORS.VALIDATE_BUTTON);
+        await expect(validateButton).toBeEnabled();
+        await validateButton.click();
     },
         
 }

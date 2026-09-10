@@ -47,6 +47,10 @@ export const SELECTORS = {
   HOSTED_MONTH_FIELD_IFRAME: 'iframe[title="Spreedly hosted field iframe - spreedly-hosted-month"]',
   HOSTED_YEAR_FIELD_IFRAME: 'iframe[title="Spreedly hosted field iframe - spreedly-hosted-year"]',
   HOSTED_TWO_DIGIT_EXPIRY_FIELD_IFRAME: 'iframe[title="Spreedly hosted field iframe - spreedly-hosted-expiry"]',
+  HOSTED_CARD_EXPIRY_FIELD_IFRAME: 'iframe[title="Spreedly hosted field iframe - spreedly-hosted-card-expiry"]',
+  HOSTED_ZIP_FIELD_IFRAME: 'iframe[title="Spreedly hosted field iframe - spreedly-hosted-zip"]',
+  HOSTED_COUNTRY_FIELD_IFRAME: 'iframe[title="Spreedly hosted field iframe - spreedly-hosted-country"]',
+  HOSTED_STATE_FIELD_IFRAME: 'iframe[title="Spreedly hosted field iframe - spreedly-hosted-state"]',
   // Form Fields(hosted fields data-testid)
   EXPIRY_MONTH: "#expiry_month, #month",
   EXPIRY_YEAR: "#expiry_year, #year",
@@ -117,7 +121,14 @@ export const SELECTORS = {
   STRIPE_RADAR_BUTTON: '[data-flow="stripe-radar"]',
   STRIPE_RADAR_PAY_BUTTON: '#pay-btn',
   HOSTED_CATALOGUE_FIELDS_DROPDOWN: 'Hosted catalogue fields',
+  HOSTED_CATALOGUE_FIELDS_DROPDOWN_EXPRESS_CHECKOUT: 'Extra fields in Express Checkout',
   TOKENIZE_WITH_SDK_BUTTON: '[data-flow="tokenize-catalogue"]',
+  CUSTOM_FIELD_VALIDATOR_DROPDOWN: 'Custom field validators',
+  VALIDATE_BUTTON: 'Validate',
+  CUSTOM_FIELD_VALIDATOR_ZIP_FORMAT: 'cv-zip-format',
+  CUSTOM_CROSS_FIELD_VALIDATION: 'cv-state-country',
+  CONDITIONAL_REQUIREMENT_ON_ZIP_VALIDATION: 'cv-conditional-zip',
+  DESTROY_SDK_BUTTON: 'Destroy SDK',
 } as const;
 
 export const THREE_DS_SELECTORS = {
@@ -193,6 +204,9 @@ export const LABELS = {
   SHIPPING_ADDRESS: "Shipping Address",
   CARD_NUMBER: "Card number",
   CVV_NUMBER: "CVV security code",
+  ZIP_CATALOGUE_FIELDS: "ZIP / Postal code",
+  COUNTRY_CATALOGUE_FIELDS: "Country",
+  STATE_CATALOGUE_FIELDS: "State",
 };
 
 export const TEST_DATA = {
@@ -255,6 +269,12 @@ export const TEST_DATA = {
   ACH_FIRST_NAME: "Bob",
   ACH_LAST_NAME: "Smith",
   ACH_BANK_NAME: "First Bank of Elbonia",
+  VALID_ZIP_CODE: "10001",
+  INVALID_ZIP_CODE: "100",
+  COUNTRY_US: "US",
+  STATE_VALID_FORMAT: "CA",
+  COUNTRY_NON_US: "IND",
+  STATE_INVALID_FORMAT: "California",
 };
 
 export const HEADINGS = {
@@ -303,6 +323,12 @@ export const ERROR_MESSAGES = {
   MONTH_REQUIRED_HOSTED_FIELDS: "Month is required",
   YEAR_REQUIRED_HOSTED_FIELDS: "Year is required",
   INVALID_CARD_NUMBER_HOSTED_FIELDS: "Invalid card number",
+  HOSTED_FIELD_ZIP_ERROR_HOSTED_FIELDS: "Enter a valid US ZIP code (12345 or 12345-6789)",
+  HOSTED_FIELD_STATE_ERROR_HOSTED_FIELDS: "Use a two-letter state code for US addresses",
+  HOSTED_FIELD_ZIP_REQUIRED_ERROR: "ZIP is required for US addresses",
+  ZIP_ERROR_EXPRESS_CHECKOUT: "Error: Enter a valid US ZIP code (12345 or 12345-6789)",
+  STATE_ERROR_EXPRESS_CHECKOUT: "Error: Use a two-letter state code for US addresses",
+  ZIP_REQUIRED_ERROR_EXPRESS_CHECKOUT: "Error: ZIP is required for US addresses",
 };
 
 export const ERROR_SELECTORS = {
@@ -317,6 +343,8 @@ export const ERROR_SELECTORS = {
   CARD_NUMBER_LENGTH_ICON: `[aria-label="${ERROR_MESSAGES.CARD_NUMBER_LENGTH}"]`,
   INVALID_CVV_ICON: `[aria-label="${ERROR_MESSAGES.INVALID_CVV}"]`,
   AMEX_INVALID_CVV_ICON: `[aria-label="${ERROR_MESSAGES.AMEX_INVALID_CVV}"]`,
+  HOSTED_FIELD_ZIP_ERROR_HOSTED_FIELDS: 'hosted-field-zip-error',
+  HOSTED_FIELD_STATE_ERROR_HOSTED_FIELDS: 'hosted-field-state-error',
 };
 
 export const CSS_PROPERTIES = {

@@ -85,18 +85,7 @@ export const tokenizePage={
         await expect(parityOptionElement).toBeChecked();
     }
 },
-    clickOnHostedCatalogueFieldsDropdown: async (page: Page) => {
-        const hostedCatalogueFieldsDropdown = page.getByText(TEST_SELECTORS.HOSTED_CATALOGUE_FIELDS_DROPDOWN);
-        await expect(hostedCatalogueFieldsDropdown).toBeVisible();
-        await hostedCatalogueFieldsDropdown.click();
-    },
-
-    selectFieldsByName: async (page: Page, fieldName: string) => {
-        const field = await tokenizePage.getFieldCheckboxByName(page, fieldName);
-        await expect(field).toBeVisible();
-        await field.check();
-        await expect(field).toBeChecked();
-    },
+    
  
 
     getPlaceholderColor: async (page: Page) => {
@@ -134,16 +123,17 @@ export const tokenizePage={
         const inputMode = await cvvField.getAttribute('inputmode');
         return inputMode;
   },
-    getFieldCheckboxByName: async (page: Page, fieldName: string) => {
-        const field = page.locator(`[data-hosted-field="${fieldName}"]`);
-        await expect(field).toBeVisible();
-        return field;
-    },
 
     clickOnParityOption: async (page: Page, parityOption: string) => {
         const parityOptionElement = page.locator(`#hf-demo-${parityOption}`);
         await expect(parityOptionElement).toBeVisible();
         await parityOptionElement.click();
+    },
+
+    clickOnDestroySDKButton: async (page: Page) => {
+        const destroySDKButton = page.getByRole('button', { name: TEST_SELECTORS.DESTROY_SDK_BUTTON });
+        await expect(destroySDKButton).toBeVisible();
+        await destroySDKButton.click();
     },
 }
 
