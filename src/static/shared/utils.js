@@ -100,6 +100,31 @@ async function createPurchaseWith3DS(paymentMethodToken, amount, browserInfo, cu
   }
 }
 
+/** Creates a Paze payment method from securedPayload via third_party_network_token */
+async function createPazePaymentMethod({
+  payloadId,
+  provisionNetworkToken,
+  retained,
+  securedPayload,
+  sessionId,
+  shippingAddress,
+}) {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/paze-payment-method`, {
+      payloadId,
+      provisionNetworkToken,
+      retained,
+      securedPayload,
+      sessionId,
+      shippingAddress,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error creating Paze payment method:', error.response?.data || error);
+    throw error.response?.data || error;
+  }
+}
+
 // UI Helpers
 function showStatus(elementId, message, type = 'info') {
   const statusEl = document.getElementById(elementId);
@@ -293,6 +318,7 @@ window.SpreedlyUtils = {
   retainPaymentMethod,
   createPurchase,
   createPurchaseWith3DS,
+  createPazePaymentMethod,
 
   // Stripe Radar
   createStripeRadarPurchase,
@@ -303,7 +329,7 @@ window.SpreedlyUtils = {
 
   // ACH Payments
   createAchPurchase,
-  
+
   // UI helpers
   showStatus,
   hideStatus,

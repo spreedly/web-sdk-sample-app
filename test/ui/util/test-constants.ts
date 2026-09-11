@@ -135,6 +135,13 @@ export const SELECTORS = {
   HOSTED_SHIPPING_HOUSE_NUMBER_OR_NAME_FIELD_IFRAME: 'iframe[title="Spreedly hosted field iframe - spreedly-hosted-shipping_house_number_or_name"]',
   HOSTED_SHIPPING_STREET_FIELD_IFRAME: 'iframe[title="Spreedly hosted field iframe - spreedly-hosted-shipping_street"]',
   HOSTED_SHIPPING_STREET_LINE2_FIELD_IFRAME: 'iframe[title="Spreedly hosted field iframe - spreedly-hosted-shipping_street_line2"]',                           
+  PPCP_DIRECT_BUTTON: '[data-flow="ppcp"]',
+  PAYPAL_NEXT_BUTTON: '#btnNext',
+  PAYPAL_PASSWORD_SUBMIT_BUTTON: 'Log In',
+  ORDER_STATUS_BODY: '.toast-body',
+  PAY_BUTTON_PAYPAL: 'Complete Purchase',
+  PAY_BUTTON_PAYPAL_LATER: 'submit-button-initial',
+  HOSTED_CATALOGUE_FIELDS_DROPDOWN: 'Hosted catalogue fields'
 } as const;
 
 export const THREE_DS_SELECTORS = {
@@ -197,6 +204,8 @@ export const PLACEHOLDERS = {
   STRIPE_APM_IBAN: "DE00 0000 0000 0000 0000 00",
   STRIPE_APM_NAME: "First and last name",
   STRIPE_APM_EMAIL: "you@example.com",
+  PAYPAL_EMAIL: "Email or mobile number",
+  PAYPAL_PASSWORD: "Password",
 };
 
 export const LABELS = {
@@ -219,6 +228,10 @@ export const LABELS = {
   SHIPPING_HOUSE_NUMBER_OR_NAME_CATALOGUE_FIELDS: "Shipping house number or name",
   SHIPPING_STREET_CATALOGUE_FIELDS: "Shipping street",
   SHIPPING_STREET_LINE2_CATALOGUE_FIELDS: "Shipping street line 2",
+  PAYPAL_BUTTON: "PayPal",
+  VENMO_BUTTON: "Pay with Venmo",
+  PAY_LATER_BUTTON: "Pay later",
+  PAYPAL_CREDIT_BUTTON: "PayPal Credit",
 };
 
 export const TEST_DATA = {
@@ -293,6 +306,19 @@ export const TEST_DATA = {
   SHIPPING_HOUSE_NUMBER_OR_NAME: "ShippingHouseName",
   SHIPPING_STREET: "ShippingStreetName",
   SHIPPING_STREET_LINE2: "ShippingStreetLine2Name",
+  PAYPAL_GOLD_BUTTON_COLOR: "rgb(255, 196, 57)",
+  PAYPAL_LATER_GOLD_BUTTON_COLOR: "rgb(255, 196, 57)",
+  PAYPAL_BLUE_BUTTON_COLOR: "rgb(0, 112, 186)",
+  PAYPAL_LATER_BLUE_BUTTON_COLOR: "rgb(0, 112, 186)",
+  PAYPAL_WHITE_BUTTON_COLOR: "rgb(255, 255, 255)",
+  PAYPAL_LATER_WHITE_BUTTON_COLOR: "rgb(255, 255, 255)",
+  PAYPAL_BLACK_BUTTON_COLOR: "rgb(44, 46, 47)",
+  PAYPAL_LATER_BLACK_BUTTON_COLOR: "rgb(44, 46, 47)",
+  VENMO_BLUE_BUTTON_COLOR: "rgb(0, 140, 255)",
+  VENMO_BLACK_BUTTON_COLOR: "rgb(44, 46, 47)",
+  ORDER_STATUS_SUCCESS: "Payment SuccessfulOrder",
+  ORDER_STATUS_CANCELLED: "paypal payment was cancelled",
+  ORDER_STATUS_CANCELLED_PAYLATER: "paylater payment was cancelled",
 };
 
 export const HEADINGS = {

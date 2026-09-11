@@ -59,7 +59,7 @@ The SDK processes the following payment card information **in memory only**:
 The SDK processes minimal technical data for authentication:
 - **Environment Key** — Provided by the merchant to identify the Spreedly environment
 - **Nonce** — One-time-use authentication token
-- **Signature** — HMAC signature for request verification
+- **Signature** — SHA-256 digital signature (certificate private key) for request verification
 - **Timestamp** — Request timestamp for replay attack prevention
 
 None of this technical data is personally identifiable.
@@ -118,7 +118,7 @@ All payment card data is transmitted securely:
 | **Encryption** | AES-256 (or stronger) in transit |
 | **Certificate Validation** | Browser-enforced certificate checks |
 | **Origin Validation** | Cross-origin message validation |
-| **Request Signing** | HMAC-SHA256 signatures |
+| **Request Signing** | SHA-256 signatures with the certificate private key |
 
 **Destination:** `https://core.spreedly.com` — Spreedly's PCI DSS Level 1 certified infrastructure.
 
@@ -173,7 +173,7 @@ The SDK implements multiple layers of security:
 ### Transmission Security
 - **TLS Encryption** — All data transmitted via HTTPS
 - **Certificate Validation** — Browser-enforced SSL/TLS checks
-- **Request Signing** — HMAC signatures prevent tampering
+- **Request Signing** — Certificate private-key signatures prevent tampering
 - **Nonce-Based Auth** — One-time-use authentication tokens prevent replay attacks
 
 ### Code Security

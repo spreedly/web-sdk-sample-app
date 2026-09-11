@@ -123,6 +123,11 @@ export const tokenizePage={
         const inputMode = await cvvField.getAttribute('inputmode');
         return inputMode;
   },
+    getFieldCheckboxByName: async (page: Page, fieldName: string) => {
+        const field = page.locator(`[data-hosted-field="${fieldName}"]`);
+        await expect(field).toBeVisible();
+        return field;
+    },
 
     clickOnParityOption: async (page: Page, parityOption: string) => {
         const parityOptionElement = page.locator(`#hf-demo-${parityOption}`);
