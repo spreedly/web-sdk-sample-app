@@ -141,7 +141,6 @@ export const SELECTORS = {
   ORDER_STATUS_BODY: '.toast-body',
   PAY_BUTTON_PAYPAL: 'Complete Purchase',
   PAY_BUTTON_PAYPAL_LATER: 'submit-button-initial',
-  HOSTED_CATALOGUE_FIELDS_DROPDOWN: 'Hosted catalogue fields'
 } as const;
 
 export const THREE_DS_SELECTORS = {
