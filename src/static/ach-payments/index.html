@@ -73,6 +73,24 @@
       font-size: 0.85rem;
       cursor: pointer;
       padding: 0.25rem 0.4rem;
+      z-index: 1;
+    }
+
+    /* Secure hosted-field iframe containers — styled to match the plain inputs. */
+    .ach-form .hosted-field {
+      height: 44px;
+      padding: 0 0.75rem;
+      border: 1.5px solid var(--color-gray-200);
+      border-radius: 8px;
+      background: white;
+      display: flex;
+      align-items: center;
+    }
+
+    .ach-form .hosted-field iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
     }
 
     .ach-form button[type="submit"] {
@@ -143,8 +161,9 @@
 
             <h1 class="mb-2">ACH Bank Account Payment</h1>
             <p class="mb-6" style="color: var(--color-gray-500);">
-              Tokenize a US/Canadian bank account using the SDK's <code>setupACHPayment</code> /
-              <code>submitACHPayment</code> methods, then run a purchase against the Spreedly Test gateway.
+              Collect a US/Canadian bank account with <code>SpreedlyACH</code> secure hosted fields —
+              the routing and account numbers are typed into Spreedly-hosted iframes and never touch
+              this page — then run a purchase against the Spreedly Test gateway.
             </p>
 
             <!-- Loading State -->
@@ -162,7 +181,8 @@
 
                 <div class="info-box">
                   <strong>Test data:</strong> Routing <code>021000021</code>, Account <code>9876543210</code>,
-                  Name <code>Bob Smith</code>. The Spreedly Test gateway always succeeds.
+                  Name <code>Bob Smith</code>. Type the routing and account numbers into the two secure
+                  fields below. The Spreedly Test gateway always succeeds.
                 </div>
 
                 <form id="ach-form" class="ach-form" autocomplete="off">
@@ -184,32 +204,16 @@
                     </div>
 
                     <div class="field">
-                      <label for="ach-routing">Routing number</label>
-                      <input
-                        type="text"
-                        id="ach-routing"
-                        name="bankRoutingNumber"
-                        placeholder="021000021"
-                        inputmode="numeric"
-                        autocomplete="off"
-                        maxlength="9"
-                        required
-                      >
-                      <span class="field-hint">9-digit US ABA number or Canadian electronic routing number.</span>
+                      <label for="ach-routing-field">Routing number</label>
+                      <div id="ach-routing-field" class="hosted-field"></div>
+                      <span class="field-hint">Secure Spreedly field. 9-digit US ABA number or Canadian electronic routing number.</span>
                     </div>
 
                     <div class="field account-row">
-                      <label for="ach-account">Account number</label>
-                      <input
-                        type="password"
-                        id="ach-account"
-                        name="bankAccountNumber"
-                        placeholder="••••••••••"
-                        inputmode="numeric"
-                        autocomplete="off"
-                        required
-                      >
+                      <label for="ach-account-field">Account number</label>
+                      <div id="ach-account-field" class="hosted-field"></div>
                       <button type="button" class="toggle-account-visibility" id="toggle-account-visibility">Show</button>
+                      <span class="field-hint">Secure Spreedly field, masked by default.</span>
                     </div>
 
                     <div class="form-row">
@@ -269,10 +273,12 @@
                 About ACH Payments
               </div>
               <p style="font-size: 0.875rem; color: var(--color-gray-600); line-height: 1.6;">
-                ACH payments tokenize a US or Canadian bank account. The SDK posts the bank
-                details directly to Spreedly Core; the merchant page never sees the raw account
-                number outside this form. After the SDK emits <code>achTokenGenerated</code>,
-                the merchant backend runs a purchase on a gateway that supports ACH.
+                ACH payments tokenize a US or Canadian bank account. With
+                <code>SpreedlyACH</code> the routing and account numbers are entered in
+                Spreedly-hosted iframes and tokenized from inside them — the merchant page never
+                touches the raw numbers, the same secure-field model as card number and CVV. After
+                the SDK emits <code>tokenGenerated</code>, the merchant backend runs a purchase on a
+                gateway that supports ACH.
               </p>
             </div>
 
@@ -284,13 +290,19 @@
                 Flow Steps
               </div>
               <ol id="flow-steps-list">
-                <li>Load SDK and initialize with auth params</li>
-                <li>Collect bank-account details in your own form</li>
-                <li>Call <code>setupACHPayment(config)</code></li>
-                <li>Call <code>submitACHPayment()</code></li>
-                <li>Listen for <code>achTokenGenerated</code> → token + last4</li>
+                <li>Load the hosted-fields SDK and create <code>new SpreedlyACH(auth)</code></li>
+                <li>Call <code>inAppElements({ routing, account })</code> to mount the secure fields</li>
+                <li>Buyer types the numbers into the iframes; name/type stay plain merchant inputs</li>
+                <li>Call <code>submit(formData)</code> with only the non-sensitive fields</li>
+                <li>Listen for <code>tokenGenerated</code> → token + last4</li>
                 <li>Send token to backend → run gateway purchase</li>
               </ol>
+
+              <p style="font-size: 0.8125rem; color: var(--color-gray-500); line-height: 1.6; margin-top: 0.75rem;">
+                The older <code>setupACHPayment</code> / <code>submitACHPayment</code> API, where the
+                merchant collected the numbers itself, still works but is deprecated in favor of these
+                secure fields.
+              </p>
             </div>
           </div>
         </div>
