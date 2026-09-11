@@ -277,7 +277,11 @@ sdk.on('validation', (payload) => {
 
 sdk.on('submitClick', (formFields) => {
   // Hosted Fields only: required when inAppElements({ submit }) is mounted.
-  sdk.submit({ ...formFields, email: document.getElementById('email').value });
+  // `formFields` is a read-only snapshot of what the shopper typed into the
+  // mounted hosted fields. Do not pass it back to submit() — those values are
+  // read from the iframes. Send only fields you did not mount as hosted fields.
+  console.log('hosted fields filled:', Object.keys(formFields));
+  sdk.submit({ email: document.getElementById('email').value });
 });
 
 sdk.on('close', () => {
@@ -930,13 +934,13 @@ API-safety floor (UTF-16 encodability, character limits, name charset) and then 
 `isRequired` gate — and your validator only runs for values that already passed both. It
 cannot relax a built-in rule, but it can reject a value the SDK would have accepted.
 
-Your validator runs on your own page, never inside the checkout iframe, so PAN and CVV are
-never passed to it. The iframe re-filters the validator field list before posting values to
-the parent, so those PCI keys cannot be requested either. It runs when the shopper leaves a
-field and again on submit (not on every keystroke), and it also runs on empty values when the
-field is not required — that is how you express a conditional requirement. When it reports a
-failure, the message renders inline on that field and submission is blocked before any network
-call.
+Your validator runs on your own page, never inside the checkout iframe, so PAN, CVV, month,
+and year are never passed to it. The iframe re-filters the validator field list before
+posting values to the parent, so those keys cannot be requested either. It runs when the
+shopper leaves a field and again on submit (not on every keystroke), and it also runs on
+empty values when the field is not required — that is how you express a conditional
+requirement. When it reports a failure, the message renders inline on that field and
+submission is blocked before any network call.
 
 Calling this twice for the same field replaces the previous validator. Registering before
 `expressCheckout()` is fine — the registration is kept in memory and applied once the form
@@ -1446,6 +1450,26 @@ State/province. Optional (method-dependent).
 > `optional` **zip?**: `string`
 
 Postal/ZIP code. Optional (method-dependent).
+
+### PPCPButtonColor
+
+> **PPCPButtonColor** = `"gold"` \| `"blue"` \| `"white"` \| `"black"`
+
+### PPCPButtonKind
+
+> **PPCPButtonKind** = `"paypal"` \| `"venmo"` \| `"payLater"` \| `"payPalCredit"`
+
+### PPCPButtonLabel
+
+> **PPCPButtonLabel** = `"checkout"` \| `"pay"` \| `"buynow"` \| `"subscribe"` \| `"donate"`
+
+### PPCPPaymentMethodType
+
+> **PPCPPaymentMethodType** = `"paypal"` \| `"venmo"` \| `"paylater"` \| `"paypal_credit"`
+
+### PPCPPresentationMode
+
+> **PPCPPresentationMode** = `"auto"` \| `"popup"` \| `"redirect"` \| `"payment-handler"`
 
 ### PazeAddress
 

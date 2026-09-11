@@ -256,10 +256,11 @@ sdk.on('ready', () => {
   sdk.setText('submit', 'Pay now');
 });
 
-sdk.on('submitClick', (formFields) => {
+sdk.on('submitClick', () => {
   sdk.setDisable('submit', true);
   sdk.setText('submit', 'Please wait…');
-  sdk.submit(formFields, { metadata: { order_id: 'ORDER-123' } });
+  // Mounted hosted fields are read from their iframes — pass only unmounted fields.
+  sdk.submit({}, { metadata: { order_id: 'ORDER-123' } });
 });
 
 sdk.on('tokenGenerated', () => {

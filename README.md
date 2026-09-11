@@ -37,10 +37,10 @@ Both options provide the same security guarantees — card data never touches yo
 
 ### Latest version
 
-The latest released version is `1.6.2`, released on 10th Sept'26, available at:
+The latest released version is `1.7.0`, released on 15th Sept'26, available at:
 
-- Hosted Fields: [`https://core.spreedly.com/checkout/sdk/1.6.2/index.js`](https://core.spreedly.com/checkout/sdk/1.6.2/index.js)
-- Express Checkout: [`https://core.spreedly.com/checkout/elements/1.6.2/express-checkout.js`](https://core.spreedly.com/checkout/elements/1.6.2/express-checkout.js)
+- Hosted Fields: [`https://core.spreedly.com/checkout/sdk/1.7.0/index.js`](https://core.spreedly.com/checkout/sdk/1.7.0/index.js)
+- Express Checkout: [`https://core.spreedly.com/checkout/elements/1.7.0/express-checkout.js`](https://core.spreedly.com/checkout/elements/1.7.0/express-checkout.js)
 
 
 
@@ -51,6 +51,7 @@ Previous production releases of the SDK:
 
 | Version | Packages                                                                                                                                                               | Release Date   | Notes |
 | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- | ----- |
+| `1.6.2` | Hosted Fields (`https://core.spreedly.com/checkout/sdk/1.6.2/index.js`) and Express Checkout (`https://core.spreedly.com/checkout/elements/1.6.2/express-checkout.js`) | September 10, 2026 | —     |
 | `1.5.1` | Hosted Fields (`https://core.spreedly.com/checkout/sdk/1.5.1/index.js`) and Express Checkout (`https://core.spreedly.com/checkout/elements/1.5.1/express-checkout.js`) | August 14, 2026  | —     |
 | `1.4.1` | Hosted Fields (`https://core.spreedly.com/checkout/sdk/1.4.1/index.js`) and Express Checkout (`https://core.spreedly.com/checkout/elements/1.4.1/express-checkout.js`) | July 31, 2026  | —     |
 | `1.3.1` | Hosted Fields (`https://core.spreedly.com/checkout/sdk/1.3.1/index.js`) and Express Checkout (`https://core.spreedly.com/checkout/elements/1.3.1/express-checkout.js`) | July 23, 2026  | —     |

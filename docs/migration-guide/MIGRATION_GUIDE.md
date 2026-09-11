@@ -251,8 +251,10 @@ sdk.inAppElements({
 sdk.on('submitClick', (formFields) => {
   sdk.setDisable('submit', true);
   sdk.setText('submit', 'Please wait...');
+  // `formFields` is informational — mounted values are read from the iframes.
+  // Pass only the fields you did not mount as hosted fields.
   sdk.submit(
-    { ...formFields, email: document.getElementById('email').value },
+    { email: document.getElementById('email').value },
     { metadata: { order_id: 'ORDER-123' } }
   );
 });
@@ -262,8 +264,8 @@ sdk.on('submitClick', (formFields) => {
 |---|---|
 | Mount | `inAppElements({ submit: { containerId, text?, styles? } })`. Opt-in; omit it to keep your own button. Mount `styles` are applied to the `<button>` on `ready`. |
 | Click | **Always** requires `sdk.on('submitClick', …)`. The SDK does **not** call `submit()` for you. |
-| Callback payload | Spreedly-param-keyed catalogue values (`first_name`, `month`/`year`, `email`, …). **Never PAN/CVV.** |
-| Your job | Call `sdk.submit(formData, submitParams)` from the listener. Hosted iframe keys in `formData` are still stripped (hosted wins). |
+| Callback payload | Spreedly-param-keyed catalogue values (`first_name`, `month`/`year`, `email`, …). **Never PAN/CVV.** Informational — do not pass it back to `submit()`. |
+| Your job | Call `sdk.submit(formData, submitParams)` from the listener, with `formData` carrying only the fields you did **not** mount as hosted fields (`{}` if you mounted them all). Mounted values are re-read from their iframes; hosted keys passed in `formData` are stripped (hosted wins) and warned about. |
 | Missing listener | Logs an error and emits `'error'` with `{ message }`. No tokenization. |
 | Loading UX | SDK does not auto-disable or change the label. Use `setDisable('submit', …)` / `setText('submit', …)` from `submitClick` / `tokenGenerated` / `error`. |
 | Styles / a11y | `setStyles('submit', …)`, `setLabel('submit', …)`, `setTitle('submit', …)`, `transferFocus('submit')`. Native `<button type="button">`; `aria-label` matches visible text. |

@@ -15,6 +15,7 @@ Methods are grouped into the sections below; type definitions follow.
 | [Lifecycle](#lifecycle) | Create, mount, reload, and tear down the SDK instance, and subscribe to events. |
 | [Field Configuration](#field-configuration) | Customize the hosted card-number and CVV fields — labels, placeholders, styles, number format, input mode, focus, masking, and the card-type badge. |
 | [Validation](#validation) | Trigger client-side validation and configure what the `validation` / `fieldStateChange` events report. |
+| [Tokenization](#tokenization) | Submit the collected card data to create a Spreedly payment method token. |
 | [Recache](#recache) | Update the CVV on an already-retained (previously tokenized) payment method. |
 | [Offsite Payments](#offsite-payments) | Redirect-style / alternative payment methods, inherited from the shared SDK — see the dedicated Offsite Payments reference. |
 | [ACH](#ach) | Bank-account (ACH) tokenization, inherited from the shared SDK — see the dedicated ACH reference. |
@@ -155,7 +156,7 @@ Field and button container configuration. Required.
   number - `{ containerId: string; styles?: Partial<CSSStyleDeclaration> }` for the card-number PCI iframe. `containerId` (required) is the id of the DOM element that will host the iframe; `styles` is optional CSS applied to the hosted input on `ready`.
   cvv - `{ containerId: string; styles?: Partial<CSSStyleDeclaration> }` for the CVV PCI iframe. Same shape as `number`.
   [catalogue type] - Optional. Any extra [HostedFormFieldType](#hostedformfieldtype) key (`expiry`, `month`, `year`, `first_name`, `last_name`, `full_name`, billing/shipping fields, …) mounts that field as its own iframe. Each value is a [HostedFieldInput](#hostedfieldinput): `containerId` (required), `styles` (optional, applied on `ready`), `isRequired` (optional — gates submit-time validation for every field except the default-required `first_name`/`last_name` and `expiry`/`month`/`year`, and sets HTML `required` + `aria-required` on the hosted input at mount). Combined `expiry` (`MM/YY`) is mutually exclusive with separate `month` + `year`.
-  submit - Optional [HostedSubmitButtonInput](#hostedsubmitbuttoninput): `{ containerId: string; text?: string; styles?: Partial<CSSStyleDeclaration> }`. A click emits `submitClick`; you must call `submit()` from that handler.
+  submit - Optional [HostedSubmitButtonInput](#hostedsubmitbuttoninput): `{ containerId: string; text?: string; styles?: Partial<CSSStyleDeclaration> }`. A click emits `submitClick`; you must call `submit()` from that handler. The `submitClick` payload is informational — do not pass it back to `submit()`, whose `formData` is for fields you did **not** mount.
 
 ##### Returns
 
@@ -270,7 +271,11 @@ sdk.on('validation', (payload) => {
 
 sdk.on('submitClick', (formFields) => {
   // Hosted Fields only: required when inAppElements({ submit }) is mounted.
-  sdk.submit({ ...formFields, email: document.getElementById('email').value });
+  // `formFields` is a read-only snapshot of what the shopper typed into the
+  // mounted hosted fields. Do not pass it back to submit() — those values are
+  // read from the iframes. Send only fields you did not mount as hosted fields.
+  console.log('hosted fields filled:', Object.keys(formFields));
+  sdk.submit({ email: document.getElementById('email').value });
 });
 
 sdk.on('close', () => {
@@ -389,9 +394,11 @@ Must be `'submit'`.
 ##### Example
 
 ```javascript
-sdk.on('submitClick', (formFields) => {
+sdk.on('submitClick', () => {
   sdk.setDisable('submit', true);
-  sdk.submit(formFields, { metadata: { order_id: 'ORDER-123' } });
+  // Pass only fields you did not mount as hosted fields — mounted values
+  // are read from their iframes, not from this argument.
+  sdk.submit({}, { metadata: { order_id: 'ORDER-123' } });
 });
 sdk.on('error', () => sdk.setDisable('submit', false));
 ```
@@ -808,10 +815,12 @@ Visible button text. Required.
 ##### Example
 
 ```javascript
-sdk.on('submitClick', (formFields) => {
+sdk.on('submitClick', () => {
   sdk.setText('submit', 'Please wait...');
   sdk.setDisable('submit', true);
-  sdk.submit(formFields, {});
+  // Mounted hosted fields are read straight from their iframes at tokenization,
+  // so pass only the fields you did not mount (none here) plus any submitParams.
+  sdk.submit({}, {});
 });
 sdk.on('tokenGenerated', () => {
   sdk.setText('submit', 'Pay now');
@@ -972,13 +981,13 @@ API-safety floor (UTF-16 encodability, character limits, name charset) and then 
 `isRequired` gate — and your validator only runs for values that already passed both. It
 cannot relax a built-in rule, but it can reject a value the SDK would have accepted.
 
-Your validator runs on your own page, never inside a payment iframe, so PAN and CVV are
-never passed to it. The iframe re-filters the validator field list before posting values
-to the parent, so those PCI keys cannot be requested either. It runs on `submit()` and
-`validate()` (not on every keystroke), and it also runs on empty values when the field is
-not required — that is how you express a conditional requirement. When it reports a
-failure, `submit()` is blocked before any network call and the message surfaces on the
-`validation` event as `payload.formFields[fieldName].error`; Hosted Fields iframes stamp
+Your validator runs on your own page, never inside a payment iframe, so PAN, CVV, month,
+year, and expiry are never passed to it. The iframe re-filters the validator field list
+before posting values to the parent, so those keys cannot be requested either. It runs on
+`submit()` and `validate()` (not on every keystroke), and it also runs on empty values when
+the field is not required — that is how you express a conditional requirement. When it
+reports a failure, `submit()` is blocked before any network call and the message surfaces on
+the `validation` event as `payload.formFields[fieldName].error`; Hosted Fields iframes stamp
 `aria-invalid` but never render error text, so displaying it stays yours.
 
 Calling this twice for the same field replaces the previous validator. If `fieldName` is not
@@ -1101,33 +1110,28 @@ sdk.removeValidation('zip');
 > **setFieldStateReporting**(`options`): `void`
 
 Configures which optional, sensitive fields are included on the continuous
-`fieldStateChange` snapshots. Call this to opt in to receiving the card's `iin` (the leading
-PAN digits / issuer identification number) from the number iframe, and/or the current
-catalogue-field `value` from name / address / expiry iframes. By default both are omitted,
-so you must opt in explicitly. Any script on the checkout page can read opted-in values from
-`message` events without registering an SDK handler — treat `includeValue` with the same
-care as `includeIin`. Sends a message to the number iframe and every mounted catalogue
-iframe, so call it once the fields are mounted (inside `on('ready', ...)`); it is a no-op
-after the instance is destroyed.
+`fieldStateChange` snapshots. Call this to opt in to receiving the card's `iin` (the
+leading PAN digits / issuer identification number) from the number iframe, and/or the
+current catalogue-field `value` from name / address / expiry iframes. By default both
+are omitted, so you must opt in explicitly. Any script on the checkout page can read
+opted-in values from `message` events without registering an SDK handler — treat
+`includeValue` with the same care as `includeIin`. Sends a message to the number iframe
+and every mounted catalogue iframe, so call it once the fields are mounted (inside
+`on('ready', ...)`); it is a no-op after the instance is destroyed.
 
 ##### Parameters
 
 ###### options
 
-Reporting options object. Required.
+`SpreedlySetFieldStateReporting`
+
+Reporting options
+  object. Required.
   - `includeIin` {boolean} - When `true`, the `iin` (PAN prefix) is added to
     `fieldStateChange` payloads whenever it is available. Optional; defaults to `false`.
   - `includeValue` {boolean} - When `true`, catalogue `fieldStateChange` payloads include
     the sub-input's current `value` (scrubbed of PAN-shaped data). Number, CVV, and
     submit-button snapshots never carry `value`. Optional; defaults to `false`.
-
-###### includeIin?
-
-`boolean`
-
-###### includeValue?
-
-`boolean`
 
 ##### Returns
 
@@ -1139,6 +1143,7 @@ Reporting options object. Required.
 const sdk = new SpreedlyHostedFields(authDetails);
 
 sdk.on('ready', () => {
+  // Opt in to receiving the card IIN on live field-state snapshots
   sdk.setFieldStateReporting({ includeIin: true, includeValue: true });
 });
 
@@ -1214,6 +1219,85 @@ sdk.on('ready', () => {
 
   // Or relax specific checks for parity with legacy behavior
   sdk.validate({ allow_blank_name: true, allow_expired_date: false, allow_blank_date: false });
+});
+```
+
+### Tokenization
+
+#### submit()
+
+> **submit**(`formData`, `submitParams?`): `void`
+
+Tokenizes the card. The card number and CVV are read from their PCI iframes, and every
+catalogue field you mounted via `inAppElements()` is read from its own iframe — none of
+those values pass through this call or through the merchant page.
+
+`formData` therefore carries only the tokenization params you did **not** mount as hosted
+fields (for example `full_name` or `address1` when you collect them in your own inputs).
+Pass `{}` when the mounted fields cover everything. Two groups of keys are dropped with a
+warning if they appear here:
+
+- `number`, `cvv`, and `verification_value` — always iframe-owned, and never accepted from
+  the parent page.
+- Any param owned by a **mounted** catalogue field — the hosted value wins.
+
+Because of that second rule, do **not** pass the `submitClick` payload back into this
+method. That payload is a snapshot of the mounted hosted fields, so every key in it is
+already iframe-owned; passing it back changes nothing about what gets tokenized and logs a
+"values for hosted fields were ignored" warning on every transaction.
+
+Tokenization runs inside the number iframe: it validates, collects the sibling iframe
+values, and POSTs. Results arrive on the `tokenGenerated` / `error` callbacks. Submits are
+throttled to one every 2 seconds, and the call is a no-op after `destroy()`.
+
+##### Parameters
+
+###### formData
+
+[`HostedFieldsFormData`](#hostedfieldsformdata)
+
+Tokenization params for the fields you did not mount as hosted fields. Required; pass `{}` if there are none.
+
+###### submitParams?
+
+[`SubmitParams`](#submitparams)
+
+Optional extras: `metadata`, `mandate`, `allow_expired_date`, `allow_blank_name`, `allow_blank_date`, `eligible_for_card_updater`.
+
+##### Returns
+
+`void`
+
+##### Examples
+
+```javascript
+// Your own Pay button; only number + cvv are hosted, so the rest ride on formData.
+document.getElementById('pay').addEventListener('click', () => {
+  sdk.submit(
+    {
+      full_name: document.getElementById('name').value,
+      month: document.getElementById('month').value,
+      year: document.getElementById('year').value,
+    },
+    { metadata: { order_id: 'ORDER-123' } }
+  );
+});
+```
+
+```javascript
+// Hosted submit button with the full catalogue mounted — nothing is left for formData.
+sdk.inAppElements({
+  number: { containerId: 'number-container' },
+  cvv: { containerId: 'cvv-container' },
+  expiry: { containerId: 'expiry-container' },
+  full_name: { containerId: 'name-container' },
+  submit: { containerId: 'submit-container', text: 'Pay now' },
+});
+
+sdk.on('submitClick', (formFields) => {
+  // `formFields` is informational — inspect it, but do not pass it back.
+  console.log('hosted fields filled:', Object.keys(formFields));
+  sdk.submit({}, { metadata: { order_id: 'ORDER-123' } });
 });
 ```
 
@@ -1657,26 +1741,6 @@ if (radarSessionId) {
 
 ***
 
-#### submit()
-
-> **submit**(`formData`, `submitParams?`): `void`
-
-##### Parameters
-
-###### formData
-
-[`HostedFieldsFormData`](#hostedfieldsformdata)
-
-###### submitParams?
-
-[`SubmitParams`](#submitparams)
-
-##### Returns
-
-`void`
-
-***
-
 #### tokenizeClickToPay()
 
 > **tokenizeClickToPay**(`body`, `options?`): `Promise`\<`unknown`\>
@@ -2017,100 +2081,12 @@ Optional hosted submit button:
 
 ## Type Declaration
 
-### address1?
-
-> `optional` **address1?**: [`HostedFieldInput`](#hostedfieldinput)
-
-Optional. Mounts a hosted billing address line 1 field (`address1`).
-
-***
-
-### address2?
-
-> `optional` **address2?**: [`HostedFieldInput`](#hostedfieldinput)
-
-Optional. Mounts a hosted billing address line 2 field (`address2`).
-
-***
-
-### city?
-
-> `optional` **city?**: [`HostedFieldInput`](#hostedfieldinput)
-
-Optional. Mounts a hosted billing city field (`city`).
-
-***
-
-### company?
-
-> `optional` **company?**: [`HostedFieldInput`](#hostedfieldinput)
-
-Optional. Mounts a hosted company field (`company`).
-
-***
-
-### country?
-
-> `optional` **country?**: [`HostedFieldInput`](#hostedfieldinput)
-
-Optional. Mounts a hosted billing country field (`country`).
-
-***
-
 ### cvv
 
 > **cvv**: [`HostedFieldInput`](#hostedfieldinput)
 
 CVV PCI iframe. Same key as [HostedCvvField](#hostedcvvfield) (`cvv`), not
 MandatoryCardPaymentFormFields.Cvv (`verification_value`).
-
-### email?
-
-> `optional` **email?**: [`HostedFieldInput`](#hostedfieldinput)
-
-Optional. Mounts a hosted cardholder email field (`email`).
-
-***
-
-### expiry?
-
-> `optional` **expiry?**: [`HostedFieldInput`](#hostedfieldinput)
-
-Optional. Mounts a hosted expiration-date field as a single `MM/YY` input, parsed into `month` + `year` at tokenization. Mutually exclusive with the separate `month`/`year` fields — if both are configured, `month`/`year` are ignored (with a warning) and this combined field wins.
-
-***
-
-### first\_name?
-
-> `optional` **first\_name?**: [`HostedFieldInput`](#hostedfieldinput)
-
-Optional. Mounts a hosted cardholder first-name field (`first_name`).
-
-***
-
-### full\_name?
-
-> `optional` **full\_name?**: [`HostedFieldInput`](#hostedfieldinput)
-
-Optional. Mounts a hosted cardholder full-name field (`full_name`). Use this instead of `first_name` + `last_name`.
-
-***
-
-### last\_name?
-
-> `optional` **last\_name?**: [`HostedFieldInput`](#hostedfieldinput)
-
-Optional. Mounts a hosted cardholder last-name field (`last_name`).
-
-***
-
-### month?
-
-> `optional` **month?**: [`HostedFieldInput`](#hostedfieldinput)
-
-Optional. Mounts a hosted expiration-month field (`month`) as a separate `MM` input. Use together with `year`; do not combine with the `expiry` field.
-
-***
 
 ### number
 
@@ -2123,96 +2099,10 @@ Card number PCI iframe. Same key as MandatoryCardPaymentFormFields.CardNumber.
 > `optional` **submit?**: [`HostedSubmitButtonInput`](#hostedsubmitbuttoninput)
 
 Optional hosted submit button iframe. When mounted, a click emits `submitClick`
-with collected catalogue values. Register `sdk.on('submitClick', …)` and call
-`submit()` from that callback; a missing listener emits `error`.
-
-***
-
-### phone\_number?
-
-> `optional` **phone\_number?**: [`HostedFieldInput`](#hostedfieldinput)
-
-Optional. Mounts a hosted billing phone-number field (`phone_number`).
-
-***
-
-### shipping\_address1?
-
-> `optional` **shipping\_address1?**: [`HostedFieldInput`](#hostedfieldinput)
-
-Optional. Mounts a hosted shipping address line 1 field (`shipping_address1`).
-
-***
-
-### shipping\_address2?
-
-> `optional` **shipping\_address2?**: [`HostedFieldInput`](#hostedfieldinput)
-
-Optional. Mounts a hosted shipping address line 2 field (`shipping_address2`).
-
-***
-
-### shipping\_city?
-
-> `optional` **shipping\_city?**: [`HostedFieldInput`](#hostedfieldinput)
-
-Optional. Mounts a hosted shipping city field (`shipping_city`).
-
-***
-
-### shipping\_country?
-
-> `optional` **shipping\_country?**: [`HostedFieldInput`](#hostedfieldinput)
-
-Optional. Mounts a hosted shipping country field (`shipping_country`).
-
-***
-
-### shipping\_phone\_number?
-
-> `optional` **shipping\_phone\_number?**: [`HostedFieldInput`](#hostedfieldinput)
-
-Optional. Mounts a hosted shipping phone-number field (`shipping_phone_number`).
-
-***
-
-### shipping\_state?
-
-> `optional` **shipping\_state?**: [`HostedFieldInput`](#hostedfieldinput)
-
-Optional. Mounts a hosted shipping state/province field (`shipping_state`).
-
-***
-
-### shipping\_zip?
-
-> `optional` **shipping\_zip?**: [`HostedFieldInput`](#hostedfieldinput)
-
-Optional. Mounts a hosted shipping ZIP / postal-code field (`shipping_zip`).
-
-***
-
-### state?
-
-> `optional` **state?**: [`HostedFieldInput`](#hostedfieldinput)
-
-Optional. Mounts a hosted billing state/province field (`state`).
-
-***
-
-### year?
-
-> `optional` **year?**: [`HostedFieldInput`](#hostedfieldinput)
-
-Optional. Mounts a hosted expiration-year field (`year`) as a separate `YYYY` input. Use together with `month`; do not combine with the `expiry` field.
-
-***
-
-### zip?
-
-> `optional` **zip?**: [`HostedFieldInput`](#hostedfieldinput)
-
-Optional. Mounts a hosted billing ZIP / postal-code field (`zip`).
+with a read-only snapshot of the collected catalogue values. Register
+`sdk.on('submitClick', …)` and call `submit()` from that callback, passing only the
+fields you did **not** mount as hosted fields — mounted values are read from their
+iframes. A missing listener emits `error`.
 
 ### HostedFieldsFormData
 
@@ -2429,6 +2319,26 @@ State/province. Optional (method-dependent).
 > `optional` **zip?**: `string`
 
 Postal/ZIP code. Optional (method-dependent).
+
+### PPCPButtonColor
+
+> **PPCPButtonColor** = `"gold"` \| `"blue"` \| `"white"` \| `"black"`
+
+### PPCPButtonKind
+
+> **PPCPButtonKind** = `"paypal"` \| `"venmo"` \| `"payLater"` \| `"payPalCredit"`
+
+### PPCPButtonLabel
+
+> **PPCPButtonLabel** = `"checkout"` \| `"pay"` \| `"buynow"` \| `"subscribe"` \| `"donate"`
+
+### PPCPPaymentMethodType
+
+> **PPCPPaymentMethodType** = `"paypal"` \| `"venmo"` \| `"paylater"` \| `"paypal_credit"`
+
+### PPCPPresentationMode
+
+> **PPCPPresentationMode** = `"auto"` \| `"popup"` \| `"redirect"` \| `"payment-handler"`
 
 ### RecacheOptions
 
