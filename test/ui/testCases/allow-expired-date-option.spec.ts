@@ -174,7 +174,7 @@ test.describe("Allow Expired Date Option", () => {
         
     });
 
-    test("should allow expired date when allow expired date option is enabled in tokenize flow with hosted fields dialog mode", async ({
+    test("should allow expired date when allow expired date option is enabled in tokenize flow with Express Checkout dialog mode", async ({
       page,
     }) => {
         await page.goto(MONOREPO_URLS.BASE);

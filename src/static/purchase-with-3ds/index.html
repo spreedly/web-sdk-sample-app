@@ -348,6 +348,7 @@
       flex: 1;
       display: flex;
       flex-direction: column;
+      margin-bottom: 1rem;
     }
 
     .form-label {
@@ -374,11 +375,19 @@
     .hosted-field-container {
       border: 1px solid var(--color-gray-300);
       border-radius: var(--radius-md);
-      padding: 0.75rem 1rem;
-      min-height: 44px;
-      display: flex;
-      align-items: center;
+      height: 48px;
       background-color: var(--color-white);
+      overflow: hidden;
+    }
+
+    .hosted-field-container iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    .hosted-field-container.has-error {
+      border-color: #ef4444;
     }
 
     /* Navigation Buttons */
@@ -840,42 +849,44 @@
 
                     <!-- Hosted Fields Form -->
                     <div id="hosted-fields-form" class="hidden">
+                      <!-- HF name/expiry/email now live in iframe[src*="formField.html"] -->
                       <form id="payment-form">
                         <div class="form-row">
                           <div class="form-group">
-                            <label class="form-label" for="first_name">First Name</label>
-                            <input type="text" id="first_name" name="first_name" class="form-input" placeholder="John" required>
+                            <label class="form-label">First Name</label>
+                            <div id="hosted-field-first_name" class="hosted-field-container"></div>
+                            <div id="hosted-field-first_name-error" class="hf-field-error" role="alert" aria-live="polite"></div>
                           </div>
                           <div class="form-group">
-                            <label class="form-label" for="last_name">Last Name</label>
-                            <input type="text" id="last_name" name="last_name" class="form-input" placeholder="Doe" required>
+                            <label class="form-label">Last Name</label>
+                            <div id="hosted-field-last_name" class="hosted-field-container"></div>
+                            <div id="hosted-field-last_name-error" class="hf-field-error" role="alert" aria-live="polite"></div>
                           </div>
                         </div>
 
                         <div class="form-group">
                           <label class="form-label">Card Number</label>
                           <div id="card-number-field" class="hosted-field-container"></div>
-                        </div>
-
-                        <div class="form-group">
-                          <label class="form-label">CVV</label>
-                          <div id="cvv-field" class="hosted-field-container" style="max-width: 120px;"></div>
+                          <div id="card-number-error" class="hf-field-error" role="alert" aria-live="polite"></div>
                         </div>
 
                         <div class="form-row">
                           <div class="form-group">
-                            <label class="form-label" for="month">Expiry Month</label>
-                            <input type="text" id="month" name="month" class="form-input" placeholder="MM" maxlength="2" inputmode="numeric" required>
+                            <label class="form-label">Expiration date</label>
+                            <div id="hosted-field-expiry" class="hosted-field-container"></div>
+                            <div id="hosted-field-expiry-error" class="hf-field-error" role="alert" aria-live="polite"></div>
                           </div>
                           <div class="form-group">
-                            <label class="form-label" for="year">Expiry Year</label>
-                            <input type="text" id="year" name="year" class="form-input" placeholder="YYYY" maxlength="4" inputmode="numeric" required>
+                            <label class="form-label">CVV</label>
+                            <div id="cvv-field" class="hosted-field-container" style="max-width: 120px;"></div>
+                            <div id="cvv-error" class="hf-field-error" role="alert" aria-live="polite"></div>
                           </div>
                         </div>
 
                         <div class="form-group">
-                          <label class="form-label" for="email">Email (optional)</label>
-                          <input type="email" id="email" name="email" class="form-input" placeholder="john@example.com">
+                          <label class="form-label">Email (optional)</label>
+                          <div id="hosted-field-email" class="hosted-field-container"></div>
+                          <div id="hosted-field-email-error" class="hf-field-error" role="alert" aria-live="polite"></div>
                         </div>
                       </form>
                     </div>

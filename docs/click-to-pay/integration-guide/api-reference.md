@@ -103,8 +103,11 @@ All optional, but you must provide **either** `withSelectedCard: true` (saved ca
 
 **`creditCard` (whitelist, snake_case, all optional):** `first_name`, `last_name`, `full_name`,
 `email`, `month`, `year`, `phone_number`, `company`, `eligible_for_card_updater`, `address1`,
-`address2`, `city`, `state`, `zip`, `country`, `shipping_address1`, `shipping_address2`,
-`shipping_city`, `shipping_state`, `shipping_zip`, `shipping_country`, `shipping_phone_number`.
+`address2`, `city`, `state`, `zip`, `country`, `house_number_or_name`, `street`, `street_line2`,
+`phone_number_country_code`, `phone_number_area_code`, `shipping_address1`, `shipping_address2`,
+`shipping_city`, `shipping_state`, `shipping_zip`, `shipping_country`, `shipping_phone_number`,
+`shipping_house_number_or_name`, `shipping_street`, `shipping_street_line2`,
+`shipping_phone_number_country_code`, `shipping_phone_number_area_code`.
 Only present keys are sent. (The PAN and CVV are **never** accepted here.)
 
 ---
