@@ -2017,12 +2017,100 @@ Optional hosted submit button:
 
 ## Type Declaration
 
+### address1?
+
+> `optional` **address1?**: [`HostedFieldInput`](#hostedfieldinput)
+
+Optional. Mounts a hosted billing address line 1 field (`address1`).
+
+***
+
+### address2?
+
+> `optional` **address2?**: [`HostedFieldInput`](#hostedfieldinput)
+
+Optional. Mounts a hosted billing address line 2 field (`address2`).
+
+***
+
+### city?
+
+> `optional` **city?**: [`HostedFieldInput`](#hostedfieldinput)
+
+Optional. Mounts a hosted billing city field (`city`).
+
+***
+
+### company?
+
+> `optional` **company?**: [`HostedFieldInput`](#hostedfieldinput)
+
+Optional. Mounts a hosted company field (`company`).
+
+***
+
+### country?
+
+> `optional` **country?**: [`HostedFieldInput`](#hostedfieldinput)
+
+Optional. Mounts a hosted billing country field (`country`).
+
+***
+
 ### cvv
 
 > **cvv**: [`HostedFieldInput`](#hostedfieldinput)
 
 CVV PCI iframe. Same key as [HostedCvvField](#hostedcvvfield) (`cvv`), not
 MandatoryCardPaymentFormFields.Cvv (`verification_value`).
+
+### email?
+
+> `optional` **email?**: [`HostedFieldInput`](#hostedfieldinput)
+
+Optional. Mounts a hosted cardholder email field (`email`).
+
+***
+
+### expiry?
+
+> `optional` **expiry?**: [`HostedFieldInput`](#hostedfieldinput)
+
+Optional. Mounts a hosted expiration-date field as a single `MM/YY` input, parsed into `month` + `year` at tokenization. Mutually exclusive with the separate `month`/`year` fields — if both are configured, `month`/`year` are ignored (with a warning) and this combined field wins.
+
+***
+
+### first\_name?
+
+> `optional` **first\_name?**: [`HostedFieldInput`](#hostedfieldinput)
+
+Optional. Mounts a hosted cardholder first-name field (`first_name`).
+
+***
+
+### full\_name?
+
+> `optional` **full\_name?**: [`HostedFieldInput`](#hostedfieldinput)
+
+Optional. Mounts a hosted cardholder full-name field (`full_name`). Use this instead of `first_name` + `last_name`.
+
+***
+
+### last\_name?
+
+> `optional` **last\_name?**: [`HostedFieldInput`](#hostedfieldinput)
+
+Optional. Mounts a hosted cardholder last-name field (`last_name`).
+
+***
+
+### month?
+
+> `optional` **month?**: [`HostedFieldInput`](#hostedfieldinput)
+
+Optional. Mounts a hosted expiration-month field (`month`) as a separate `MM` input. Use together with `year`; do not combine with the `expiry` field.
+
+***
 
 ### number
 
@@ -2037,6 +2125,94 @@ Card number PCI iframe. Same key as MandatoryCardPaymentFormFields.CardNumber.
 Optional hosted submit button iframe. When mounted, a click emits `submitClick`
 with collected catalogue values. Register `sdk.on('submitClick', …)` and call
 `submit()` from that callback; a missing listener emits `error`.
+
+***
+
+### phone\_number?
+
+> `optional` **phone\_number?**: [`HostedFieldInput`](#hostedfieldinput)
+
+Optional. Mounts a hosted billing phone-number field (`phone_number`).
+
+***
+
+### shipping\_address1?
+
+> `optional` **shipping\_address1?**: [`HostedFieldInput`](#hostedfieldinput)
+
+Optional. Mounts a hosted shipping address line 1 field (`shipping_address1`).
+
+***
+
+### shipping\_address2?
+
+> `optional` **shipping\_address2?**: [`HostedFieldInput`](#hostedfieldinput)
+
+Optional. Mounts a hosted shipping address line 2 field (`shipping_address2`).
+
+***
+
+### shipping\_city?
+
+> `optional` **shipping\_city?**: [`HostedFieldInput`](#hostedfieldinput)
+
+Optional. Mounts a hosted shipping city field (`shipping_city`).
+
+***
+
+### shipping\_country?
+
+> `optional` **shipping\_country?**: [`HostedFieldInput`](#hostedfieldinput)
+
+Optional. Mounts a hosted shipping country field (`shipping_country`).
+
+***
+
+### shipping\_phone\_number?
+
+> `optional` **shipping\_phone\_number?**: [`HostedFieldInput`](#hostedfieldinput)
+
+Optional. Mounts a hosted shipping phone-number field (`shipping_phone_number`).
+
+***
+
+### shipping\_state?
+
+> `optional` **shipping\_state?**: [`HostedFieldInput`](#hostedfieldinput)
+
+Optional. Mounts a hosted shipping state/province field (`shipping_state`).
+
+***
+
+### shipping\_zip?
+
+> `optional` **shipping\_zip?**: [`HostedFieldInput`](#hostedfieldinput)
+
+Optional. Mounts a hosted shipping ZIP / postal-code field (`shipping_zip`).
+
+***
+
+### state?
+
+> `optional` **state?**: [`HostedFieldInput`](#hostedfieldinput)
+
+Optional. Mounts a hosted billing state/province field (`state`).
+
+***
+
+### year?
+
+> `optional` **year?**: [`HostedFieldInput`](#hostedfieldinput)
+
+Optional. Mounts a hosted expiration-year field (`year`) as a separate `YYYY` input. Use together with `month`; do not combine with the `expiry` field.
+
+***
+
+### zip?
+
+> `optional` **zip?**: [`HostedFieldInput`](#hostedfieldinput)
+
+Optional. Mounts a hosted billing ZIP / postal-code field (`zip`).
 
 ### HostedFieldsFormData
 
