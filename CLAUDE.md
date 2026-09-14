@@ -64,7 +64,8 @@ backend, plain browser JS frontend (no bundler).
 
 | Flow dir | Demos | SDK surface | Backend routes used |
 |---|---|---|---|
-| `tokenize/` | Tokenization + full SDK config panel (the API showcase: setLabel/setTitle/formats/mask/validate/reload/destroy/…) | HF + EC | `auth/params`, `retain` |
+| `tokenize/` | Tokenization with a **merchant-hosted form** (name/expiry/address on the page; only number + CVV are iframes) + SDK config panel | HF + EC | `auth/params`, `retain` |
+| `tokenize-catalogue/` | Tokenization with **SDK-hosted catalogue fields** (`inAppElements`) + custom validators (`addValidation`) | HF + EC | `auth/params`, `retain` |
 | `purchase/` | 3-step storefront, saved cards + new card, no 3DS | HF + EC (dialog) | `auth/params`, `payment_methods`, `simple-purchase` |
 | `recache/` | CVV recache on a retained card (`setRecache` → `recache()`) — done client-side via SDK; the server recache route goes unused | HF + EC | `auth/params`, `payment_methods` |
 | `purchase-with-3ds/` | 3DS **Global** (`sca_provider_key` server-side), `SpreedlyThreeDSLifecycle` + `serializeBrowserInfo` | HF + EC | `create-purchase-with-3ds` |
