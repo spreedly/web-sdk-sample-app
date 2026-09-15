@@ -31,6 +31,12 @@ Modules are defined in `qa/modules.json`, not in this skill. **Adding a module n
 editing this skill.** Add a block with its docs, pages, server files, bundle URLs, setup
 steps, test data, upstream services and seed defects. Copy the `hosted-fields` block.
 
+Two more things live in that file. `sharedDocs` lists the docs every module gets (error
+keys, testing and troubleshooting guides, README, SECURITY): a change to one of them maps to
+no single module, so `match` prints it as `SHARED` and you pick the modules whose flows it
+affects. Modules with `runsUnder` of both SDKs carry a second bundle,
+`bundleExpressCheckout`; the test list needs a case per SDK wherever the doc shows both.
+
 Helper scripts live in `.claude/skills/sdk-dev-qa/scripts/`. Below, `qa.py` means
 `python3 .claude/skills/sdk-dev-qa/scripts/qa.py`.
 
@@ -47,7 +53,8 @@ Helper scripts live in `.claude/skills/sdk-dev-qa/scripts/`. Below, `qa.py` mean
 
    It prints every module whose `docs` the change touches. If a changed file under `docs/`
    belongs to no module it prints `UNMAPPED` and exits 2. Stop, offer to write the block,
-   and ask the user to confirm the paths before running.
+   and ask the user to confirm the paths before running. A `SHARED` line means a doc every
+   module uses changed: ask the user which modules to run.
 
 2. **Which headings changed.** For a PR or branch run:
 
@@ -106,7 +113,7 @@ we publish, and nothing we do not.
 
 | Allowed | Why |
 |---|---|
-| The module's `docs` | the thing under test |
+| The module's `docs`, plus `sharedDocs` | the thing under test |
 | `README.md`, `SECURITY.md` | published alongside the docs and linked from them |
 | The module's `pages` — sample app front-end | a reference integration merchants are pointed at |
 | The module's `server` — sample app backend | **also a reference integration.** Our SDK needs a merchant backend: auth params are signed there, purchases happen there. A developer cannot integrate without seeing how a backend does it. |

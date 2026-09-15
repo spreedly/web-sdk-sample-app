@@ -12,7 +12,8 @@ checkout web SDK. You have never seen it before.
 
 Everything Spreedly publishes for this module:
 
-1. **The docs** — the `docs` list in your module block. This is what you are testing.
+1. **The docs** — the `docs` list in your module block, plus the `sharedDocs` list (error
+   keys, testing and troubleshooting guides). This is what you are testing.
 2. **`README.md` and `SECURITY.md`** — published with the docs.
 3. **The sample app front-end** — the `pages` list. A reference integration.
 4. **The sample app backend** — the `server` list. Also a reference integration. Our SDK
@@ -68,7 +69,9 @@ reviewer cares about most. Then the rest.
 ## Pages
 
 - One per test case, named for the id: `pages/HF-014.html`.
-- Self-contained. Load the SDK from the module's `bundle.rc` URL the way the docs say.
+- Self-contained. Load the SDK from the module's `bundle.rc` URL the way the docs say. If the
+  block has `bundleExpressCheckout`, the flow also runs under Express Checkout: build the
+  case for whichever SDK the test case names, and load any `extraScripts` the docs require.
 - No cleverness. The plainest thing that satisfies the test case.
 - If the docs give example code, start from it **verbatim**. If it does not work, that is a
   finding — record the exact error.

@@ -4,11 +4,13 @@
     qa.py list                                   modules in qa/modules.json
     qa.py match   --pr N | --branch [BASE] | FILE...   which modules a change touches
     qa.py touched --pr N | --branch [BASE]        which doc headings a change touches
-    qa.py bundle  <module>                        SDK version on the module's rc bundle vs README
+    qa.py bundle  <module>                        SDK version on the module's rc bundle(s) vs README
 
-`match` exits 2 when a changed file under docs/ belongs to no module. `touched` diffs the
-working tree against the merge base with BASE (default origin/main), so a checked-out PR
-and planted seed defects both count. For --pr the PR must be checked out first.
+`match` exits 2 when a changed file under docs/ belongs to no module. A file in `sharedDocs`
+(error keys, testing guide, README...) belongs to every module: it is printed as SHARED and
+the human picks which modules to run. `touched` diffs the working tree against the merge
+base with BASE (default origin/main), so a checked-out PR and planted seed defects both
+count. For --pr the PR must be checked out first.
 """
 
 import json
@@ -29,10 +31,18 @@ def die(msg, code=1):
     sys.exit(code)
 
 
-def modules():
+def config():
     if not CONFIG.exists():
         die(f"no config at {CONFIG}")
-    return json.loads(CONFIG.read_text())["modules"]
+    return json.loads(CONFIG.read_text())
+
+
+def modules():
+    return config()["modules"]
+
+
+def shared_docs():
+    return config().get("sharedDocs") or []
 
 
 def run(*args, check=True):
@@ -75,38 +85,44 @@ def changed_files(argv):
 
 
 def owners(files):
-    """Map each changed doc file to the modules that list it."""
-    ms = modules()
-    hits, unmapped = {}, []
+    """Split changed files into {module: [docs]}, shared docs, and unmapped docs."""
+    ms, shared_list = modules(), shared_docs()
+    hits, shared, unmapped = {}, [], []
     for f in files:
         mods = [name for name, cfg in ms.items() if f in cfg["docs"]]
         if mods:
             for m in mods:
                 hits.setdefault(m, []).append(f)
+        elif f in shared_list:
+            shared.append(f)
         elif f.startswith("docs/"):
             unmapped.append(f)
-    return hits, unmapped
+    return hits, shared, unmapped
 
 
 # ── commands ─────────────────────────────────────────────────────────────────
 
 def cmd_list():
     ms = modules()
-    print(f"{'module':<18} {'title':<40} docs  selfcheck")
+    print(f"{'module':<26} {'title':<58} docs  sdks  selfcheck")
     for name, cfg in sorted(ms.items()):
         n = len(cfg.get("seedDefects") or [])
-        print(f"{name:<18} {cfg['title']:<40} {len(cfg['docs']):<5} {n or 'not set up'}")
+        sdks = len(cfg.get("runsUnder") or [1])
+        print(f"{name:<26} {cfg['title'][:58]:<58} {len(cfg['docs']):<5} {sdks:<5} {n or 'not set up'}")
+    print(f"\nshared docs (every module, not mapped by match): {', '.join(shared_docs())}")
 
 
 def cmd_match(argv):
     label, files = changed_files(argv)
-    hits, unmapped = owners(files)
+    hits, shared, unmapped = owners(files)
     print(f"{label}: {len(files)} changed file(s)")
     for m, fs in sorted(hits.items()):
         print(f"  {m}")
         for f in fs:
             print(f"    {f}")
-    if not hits:
+    for f in shared:
+        print(f"  SHARED {f}  (belongs to every module — pick the modules whose flows this change affects)")
+    if not hits and not shared:
         print("  no module docs changed — nothing to test")
     for f in unmapped:
         print(f"  UNMAPPED {f}  (under docs/ but in no module — add it to qa/modules.json)")
@@ -142,16 +158,17 @@ def cmd_touched(argv):
         die("touched needs --pr N or --branch [BASE]")
     mb = run("git", "merge-base", base, "HEAD").strip()
     files = run("git", "diff", "--name-only", mb).split()
-    hits, _ = owners(files)
-    doc_files = sorted({f for fs in hits.values() for f in fs})
+    hits, shared, _ = owners(files)
+    doc_files = sorted({f for fs in hits.values() for f in fs}) + [f for f in shared if f.startswith("docs/")]
     print(f"{label}: headings touched in module docs")
     if not doc_files:
         print("  none")
         return
     for f in doc_files:
+        tag = " (shared)" if f in shared else ""
         path = ROOT / f
         if not path.exists():
-            print(f"  {f} (deleted)")
+            print(f"  {f} (deleted){tag}")
             continue
         new_heads = headings_for(path.read_text())
         old_heads = headings_for(run("git", "show", f"{mb}:{f}", check=False))
@@ -168,9 +185,9 @@ def cmd_touched(argv):
             if h and h not in seen:
                 seen.append(h)
         for h in seen:
-            print(f"  {f} § {h}")
+            print(f"  {f} § {h}{tag}")
         if not seen:
-            print(f"  {f} (changed before the first heading)")
+            print(f"  {f} (changed before the first heading){tag}")
 
 
 VERSION_PATTERNS = [
@@ -184,43 +201,50 @@ VERSION_PATTERNS = [
 SEMVER = re.compile(r"[\"'](\d+\.\d+\.\d+)[\"']")
 
 
-def cmd_bundle(argv):
-    if not argv:
-        die("bundle needs a module name")
-    cfg = modules().get(argv[0]) or die(f"unknown module '{argv[0]}'")
-    url = cfg["bundle"]["rc"]
+def served_version(url):
     try:
         with urllib.request.urlopen(url, timeout=30) as r:
             body = r.read().decode("utf-8", "replace")
     except Exception as e:  # noqa: BLE001
         die(f"could not fetch {url}: {e}")
-    served, how = None, None
     for pat in VERSION_PATTERNS:
         m = pat.search(body)
         if m:
-            served, how = m.group(1), f"matched {pat.pattern!r}"
-            break
-    if not served:
-        common = Counter(SEMVER.findall(body)).most_common(1)
-        if common:
-            served, how = common[0][0], "most frequent semver string (heuristic)"
+            return m.group(1), f"matched {pat.pattern!r}"
+    common = Counter(SEMVER.findall(body)).most_common(1)
+    if common:
+        return common[0][0], "most frequent semver string (heuristic)"
+    return None, "no version string found"
+
+
+def cmd_bundle(argv):
+    if not argv:
+        die("bundle needs a module name")
+    cfg = modules().get(argv[0]) or die(f"unknown module '{argv[0]}'")
     readme = None
     if README.exists():
         m = re.search(r"latest released version is `(\d+\.\d+\.\d+)`", README.read_text())
         readme = m.group(1) if m else None
-
-    print(f"bundle : {url}")
-    print(f"served : {served or 'unknown'}  ({how or 'no version string found'})")
     print(f"readme : {readme or 'not stated'}  (README.md 'Latest version')")
-    if served and readme:
-        s, r_ = tuple(map(int, served.split("."))), tuple(map(int, readme.split(".")))
-        if s >= r_:
-            print("verdict: OK — the bundle is at or past the version the docs describe")
+
+    checks = [("bundle", cfg["bundle"]["rc"])]
+    if cfg.get("bundleExpressCheckout"):
+        checks.append(("bundleExpressCheckout", cfg["bundleExpressCheckout"]["rc"]))
+    stop = False
+    for name, url in checks:
+        served, how = served_version(url)
+        print(f"{name:<21}: {url}")
+        print(f"{'  served':<21}: {served or 'unknown'}  ({how})")
+        if served and readme:
+            s, r_ = tuple(map(int, served.split("."))), tuple(map(int, readme.split(".")))
+            if s < r_:
+                stop = True
         else:
-            print("verdict: STOP — the bundle is older than the docs; the SDK change has not reached rc")
-            sys.exit(3)
-    else:
-        print("verdict: cannot compare — confirm by hand before running")
+            print("  cannot compare — confirm by hand before running")
+    if stop:
+        print("verdict: STOP — a bundle is older than the docs; the SDK change has not reached rc")
+        sys.exit(3)
+    print("verdict: OK — every bundle is at or past the version the docs describe")
 
 
 if __name__ == "__main__":
