@@ -14,3 +14,12 @@ log/
 
 .cursor
 .DS_Store
+
+# Developer QA (sdk-dev-qa skill) — generated per run; test-cases.md and report.md are committed
+qa/*/pages/
+qa/*/shots/
+qa/*/notes.md
+qa/*/results.json
+qa/*/verified.json
+qa/*/.seeded-defects.md
+__pycache__/

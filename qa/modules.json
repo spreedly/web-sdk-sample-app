@@ -1,0 +1,75 @@
+{
+  "$comment": "Modules the sdk-dev-qa skill can test. Paths are relative to this repo. Add a block per module; never edit the skill.",
+  "modules": {
+    "hosted-fields": {
+      "title": "Hosted Fields — card tokenization",
+      "idPrefix": "HF",
+      "docs": [
+        "docs/tokenization/OVERVIEW.md",
+        "docs/tokenization/hosted-fields/INTEGRATION_GUIDE.md",
+        "docs/HOSTED_FIELDS_API_REFERENCE.md",
+        "docs/errors/ERROR_KEYS_REFERENCE.md"
+      ],
+      "pages": [
+        "src/static/tokenize/index.html",
+        "src/static/tokenize/tokenize.js",
+        "src/static/purchase/index.html",
+        "src/static/purchase/purchase.js",
+        "src/static/shared/utils.js"
+      ],
+      "server": [
+        "src/routes.ts",
+        "src/controllers/auth.ts",
+        "src/controllers/payments.ts"
+      ],
+      "bundle": {
+        "rc": "https://core-test.spreedly.com/checkout/sdk/rc/index.js",
+        "staging": "https://core-test.spreedly.com/checkout/sdk/{version}/index.js",
+        "production": "https://core.spreedly.com/checkout/sdk/{version}/index.js"
+      },
+      "globalName": "SpreedlyHostedFields",
+      "setup": [
+        "npm install",
+        "Get a .env from the team and put it in the repo root. Hosted fields needs SPREEDLY_ENVIRONMENT_KEY_NEW, CERTIFICATE_TOKEN_NEW, PRIVATE_KEY_NEW, SPREEDLY_ACCESS_SECRET_NEW, SPREEDLY_URL, and SPREEDLY_GATEWAY_TOKEN_NEW for purchase cases. Never commit it.",
+        "npm run dev — backend on http://localhost:3000. Or skip the .env and point pages at testData.apiBaseHeroku.",
+        "python3 -m http.server 4173 -d qa/hosted-fields/pages — serves the built pages for step 3."
+      ],
+      "testData": {
+        "apiBase": "http://localhost:3000/api/v1",
+        "apiBaseHeroku": "https://checkout-web-sample-app-049a3c617015.herokuapp.com/api/v1",
+        "authParamsRoute": "GET /auth/params",
+        "cards": [
+          { "brand": "Visa", "number": "4111111111111111", "cvv": "123", "expiry": "any future date" },
+          { "brand": "Mastercard", "number": "5555555555554444", "cvv": "123", "expiry": "any future date" },
+          { "brand": "American Express", "number": "378282246310005", "cvv": "1234", "expiry": "any future date" }
+        ],
+        "moreTestData": "https://developer.spreedly.com/docs/test-data — includes cards that decline, for error cases"
+      },
+      "upstream": [
+        "https://core-test.spreedly.com — Spreedly staging: tokenization API and the bundle CDN",
+        "https://checkout-web-sample-app-049a3c617015.herokuapp.com — the hosted backend, when used instead of localhost"
+      ],
+      "seedDefects": [
+        {
+          "kind": "rename",
+          "file": "docs/tokenization/hosted-fields/INTEGRATION_GUIDE.md",
+          "from": "tokenGenerated",
+          "to": "tokenGenerate",
+          "note": "every guide example now registers an event that never fires; token handling must come out BROKEN / doc wrong"
+        },
+        {
+          "kind": "deleteSection",
+          "file": "docs/HOSTED_FIELDS_API_REFERENCE.md",
+          "match": "setPlaceholder()",
+          "note": "the method vanishes from the reference while the guide's Step 4 still calls it; expect UNDOCUMENTED or a guide-vs-reference disagreement"
+        },
+        {
+          "kind": "deleteRow",
+          "file": "docs/tokenization/hosted-fields/INTEGRATION_GUIDE.md",
+          "match": "expiry",
+          "note": "the combined MM/YY submit key disappears from the guide's config table; expect DOC-GAP or PARTIAL since the reference still mentions CombinedExpiryField"
+        }
+      ]
+    }
+  }
+}

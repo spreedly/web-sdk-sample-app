@@ -403,6 +403,24 @@ For a complete list of test data, see [Spreedly Test Data](https://developer.spr
 
 
 
+## Developer QA
+
+`/sdk-dev-qa` is a Claude Code skill in this repo that tests whether a developer can integrate an
+SDK module from the published docs alone. A fresh agent builds one page per documented
+behaviour using only `docs/` and this sample app, runs the pages against the `rc` bundle, and a
+second agent verifies every complaint before it reaches the report.
+
+```bash
+claude                          # start Claude Code in the repo root
+/sdk-dev-qa --list              # modules defined in qa/modules.json
+/sdk-dev-qa hosted-fields       # test one module
+/sdk-dev-qa --pr 45             # test every module whose docs PR #45 changes
+```
+
+You need: Claude Code, the `gh` CLI (for `--pr`), a `.env` or the Heroku backend, and
+Playwright MCP for the run step (`claude mcp add playwright -- npx @playwright/mcp@latest`).
+Reports land in `qa/<module>/report.md`. Details: `.claude/skills/sdk-dev-qa/SKILL.md`.
+
 ## Support
 
 - **Support Home:** [Troubleshoot](https://support.spreedly.com/hc/en-us)
