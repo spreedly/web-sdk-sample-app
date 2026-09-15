@@ -5,6 +5,12 @@ All notable changes to the Spreedly Web SDK will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **Paze demo now lets the SDK own the button** (HC-1822), matching the breaking `SpreedlyPaze` change in the SDK. `src/static/paze/index.html` ships an empty `#paze-button-container` instead of a hand-written `<paze-button>`, and `paze.js` passes `paymentElements`, `displayMode`, `buttonStyle`, and a synchronous `getCheckoutOptions` callback, then calls `mount()` after `setup()`. The merchant-side click handler, visibility toggling, and button-recreation code are gone: the SDK shows and hides the button (dynamic mode is driven by `canCheckout`) and starts the flow itself. Panel reset on pay uses `paze.on('pazeButtonClicked')` rather than a click listener on the container. The Color / Shape / Disable-max-height and Button Display controls now destroy and remount the instance, since `buttonStyle` and `displayMode` are read once at `mount()`. The demo also reads `environmentKey` from `GET /api/v1/auth/params` so Paze telemetry is attributable to a Spreedly environment. Change Card / Change Shipping Address still go through `checkout()`.
+
 ## [1.7.0] - 2026-09-15
 
 ### Added
