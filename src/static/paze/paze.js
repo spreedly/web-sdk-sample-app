@@ -1,6 +1,10 @@
 /**
  * Paze Digital Wallet Demo
- * Uses SpreedlyPaze standalone class with merchant-loaded Paze SDK script
+ * Uses SpreedlyPaze standalone class with merchant-loaded Paze SDK script.
+ *
+ * The <paze-button> is created by the SDK: this page supplies an empty
+ * #paze-button-container and calls mount(). It never builds the button itself and never calls
+ * checkout() to start a flow — the SDK owns that so it can count button impressions.
  */
 
 const PAZE_CLIENT_CONFIG = {
@@ -14,10 +18,12 @@ const TRANSACTION_VALUE = {
   transactionCurrencyCode: 'USD',
 };
 
+const BUTTON_CONTAINER_ID = 'paze-button-container';
+
 let pazeInstance = null;
 let lastCheckoutData = null;
-let walletEligible = false;
-let payButtonLocked = false;
+let environmentKey = '';
+let checkoutInFlight = false;
 
 const elements = {};
 
@@ -35,8 +41,7 @@ function initElements() {
   elements.pazeBtnShape = document.getElementById('paze-btn-shape');
   elements.pazeBtnDisableMaxHeight = document.getElementById('paze-btn-disable-max-height');
   elements.reviewPanel = document.getElementById('review-panel');
-  elements.payBtn = document.getElementById('paze-pay-btn');
-  elements.pazeButton = document.querySelector('paze-button');
+  elements.buttonContainer = document.getElementById(BUTTON_CONTAINER_ID);
   elements.completeBtn = document.getElementById('paze-complete-btn');
   elements.resetBtn = document.getElementById('paze-reset-btn');
   elements.resultCard = document.getElementById('result-card');
@@ -50,9 +55,18 @@ function getPazeClientConfig() {
   return PAZE_CLIENT_CONFIG;
 }
 
-/** Returns whether dynamic button mode is enabled */
-function isDynamicButtonMode() {
-  return elements.pazeButtonMode?.value === 'dynamic';
+/** Returns the selected SDK display mode. Named distinctly from SpreedlyUtils.getDisplayMode. */
+function getPazeDisplayMode() {
+  return elements.pazeButtonMode?.value === 'dynamic' ? 'dynamic' : 'static';
+}
+
+/** Returns the <paze-button> presentation attributes from the demo controls */
+function getButtonStyle() {
+  return {
+    color: elements.pazeBtnColor?.value || 'pazeblue',
+    disableMaxHeight: elements.pazeBtnDisableMaxHeight?.checked === true,
+    shape: elements.pazeBtnShape?.value || 'default',
+  };
 }
 
 /** Returns whether express checkout intent is selected */
@@ -70,12 +84,31 @@ function normalizePazeEmail(email) {
   return email?.trim().toLowerCase() || '';
 }
 
-/** Returns wallet eligibility from a canCheckout response */
-function isWalletEligible(result) {
-  return Boolean(result?.consumerPresent);
+/** Returns the current email from the form */
+function getEmail() {
+  return normalizePazeEmail(elements.pazeEmail?.value);
 }
 
-/** Checks wallet eligibility and updates dynamic button visibility */
+/**
+ * Builds the checkout call for each button click. The SDK calls this synchronously on click,
+ * so it must not await anything — doing so would spend the click's user activation and Paze's
+ * popup would be blocked.
+ */
+function getCheckoutOptions() {
+  const options = {
+    emailAddress: getEmail(),
+    transactionValue: TRANSACTION_VALUE,
+  };
+
+  const intent = elements.pazeIntent?.value;
+  if (intent) {
+    options.intent = intent;
+  }
+
+  return options;
+}
+
+/** Checks wallet eligibility; in dynamic mode this is what reveals the SDK's button */
 async function checkWalletEligibility(email, { showStatus = true } = {}) {
   const normalizedEmail = normalizePazeEmail(email);
   if (!normalizedEmail || !pazeInstance?.isInitialized?.()) {
@@ -86,32 +119,29 @@ async function checkWalletEligibility(email, { showStatus = true } = {}) {
     setStatus('Checking Paze eligibility...', 'info');
   }
 
-  const result = await pazeInstance.canCheckout(normalizedEmail);
-  walletEligible = isWalletEligible(result);
-
-  updatePayButtonVisibility();
+  const { consumerPresent } = await pazeInstance.canCheckout(normalizedEmail);
 
   if (!showStatus) {
-    return walletEligible;
+    return consumerPresent;
   }
 
-  if (isDynamicButtonMode()) {
+  if (getPazeDisplayMode() === 'dynamic') {
     setStatus(
-      walletEligible
+      consumerPresent
         ? 'Paze wallet found — the Paze button is available.'
         : 'No Paze wallet detected for this email.',
-      walletEligible ? 'success' : 'info'
+      consumerPresent ? 'success' : 'info'
     );
-    return walletEligible;
+    return consumerPresent;
   }
 
   setStatus(
-    walletEligible
+    consumerPresent
       ? 'Paze wallet found for this email.'
       : 'No Paze wallet detected — you can still try the Paze button.',
-    walletEligible ? 'success' : 'info'
+    consumerPresent ? 'success' : 'info'
   );
-  return walletEligible;
+  return consumerPresent;
 }
 
 /** Shows a fatal initialization error */
@@ -167,16 +197,13 @@ function buildShippingAddress(checkoutData) {
   };
 }
 
-/** Enables or disables the branded Paze button wrapper */
-function setPayButtonLocked(locked) {
-  payButtonLocked = locked;
-  applyPayButtonDisabledState();
-}
-
-/** Applies disabled styling from lock state and dynamic eligibility */
-function applyPayButtonDisabledState() {
-  const disabled = payButtonLocked || (isDynamicButtonMode() && !walletEligible);
-  elements.payBtn?.classList.toggle('disabled', disabled);
+/**
+ * Blocks clicks on the SDK's button while a checkout is running or the email is empty.
+ * Visibility itself is the SDK's job — this only covers demo preconditions.
+ */
+function updateButtonInteractivity() {
+  const blocked = checkoutInFlight || !getEmail();
+  elements.buttonContainer?.classList.toggle('busy', blocked);
 }
 
 /** Shows the reset button after checkout finishes */
@@ -187,20 +214,6 @@ function showResetButton() {
 /** Reloads the demo page */
 function handleReset() {
   window.location.reload();
-}
-
-/** Shows or hides the Paze button based on button display mode and eligibility */
-function updatePayButtonVisibility() {
-  if (!elements.payBtn) return;
-
-  if (isDynamicButtonMode()) {
-    elements.payBtn.classList.toggle('hidden', !walletEligible);
-    applyPayButtonDisabledState();
-    return;
-  }
-
-  elements.payBtn.classList.remove('hidden');
-  applyPayButtonDisabledState();
 }
 
 /** Loads Spreedly SDK and verifies SpreedlyPaze is available */
@@ -218,10 +231,13 @@ async function loadSpreedlySDK() {
 function registerPazeEventHandlers() {
   pazeInstance.on('pazeReady', () => {
     setStatus('Paze is ready. Enter your email to check eligibility.', 'success');
-    updatePayButtonVisibility();
   });
 
+  pazeInstance.on('pazeButtonClicked', handlePazeButtonClick);
+
   pazeInstance.on('pazeCheckoutComplete', async data => {
+    checkoutInFlight = false;
+    updateButtonInteractivity();
     lastCheckoutData = data;
     showReviewPanel(data);
 
@@ -251,7 +267,8 @@ function registerPazeEventHandlers() {
       return;
     }
 
-    setPayButtonLocked(false);
+    checkoutInFlight = false;
+    updateButtonInteractivity();
   });
 }
 
@@ -280,9 +297,11 @@ function showReviewPanel(data) {
   document.getElementById('paze-change-shipping-btn')?.addEventListener('click', handleChangeShippingAddress);
 }
 
-/** Checks wallet eligibility on email blur and updates dynamic button visibility */
+/** Checks wallet eligibility on email blur; in dynamic mode this reveals the SDK's button */
 async function handleEmailBlur() {
-  const email = normalizePazeEmail(elements.pazeEmail?.value);
+  updateButtonInteractivity();
+
+  const email = getEmail();
   if (!email || !pazeInstance) return;
 
   try {
@@ -292,40 +311,18 @@ async function handleEmailBlur() {
   }
 }
 
-/** Handles branded Paze button click */
-async function handlePayWithPaze() {
-  if (!pazeInstance) return;
+/** Resets the demo panels when the SDK reports the shopper pressed the mounted Paze button */
+function handlePazeButtonClick() {
+  checkoutInFlight = true;
+  updateButtonInteractivity();
 
-  const email = normalizePazeEmail(elements.pazeEmail?.value);
-  if (!email) {
-    setStatus('Please enter an email address.', 'warn');
-    return;
-  }
-
-  setPayButtonLocked(true);
   elements.completeBtn?.classList.add('hidden');
   elements.resetBtn?.classList.add('hidden');
   elements.reviewPanel?.classList.add('hidden');
   elements.resultCard?.classList.add('hidden');
   lastCheckoutData = null;
 
-  try {
-    setStatus('Opening Paze checkout...', 'info');
-
-    const options = {
-      emailAddress: email,
-      transactionValue: getTransactionValue(),
-    };
-    const intent = elements.pazeIntent?.value;
-    if (intent) {
-      options.intent = intent;
-    }
-
-    await pazeInstance.checkout(options);
-  } catch (error) {
-    setStatus(error.message || 'Checkout failed', 'error');
-    setPayButtonLocked(false);
-  }
+  setStatus('Opening Paze checkout...', 'info');
 }
 
 /** Reopens Paze checkout to change the selected card */
@@ -408,49 +405,61 @@ async function createPaymentMethodFromSecuredPayload(completeData) {
   }
 }
 
-/** Handles button display mode changes */
-function handleButtonModeChange() {
-  walletEligible = false;
-  updatePayButtonVisibility();
-  const email = elements.pazeEmail?.value?.trim();
-  if (email && isDynamicButtonMode()) {
-    handleEmailBlur();
-  }
-}
+/**
+ * Creates the SpreedlyPaze instance, sets it up, and mounts the SDK-owned button.
+ *
+ * `displayMode` and `buttonStyle` are constructor config read once at mount(), so the demo's
+ * display/color/shape controls rebuild the instance rather than editing the button in place.
+ */
+async function createAndMountPaze() {
+  pazeInstance = new window.SpreedlyPaze({
+    buttonStyle: getButtonStyle(),
+    clientConfig: getPazeClientConfig(),
+    displayMode: getPazeDisplayMode(),
+    environment: 'sandbox',
+    environmentKey,
+    getCheckoutOptions,
+    paymentElements: { paze: BUTTON_CONTAINER_ID },
+  });
 
-/** Binds click and error handlers on the branded Paze button */
-function bindPazeButton() {
-  if (!elements.pazeButton) return;
+  registerPazeEventHandlers();
 
-  elements.pazeButton.addEventListener('click', handlePayWithPaze);
-  elements.pazeButton._onError = error => {
-    setStatus(error?.message || 'Paze button error', 'error');
-    setPayButtonLocked(false);
-  };
-}
-
-/** Applies color, shape, and max-height attributes from the demo controls */
-function applyPazeButtonCustomization() {
-  const wrap = elements.payBtn;
-  if (!wrap) return;
-
-  const color = elements.pazeBtnColor?.value || 'pazeblue';
-  const shape = elements.pazeBtnShape?.value || 'default';
-  const disableMaxHeight = elements.pazeBtnDisableMaxHeight?.checked === true;
-
-  wrap.classList.toggle('tall', disableMaxHeight);
-
-  const next = document.createElement('paze-button');
-  next.setAttribute('color', color);
-  next.setAttribute('shape', shape);
-  if (disableMaxHeight) {
-    next.setAttribute('disableMaxHeight', '');
+  const setupResult = await pazeInstance.setup();
+  if (setupResult.error) {
+    throw new Error(setupResult.error);
   }
 
-  wrap.replaceChildren(next);
-  elements.pazeButton = next;
-  bindPazeButton();
-  applyPayButtonDisabledState();
+  const mountResult = await pazeInstance.mount();
+  if (mountResult.error) {
+    throw new Error(mountResult.error);
+  }
+
+  elements.buttonContainer?.classList.toggle(
+    'tall',
+    elements.pazeBtnDisableMaxHeight?.checked === true
+  );
+  updateButtonInteractivity();
+}
+
+/** Rebuilds the Paze instance so new display mode / button style take effect */
+async function rebuildPazeInstance() {
+  if (!pazeInstance) return;
+
+  pazeInstance.destroy();
+  pazeInstance = null;
+  checkoutInFlight = false;
+
+  try {
+    await createAndMountPaze();
+
+    const email = getEmail();
+    if (email) {
+      await checkWalletEligibility(email, { showStatus: false });
+    }
+    setStatus('Paze button updated.', 'success');
+  } catch (error) {
+    setStatus(error.message || 'Failed to remount the Paze button.', 'error');
+  }
 }
 
 /** Main initialization */
@@ -458,35 +467,31 @@ async function init() {
   initElements();
 
   elements.pazeEmail?.addEventListener('blur', handleEmailBlur);
-  elements.pazeButtonMode?.addEventListener('change', handleButtonModeChange);
-  elements.pazeBtnColor?.addEventListener('change', applyPazeButtonCustomization);
-  elements.pazeBtnShape?.addEventListener('change', applyPazeButtonCustomization);
-  elements.pazeBtnDisableMaxHeight?.addEventListener('change', applyPazeButtonCustomization);
-  applyPazeButtonCustomization();
+  elements.pazeEmail?.addEventListener('input', updateButtonInteractivity);
+  elements.pazeButtonMode?.addEventListener('change', rebuildPazeInstance);
+  elements.pazeBtnColor?.addEventListener('change', rebuildPazeInstance);
+  elements.pazeBtnShape?.addEventListener('change', rebuildPazeInstance);
+  elements.pazeBtnDisableMaxHeight?.addEventListener('change', rebuildPazeInstance);
   elements.completeBtn?.addEventListener('click', handleCompletePayment);
   elements.resetBtn?.addEventListener('click', handleReset);
 
   try {
     await loadSpreedlySDK();
 
-    const clientConfig = getPazeClientConfig();
-    pazeInstance = new window.SpreedlyPaze({
-      clientConfig,
-      environment: 'sandbox',
-    });
-
-    registerPazeEventHandlers();
-
-    const result = await pazeInstance.setup();
-    if (result.error) {
-      throw new Error(result.error);
+    // Only used to tag telemetry; the SDK masks it before sending. Not worth failing the
+    // demo over, so a lookup failure just leaves the key empty.
+    try {
+      const authParams = await SpreedlyUtils.fetchAuthParams();
+      environmentKey = authParams?.environmentKey || '';
+    } catch (authError) {
+      console.warn('Could not load the environment key for telemetry:', authError.message);
     }
 
     showPaymentSection();
-    updatePayButtonVisibility();
+    await createAndMountPaze();
     setStatus('Ready to create Paze payment methods.', 'success');
 
-    const prefilledEmail = normalizePazeEmail(elements.pazeEmail?.value);
+    const prefilledEmail = getEmail();
     if (prefilledEmail) {
       await checkWalletEligibility(prefilledEmail, { showStatus: false });
     }
