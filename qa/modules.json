@@ -13,6 +13,8 @@
       "pages": [
         "src/static/tokenize/index.html",
         "src/static/tokenize/tokenize.js",
+        "src/static/tokenize-catalogue/tokenize.js",
+        "src/static/tokenize-catalogue/index.html",
         "src/static/purchase/index.html",
         "src/static/purchase/purchase.js",
         "src/static/shared/utils.js"
@@ -39,9 +41,24 @@
         "apiBaseHeroku": "https://checkout-web-sample-app-049a3c617015.herokuapp.com/api/v1",
         "authParamsRoute": "GET /auth/params",
         "cards": [
-          { "brand": "Visa", "number": "4111111111111111", "cvv": "123", "expiry": "any future date" },
-          { "brand": "Mastercard", "number": "5555555555554444", "cvv": "123", "expiry": "any future date" },
-          { "brand": "American Express", "number": "378282246310005", "cvv": "1234", "expiry": "any future date" }
+          {
+            "brand": "Visa",
+            "number": "4111111111111111",
+            "cvv": "123",
+            "expiry": "any future date"
+          },
+          {
+            "brand": "Mastercard",
+            "number": "5555555555554444",
+            "cvv": "123",
+            "expiry": "any future date"
+          },
+          {
+            "brand": "American Express",
+            "number": "378282246310005",
+            "cvv": "1234",
+            "expiry": "any future date"
+          }
         ],
         "moreTestData": "https://developer.spreedly.com/docs/test-data — includes cards that decline, for error cases"
       },
