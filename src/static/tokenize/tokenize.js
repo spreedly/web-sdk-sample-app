@@ -19,6 +19,8 @@ const config = {
   eligibleForCardUpdater: false,
   showCardTypeIcon: true,
   ecExtraFields: [],
+  // Express Checkout CVV mode at launch: '' (required, default) | 'optional' | 'hidden'
+  ecCvvMode: '',
 };
 
 const EC_EXTRA_FIELD_KEYS = Object.freeze([
@@ -167,6 +169,28 @@ function setupConfigCheckboxListeners() {
     config.showCardTypeIcon = this.checked;
   });
 
+  // Express Checkout no-CVV runtime setters. Init-gated by the SDK: a cross call
+  // (e.g. setCVVHidden after launching optional) is ignored with a console warning.
+  document.getElementById('ec-demo-cvv-optional')?.addEventListener('change', function () {
+    if (!sdk || sdkType !== 'express-checkout' || !isReady) return;
+    if (typeof sdk.setCVVOptional !== 'function') {
+      showStatus('setCVVOptional is not in this SDK build (needs a build with no-CVV support).', 'info');
+      this.checked = false;
+      return;
+    }
+    sdk.setCVVOptional(this.checked);
+  });
+
+  document.getElementById('ec-demo-cvv-hidden')?.addEventListener('change', function () {
+    if (!sdk || sdkType !== 'express-checkout' || !isReady) return;
+    if (typeof sdk.setCVVHidden !== 'function') {
+      showStatus('setCVVHidden is not in this SDK build (needs a build with no-CVV support).', 'info');
+      this.checked = false;
+      return;
+    }
+    sdk.setCVVHidden(this.checked);
+  });
+
   document.querySelectorAll('input[data-ec-field]').forEach((checkbox) => {
     checkbox.addEventListener('change', () => {
       syncEcExtraFieldsFromCheckboxes();
@@ -228,6 +252,20 @@ function buildEcExtraFieldsConfig(fieldKeys) {
   return out;
 }
 
+// No-CVV support
+function buildEcCvvFieldOverride(mode) {
+  return {
+    fieldName: 'verification_value',
+    isRequired: mode !== 'optional',
+    ...(mode === 'hidden' ? { isHidden: true } : {}),
+    label: 'CVV',
+    placeholder: '123',
+    size: 6,
+    isMasked: true,
+    styles: {},
+  };
+}
+
 // Sync config state from checkbox values (called when SDK becomes ready)
 function syncConfigFromCheckboxes() {
   config.twoDigitExpiryYear = document.getElementById('config-two-digit-expiry')?.checked || false;
@@ -237,6 +275,7 @@ function syncConfigFromCheckboxes() {
   config.eligibleForCardUpdater = document.getElementById('config-eligible-for-card-updater')?.checked || false;
   const ecCardTypeIcon = document.getElementById('ec-demo-card-type-icon');
   config.showCardTypeIcon = ecCardTypeIcon ? ecCardTypeIcon.checked : true;
+  config.ecCvvMode = document.getElementById('ec-demo-cvv-mode')?.value || '';
   syncEcExtraFieldsFromCheckboxes();
 }
 
@@ -355,6 +394,11 @@ function configureHostedFieldsOnReady(sdkInstance) {
   // Respect the card-type-icon checkbox even if toggled before the form was opened.
   const cardTypeIcon = document.getElementById('hf-demo-card-type-icon');
   sdkInstance.setShowCardTypeIcon(cardTypeIcon ? cardTypeIcon.checked : true);
+  // Re-apply CVV-optional after (re)mount — the iframe-side flag resets on reload().
+  const cvvOptional = document.getElementById('hf-demo-cvv-optional');
+  if (cvvOptional?.checked && typeof sdkInstance.setCVVOptional === 'function') {
+    sdkInstance.setCVVOptional(true);
+  }
 }
 
 /** Wires SDK Configuration panel controls to hosted fields SDK methods. */
@@ -445,6 +489,19 @@ function setupHostedFieldsConfigPanel(sdkInstance) {
       if (!sdk || sdk !== sdkInstance || !isReady) return;
       sdkInstance.setRequiredAttribute('number', this.checked);
       sdkInstance.setRequiredAttribute('cvv', this.checked);
+    };
+  }
+
+  const cvvOptionalCheckbox = document.getElementById('hf-demo-cvv-optional');
+  if (cvvOptionalCheckbox) {
+    cvvOptionalCheckbox.onchange = function handleHostedFieldsCvvOptionalChange() {
+      if (!sdk || sdk !== sdkInstance || !isReady) return;
+      if (typeof sdkInstance.setCVVOptional !== 'function') {
+        showStatus('setCVVOptional is not in this SDK build (needs a build with no-CVV support).', 'info');
+        this.checked = false;
+        return;
+      }
+      sdkInstance.setCVVOptional(this.checked);
     };
   }
 
@@ -701,8 +758,15 @@ window.openExpressCheckoutForm = function () {
           },
         },
       },
-      ...(config.ecExtraFields.length > 0
-        ? { cardPaymentFormFields: buildEcExtraFieldsConfig(config.ecExtraFields) }
+      ...(config.ecExtraFields.length > 0 || config.ecCvvMode
+        ? {
+            cardPaymentFormFields: {
+              ...buildEcExtraFieldsConfig(config.ecExtraFields),
+              ...(config.ecCvvMode
+                ? { verification_value: buildEcCvvFieldOverride(config.ecCvvMode) }
+                : {}),
+            },
+          }
         : {}),
     },
     submitParams: {
