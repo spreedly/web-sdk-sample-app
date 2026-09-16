@@ -1,7 +1,7 @@
 import { purchasePage } from "../pages/3dsPage";
 import { landingPage } from "../pages/landingPage";
 import { test, expect } from "../util/fixtures";
-import { TEST_DATA, waitForAuthParams, getValidYearString, getValidTwoDigitExpiryString } from "../util/test-constants";
+import { TEST_DATA, waitForAuthParams, getValidYearString } from "../util/test-constants";
 import { MONOREPO_URLS } from "../util/urls";
 import { helperFunctions } from "../util/utils";
 import { tokenizePage } from "../pages/tokenizePage";
@@ -14,17 +14,19 @@ test.describe('3DS Flow', () => {
         await purchasePage.clickOnProductIncreaseButton(page, TEST_DATA.PRODUCT_ID_WIRELESS_HEADPHONE);
         await purchasePage.clickOnProceedToPaymentButton(page);
         await helperFunctions.clickOnNewCardButton(page);
-        await helperFunctions.fillHostedFieldsFormWithCatalogueFields(page, TEST_DATA.THREE_DS2_CHALLENGE_FLOW_CARD_NUMBER, {
+        await helperFunctions.fillHostedFieldsForm(page, TEST_DATA.THREE_DS2_CHALLENGE_FLOW_CARD_NUMBER, {
             firstName: TEST_DATA.FIRST_NAME,
             lastName: TEST_DATA.LAST_NAME,
             cvv: TEST_DATA.CVV,
-            twoDigitExpiry: getValidTwoDigitExpiryString(),
+            expiryMonth: TEST_DATA.EXPIRY_MONTH,
+            expiryYear: getValidYearString(),
         });
-        await helperFunctions.verifyFormFieldsHostedFieldsWithCatalogueFields(page, TEST_DATA.THREE_DS2_CHALLENGE_FLOW_CARD_NUMBER, {
+        await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.THREE_DS2_CHALLENGE_FLOW_CARD_NUMBER, {
             firstName: TEST_DATA.FIRST_NAME,
             lastName: TEST_DATA.LAST_NAME,
             cvv: TEST_DATA.CVV,
-            twoDigitExpiry: getValidTwoDigitExpiryString(),
+            expiryMonth: TEST_DATA.EXPIRY_MONTH,
+            expiryYear: getValidYearString(),
            });
            let responseStatus: number | null = null;
            let apiResponse: any = null;
@@ -66,17 +68,19 @@ test.describe('3DS Flow', () => {
         await purchasePage.clickOnProductIncreaseButton(page, TEST_DATA.PRODUCT_ID_WIRELESS_HEADPHONE);
         await purchasePage.clickOnProceedToPaymentButton(page);
         await helperFunctions.clickOnNewCardButton(page);
-        await helperFunctions.fillHostedFieldsFormWithCatalogueFields(page, TEST_DATA.THREE_DS2_CHALLENGE_FLOW_CARD_NUMBER, {
+        await helperFunctions.fillHostedFieldsForm(page, TEST_DATA.THREE_DS2_CHALLENGE_FLOW_CARD_NUMBER, {
             firstName: TEST_DATA.FIRST_NAME,
             lastName: TEST_DATA.LAST_NAME,
             cvv: TEST_DATA.CVV,
-            twoDigitExpiry: getValidTwoDigitExpiryString(),
+            expiryMonth: TEST_DATA.EXPIRY_MONTH,
+            expiryYear: getValidYearString(),
         });
-        await helperFunctions.verifyFormFieldsHostedFieldsWithCatalogueFields(page, TEST_DATA.THREE_DS2_CHALLENGE_FLOW_CARD_NUMBER, {
+        await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.THREE_DS2_CHALLENGE_FLOW_CARD_NUMBER, {
             firstName: TEST_DATA.FIRST_NAME,
             lastName: TEST_DATA.LAST_NAME,
             cvv: TEST_DATA.CVV,
-            twoDigitExpiry: getValidTwoDigitExpiryString(),
+            expiryMonth: TEST_DATA.EXPIRY_MONTH,
+            expiryYear: getValidYearString(),
         });
         let responseStatus: number | null = null;
            let apiResponse: any = null;
@@ -172,17 +176,19 @@ test.describe('3DS Flow', () => {
         await purchasePage.clickOnProductIncreaseButton(page, TEST_DATA.PRODUCT_ID_WIRELESS_HEADPHONE);
         await purchasePage.clickOnProceedToPaymentButton(page);
         await helperFunctions.clickOnNewCardButton(page);
-        await helperFunctions.fillHostedFieldsFormWithCatalogueFields(page, TEST_DATA.THREE_DS2_FRUCTIONLESS_SUCCESS_CARD_NUMBER, {
+        await helperFunctions.fillHostedFieldsForm(page, TEST_DATA.THREE_DS2_FRUCTIONLESS_SUCCESS_CARD_NUMBER, {
             firstName: TEST_DATA.FIRST_NAME,
             lastName: TEST_DATA.LAST_NAME,
             cvv: TEST_DATA.CVV,
-            twoDigitExpiry: getValidTwoDigitExpiryString(),
+            expiryMonth: TEST_DATA.EXPIRY_MONTH,
+            expiryYear: getValidYearString(),
         });
-        await helperFunctions.verifyFormFieldsHostedFieldsWithCatalogueFields(page, TEST_DATA.THREE_DS2_FRUCTIONLESS_SUCCESS_CARD_NUMBER, {
+        await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.THREE_DS2_FRUCTIONLESS_SUCCESS_CARD_NUMBER, {
             firstName: TEST_DATA.FIRST_NAME,
             lastName: TEST_DATA.LAST_NAME,
             cvv: TEST_DATA.CVV,
-            twoDigitExpiry: getValidTwoDigitExpiryString(),
+            expiryMonth: TEST_DATA.EXPIRY_MONTH,
+            expiryYear: getValidYearString(),
         });
         let responseStatus: number | null = null;
         let apiResponse: any = null;
@@ -220,17 +226,19 @@ test.describe('3DS Flow', () => {
         await purchasePage.clickOnProductIncreaseButton(page, TEST_DATA.PRODUCT_ID_WIRELESS_HEADPHONE);
         await purchasePage.clickOnProceedToPaymentButton(page);
         await helperFunctions.clickOnNewCardButton(page);
-        await helperFunctions.fillHostedFieldsFormWithCatalogueFields(page, TEST_DATA.THREE_DS2_FRUCTIONLESS_FAILURE_CARD_NUMBER, {
+        await helperFunctions.fillHostedFieldsForm(page, TEST_DATA.THREE_DS2_FRUCTIONLESS_FAILURE_CARD_NUMBER, {
             firstName: TEST_DATA.FIRST_NAME,
             lastName: TEST_DATA.LAST_NAME,
             cvv: TEST_DATA.CVV,
-            twoDigitExpiry: getValidTwoDigitExpiryString(),
+            expiryMonth: TEST_DATA.EXPIRY_MONTH,
+            expiryYear: getValidYearString(),
         });
-        await helperFunctions.verifyFormFieldsHostedFieldsWithCatalogueFields(page, TEST_DATA.THREE_DS2_FRUCTIONLESS_FAILURE_CARD_NUMBER, {
+        await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.THREE_DS2_FRUCTIONLESS_FAILURE_CARD_NUMBER, {
             firstName: TEST_DATA.FIRST_NAME,
             lastName: TEST_DATA.LAST_NAME,
             cvv: TEST_DATA.CVV,
-            twoDigitExpiry: getValidTwoDigitExpiryString(),
+            expiryMonth: TEST_DATA.EXPIRY_MONTH,
+            expiryYear: getValidYearString(),
         }); 
         let responseStatus: number | null = null;
         let apiResponse: any = null;

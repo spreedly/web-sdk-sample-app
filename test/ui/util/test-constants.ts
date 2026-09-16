@@ -41,16 +41,7 @@ export const SELECTORS = {
   HOSTED_NUMBER_FIELD: "#spreedly-hosted-number-input",
   HOSTED_CVV_FIELD: "#spreedly-hosted-cvv-input",
   HOSTED_SHIPPING_ADDRESS_FIELD: "input-shipping-address",
-  // Catalogue fields share formField.html; title is unique per type.
-  HOSTED_FIRST_NAME_FIELD_IFRAME: 'iframe[title="Spreedly hosted field iframe - spreedly-hosted-first_name"]',
-  HOSTED_LAST_NAME_FIELD_IFRAME: 'iframe[title="Spreedly hosted field iframe - spreedly-hosted-last_name"]',
-  HOSTED_MONTH_FIELD_IFRAME: 'iframe[title="Spreedly hosted field iframe - spreedly-hosted-month"]',
-  HOSTED_YEAR_FIELD_IFRAME: 'iframe[title="Spreedly hosted field iframe - spreedly-hosted-year"]',
-  HOSTED_TWO_DIGIT_EXPIRY_FIELD_IFRAME: 'iframe[title="Spreedly hosted field iframe - spreedly-hosted-expiry"]',
-  HOSTED_CARD_EXPIRY_FIELD_IFRAME: 'iframe[title="Spreedly hosted field iframe - spreedly-hosted-card-expiry"]',
-  HOSTED_ZIP_FIELD_IFRAME: 'iframe[title="Spreedly hosted field iframe - spreedly-hosted-zip"]',
-  HOSTED_COUNTRY_FIELD_IFRAME: 'iframe[title="Spreedly hosted field iframe - spreedly-hosted-country"]',
-  HOSTED_STATE_FIELD_IFRAME: 'iframe[title="Spreedly hosted field iframe - spreedly-hosted-state"]',
+
   // Form Fields(hosted fields data-testid)
   EXPIRY_MONTH: "#expiry_month, #month",
   EXPIRY_YEAR: "#expiry_year, #year",
@@ -120,21 +111,6 @@ export const SELECTORS = {
   ACH_ERROR_MESSAGE: '.status-message',
   STRIPE_RADAR_BUTTON: '[data-flow="stripe-radar"]',
   STRIPE_RADAR_PAY_BUTTON: '#pay-btn',
-  HOSTED_CATALOGUE_FIELDS_DROPDOWN: 'Hosted catalogue fields',
-  HOSTED_CATALOGUE_FIELDS_DROPDOWN_EXPRESS_CHECKOUT: 'Extra fields in Express Checkout',
-  TOKENIZE_WITH_SDK_BUTTON: '[data-flow="tokenize-catalogue"]',
-  CUSTOM_FIELD_VALIDATOR_DROPDOWN: 'Custom field validators',
-  VALIDATE_BUTTON: 'Validate',
-  CUSTOM_FIELD_VALIDATOR_ZIP_FORMAT: 'cv-zip-format',
-  CUSTOM_CROSS_FIELD_VALIDATION: 'cv-state-country',
-  CONDITIONAL_REQUIREMENT_ON_ZIP_VALIDATION: 'cv-conditional-zip',
-  DESTROY_SDK_BUTTON: 'Destroy SDK',
-  HOSTED_HOUSE_NUMBER_OR_NAME_FIELD_IFRAME: 'iframe[title="Spreedly hosted field iframe - spreedly-hosted-house_number_or_name"]',
-  HOSTED_STREET_FIELD_IFRAME: 'iframe[title="Spreedly hosted field iframe - spreedly-hosted-street"]',
-  HOSTED_STREET_LINE2_FIELD_IFRAME: 'iframe[title="Spreedly hosted field iframe - spreedly-hosted-street_line2"]',
-  HOSTED_SHIPPING_HOUSE_NUMBER_OR_NAME_FIELD_IFRAME: 'iframe[title="Spreedly hosted field iframe - spreedly-hosted-shipping_house_number_or_name"]',
-  HOSTED_SHIPPING_STREET_FIELD_IFRAME: 'iframe[title="Spreedly hosted field iframe - spreedly-hosted-shipping_street"]',
-  HOSTED_SHIPPING_STREET_LINE2_FIELD_IFRAME: 'iframe[title="Spreedly hosted field iframe - spreedly-hosted-shipping_street_line2"]',                           
   PPCP_DIRECT_BUTTON: '[data-flow="ppcp"]',
   PAYPAL_NEXT_BUTTON: '#btnNext',
   PAYPAL_PASSWORD_SUBMIT_BUTTON: 'Log In',
@@ -210,23 +186,9 @@ export const PLACEHOLDERS = {
 export const LABELS = {
   FIRST_NAME: "First Name",
   LAST_NAME: "Last Name",
-  FIRST_NAME_CATALOGUE_FIELDS: "First name",
-  LAST_NAME_CATALOGUE_FIELDS: "Last name",
-  MONTH_CATALOGUE_FIELDS: "Expiration month",
-  YEAR_CATALOGUE_FIELDS: "Expiration year",
-  TWO_DIGIT_EXPIRY_CATALOGUE_FIELDS: "Expiration date",
   SHIPPING_ADDRESS: "Shipping Address",
   CARD_NUMBER: "Card number",
   CVV_NUMBER: "CVV security code",
-  ZIP_CATALOGUE_FIELDS: "ZIP / Postal code",
-  COUNTRY_CATALOGUE_FIELDS: "Country",
-  STATE_CATALOGUE_FIELDS: "State",
-  HOUSE_NUMBER_OR_NAME_CATALOGUE_FIELDS: "House number or name",
-  STREET_CATALOGUE_FIELDS: "Street",
-  STREET_LINE2_CATALOGUE_FIELDS: "Street line 2",
-  SHIPPING_HOUSE_NUMBER_OR_NAME_CATALOGUE_FIELDS: "Shipping house number or name",
-  SHIPPING_STREET_CATALOGUE_FIELDS: "Shipping street",
-  SHIPPING_STREET_LINE2_CATALOGUE_FIELDS: "Shipping street line 2",
   PAYPAL_BUTTON: "PayPal",
   VENMO_BUTTON: "Pay with Venmo",
   PAY_LATER_BUTTON: "Pay later",
@@ -293,18 +255,6 @@ export const TEST_DATA = {
   ACH_FIRST_NAME: "Bob",
   ACH_LAST_NAME: "Smith",
   ACH_BANK_NAME: "First Bank of Elbonia",
-  VALID_ZIP_CODE: "10001",
-  INVALID_ZIP_CODE: "100",
-  COUNTRY_US: "US",
-  STATE_VALID_FORMAT: "CA",
-  COUNTRY_NON_US: "IND",
-  STATE_INVALID_FORMAT: "California",
-  HOUSE_NUMBER_OR_NAME: "HouseName",
-  STREET: "StreetName",
-  STREET_LINE2: "StreetLine2Name",
-  SHIPPING_HOUSE_NUMBER_OR_NAME: "ShippingHouseName",
-  SHIPPING_STREET: "ShippingStreetName",
-  SHIPPING_STREET_LINE2: "ShippingStreetLine2Name",
   PAYPAL_GOLD_BUTTON_COLOR: "rgb(255, 196, 57)",
   PAYPAL_LATER_GOLD_BUTTON_COLOR: "rgb(255, 196, 57)",
   PAYPAL_BLUE_BUTTON_COLOR: "rgb(0, 112, 186)",
@@ -361,17 +311,6 @@ export const ERROR_MESSAGES = {
   TOKENIZATION_FAILED_MESSAGE: "Tokenization failed. Please try again.",
   ACH_INVALID_ROUTING_NUMBER: "Routing number is invalid",
   ACH_INVALID_ACCOUNT_NUMBER: "Request failed with status code 422",
-  FIRST_NAME_REQUIRED_HOSTED_FIELDS: "First name is required",
-  CARD_EXPIRED_HOSTED_FIELDS: "Card has expired",
-  MONTH_REQUIRED_HOSTED_FIELDS: "Month is required",
-  YEAR_REQUIRED_HOSTED_FIELDS: "Year is required",
-  INVALID_CARD_NUMBER_HOSTED_FIELDS: "Invalid card number",
-  HOSTED_FIELD_ZIP_ERROR_HOSTED_FIELDS: "Enter a valid US ZIP code (12345 or 12345-6789)",
-  HOSTED_FIELD_STATE_ERROR_HOSTED_FIELDS: "Use a two-letter state code for US addresses",
-  HOSTED_FIELD_ZIP_REQUIRED_ERROR: "ZIP is required for US addresses",
-  ZIP_ERROR_EXPRESS_CHECKOUT: "Error: Enter a valid US ZIP code (12345 or 12345-6789)",
-  STATE_ERROR_EXPRESS_CHECKOUT: "Error: Use a two-letter state code for US addresses",
-  ZIP_REQUIRED_ERROR_EXPRESS_CHECKOUT: "Error: ZIP is required for US addresses",
 };
 
 export const ERROR_SELECTORS = {
@@ -386,8 +325,6 @@ export const ERROR_SELECTORS = {
   CARD_NUMBER_LENGTH_ICON: `[aria-label="${ERROR_MESSAGES.CARD_NUMBER_LENGTH}"]`,
   INVALID_CVV_ICON: `[aria-label="${ERROR_MESSAGES.INVALID_CVV}"]`,
   AMEX_INVALID_CVV_ICON: `[aria-label="${ERROR_MESSAGES.AMEX_INVALID_CVV}"]`,
-  HOSTED_FIELD_ZIP_ERROR_HOSTED_FIELDS: 'hosted-field-zip-error',
-  HOSTED_FIELD_STATE_ERROR_HOSTED_FIELDS: 'hosted-field-state-error',
 };
 
 export const CSS_PROPERTIES = {
@@ -418,10 +355,6 @@ export const getValidYearString = (): string => {
   return getValidYear().toString();
 };
 
-export const getValidTwoDigitExpiryString = (): string => {
-  const year = getValidYear().toString().slice(-2);
-  return `12/${year}`;
-};
 /**
  * Returns a valid two-digit year for testing (current year + 1)
  * Example usage: await mmyyField.fill(`12/${getValidTwoDigitYear()}`);

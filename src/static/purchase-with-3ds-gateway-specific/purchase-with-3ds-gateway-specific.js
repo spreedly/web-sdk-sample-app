@@ -41,26 +41,6 @@ let selectedAmount = 3001; // Default to frictionless flow
 const CARDS_PER_PAGE = 5;
 let currentCardsPage = 1;
 
-/** Default-mounted catalogue fields for this storefront (not an SDK playground). */
-const HOSTED_CATALOGUE_FIELDS = Object.freeze(['first_name', 'last_name', 'expiry', 'email']);
-
-/** Styles pushed into each hosted iframe input so it matches surrounding CSS. */
-const HOSTED_INPUT_STYLE = {
-  fontSize: '1rem',
-  color: '#0a0a0a',
-  padding: '0 1rem',
-  height: '100%',
-  width: '100%',
-};
-
-function hostedCatalogueContainerId(type) {
-  return `hosted-field-${type}`;
-}
-
-function hostedCatalogueErrorId(type) {
-  return `hosted-field-${type}-error`;
-}
-
 // DOM Elements
 const elements = {
   sdkBadge: () => document.getElementById('sdk-badge'),
@@ -246,8 +226,6 @@ function initializeHostedFields(authParams) {
   
   sdk.on('ready', () => {
     isReady = true;
-    sdk.setStyles('cvv', HOSTED_INPUT_STYLE);
-    applyHostedCatalogueStyles(sdk);
     elements.hostedFieldsForm().classList.remove('hidden');
     console.log('Hosted Fields ready');
   });
@@ -266,79 +244,17 @@ function initializeHostedFields(authParams) {
   });
   
   sdk.on('error', (error) => {
-    const message =
-      typeof error === 'string' && error.trim()
-        ? error
-        : error?.message || 'An error occurred';
-    console.error('SDK error:', message);
-    showStatus(message, 'error');
+    console.error('SDK error:', error.message);
+    showStatus(error.message || 'An error occurred', 'error');
     setPayButtonLoading(false);
   });
 
-  sdk.on('validation', (validationResponse) => {
-    updateHostedFieldsValidationErrors(validationResponse);
+  sdk.inAppElements({
+    number: { containerId: 'card-number-field' },
+    cvv: { containerId: 'cvv-field' },
   });
-
-  // Containers must exist in the DOM before inAppElements runs or the field is skipped.
-  sdk.inAppElements(buildHostedFieldsElementsConfig());
   
   console.log('Hosted Fields SDK initialized');
-}
-
-function buildHostedFieldsElementsConfig() {
-  const elementsConfig = {
-    cvv: { containerId: 'cvv-field' },
-    number: { containerId: 'card-number-field', styles: HOSTED_INPUT_STYLE },
-  };
-  HOSTED_CATALOGUE_FIELDS.forEach((type) => {
-    elementsConfig[type] = { containerId: hostedCatalogueContainerId(type) };
-  });
-  return elementsConfig;
-}
-
-/**
- * Catalogue iframes render an unstyled input, so push storefront styles in to match
- * surrounding CSS. `ready` tracks the number/cvv handshake, so re-apply once each
- * catalogue frame loads in case the first `setStyles` was dropped.
- */
-function applyHostedCatalogueStyles(sdkInstance) {
-  HOSTED_CATALOGUE_FIELDS.forEach((type) => {
-    sdkInstance.setStyles(type, HOSTED_INPUT_STYLE);
-    const iframe = document.querySelector(`#${hostedCatalogueContainerId(type)} iframe`);
-    iframe?.addEventListener(
-      'load',
-      () => sdkInstance.setStyles(type, HOSTED_INPUT_STYLE),
-      { once: true }
-    );
-  });
-}
-
-function setHostedFieldError(containerId, errorId, message) {
-  const container = document.getElementById(containerId);
-  const errorEl = document.getElementById(errorId);
-  if (errorEl) {
-    errorEl.textContent = message || '';
-    errorEl.classList.toggle('visible', Boolean(message));
-  }
-  if (container) {
-    container.classList.toggle('has-error', Boolean(message));
-  }
-}
-
-function updateHostedFieldsValidationErrors(payload) {
-  let numberError = '';
-  if (payload?.validNumber === false) {
-    numberError = 'Card number is invalid';
-  } else if (payload?.luhnValid === false) {
-    numberError = 'Card number failed the Luhn check';
-  }
-  setHostedFieldError('card-number-field', 'card-number-error', numberError);
-  setHostedFieldError('cvv-field', 'cvv-error', payload?.validCvv === false ? 'CVV is invalid' : '');
-  HOSTED_CATALOGUE_FIELDS.forEach((type) => {
-    const result = payload?.formFields?.[type];
-    const message = result && result.valid === false ? result.error || 'Invalid' : '';
-    setHostedFieldError(hostedCatalogueContainerId(type), hostedCatalogueErrorId(type), message);
-  });
 }
 
 function initializeExpressCheckout(authParams) {
@@ -613,8 +529,30 @@ function tokenizeNewCard() {
     return;
   }
   
-  // Catalogue values (name, expiry, email) are read from hosted iframes.
-  sdk.submit({});
+  const firstName = document.getElementById('first_name')?.value?.trim() || '';
+  const lastName = document.getElementById('last_name')?.value?.trim() || '';
+  const month = document.getElementById('month')?.value?.trim() || '';
+  const year = document.getElementById('year')?.value?.trim() || '';
+  const email = document.getElementById('email')?.value?.trim() || '';
+  
+  if (!firstName || !lastName || !month || !year) {
+    showStatus('Please fill in all required fields', 'error');
+    setPayButtonLoading(false);
+    return;
+  }
+  
+  const submitData = {
+    first_name: firstName,
+    last_name: lastName,
+    month: month,
+    year: year,
+  };
+  
+  if (email) {
+    submitData.email = email;
+  }
+  
+  sdk.submit(submitData);
 }
 
 // Gateway Specific 3DS Purchase Flow

@@ -42,7 +42,7 @@ Need to collect card details and tokenize?
 
 **Key methods:** `inAppElements()`, `setPlaceholder()`, `setStyles()`, `setFieldType()`, `submit()`
 
-📖 See: [Hosted Fields Integration Guide](./hosted-fields/INTEGRATION_GUIDE.md) · [Styling Guide](./STYLING_GUIDE.md)
+📖 See: [Hosted Fields Integration Guide](./hosted-fields/INTEGRATION_GUIDE.md)
 
 ---
 
@@ -58,4 +58,4 @@ Need to collect card details and tokenize?
 
 **Key methods:** `expressCheckout()`, `addField()`, `removeField()`, `setFieldConfig()`, `updateTextElement()`
 
-📖 See: [Express Checkout Integration Guide](./express-checkout/INTEGRATION_GUIDE.md) · [Styling Guide](./STYLING_GUIDE.md)
+📖 See: [Express Checkout Integration Guide](./express-checkout/INTEGRATION_GUIDE.md)

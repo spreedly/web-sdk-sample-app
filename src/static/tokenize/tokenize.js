@@ -1,7 +1,6 @@
 /**
- * Tokenize (merchant-hosted form) — card number and CVV are Spreedly iframes;
- * name, expiry, and address are collected on this page and passed to submit().
- * Supports both Hosted Fields and Express Checkout SDKs.
+ * Tokenize Flow - Creates a payment method token from card details
+ * Supports both Hosted Fields and Express Checkout SDKs
  */
 
 // State

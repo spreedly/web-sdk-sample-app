@@ -85,8 +85,6 @@ export const tokenizePage={
         await expect(parityOptionElement).toBeChecked();
     }
 },
-    
- 
 
     getPlaceholderColor: async (page: Page) => {
     const cardNumberField = await helperFunctions.getHostedFieldsCardNumberField(page);
@@ -123,22 +121,11 @@ export const tokenizePage={
         const inputMode = await cvvField.getAttribute('inputmode');
         return inputMode;
   },
-    getFieldCheckboxByName: async (page: Page, fieldName: string) => {
-        const field = page.locator(`[data-hosted-field="${fieldName}"]`);
-        await expect(field).toBeVisible();
-        return field;
-    },
 
     clickOnParityOption: async (page: Page, parityOption: string) => {
         const parityOptionElement = page.locator(`#hf-demo-${parityOption}`);
         await expect(parityOptionElement).toBeVisible();
         await parityOptionElement.click();
-    },
-
-    clickOnDestroySDKButton: async (page: Page) => {
-        const destroySDKButton = page.getByRole('button', { name: TEST_SELECTORS.DESTROY_SDK_BUTTON });
-        await expect(destroySDKButton).toBeVisible();
-        await destroySDKButton.click();
     },
 }
 
