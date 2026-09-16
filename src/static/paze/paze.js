@@ -233,6 +233,17 @@ function registerPazeEventHandlers() {
     setStatus('Paze is ready. Enter your email to check eligibility.', 'success');
   });
 
+  // The SDK only ever toggles display on the <paze-button> element it creates. In dynamic
+  // mode that leaves this page's own wrapper (margin, min-height) visible as an empty box
+  // whenever the button is hidden, so mirror the SDK's pass/fail result onto the container
+  // itself rather than relying on the SDK to manage layout it doesn't own.
+  pazeInstance.on('pazeEligibilityChecked', ({ eligible }) => {
+    if (getPazeDisplayMode() !== 'dynamic') {
+      return;
+    }
+    elements.buttonContainer?.classList.toggle('hidden', !eligible);
+  });
+
   pazeInstance.on('pazeButtonClicked', handlePazeButtonClick);
 
   pazeInstance.on('pazeCheckoutComplete', async data => {
@@ -434,6 +445,9 @@ async function createAndMountPaze() {
     throw new Error(mountResult.error);
   }
 
+  // Dynamic mode mounts the button hidden until the first eligibility check; keep our own
+  // container hidden too so there's no empty box before that check resolves.
+  elements.buttonContainer?.classList.toggle('hidden', getPazeDisplayMode() === 'dynamic');
   elements.buttonContainer?.classList.toggle(
     'tall',
     elements.pazeBtnDisableMaxHeight?.checked === true
