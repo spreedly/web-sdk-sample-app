@@ -1,6 +1,6 @@
 # Express Checkout — Tokenization Integration Guide
 
-Use Spreedly Express Checkout (`SpreedlyExpressCheckout`) to drop a complete, pre-built payment form into your page with minimal code. The form can render as an embedded component or a modal dialog — you customize text, fields, and styling through the SDK API. A working example of extra fields and `addValidation` is at `/tokenize-catalogue` in this sample app.
+Use Spreedly Express Checkout (`SpreedlyExpressCheckout`) to drop a complete, pre-built payment form into your page with minimal code. The form can render as an embedded component or a modal dialog — you customize text, fields, and styling through the SDK API.
 
 ---
 
@@ -12,11 +12,10 @@ Use Spreedly Express Checkout (`SpreedlyExpressCheckout`) to drop a complete, pr
 4. [Complete Usage Example](#complete-usage-example)
 5. [Display Modes](#display-modes)
 6. [Customizing the Form](#customizing-the-form)
-7. [Custom field validation](#custom-field-validation)
-8. [Error Handling](#error-handling)
-9. [Testing](#testing)
-10. [API Reference](#api-reference)
-11. [Troubleshooting](#troubleshooting)
+7. [Error Handling](#error-handling)
+8. [Testing](#testing)
+9. [API Reference](#api-reference)
+10. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -289,9 +288,6 @@ checkout.destroy();
 
 ## Customizing the Form
 
-For a dedicated walkthrough of themes, per-field styles, and Hosted Fields vs Express
-Checkout styling models, see the **[Styling Guide](../STYLING_GUIDE.md)**.
-
 ### Text elements
 
 ```javascript
@@ -300,8 +296,6 @@ sdk.updateTextElement('submitBtnText', 'Pay $99.00');
 sdk.updateTextElement('footerText', 'Secured by Spreedly');
 sdk.updateTextElement('processingText', 'Processing payment...');
 ```
-
-> Hosted Fields has an optional mountable submit button (`inAppElements({ submit })`) with default copy `'Submit'`. Clicks emit `submitClick` (required — a missing listener is an `error`); merchants control disable/text via `setDisable` / `setText`. Express Checkout's button stays inside the checkout iframe — there is no `submitClick` event here. See the [Hosted Fields integration guide](../hosted-fields/INTEGRATION_GUIDE.md#optional-hosted-submit-button).
 
 ### Adding and removing fields
 
@@ -349,90 +343,6 @@ sdk.updateSubmitParams({
   metadata: { order_id: 'ORDER-456', customer_id: 'CUST-789' },
 });
 ```
-
----
-
-## Custom field validation
-
-`addValidation(fieldName, validator)` attaches your own rule to a non-sensitive field. It is
-**layered on top of** the form's built-in validation, not a replacement for it:
-
-1. The form's API-safety checks run first — UTF-16 encodability, per-field character limits, and
-   the name charset. These are not overridable.
-2. Then the `isRequired` gate (and, for `first_name` / `last_name`, the `allow_blank_name` gate
-   plus the combined 350-character cap).
-3. Only if both passed does your validator run.
-
-So a validator can reject a value the form would have accepted, but it can never make it accept
-one it rejected. Your function runs on your own page — it is never injected into the checkout
-iframe — and it fires on field blur and again on submit.
-
-```javascript
-sdk.addValidation('zip', (value, fields) => {
-  const ok = /^\d{5}(-\d{4})?$/.test(value);
-  return { isValid: ok, errorMessage: ok ? undefined : 'Enter a valid US ZIP code' };
-});
-
-// The second argument carries the form's other non-sensitive values, so rules can be cross-field
-sdk.addValidation('state', (value, fields) => {
-  if (fields.country !== 'US') return { isValid: true };
-  const ok = US_STATES.includes(value);
-  return { isValid: ok, errorMessage: ok ? undefined : 'Select a valid US state' };
-});
-
-sdk.removeValidation('zip'); // back to built-in-only validation for that field
-```
-
-Register validators before or after `expressCheckout()` — either works. Registering before the
-form mounts is fine; the field names are included in the form's initial configuration.
-
-**Which fields accept a validator.** Every additional field you can pass to `addField()`, plus
-the two cardholder-name fields: `first_name`, `last_name`, `full_name`, `email`, `company`,
-`phone_number`, the billing address keys (`address1`, `address2`, `city`, `state`, `zip`,
-`country`, `house_number_or_name`, `street`, `street_line2`, `phone_number_country_code`,
-`phone_number_area_code`) and their `shipping_*` twins. Not accepted: `number` and
-`verification_value` (PCI — their values never leave the iframe), and `month` / `year`
-(governed by the shared date validation). An unrecognized name logs a warning and is ignored;
-nothing throws.
-
-**Return values.** Return `{ isValid: boolean, errorMessage?: string }`:
-
-| Return | Meaning |
-|---|---|
-| `{ isValid: true }` | Valid (`errorMessage` is ignored) |
-| `{ isValid: false, errorMessage: 'msg' }` | Invalid, `msg` is shown on the field |
-| `{ isValid: false }` | Invalid, a generic `<Label> is invalid` message is shown |
-
-Validators must be **synchronous**. Returning a Promise, a boolean, a string, `null`, or
-`undefined` is treated as a bug (see below).
-
-**Empty values still run.** A validator is invoked even when the field is blank, as long as the
-field is not required. That is how you express a conditional requirement:
-
-```javascript
-sdk.addValidation('zip', (value, fields) => {
-  if (fields.country !== 'US') return { isValid: true };
-  const ok = Boolean(value.trim());
-  return { isValid: ok, errorMessage: ok ? undefined : 'ZIP is required for US addresses' };
-});
-```
-
-**Reporting.** Express Checkout renders the message on the field itself, exactly like a built-in
-failure, and a failure blocks tokenization before any network call. There is no extra event to
-subscribe to.
-
-**Fail-open.** If your validator throws, returns something the SDK cannot interpret, or returns a
-Promise, that field **passes** the custom rule and the SDK emits an `error` event describing the
-problem. A bug in merchant code must not be able to block every checkout with no diagnosable
-cause; the value has already cleared the API-safety floor, and Spreedly Core still validates
-server-side.
-
-**Cost when unused.** With no validators registered there is no extra iframe round-trip and no
-behavior change at all.
-
-**PAN, CVV, and expiry are never passed.** The `fields` argument is the form's other
-non-sensitive values keyed by Spreedly param name; `number`, `verification_value`, `month`,
-and `year` are always absent.
 
 ---
 
@@ -525,9 +435,7 @@ if (typeof SpreedlyExpressCheckout === 'undefined') {
 
 ## See Also
 
-- [Styling Guide](../STYLING_GUIDE.md) — Brand Hosted Fields and Express Checkout
 - [Hosted Fields Integration Guide](../hosted-fields/INTEGRATION_GUIDE.md) — Custom form alternative
-- Sample app `/tokenize-catalogue` — Live extra-fields and custom-validator demo
 - [Recaching Integration Guide](../../recaching/INTEGRATION_GUIDE.md) — Update CVV for retained cards
 - [3DS Overview](../../three-ds/OVERVIEW.md) — Add 3D Secure authentication
 - [Security Guide](../../../SECURITY.md) — SRI, CSP, and security best practices

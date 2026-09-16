@@ -107,7 +107,7 @@ For Braintree or Stripe APM, see their respective integration guides for require
 
 | Check | Detail |
 |-------|--------|
-| Container elements exist | The `<div>` elements for number, CVV, and every catalogue field (plus `submit`, if mounted) must be in the DOM **before** calling `inAppElements()` |
+| Container elements exist | The `<div>` elements for number and CVV must be in the DOM **before** calling `inAppElements()` |
 | Container IDs match | The IDs passed to `inAppElements()` must exactly match the element IDs in your HTML |
 | Auth details are valid | An auth error silently prevents iframe creation — check `onError` callback |
 | Console errors | Open DevTools → Console for any errors during initialization |
@@ -138,12 +138,6 @@ For Braintree or Stripe APM, see their respective integration guides for require
 **Cause:** `submit()` was called before the `ready` event fired or before auth completed.
 
 **Fix:** Only call `submit()` after the `onReady` callback has been invoked. Disable your submit button until then.
-
-### Hosted submit button click does not tokenize
-
-**Cause:** `inAppElements({ submit })` was mounted but no `sdk.on('submitClick', …)` listener is registered. The SDK does **not** call `submit()` for you.
-
-**Fix:** Register `submitClick` and invoke `sdk.submit(...)` from that handler. A missing listener emits `error` with `{ message }` and skips tokenization.
 
 ### Token response has unexpected structure
 

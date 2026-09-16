@@ -48,16 +48,15 @@ If you used 3DS, see [3DS — Global / Forter](#3ds--global--forter).
 2. [Initialization & lifecycle](#initialization--lifecycle)
 3. [Field configuration](#field-configuration)
 4. [Tokenization (submit)](#tokenization-submit)
-5. [Hosted submit button 🆕](#hosted-submit-button-)
-6. [Recaching](#recaching)
-7. [Events](#events)
-8. [3DS — Global / Forter](#3ds--global--forter)
-9. [3DS — Gateway-Specific](#3ds--gateway-specific)
-10. [Offsite payments — PayPal & redirect-style](#offsite-payments--paypal--redirect-style)
-11. [Offsite payments — Stripe APM](#offsite-payments--stripe-apm)
-12. [Offsite payments — Braintree (PayPal/Venmo)](#offsite-payments--braintree-paypalvenmo)
-13. [ACH payments 🆕](#ach-payments-)
-14. [Express Checkout 🆕](#express-checkout-)
+5. [Recaching](#recaching)
+6. [Events](#events)
+7. [3DS — Global / Forter](#3ds--global--forter)
+8. [3DS — Gateway-Specific](#3ds--gateway-specific)
+9. [Offsite payments — PayPal & redirect-style](#offsite-payments--paypal--redirect-style)
+10. [Offsite payments — Stripe APM](#offsite-payments--stripe-apm)
+11. [Offsite payments — Braintree (PayPal/Venmo)](#offsite-payments--braintree-paypalvenmo)
+12. [ACH payments 🆕](#ach-payments-)
+13. [Express Checkout 🆕](#express-checkout-)
 
 ---
 
@@ -76,7 +75,7 @@ Reference: `web-sdk-sample-app/src/static/shared/utils.js` (`getSDKScriptUrl`)
 
 | Legacy iFrame | Checkout Web SDK | Status | Notes |
 |---|---|---|---|
-| `Spreedly.init(envKey, { nonce, timestamp, certificateToken, signature, numberEl, cvvEl })` | `new SpreedlyHostedFields({ environment_key, nonce, timestamp, certificate_token, signature })` + `sdk.inAppElements({ number: { containerId }, cvv: { containerId }, submit? })` | ⚠️ | Auth fields are now snake_case and passed to the constructor; iframe mount is a separate explicit call. `data-environment-key` / `data-number-id` / `data-cvv-id` HTML attributes are no longer used. Optional `submit: { containerId, text?, styles? }` mounts a [hosted submit button](#hosted-submit-button-). |
+| `Spreedly.init(envKey, { nonce, timestamp, certificateToken, signature, numberEl, cvvEl })` | `new SpreedlyHostedFields({ environment_key, nonce, timestamp, certificate_token, signature })` + `sdk.inAppElements({ number: { containerId }, cvv: { containerId } })` | ⚠️ | Auth fields are now snake_case and passed to the constructor; iframe mount is a separate explicit call. `data-environment-key` / `data-number-id` / `data-cvv-id` HTML attributes are no longer used. |
 | _(global singleton `Spreedly`)_ | _(per-instance `sdk`)_ | ⚠️ | The new SDK is class-based |
 | `Spreedly.unload()` | `sdk.destroy()` | ⚠️ | Renamed. Removes the iframes, clears `on()` callbacks, and emits `'close'`. Idempotent. After destroy, other SDK methods no-op with a warning. |
 | `Spreedly.reload()` | `sdk.reload()` | ✅ | Same name. Internally tears down current iframes and re-mounts using the same `inAppElements()` config; merchant `on('ready', …)` callbacks fire again. |
@@ -97,21 +96,20 @@ manages its own UI via `sdk.expressCheckout({...})` configuration
 | Legacy iFrame | Checkout Web SDK | Status | Notes |
 |---|---|---|---|
 | `Spreedly.setPlaceholder(field, text)` | `sdk.setPlaceholder('number' \| 'cvv', text)` | ✅ | |
-| `Spreedly.setStyle(field, css)` (CSS string) | `sdk.setStyles('number' \| 'cvv' \| 'submit' \| catalogue type, { fontSize, color, ... })` (object), or `styles` on each `inAppElements()` field (applied on `ready`) | ⚠️ | Renamed (`setStyle` → `setStyles`); pass a plain object of camelCase CSS properties instead of a CSS string. `'submit'` targets the optional [hosted submit button](#hosted-submit-button-). Mount-time `styles` on `number` / `cvv` / catalogue / `submit` are applied on `ready`. |
+| `Spreedly.setStyle(field, css)` (CSS string) | `sdk.setStyles('number' \| 'cvv', { fontSize, color, ... })` (object) | ⚠️ | Renamed (`setStyle` → `setStyles`); pass a plain object of camelCase CSS properties instead of a CSS string. |
 | `Spreedly.setStyle('placeholder', css)` | `sdk.setPlaceholderStyles({ color, fontStyle, ... })` | ⚠️ | Placeholder styling is now its own method (applies to both fields); pass a plain object instead of a CSS string. |
 | `Spreedly.setFieldType(field, type)` | `sdk.setFieldType('number' \| 'cvv', 'text' \| 'tel' \| 'number' \| 'password')` | ✅ | |
-| `Spreedly.setLabel(field, value)` | `sdk.setLabel('number' \| 'cvv' \| 'submit' \| catalogue type, value)` | ✅ | Sets `aria-label` on the hosted input (and the visible label on `'submit'`). HTML-like tags are stripped (same as legacy). |
-| `Spreedly.setTitle(field, value)` | `sdk.setTitle('number' \| 'cvv' \| 'submit' \| catalogue type, value)` | ✅ | Sets the `title` attribute on the hosted input. |
-| `Spreedly.setInputMode(field, value)` | `sdk.setInputMode('number' \| 'cvv', value)` | ✅ | Allowed: `'none' \| 'text' \| 'numeric' \| 'decimal' \| 'tel' \| 'search' \| 'email' \| 'url'`. No-op on `'submit'`. |
-| `Spreedly.setRequiredAttribute(field)` | `sdk.setRequiredAttribute('number' \| 'cvv', required = true)` | ⚠️ | New SDK accepts a second `required` boolean (default `true`) so you can also _remove_ the attribute. No-op on `'submit'`. |
+| `Spreedly.setLabel(field, value)` | `sdk.setLabel('number' \| 'cvv', value)` | ✅ | Sets `aria-label` on the hosted input. HTML-like tags are stripped (same as legacy). |
+| `Spreedly.setTitle(field, value)` | `sdk.setTitle('number' \| 'cvv', value)` | ✅ | Sets the `title` attribute on the hosted input. |
+| `Spreedly.setInputMode(field, value)` | `sdk.setInputMode('number' \| 'cvv', value)` | ✅ | Allowed: `'none' \| 'text' \| 'numeric' \| 'decimal' \| 'tel' \| 'search' \| 'email' \| 'url'`. |
+| `Spreedly.setRequiredAttribute(field)` | `sdk.setRequiredAttribute('number' \| 'cvv', required = true)` | ⚠️ | New SDK accepts a second `required` boolean (default `true`) so you can also _remove_ the attribute. |
 | `Spreedly.setNumberFormat('prettyFormat' \| 'plainFormat' \| 'maskedFormat')` | `sdk.setNumberFormat(format)` | ✅ | |
 | `Spreedly.toggleAutoComplete()` | `sdk.toggleAutoComplete()` | ✅ | |
 | `Spreedly.toggleMask()` | `sdk.toggleMask()` | ✅ | |
-| `Spreedly.transferFocus(field)` | `sdk.transferFocus('number' \| 'cvv' \| 'submit' \| 'iframe')` | ✅ | `'iframe'` parks focus on the iframe document (same as legacy). `'submit'` focuses the optional hosted submit button. |
-| `Spreedly.validate()` | `sdk.validate(options?)` | ⚠️ | Now async — payload arrives via `sdk.on('validation', payload => …)`. Optional `options.allow_blank_name` / `options.allow_expired_date` / `options.allow_blank_date` mirror submit flags. Catalogue fields mounted via `inAppElements()` are reported under `payload.formFields`. The same `validation` event fires when `submit()` is blocked client-side (followed by `error`). For continuous live state (typing, focus, hover, keys), use `sdk.on('fieldStateChange', …)`. |
+| `Spreedly.transferFocus(field)` | `sdk.transferFocus('number' \| 'cvv' \| 'iframe')` | ✅ | `'iframe'` parks focus on the iframe document (same as legacy). |
+| `Spreedly.validate()` | `sdk.validate(options?)` | ⚠️ | Now async — payload arrives via `sdk.on('validation', payload => …)`. Optional `options.allow_blank_name` / `options.allow_expired_date` mirror legacy submit flags. The same `validation` event fires when `submit()` is blocked client-side (followed by `error`). For continuous live state (typing, focus, hover, keys), use `sdk.on('fieldStateChange', …)`. |
 | `Spreedly.resetFields()` | `sdk.resetFields()` | ✅ | Clears both inputs. In recache mode the prefilled disabled number stays — only CVV is cleared. |
 | _(none — legacy always renders the brand badge)_ | `sdk.setShowCardTypeIcon(false)` (Hosted Fields) / `uiConfig.showCardTypeIcon: false` (Express Checkout) | 🆕 | Hide the built-in card-type badge (e.g. `VISA`). No legacy equivalent — legacy always shows it. Default is shown. |
-| _(none)_ | `sdk.setText('submit', text)` / `sdk.setDisable('submit', boolean)` | 🆕 | Hosted Fields only. Visible label and disabled state for the optional [hosted submit button](#hosted-submit-button-). No-op (with a warning) on any other element type. |
 | `Spreedly.setValue('number' \| 'cvv', value)` | _(none — setting card values from the parent page is not supported)_ | ❌ | Intentionally not migrated. Hosted Fields exists to keep card values in the iframe; setting from the parent page would break PCI scope. |
 | `Spreedly.setParam(name, value)` | Pass via `sdk.submit(formData, submitParams)` | ⚠️ | See [Tokenization (submit)](#tokenization-submit) — params are passed at submit time, not set ahead. |
 
@@ -201,13 +199,8 @@ type HostedFieldsFormData = {
   state?:    string;
   zip?:      string;
   country?:  string;
-  house_number_or_name?: string;
-  street?: string;
-  street_line2?: string;
-  phone_number_country_code?: string;
-  phone_number_area_code?: string;
 
-  // Shipping address (every `shipping_*` field)
+  // Shipping address (every legacy `shipping_*` field)
   shipping_address1?:    string;
   shipping_address2?:    string;
   shipping_city?:        string;
@@ -215,11 +208,6 @@ type HostedFieldsFormData = {
   shipping_zip?:         string;
   shipping_country?:     string;
   shipping_phone_number?: string;
-  shipping_house_number_or_name?: string;
-  shipping_street?: string;
-  shipping_street_line2?: string;
-  shipping_phone_number_country_code?: string;
-  shipping_phone_number_area_code?: string;
 
   // Legacy boolean flag (was `permittedBooleanParams` in the iframe)
   eligible_for_card_updater?: boolean;
@@ -232,47 +220,6 @@ for PCI scope.
 Pass any unknown key (e.g. `address_1` instead of `address1`) and the SDK logs a single
 `console.warn` listing the offending keys plus the full whitelist, so typos are easy to
 spot in development.
-
----
-
-## Hosted submit button 🆕
-
-Legacy iFrame has no mountable submit control — merchants always own the Pay button and call
-`tokenizeCreditCard()`. Hosted Fields keeps that model by default. Optionally you can mount a
-Spreedly-hosted button next to number/CVV:
-
-```js
-sdk.inAppElements({
-  number: { containerId: 'card-number-field' },
-  cvv: { containerId: 'cvv-field' },
-  submit: { containerId: 'submit-button-field', text: 'Pay now' },
-});
-
-sdk.on('submitClick', (formFields) => {
-  sdk.setDisable('submit', true);
-  sdk.setText('submit', 'Please wait...');
-  // `formFields` is informational — mounted values are read from the iframes.
-  // Pass only the fields you did not mount as hosted fields.
-  sdk.submit(
-    { email: document.getElementById('email').value },
-    { metadata: { order_id: 'ORDER-123' } }
-  );
-});
-```
-
-| Concern | Behavior |
-|---|---|
-| Mount | `inAppElements({ submit: { containerId, text?, styles? } })`. Opt-in; omit it to keep your own button. Mount `styles` are applied to the `<button>` on `ready`. |
-| Click | **Always** requires `sdk.on('submitClick', …)`. The SDK does **not** call `submit()` for you. |
-| Callback payload | Spreedly-param-keyed catalogue values (`first_name`, `month`/`year`, `email`, …). **Never PAN/CVV.** Informational — do not pass it back to `submit()`. |
-| Your job | Call `sdk.submit(formData, submitParams)` from the listener, with `formData` carrying only the fields you did **not** mount as hosted fields (`{}` if you mounted them all). Mounted values are re-read from their iframes; hosted keys passed in `formData` are stripped (hosted wins) and warned about. |
-| Missing listener | Logs an error and emits `'error'` with `{ message }`. No tokenization. |
-| Loading UX | SDK does not auto-disable or change the label. Use `setDisable('submit', …)` / `setText('submit', …)` from `submitClick` / `tokenGenerated` / `error`. |
-| Styles / a11y | `setStyles('submit', …)`, `setLabel('submit', …)`, `setTitle('submit', …)`, `transferFocus('submit')`. Native `<button type="button">`; `aria-label` matches visible text. |
-| `fieldStateChange` | `field: 'submit'` with `focus` / `blur` / `mouseover` / `mouseout` / `click` / `tab` / `shiftTab`. |
-| Express Checkout | No equivalent — EC's button stays inside its checkout iframe. There is no `submitClick` there. |
-
-Full walkthrough: [Hosted Fields integration guide — optional hosted submit button](../tokenization/hosted-fields/INTEGRATION_GUIDE.md#optional-hosted-submit-button).
 
 ---
 
@@ -322,9 +269,9 @@ are marked ⚠️.
 |---|---|---|---|
 | `'ready'` | `'ready'` | ✅ | |
 | `'paymentMethod'` `(token, pm)` | `'tokenGenerated'` `(payload)` | ⚠️ | Renamed and payload changed. Payload is `{ message, tokenResponse: { token, succeeded, payment_method: { token, card_type, last_four_digits, ... } } }`. |
-| `'errors'` `(errorsArray)` | `'error'` `(payload)` | ⚠️ | Renamed (singular) and payload changed — it varies by source: a `string` for client-side validation and guard errors (e.g. `'Invalid card number'`, `'Please wait before submitting again'`); Spreedly's error response body (object with an `errors` array) for API failures; `{ message, attribute? }` objects for recache configuration **and** a missing hosted `submitClick` listener. Handle both strings and objects. |
-| `'validation'` `(payload)` | `'validation'` `(payload)` | ✅ | Fired in response to `sdk.validate()` and again when `submit()` is blocked client-side. Payload includes `cardType`, `validNumber`, `validCvv`, `cvvLength`, `numberLength`, `luhnValid`, `iin?`, `maskedNumber?`, `allow_blank_name?`, `allow_expired_date?`, and `formFields` (per mounted catalogue field: `{ valid, empty, error }`; `{}` when none are mounted). |
-| `'fieldEvent'` `(name, type, ...)` | `'fieldStateChange'` `(payload)` | ⚠️ | Renamed; single object payload. Includes the same numeric snapshot as `validation` plus `field` (`'number'` \| `'cvv'` \| `'submit'` \| catalogue type), `action` (`focus` \| `blur` \| `input` \| `click` \| `mouseover` \| `mouseout` \| `enter` \| `escape` \| `tab` \| `shiftTab`), `focused`, `hovered?`. Opt in to PAN-prefix `iin` via `sdk.setFieldStateReporting({ includeIin: true })`. Catalogue snapshots omit the typed `value` unless you also pass `includeValue: true`. |
+| `'errors'` `(errorsArray)` | `'error'` `(payload)` | ⚠️ | Renamed (singular) and payload changed — it varies by source: a `string` for client-side validation and guard errors (e.g. `'Invalid card number'`, `'Please wait before submitting again'`); Spreedly's error response body (object with an `errors` array) for API failures; `{ message, attribute? }` objects for recache configuration errors. Handle both strings and objects. |
+| `'validation'` `(payload)` | `'validation'` `(payload)` | ✅ | Fired in response to `sdk.validate()` and again when `submit()` is blocked client-side. Payload includes `cardType`, `validNumber`, `validCvv`, `cvvLength`, `numberLength`, `luhnValid`, `iin?`, `maskedNumber?`, `allow_blank_name?`, `allow_expired_date?`. |
+| `'fieldEvent'` `(name, type, ...)` | `'fieldStateChange'` `(payload)` | ⚠️ | Renamed; single object payload. Includes the same numeric snapshot as `validation` plus `field`, `action` (`focus` \| `blur` \| `input` \| `mouseover` \| `mouseout` \| `enter` \| `escape` \| `tab` \| `shiftTab`), `focused`, `hovered?`. Opt in to PAN-prefix `iin` via `sdk.setFieldStateReporting({ includeIin: true })`. |
 | `'consoleError'` `(error)` | `'consoleError'` `(payload)` | ⚠️ | Same name; payload shape is now `{ msg, url, line, col, error, field: 'number' \| 'cvv' }`. Fired when an uncaught error occurs inside one of the hosted iframes. |
 | `'numberSet'` / `'cvvSet'` / `'sourceSet'` | _(none)_ | ❌ | Mirror legacy `setValue` / `source` flows that aren't supported (intentionally — see Field configuration). |
 | `'recacheReady'` | `'recacheReady'` | ✅ | |
@@ -332,7 +279,6 @@ are marked ⚠️.
 | _(none)_ | `'cvvExpired'` (subset of `'error'`) | 🆕 | New SDK clears CVV after PCI DSS 3.2.3 TTL (3 minutes) and emits an `error` with `{ message: 'CVV expired after 3 minutes', reason: 'PCI DSS 3.2.3 TTL compliance' }`. |
 | `'3ds:status'` `(event)` (single dispatcher; switch on `event.action`) | Typed callbacks on the `SpreedlyThreeDSLifecycle` constructor | ⚠️ | See [3DS](#3ds--global--forter) — replaced by `callbacks: { onChallenge, onSuccess, onError, onDeviceFingerprint?, onTriggerCompletion? }`. |
 | _none_ | `'close'` (Hosted Fields after `destroy()`, and Express Checkout) | 🆕 | |
-| _none_ | `'submitClick'` (Hosted Fields optional hosted submit button) | 🆕 | Required when `inAppElements({ submit })` is mounted. Fired on click with Spreedly-param-keyed catalogue values (never PAN/CVV). You must call `sdk.submit(...)` yourself. A missing listener logs an error and emits `'error'` with `{ message }`; the SDK does not tokenize. See [Hosted submit button](#hosted-submit-button-). |
 | _none_ | `'offsiteTokenGenerated'` / `'offsitePaymentError'` | 🆕 | See [Offsite payments](#offsite-payments--paypal--redirect-style). |
 | _none_ | `'achTokenGenerated'` / `'achPaymentError'` | 🆕 | See [ACH payments](#ach-payments-). |
 
@@ -595,7 +541,6 @@ Map legacy `setParam` to Express Checkout like this:
 | `'first_name' / 'last_name' / 'month' / 'year'` (mandatory) | Rendered by default in `uiConfig.cardPaymentFormFields` | ✅ |
 | `'full_name' / 'company' / 'email' / 'phone_number'` | Add to `uiConfig.cardPaymentFormFields` (typed via `AdditionalCardPaymentFormFields`) | ✅ |
 | `'address1' / 'address2' / 'city' / 'state' / 'zip' / 'country'` | Add to `uiConfig.cardPaymentFormFields` | ✅ |
-| `'house_number_or_name' / 'street' / 'street_line2' / 'phone_number_country_code' / 'phone_number_area_code'` | Add to `uiConfig.cardPaymentFormFields` | ✅ |
 | All `'shipping_*'` variants | Add to `uiConfig.cardPaymentFormFields` | ✅ |
 | `'metadata'` (object) | `submitParams.metadata` | ✅ |
 | `'allow_blank_name' / 'allow_blank_date' / 'allow_expired_date'` (boolean) | `submitParams.allow_blank_name` / `…blank_date` / `…expired_date` | ✅ |

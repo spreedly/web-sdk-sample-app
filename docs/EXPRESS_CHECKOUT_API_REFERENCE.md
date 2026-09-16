@@ -15,7 +15,6 @@ Methods are grouped into the sections below; type definitions follow.
 | --- | --- |
 | [Lifecycle](#lifecycle) | Create, mount, reload, and tear down the SDK instance, and subscribe to events. |
 | [Form Configuration](#form-configuration) | Configure the prebuilt form — which fields to render, their labels/placeholders, the display text, and submit parameters. |
-| [Validation](#validation) | Trigger client-side validation and configure what the `validation` / `fieldStateChange` events report. |
 | [Recache](#recache) | Update the CVV on an already-retained (previously tokenized) payment method. |
 | [Offsite Payments](#offsite-payments) | Redirect-style / alternative payment methods, inherited from the shared SDK — see the dedicated Offsite Payments reference. |
 | [ACH](#ach) | Bank-account (ACH) tokenization, inherited from the shared SDK — see the dedicated ACH reference. |
@@ -45,7 +44,7 @@ sdk.expressCheckout({
 
 ### AdditionalCardFormFields
 
-> `static` **AdditionalCardFormFields**: `Readonly`\<\{ `Address1`: `"address1"`; `Address2`: `"address2"`; `City`: `"city"`; `Company`: `"company"`; `Country`: `"country"`; `Email`: `"email"`; `FullName`: `"full_name"`; `HouseNumberOrName`: `"house_number_or_name"`; `PhoneNumber`: `"phone_number"`; `PhoneNumberAreaCode`: `"phone_number_area_code"`; `PhoneNumberCountryCode`: `"phone_number_country_code"`; `ShippingAddress1`: `"shipping_address1"`; `ShippingAddress2`: `"shipping_address2"`; `ShippingCity`: `"shipping_city"`; `ShippingCountry`: `"shipping_country"`; `ShippingHouseNumberOrName`: `"shipping_house_number_or_name"`; `ShippingPhoneNumber`: `"shipping_phone_number"`; `ShippingPhoneNumberAreaCode`: `"shipping_phone_number_area_code"`; `ShippingPhoneNumberCountryCode`: `"shipping_phone_number_country_code"`; `ShippingState`: `"shipping_state"`; `ShippingStreet`: `"shipping_street"`; `ShippingStreetLine2`: `"shipping_street_line2"`; `ShippingZip`: `"shipping_zip"`; `State`: `"state"`; `Street`: `"street"`; `StreetLine2`: `"street_line2"`; `Zip`: `"zip"`; \}\>
+> `static` **AdditionalCardFormFields**: `Readonly`\<\{ `Address1`: `"address1"`; `Address2`: `"address2"`; `City`: `"city"`; `Company`: `"company"`; `Country`: `"country"`; `Email`: `"email"`; `FullName`: `"full_name"`; `PhoneNumber`: `"phone_number"`; `ShippingAddress1`: `"shipping_address1"`; `ShippingAddress2`: `"shipping_address2"`; `ShippingCity`: `"shipping_city"`; `ShippingCountry`: `"shipping_country"`; `ShippingPhoneNumber`: `"shipping_phone_number"`; `ShippingState`: `"shipping_state"`; `ShippingZip`: `"shipping_zip"`; `State`: `"state"`; `Zip`: `"zip"`; \}\>
 
 Additional card form fields that can be added dynamically
 
@@ -61,7 +60,7 @@ Mandatory card form fields required for payment processing
 
 ### SpreedlySDKCallbacks
 
-> `static` **SpreedlySDKCallbacks**: `Readonly`\<\{ `ACHPaymentError`: `"achPaymentError"`; `ACHTokenGenerated`: `"achTokenGenerated"`; `C2PAddNewCard`: `"add-new-card"`; `C2PCheckoutCancelled`: `"checkout-cancelled"`; `C2PCheckoutDifferentPm`: `"checkout-different-pm"`; `C2PCheckoutError`: `"checkout-error"`; `C2PCheckoutWindowClose`: `"checkout-window-close"`; `C2PCheckoutWindowOpen`: `"checkout-window-open"`; `C2PDisplayCardsReady`: `"display-cards-ready"`; `C2PExistingUser`: `"c2p-existing-user"`; `C2PInitialized`: `"c2p-initialized"`; `C2PNewUser`: `"c2p-new-user"`; `C2POtpInitiated`: `"otp-initiated"`; `C2POtpNotYou`: `"otp-not-you"`; `C2POtpResend`: `"otp-resend"`; `C2POtpResponse`: `"otp-response"`; `C2PSessionDeleted`: `"c2p-session-deleted"`; `C2PVerifiedUser`: `"c2p-verified-user"`; `Close`: `"close"`; `ConsoleError`: `"consoleError"`; `Error`: `"error"`; `FieldStateChange`: `"fieldStateChange"`; `OffsitePaymentError`: `"offsitePaymentError"`; `OffsiteTokenGenerated`: `"offsiteTokenGenerated"`; `PazeCheckoutComplete`: `"pazeCheckoutComplete"`; `PazeError`: `"pazeError"`; `PazeReady`: `"pazeReady"`; `PazeTokenGenerated`: `"pazeTokenGenerated"`; `Ready`: `"ready"`; `RecacheReady`: `"recacheReady"`; `RecacheSuccess`: `"recacheSuccess"`; `SubmitClick`: `"submitClick"`; `TokenGenerated`: `"tokenGenerated"`; `Validation`: `"validation"`; \}\>
+> `static` **SpreedlySDKCallbacks**: `Readonly`\<\{ `ACHPaymentError`: `"achPaymentError"`; `ACHTokenGenerated`: `"achTokenGenerated"`; `Close`: `"close"`; `ConsoleError`: `"consoleError"`; `Error`: `"error"`; `FieldStateChange`: `"fieldStateChange"`; `OffsitePaymentError`: `"offsitePaymentError"`; `OffsiteTokenGenerated`: `"offsiteTokenGenerated"`; `Ready`: `"ready"`; `RecacheReady`: `"recacheReady"`; `RecacheSuccess`: `"recacheSuccess"`; `TokenGenerated`: `"tokenGenerated"`; `Validation`: `"validation"`; \}\>
 
 Available SDK callback events that merchants can listen to
 
@@ -147,7 +146,7 @@ Configuration for the checkout form. Optional; if omitted the previously configu
   - `id` {string} - ID attribute applied to the generated iframe element. Optional.
   - `className` {string} - CSS class added to the generated iframe element. Optional.
   - `parentContainerId` {string} - ID of an existing DOM element to embed the form into. Optional; when omitted the form opens as a modal dialog instead.
-  - `submitParams` {SubmitParams} - Tokenization options sent with the payment; supported sub-fields: `metadata` (Record<string, string>, defaults to `{}`), `mandate` (opaque data owned by Spreedly Core, defaults to `{}`), `allow_expired_date`, `allow_blank_name`, `allow_blank_date`, and `retained` (all optional booleans, only forwarded when truthy). Optional.
+  - `submitParams` {SubmitParams} - Tokenization options sent with the payment; supported sub-fields: `metadata` (Record<string, string>, defaults to `{}`), `allow_expired_date`, `allow_blank_name`, `allow_blank_date`, and `retained` (all optional booleans, only forwarded when truthy). Optional.
   - `uiConfig` {Partial<UIConfig>} - Overrides for the form UI (e.g. `styles`, `textConfig`, `cardPaymentFormFields`, `twoDigitExpiry`, `showSaveCardCheckbox`). Optional; merged over `DEFAULT_UI_CONFIG`.
 
 ##### Returns
@@ -275,15 +274,6 @@ sdk.on('validation', (payload) => {
   console.log('Hosted fields validation snapshot:', payload);
 });
 
-sdk.on('submitClick', (formFields) => {
-  // Hosted Fields only: required when inAppElements({ submit }) is mounted.
-  // `formFields` is a read-only snapshot of what the shopper typed into the
-  // mounted hosted fields. Do not pass it back to submit() — those values are
-  // read from the iframes. Send only fields you did not mount as hosted fields.
-  console.log('hosted fields filled:', Object.keys(formFields));
-  sdk.submit({ email: document.getElementById('email').value });
-});
-
 sdk.on('close', () => {
   console.log('Payment form was closed');
 });
@@ -327,12 +317,9 @@ the form is closed the field is retained in config but no live update is sent.
 
 The optional field to add. Required. One of:
   `'full_name'`, `'email'`, `'company'`, `'address1'`, `'address2'`, `'city'`, `'state'`,
-  `'zip'`, `'country'`, `'phone_number'`, `'house_number_or_name'`, `'street'`,
-  `'street_line2'`, `'phone_number_country_code'`, `'phone_number_area_code'`,
-  `'shipping_address1'`, `'shipping_address2'`, `'shipping_city'`, `'shipping_state'`,
-  `'shipping_zip'`, `'shipping_country'`, `'shipping_phone_number'`,
-  `'shipping_house_number_or_name'`, `'shipping_street'`, `'shipping_street_line2'`,
-  `'shipping_phone_number_country_code'`, `'shipping_phone_number_area_code'`.
+  `'zip'`, `'country'`, `'phone_number'`, `'shipping_address1'`, `'shipping_address2'`,
+  `'shipping_city'`, `'shipping_state'`, `'shipping_zip'`, `'shipping_country'`,
+  `'shipping_phone_number'`.
 
 ###### config
 
@@ -399,12 +386,8 @@ takes effect once the form renders.
 The additional field to remove. Required. One of
   the optional field identifiers: `'full_name'`, `'email'`, `'company'`, `'address1'`,
   `'address2'`, `'city'`, `'state'`, `'zip'`, `'country'`, `'phone_number'`,
-  `'house_number_or_name'`, `'street'`, `'street_line2'`, `'phone_number_country_code'`,
-  `'phone_number_area_code'`, `'shipping_address1'`, `'shipping_address2'`,
-  `'shipping_city'`, `'shipping_state'`, `'shipping_zip'`, `'shipping_country'`,
-  `'shipping_phone_number'`, `'shipping_house_number_or_name'`, `'shipping_street'`,
-  `'shipping_street_line2'`, `'shipping_phone_number_country_code'`, or
-  `'shipping_phone_number_area_code'`.
+  `'shipping_address1'`, `'shipping_address2'`, `'shipping_city'`, `'shipping_state'`,
+  `'shipping_zip'`, `'shipping_country'`, or `'shipping_phone_number'`.
 
 ##### Returns
 
@@ -446,9 +429,7 @@ config only.
 Which field to reconfigure. One of the card-form field
   keys: `'first_name'`, `'last_name'`, `'number'`, `'verification_value'`, `'month'`, `'year'`,
   or an additional field such as `'full_name'`, `'email'`, `'company'`, `'address1'`, `'address2'`,
-  `'city'`, `'state'`, `'zip'`, `'country'`, `'phone_number'`, `'house_number_or_name'`,
-  `'street'`, `'street_line2'`, `'phone_number_country_code'`, `'phone_number_area_code'`,
-  or their `'shipping_*'` counterparts.
+  `'city'`, `'state'`, `'zip'`, `'country'`, `'phone_number'`, or their `'shipping_*'` counterparts.
   Required.
 
 ###### config
@@ -515,7 +496,6 @@ the stored params still apply once the form initializes.
 
 The tokenization options to apply. All fields are optional:
   - `metadata` ({ [key: string]: string }): custom key/value pairs stored on the payment method.
-  - `mandate` (opaque object): mandate data forwarded verbatim to Spreedly Core, which owns the shape.
   - `allow_expired_date` (boolean): tokenize even when the card's expiration date is in the past.
   - `allow_blank_name` (boolean): tokenize even when the cardholder name is empty.
   - `allow_blank_date` (boolean): tokenize even when the expiration date is empty.
@@ -922,134 +902,6 @@ if (radarSessionId) {
 }
 ```
 
-### Validation
-
-#### addValidation()
-
-> **addValidation**(`fieldName`, `validator`): `void`
-
-Registers a custom validator for one non-sensitive form field, layered on top of the SDK's
-own validation rather than replacing it. The SDK's built-in checks always run first — the
-API-safety floor (UTF-16 encodability, character limits, name charset) and then the
-`isRequired` gate — and your validator only runs for values that already passed both. It
-cannot relax a built-in rule, but it can reject a value the SDK would have accepted.
-
-Your validator runs on your own page, never inside the checkout iframe, so PAN, CVV, month,
-and year are never passed to it. The iframe re-filters the validator field list before
-posting values to the parent, so those keys cannot be requested either. It runs when the
-shopper leaves a field and again on submit (not on every keystroke), and it also runs on
-empty values when the field is not required — that is how you express a conditional
-requirement. When it reports a failure, the message renders inline on that field and
-submission is blocked before any network call.
-
-Calling this twice for the same field replaces the previous validator. Registering before
-`expressCheckout()` is fine — the registration is kept in memory and applied once the form
-mounts. If `fieldName` is not a validatable field or `validator` is not a function, the call
-is ignored with a logged warning — it never throws. If your validator throws or returns
-something unusable, the SDK fails open (that field passes the custom rule) and emits `error`
-plus `consoleError`, so a bug in your code cannot silently block every checkout.
-
-##### Parameters
-
-###### fieldName
-
-`string`
-
-The field to validate. Required. One of the additional fields
-  (`'full_name'`, `'email'`, `'company'`, `'address1'`, `'address2'`, `'city'`, `'state'`,
-  `'zip'`, `'country'`, `'phone_number'`, `'house_number_or_name'`, `'street'`,
-  `'street_line2'`, `'phone_number_country_code'`, `'phone_number_area_code'`, and their
-  `shipping_*` twins) or a cardholder name field (`'first_name'`, `'last_name'`). The PCI
-  fields (`'number'`, `'verification_value'`) and date fields (`'month'`, `'year'`) are not
-  accepted.
-
-###### validator
-
-`CustomFieldValidator`
-
-Called with the field's current value exactly as typed (not trimmed) and the form's other
-  non-sensitive values keyed by Spreedly param name (`number`, `verification_value`, `month`,
-  and `year` are always absent). Return `{ isValid: false, errorMessage }`
-  to fail with a message, `{ isValid: true }` to pass, or `{ isValid: false }` to fail with
-  a generic message. Must be synchronous — returning a Promise is treated as a bug and fails
-  open.
-
-##### Returns
-
-`void`
-
-##### Example
-
-```javascript
-const sdk = new SpreedlyExpressCheckout(authDetails);
-
-sdk.addField('zip', { label: 'ZIP code' });
-sdk.addField('country', { label: 'Country' });
-
-// Simple format rule
-sdk.addValidation('zip', value => {
-  const ok = /^\d{5}(-\d{4})?$/.test(value);
-  return { isValid: ok, errorMessage: ok ? void : 'Enter a valid US ZIP code' };
-});
-
-// Cross-field rule — the second argument holds the other field values
-sdk.addValidation('state', (value, fields) => {
-  if (fields.country !== 'US') return { isValid: true };
-  const ok = US_STATES.includes(value);
-  return { isValid: ok, errorMessage: ok ? void : 'Select a valid US state' };
-});
-
-// Conditional requirement — zip is not marked isRequired, but is mandatory
-// for US shoppers. Validators run on empty values too.
-sdk.addValidation('zip', (value, fields) => {
-  if (fields.country !== 'US') return { isValid: true };
-  const ok = Boolean(value.trim());
-  return { isValid: ok, errorMessage: ok ? void : 'ZIP is required for US addresses' };
-});
-
-sdk.expressCheckout({ parentContainerId: 'payment-container' });
-```
-
-***
-
-#### removeValidation()
-
-> **removeValidation**(`fieldName`): `void`
-
-Removes the custom validator previously registered for a field with `addValidation()`,
-restoring built-in-only validation for it. Every other field is unaffected, and the SDK's
-own rules for this field (character limits, UTF-16, charset, `isRequired`) keep working
-exactly as before — those were never replaced. Removing the last registered validator also
-removes the iframe round-trip entirely, so validation returns to being fully synchronous.
-
-If `fieldName` is not a validatable field the call is ignored with a logged warning; if it
-is valid but has no validator registered, the call is a silent no-op. It never throws.
-
-##### Parameters
-
-###### fieldName
-
-`string`
-
-The field whose validator should be removed. Required. Same set
-  of names accepted by `addValidation()`.
-
-##### Returns
-
-`void`
-
-##### Example
-
-```javascript
-sdk.addValidation('zip', value => {
-  const ok = /^\d{5}$/.test(value);
-  return { isValid: ok, errorMessage: ok ? void : 'Enter a 5-digit ZIP' };
-});
-
-// Later — e.g. the shopper switched to a country where the rule no longer applies
-sdk.removeValidation('zip');
-```
-
 ***
 
 ## Type Definitions
@@ -1169,14 +1021,6 @@ Account holder's full name. Provide this **or** `firstName` + `lastName`.
 > `optional` **lastName?**: `string`
 
 Account holder's last name. Use together with `firstName` when `fullName` is not provided.
-
-***
-
-### mandate?
-
-> `optional` **mandate?**: [`Mandate`](#mandate)
-
-Opaque mandate data stored on the payment method; the shape is owned by Spreedly Core and forwarded verbatim. Optional.
 
 ***
 
@@ -1320,14 +1164,6 @@ The UTC timestamp that was included when generating the signature, used to bound
 
 > **styles**: `TextfieldStyles`
 
-### Mandate
-
-> **Mandate** = `Record`\<`string`, `unknown`\>
-
-Opaque mandate data forwarded verbatim to Spreedly Core. Core owns the mandate
-schema and performs all validation; the SDK does not interpret, shape, or
-validate this object beyond checking that it is non-empty before forwarding it.
-
 ### OffsitePaymentConfig
 
 > **OffsitePaymentConfig** = `object`
@@ -1450,366 +1286,6 @@ State/province. Optional (method-dependent).
 > `optional` **zip?**: `string`
 
 Postal/ZIP code. Optional (method-dependent).
-
-### PPCPButtonColor
-
-> **PPCPButtonColor** = `"gold"` \| `"blue"` \| `"white"` \| `"black"`
-
-### PPCPButtonKind
-
-> **PPCPButtonKind** = `"paypal"` \| `"venmo"` \| `"payLater"` \| `"payPalCredit"`
-
-### PPCPButtonLabel
-
-> **PPCPButtonLabel** = `"checkout"` \| `"pay"` \| `"buynow"` \| `"subscribe"` \| `"donate"`
-
-### PPCPPaymentMethodType
-
-> **PPCPPaymentMethodType** = `"paypal"` \| `"venmo"` \| `"paylater"` \| `"paypal_credit"`
-
-### PPCPPresentationMode
-
-> **PPCPPresentationMode** = `"auto"` \| `"popup"` \| `"redirect"` \| `"payment-handler"`
-
-### PazeAddress
-
-> **PazeAddress** = `object`
-
-## Properties
-
-### city?
-
-> `optional` **city?**: `string`
-
-***
-
-### countryCode?
-
-> `optional` **countryCode?**: `string`
-
-***
-
-### line1?
-
-> `optional` **line1?**: `string`
-
-***
-
-### state?
-
-> `optional` **state?**: `string`
-
-***
-
-### zip?
-
-> `optional` **zip?**: `string`
-
-### PazeCheckoutOptions
-
-> **PazeCheckoutOptions** = `object`
-
-## Properties
-
-### actionCode?
-
-> `optional` **actionCode?**: `"START_FLOW"` \| `"CHANGE_CARD"` \| `"CHANGE_SHIPPING_ADDRESS"`
-
-***
-
-### emailAddress?
-
-> `optional` **emailAddress?**: `string`
-
-***
-
-### intent?
-
-> `optional` **intent?**: `"EXPRESS_CHECKOUT"`
-
-***
-
-### sessionId?
-
-> `optional` **sessionId?**: `string`
-
-***
-
-### shippingPreference?
-
-> `optional` **shippingPreference?**: `"NONE"` \| `string`
-
-***
-
-### transactionValue
-
-> **transactionValue**: `object`
-
-#### transactionAmount
-
-> **transactionAmount**: `string`
-
-#### transactionCurrencyCode
-
-> **transactionCurrencyCode**: `string`
-
-### PazeCheckoutResult
-
-> **PazeCheckoutResult** = `object`
-
-## Properties
-
-### consumer?
-
-> `optional` **consumer?**: `object`
-
-#### countryCode?
-
-> `optional` **countryCode?**: `string`
-
-#### emailAddress?
-
-> `optional` **emailAddress?**: `string`
-
-#### firstName?
-
-> `optional` **firstName?**: `string`
-
-#### fullName?
-
-> `optional` **fullName?**: `string`
-
-#### lastName?
-
-> `optional` **lastName?**: `string`
-
-#### mobileNumber?
-
-> `optional` **mobileNumber?**: `object`
-
-##### mobileNumber.countryCode?
-
-> `optional` **countryCode?**: `string`
-
-##### mobileNumber.phoneNumber?
-
-> `optional` **phoneNumber?**: `string`
-
-***
-
-### maskedCard?
-
-> `optional` **maskedCard?**: `object`
-
-#### billingAddress?
-
-> `optional` **billingAddress?**: [`PazeAddress`](#pazeaddress)
-
-#### digitalCardData?
-
-> `optional` **digitalCardData?**: `object`
-
-##### digitalCardData.artUri?
-
-> `optional` **artUri?**: `string`
-
-#### digitalCardId?
-
-> `optional` **digitalCardId?**: `string`
-
-#### panExpirationMonth?
-
-> `optional` **panExpirationMonth?**: `string`
-
-#### panExpirationYear?
-
-> `optional` **panExpirationYear?**: `string`
-
-#### panLastFour?
-
-> `optional` **panLastFour?**: `string`
-
-#### paymentCardBrand?
-
-> `optional` **paymentCardBrand?**: `string`
-
-#### paymentCardNetwork?
-
-> `optional` **paymentCardNetwork?**: `string`
-
-#### paymentCardType?
-
-> `optional` **paymentCardType?**: `string`
-
-***
-
-### sessionId?
-
-> `optional` **sessionId?**: `string`
-
-***
-
-### shippingAddress?
-
-> `optional` **shippingAddress?**: [`PazeAddress`](#pazeaddress) & `object`
-
-#### Type Declaration
-
-##### deliveryContactDetails?
-
-> `optional` **deliveryContactDetails?**: `object`
-
-###### deliveryContactDetails.contactFullName?
-
-> `optional` **contactFullName?**: `string`
-
-###### deliveryContactDetails.contactPhoneNumber?
-
-> `optional` **contactPhoneNumber?**: `object`
-
-###### deliveryContactDetails.contactPhoneNumber.countryCode?
-
-> `optional` **countryCode?**: `string`
-
-###### deliveryContactDetails.contactPhoneNumber.phoneNumber?
-
-> `optional` **phoneNumber?**: `string`
-
-### PazeClientConfig
-
-> **PazeClientConfig** = `object`
-
-## Properties
-
-### id
-
-> **id**: `string`
-
-***
-
-### name
-
-> **name**: `string`
-
-***
-
-### profileId
-
-> **profileId**: `string`
-
-### PazeCompleteOptions
-
-> **PazeCompleteOptions** = `object`
-
-## Properties
-
-### billingPreference?
-
-> `optional` **billingPreference?**: `"ALL"` \| `"NONE"` \| `"ZIP_ONLY"`
-
-***
-
-### merchantCategoryCode?
-
-> `optional` **merchantCategoryCode?**: `string`
-
-***
-
-### transactionType
-
-> **transactionType**: `"PURCHASE"` \| `"CARD_ON_FILE"` \| `"BOTH"`
-
-***
-
-### transactionValue
-
-> **transactionValue**: `object`
-
-#### transactionAmount
-
-> **transactionAmount**: `string`
-
-#### transactionCurrencyCode
-
-> **transactionCurrencyCode**: `string`
-
-### PazeCompleteResult
-
-> **PazeCompleteResult** = `object`
-
-## Properties
-
-### payloadId
-
-> **payloadId**: `string`
-
-***
-
-### securedPayload
-
-> **securedPayload**: `string`
-
-***
-
-### sessionId
-
-> **sessionId**: `string`
-
-### PazeConfig
-
-> **PazeConfig** = `object`
-
-## Properties
-
-### clientConfig
-
-> **clientConfig**: [`PazeClientConfig`](#pazeclientconfig)
-
-***
-
-### environment?
-
-> `optional` **environment?**: [`PazeEnvironment`](#pazeenvironment)
-
-### PazeEnvironment
-
-> **PazeEnvironment** = `"sandbox"` \| `"production"`
-
-### PazeError
-
-> **PazeError** = `object`
-
-## Properties
-
-### code
-
-> **code**: [`PazeErrorCode`](#pazeerrorcode)
-
-***
-
-### details?
-
-> `optional` **details?**: `unknown`
-
-***
-
-### message
-
-> **message**: `string`
-
-### PazeErrorCode
-
-> **PazeErrorCode** = `"CHECKOUT_FAILED"` \| `"CHECKOUT_INCOMPLETE"` \| `"COMPLETE_FAILED"` \| `"INITIALIZATION_FAILED"` \| `"NOT_INITIALIZED"` \| `"NO_SECURED_PAYLOAD"`
-
-### PazeSetupResult
-
-> **PazeSetupResult** = `object`
-
-## Properties
-
-### error?
-
-> `optional` **error?**: `string`
 
 ### RecacheOptions
 
@@ -2008,6 +1484,20 @@ Machine-readable error key, e.g. `'errors.invalid'` or `'errors.blank'`.
 
 Human-readable description of the failure, e.g. `'is invalid'`.
 
+### StripeRadarOptions
+
+> **StripeRadarOptions** = `object`
+
+Options for the `stripeRadar` method.
+
+## Properties
+
+### stripeAccount?
+
+> `optional` **stripeAccount?**: `string`
+
+Connected account id (`acct_...`) for Stripe Connect. Optional.
+
 ### SubmitParams
 
 > **SubmitParams** = `object`
@@ -2017,9 +1507,9 @@ SpreedlyHostedFields.submit (`submit(formData, submitParams)`). Every field is
 optional — omit the argument entirely to tokenize with default (strict) validation.
 Sensitive card data (PAN/CVV) is NEVER included here; those values stay inside the
 hosted-field iframes. Note that the hosted-fields `submit()` only forwards `metadata`,
-`mandate`, the three `allow_*` flags, and `eligible_for_card_updater` — the `allow_*`
-flags are sent only when truthy, and `eligible_for_card_updater` is sent whenever it
-is defined (including `false`).
+the three `allow_*` flags, and `eligible_for_card_updater` — the `allow_*` flags are
+sent only when truthy, and `eligible_for_card_updater` is sent whenever it is defined
+(including `false`).
 
 ## Properties
 
@@ -2052,14 +1542,6 @@ Optional. When `true`, allows tokenization to succeed even if the card's expirat
 > `optional` **eligible\_for\_card\_updater?**: `boolean`
 
 Optional. Marks the payment method as eligible for Spreedly's Account Updater (card-updater) service. Forwarded whenever it is defined, including when set to `false`.
-
-***
-
-### mandate?
-
-> `optional` **mandate?**: [`Mandate`](#mandate)
-
-Optional. Opaque mandate data stored alongside the resulting payment method; the shape is owned by Spreedly Core and forwarded verbatim. Defaults to an empty object (`{}`) when omitted.
 
 ***
 
