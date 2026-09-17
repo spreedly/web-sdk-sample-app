@@ -220,7 +220,6 @@ test.describe('Token Generation', () => {
     await landingPage.clickOnTokenizeButton(page);
     await waitForAuthParams(page);
     await tokenizePage.clickOnOpenPaymentFormButtonHostedFields(page);
-
     await helperFunctions.fillHostedFieldsForm(page, TEST_DATA.CARD_NUMBER, {
       firstName: TEST_DATA.FIRST_NAME,
       lastName: TEST_DATA.LAST_NAME,

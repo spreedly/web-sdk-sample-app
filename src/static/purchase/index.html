@@ -561,75 +561,38 @@
             <div class="payment-content" id="payment-new">
               <!-- Hosted Fields Form -->
               <div id="hosted-fields-form" class="hidden">
+                <!-- HF name/expiry now live in iframe[src*="formField.html"] -->
                 <form id="payment-form">
-                  <!-- Cardholder Name -->
                   <div class="form-row">
                     <div class="form-group">
-                      <label class="form-label" for="first_name">First Name</label>
-                      <input 
-                        type="text" 
-                        id="first_name" 
-                        name="first_name" 
-                        class="form-input" 
-                        placeholder="John"
-                        required
-                      >
+                      <label class="form-label">First Name</label>
+                      <div id="hosted-field-first_name" class="hosted-field-container"></div>
+                      <div id="hosted-field-first_name-error" class="hf-field-error" role="alert" aria-live="polite"></div>
                     </div>
                     <div class="form-group">
-                      <label class="form-label" for="last_name">Last Name</label>
-                      <input 
-                        type="text" 
-                        id="last_name" 
-                        name="last_name" 
-                        class="form-input" 
-                        placeholder="Doe"
-                        required
-                      >
+                      <label class="form-label">Last Name</label>
+                      <div id="hosted-field-last_name" class="hosted-field-container"></div>
+                      <div id="hosted-field-last_name-error" class="hf-field-error" role="alert" aria-live="polite"></div>
                     </div>
                   </div>
 
-                  <!-- Card Number - Hosted Field -->
                   <div class="form-group">
                     <label class="form-label">Card Number</label>
                     <div id="card-number-field" class="hosted-field-container"></div>
+                    <div id="card-number-error" class="hf-field-error" role="alert" aria-live="polite"></div>
                   </div>
 
-                  <!-- Expiry Fields -->
                   <div class="form-row">
                     <div class="form-group">
-                      <label class="form-label" for="month">Expiry Month</label>
-                      <input 
-                        type="text" 
-                        id="month" 
-                        name="month" 
-                        class="form-input" 
-                        placeholder="MM"
-                        maxlength="2"
-                        inputmode="numeric"
-                        pattern="[0-9]*"
-                        required
-                      >
+                      <label class="form-label">Expiration date</label>
+                      <div id="hosted-field-expiry" class="hosted-field-container"></div>
+                      <div id="hosted-field-expiry-error" class="hf-field-error" role="alert" aria-live="polite"></div>
                     </div>
                     <div class="form-group">
-                      <label class="form-label" for="year">Expiry Year</label>
-                      <input 
-                        type="text" 
-                        id="year" 
-                        name="year" 
-                        class="form-input" 
-                        placeholder="YYYY"
-                        maxlength="4"
-                        inputmode="numeric"
-                        pattern="[0-9]*"
-                        required
-                      >
+                      <label class="form-label">CVV</label>
+                      <div id="cvv-field" class="hosted-field-container" style="max-width: 120px;"></div>
+                      <div id="cvv-error" class="hf-field-error" role="alert" aria-live="polite"></div>
                     </div>
-                  </div>
-
-                  <!-- CVV - Hosted Field -->
-                  <div class="form-group">
-                    <label class="form-label">CVV</label>
-                    <div id="cvv-field" class="hosted-field-container" style="max-width: 120px;"></div>
                   </div>
                 </form>
 
