@@ -52,6 +52,11 @@ let hostedFieldsMaskEnabled = false;
 
 /** Tracks browser autocomplete state for the demo checkbox. */
 let hostedFieldsAutocompleteEnabled = false;
+const HOSTED_FIELD_STYLES = { fontSize: '14px' };
+
+const HOSTED_FIELD_PLACEHOLDERS = { number: '1234 1234 1234 1234', cvv: 'CVC' };
+
+const HOSTED_FIELD_CONTAINER_BY_FIELD = { number: 'card-number-field', cvv: 'cvv-field' };
 
 const HOSTED_FIELDS_PLACEHOLDER_STYLES = {
   default: { color: '#9ca3af', fontWeight: '400', opacity: '1' },
@@ -132,10 +137,6 @@ function updateConfigPanelForSdkType() {
 function setupConfigCheckboxListeners() {
   document.getElementById('config-two-digit-expiry')?.addEventListener('change', function () {
     config.twoDigitExpiryYear = this.checked;
-    if (isReady && sdkType === 'hosted-fields') {
-      updateExpiryFieldDisplay();
-      updateFormState();
-    }
   });
 
   document.getElementById('config-allow-blank-name')?.addEventListener('change', function () {
@@ -314,7 +315,14 @@ function setupHostedFieldsSdkDemoPanel(sdkInstance) {
   if (hostedFieldsSdkDemoEventHandlersWiredFor !== sdkInstance) {
     hostedFieldsSdkDemoEventHandlersWiredFor = sdkInstance;
     sdkInstance.on('validation', updateHostedFieldsDemoLastValidation);
-    sdkInstance.on('fieldStateChange', console.log);
+    sdkInstance.on('fieldStateChange', (payload) => {
+      const field = payload && payload.field;
+      const containerId = HOSTED_FIELD_CONTAINER_BY_FIELD[field];
+      if (containerId) {
+        const container = document.getElementById(containerId);
+        if (container) container.classList.toggle('is-focused', Boolean(payload.focused));
+      }
+    });
     sdkInstance.on('consoleError', (payload) => {
       console.warn('Hosted Fields consoleError:', payload);
       updateHostedFieldsDemoLastConsoleError(payload);
@@ -352,6 +360,10 @@ function configureHostedFieldsOnReady(sdkInstance) {
   sdkInstance.setTitle('cvv', 'Security code');
   sdkInstance.setPlaceholderStyles(HOSTED_FIELDS_PLACEHOLDER_STYLES.default);
   sdkInstance.setNumberFormat('prettyFormat');
+  sdkInstance.setPlaceholder('number', HOSTED_FIELD_PLACEHOLDERS.number);
+  sdkInstance.setPlaceholder('cvv', HOSTED_FIELD_PLACEHOLDERS.cvv);
+  sdkInstance.setStyles('number', HOSTED_FIELD_STYLES);
+  sdkInstance.setStyles('cvv', HOSTED_FIELD_STYLES);
   // Respect the card-type-icon checkbox even if toggled before the form was opened.
   const cardTypeIcon = document.getElementById('hf-demo-card-type-icon');
   sdkInstance.setShowCardTypeIcon(cardTypeIcon ? cardTypeIcon.checked : true);
@@ -510,7 +522,7 @@ function registerHostedFieldsSdkHandlers(sdkInstance) {
     isReady = true;
 
     sdkInstance.setLabel('number', 'Card Number');
-    sdkInstance.setLabel('cvv', 'CVV');
+    sdkInstance.setLabel('cvv', 'Security code');
     configureHostedFieldsOnReady(sdkInstance);
 
     const numberFormatSelect = document.getElementById('hf-demo-number-format');
@@ -618,8 +630,8 @@ window.openHostedFieldsForm = function () {
   SpreedlyUtils.setButtonLoading('open-hosted-fields-btn', true, 'Loading...');
 
   sdk.inAppElements({
-    cvv: { containerId: 'cvv-field' },
-    number: { containerId: 'card-number-field' },
+    cvv: { containerId: 'cvv-field', styles: HOSTED_FIELD_STYLES },
+    number: { containerId: 'card-number-field', styles: HOSTED_FIELD_STYLES },
   });
 }
 
@@ -731,7 +743,7 @@ function setupHostedFieldsEventListeners() {
     form.addEventListener('submit', handleFormSubmit);
   }
 
-  const fieldIds = ['first_name', 'last_name', 'expiry_month', 'expiry_year', 'expiry_date'];
+  const fieldIds = ['first_name', 'last_name', 'expiry_date'];
   fieldIds.forEach(id => {
     const el = document.getElementById(id);
     if (el) {
@@ -780,7 +792,6 @@ function setupHostedFieldsEventListeners() {
   // Apply initial config state to UI
   updateNameFieldsRequired();
   updateDateFieldsRequired();
-  updateExpiryFieldDisplay();
 }
 
 // Update required attribute on name fields based on allowBlankName config
@@ -805,25 +816,15 @@ function updateNameFieldsRequired() {
 
 // Update required attribute on date fields based on allowBlankDate config
 function updateDateFieldsRequired() {
-  const monthInput = document.getElementById('expiry_month');
-  const yearInput = document.getElementById('expiry_year');
   const expiryDateInput = document.getElementById('expiry_date');
-  const monthLabel = document.querySelector('label[for="expiry_month"]');
-  const yearLabel = document.querySelector('label[for="expiry_year"]');
   const expiryDateLabel = document.querySelector('label[for="expiry_date"]');
 
   if (config.allowBlankDate) {
-    monthInput?.removeAttribute('required');
-    yearInput?.removeAttribute('required');
     expiryDateInput?.removeAttribute('required');
-    if (monthLabel) monthLabel.textContent = 'Expiry Month (optional)';
-    if (yearLabel) yearLabel.textContent = 'Expiry Year (optional)';
-    if (expiryDateLabel) expiryDateLabel.textContent = 'Expiry Date (optional)';
+    if (expiryDateLabel) expiryDateLabel.textContent = 'Expiration date (optional)';
   } else {
-    // Don't set required on these - the JS validation handles it
-    if (monthLabel) monthLabel.textContent = 'Expiry Month';
-    if (yearLabel) yearLabel.textContent = 'Expiry Year';
-    if (expiryDateLabel) expiryDateLabel.textContent = 'Expiry Date';
+    // Don't set required here - the JS validation handles it
+    if (expiryDateLabel) expiryDateLabel.textContent = 'Expiration date';
   }
 }
 
@@ -895,13 +896,9 @@ function updateFormState() {
 
   if (config.allowBlankDate) {
     expiryValid = true;
-  } else if (config.twoDigitExpiryYear) {
+  } else {
     const expiryDate = document.getElementById('expiry_date')?.value.trim() || '';
     expiryValid = /^\d{2}\/\d{2}$/.test(expiryDate);
-  } else {
-    const month = document.getElementById('expiry_month')?.value.trim() || '';
-    const year = document.getElementById('expiry_year')?.value.trim() || '';
-    expiryValid = month.length >= 1 && year.length >= 2;
   }
 
   const nameValid = config.allowBlankName || (firstName && lastName);
@@ -911,17 +908,11 @@ function updateFormState() {
 }
 
 function getExpiryData() {
-  if (config.twoDigitExpiryYear) {
-    const expiryDate = document.getElementById('expiry_date')?.value.trim() || '';
-    const parts = expiryDate.split('/');
-    return {
-      month: parts[0] || '',
-      year: parts[1] ? '20' + parts[1] : ''
-    };
-  }
+  const expiryDate = document.getElementById('expiry_date')?.value.trim() || '';
+  const parts = expiryDate.split('/');
   return {
-    month: document.getElementById('expiry_month')?.value.trim() || '',
-    year: document.getElementById('expiry_year')?.value.trim() || ''
+    month: parts[0] || '',
+    year: parts[1] ? '20' + parts[1] : ''
   };
 }
 
@@ -931,19 +922,6 @@ function formatExpiryDate(input) {
     value = value.substring(0, 2) + '/' + value.substring(2, 4);
   }
   input.value = value;
-}
-
-function updateExpiryFieldDisplay() {
-  const separateFields = document.getElementById('expiry-separate-fields');
-  const combinedField = document.getElementById('expiry-combined-field');
-
-  if (config.twoDigitExpiryYear) {
-    separateFields?.classList.add('hidden');
-    combinedField?.classList.remove('hidden');
-  } else {
-    separateFields?.classList.remove('hidden');
-    combinedField?.classList.add('hidden');
-  }
 }
 
 // Response Handlers
