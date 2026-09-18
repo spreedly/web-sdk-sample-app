@@ -30,9 +30,12 @@ supports `third_party_network_token` transactions.
 | Piece | Role |
 |-------|------|
 | **Paze `digitalwallet-sdk.js`** | Loaded at the end of `src/static/paze/index.html` |
-| **`<paze-button>`** | Paze branded button; color/shape controls recreate the element |
+| **`<paze-button>`** | Paze branded button, **created by the SDK** in `mount()`. The page only supplies an empty `#paze-button-container` |
 | **`SpreedlyPaze`** | Orchestrator in `src/static/paze/paze.js` |
-| **Sample app server** | `POST /api/v1/paze-payment-method` |
+| **Sample app server** | `POST /api/v1/paze-payment-method`, and `GET /api/v1/auth/params` for the environment key |
+
+The demo does not build a `<paze-button>` or call `checkout()` to start a flow — the SDK owns
+both so it can count how often the Paze option was presented (`paze.button_rendered`).
 
 ---
 
@@ -60,16 +63,24 @@ from the sample app's configured CDN. `window.SpreedlyPaze` must exist after tha
 ### Demo flow in `paze.js`
 
 ```
-new SpreedlyPaze({ clientConfig, environment: 'sandbox' })
-  → on(pazeReady / pazeCheckoutComplete / pazeTokenGenerated / pazeError)
+GET /api/v1/auth/params                      // environmentKey, for telemetry only
+new SpreedlyPaze({ clientConfig, paymentElements: { paze: 'paze-button-container' },
+                   displayMode, buttonStyle, environmentKey, getCheckoutOptions })
+  → on(pazeReady / pazeButtonClicked / pazeCheckoutComplete / pazeTokenGenerated / pazeError)
   → setup()
-  → canCheckout(email)   // on blur + optional dynamic button
-  → checkout({ emailAddress, transactionValue, intent? })
+  → mount()              // SDK creates <paze-button> in the empty container
+  → canCheckout(email)   // on blur; in dynamic mode this is what reveals the button
+  → [shopper clicks the SDK's button] → pazeButtonClicked → SDK reads getCheckoutOptions() → Paze popup
   → [Review & Pay] Complete button  or  [Express Pay] auto complete()
   → POST /api/v1/paze-payment-method
 ```
 
-Emails are trimmed and lowercased before `canCheckout` / `checkout` (Paze expects RFC 5322
+`getCheckoutOptions()` returns the current email, the fixed `TRANSACTION_VALUE`, and the selected
+`intent`. It is synchronous by requirement — the SDK calls it inside the click handler, and an
+await there would cost the click's user activation and get Paze's popup blocked. The demo resets
+its review/result panels from `pazeButtonClicked`, not from a DOM click on `#paze-button-container`.
+
+Emails are trimmed and lowercased before `canCheckout` / checkout (Paze expects RFC 5322
 lowercase).
 
 ---
@@ -78,12 +89,12 @@ lowercase).
 
 | Control | Behavior |
 |---------|----------|
-| **Button Display — Static** | Always show `<paze-button>` after `pazeReady` |
-| **Button Display — Dynamic** | Show the button only when `canCheckout` returns `consumerPresent` |
+| **Button Display — Static** | `displayMode: 'static'`; `mount()` shows the button straight away |
+| **Button Display — Dynamic** | `displayMode: 'dynamic'`; the button stays hidden until `canCheckout` returns `consumerPresent` |
 | **Checkout Intent — Review & Pay** | After the popup, show the review panel and **Complete Payment** |
-| **Checkout Intent — Express Pay** | Passes `intent: 'EXPRESS_CHECKOUT'`; on `pazeCheckoutComplete` auto-calls `complete()` |
+| **Checkout Intent — Express Pay** | `getCheckoutOptions` returns `intent: 'EXPRESS_CHECKOUT'`; on `pazeCheckoutComplete` auto-calls `complete()` |
 | **Retain payment method** | Sends `retained: true` and `provisionNetworkToken: true` on create |
-| **Color / Shape / Disable max height** | Recreates `<paze-button>` with Paze attributes |
+| **Color / Shape / Disable max height** | Feeds `buttonStyle`. Read once at `mount()`, so changing one destroys the instance and remounts (`rebuildPazeInstance()`) |
 | **Change Card** | `checkout({ actionCode: 'CHANGE_CARD', transactionValue })` |
 | **Change Shipping Address** | `checkout({ actionCode: 'CHANGE_SHIPPING_ADDRESS', transactionValue })` |
 | **Reset** | Reloads the page (`destroy()` also runs on `beforeunload`) |
