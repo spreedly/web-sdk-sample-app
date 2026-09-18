@@ -384,6 +384,18 @@ function setupHostedFieldsSdkDemoPanel(sdkInstance) {
   setupHostedFieldsConfigPanel(sdkInstance);
 }
 
+/**
+ * Applies the CVV-optional demo setting. `setCVVOptional` only changes validation — Hosted
+ * Fields renders no visible label, so the merchant page updates its own label text (and the
+ * hosted input's accessible name via `setLabel`) to tell the shopper the CVV is optional.
+ */
+function applyHostedFieldsCvvOptional(sdkInstance, optional) {
+  sdkInstance.setCVVOptional(optional);
+  sdkInstance.setLabel('cvv', optional ? 'CVV (optional)' : 'CVV');
+  const cvvLabel = document.getElementById('hosted-field-label-cvv');
+  if (cvvLabel) cvvLabel.textContent = optional ? 'CVV (optional)' : 'CVV';
+}
+
 /** Configures hosted field display defaults when fields are ready. */
 function configureHostedFieldsOnReady(sdkInstance) {
   sdkInstance.setTitle('number', 'Credit card number');
@@ -396,7 +408,7 @@ function configureHostedFieldsOnReady(sdkInstance) {
   // Re-apply CVV-optional after (re)mount — the iframe-side flag resets on reload().
   const cvvOptional = document.getElementById('hf-demo-cvv-optional');
   if (cvvOptional?.checked && typeof sdkInstance.setCVVOptional === 'function') {
-    sdkInstance.setCVVOptional(true);
+    applyHostedFieldsCvvOptional(sdkInstance, true);
   }
 }
 
@@ -500,7 +512,7 @@ function setupHostedFieldsConfigPanel(sdkInstance) {
         this.checked = false;
         return;
       }
-      sdkInstance.setCVVOptional(this.checked);
+      applyHostedFieldsCvvOptional(sdkInstance, this.checked);
     };
   }
 
