@@ -168,25 +168,15 @@ function setupConfigCheckboxListeners() {
     config.showCardTypeIcon = this.checked;
   });
 
-  // Express Checkout no-CVV runtime setters. Init-gated by the SDK: a cross call
+  // Express Checkout no-CVV runtime setters. A cross call
   // (e.g. setCVVHidden after launching optional) is ignored with a console warning.
   document.getElementById('ec-demo-cvv-optional')?.addEventListener('change', function () {
     if (!sdk || sdkType !== 'express-checkout' || !isReady) return;
-    if (typeof sdk.setCVVOptional !== 'function') {
-      showStatus('setCVVOptional is not in this SDK build (needs a build with no-CVV support).', 'info');
-      this.checked = false;
-      return;
-    }
     sdk.setCVVOptional(this.checked);
   });
 
   document.getElementById('ec-demo-cvv-hidden')?.addEventListener('change', function () {
     if (!sdk || sdkType !== 'express-checkout' || !isReady) return;
-    if (typeof sdk.setCVVHidden !== 'function') {
-      showStatus('setCVVHidden is not in this SDK build (needs a build with no-CVV support).', 'info');
-      this.checked = false;
-      return;
-    }
     sdk.setCVVHidden(this.checked);
   });
 
@@ -385,8 +375,7 @@ function setupHostedFieldsSdkDemoPanel(sdkInstance) {
 }
 
 /**
- * Applies the CVV-optional demo setting. `setCVVOptional` only changes validation — Hosted
- * Fields renders no visible label, so the merchant page updates its own label text (and the
+ * Applies the CVV-optional demo setting. the merchant page updates its own label text (and the
  * hosted input's accessible name via `setLabel`) to tell the shopper the CVV is optional.
  */
 function applyHostedFieldsCvvOptional(sdkInstance, optional) {
@@ -405,7 +394,7 @@ function configureHostedFieldsOnReady(sdkInstance) {
   // Respect the card-type-icon checkbox even if toggled before the form was opened.
   const cardTypeIcon = document.getElementById('hf-demo-card-type-icon');
   sdkInstance.setShowCardTypeIcon(cardTypeIcon ? cardTypeIcon.checked : true);
-  // Re-apply CVV-optional after (re)mount — the iframe-side flag resets on reload().
+  // Re-apply CVV-optional after (re)mount.
   const cvvOptional = document.getElementById('hf-demo-cvv-optional');
   if (cvvOptional?.checked && typeof sdkInstance.setCVVOptional === 'function') {
     applyHostedFieldsCvvOptional(sdkInstance, true);
@@ -507,11 +496,6 @@ function setupHostedFieldsConfigPanel(sdkInstance) {
   if (cvvOptionalCheckbox) {
     cvvOptionalCheckbox.onchange = function handleHostedFieldsCvvOptionalChange() {
       if (!sdk || sdk !== sdkInstance || !isReady) return;
-      if (typeof sdkInstance.setCVVOptional !== 'function') {
-        showStatus('setCVVOptional is not in this SDK build (needs a build with no-CVV support).', 'info');
-        this.checked = false;
-        return;
-      }
       applyHostedFieldsCvvOptional(sdkInstance, this.checked);
     };
   }
