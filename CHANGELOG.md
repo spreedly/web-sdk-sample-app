@@ -5,7 +5,19 @@ All notable changes to the Spreedly Web SDK will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.7.0] - 2026-09-15
+## [1.8.0] - 2026-09-22
+
+### Added
+
+- **Optional CVV** support.
+- **Hosted Fields:** `setCVVOptional(boolean)`. When optional, an empty CVV passes client-side validation, and an empty cvv value is sent in tokenization. A typed CVV is still fully validated. Call after `ready`. `reload()` resets it like every other customization. The CVV field remains mounted. You can hide your own CVV container with CSS. Recache and Click to Pay are unaffected and always require a CVV.
+- **Express Checkout:** init-time config on `uiConfig.cardPaymentFormFields.verification_value` — `isRequired: false` (cvv field shown but made optional) or `isHidden: true` (cvv field not rendered). Runtime setters `setCVVOptional(boolean)` and `setCVVHidden(boolean)` toggle the same optional / hidden states after `ready`.
+
+### Fixed
+
+- **Hosted Fields: non-digit characters no longer flash in the card number and CVV inputs.** No public API, event, or payload change.
+
+## [1.7.0] - 2026-09-17
 
 ### Added
 

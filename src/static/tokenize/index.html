@@ -465,6 +465,42 @@
                     </div>
                   </div>
                 </div>
+
+                <div class="config-option-row">
+                  <div class="config-option">
+                    <div class="config-option-content">
+                      <label for="ec-demo-cvv-mode" class="config-option-label">CVV field at launch</label>
+                      <span class="config-option-desc">No-CVV support for processors that don't require one
+                      Sets <code>uiConfig.cardPaymentFormFields.verification_value</code> —
+                        <code>isRequired: false</code> (optional) or <code>isHidden: true</code> (hidden).
+                        Applies the next time the form is opened.</span>
+                      <select id="ec-demo-cvv-mode" class="form-input" style="margin-top: 0.5rem; width: 100%;">
+                        <option value="" selected>Required (default)</option>
+                        <option value="optional">Optional — field shown, empty CVV allowed</option>
+                        <option value="hidden">Hidden — no CVV field at all</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="config-option-row">
+                  <div class="config-option">
+                    <input type="checkbox" id="ec-demo-cvv-optional" class="config-checkbox">
+                    <div class="config-option-content">
+                      <label for="ec-demo-cvv-optional" class="config-option-label">CVV optional (runtime)</label>
+                      <span class="config-option-desc"><code>setCVVOptional(true/false)</code> — ignored (with a
+                        console warning) if the form launched with the CVV hidden</span>
+                    </div>
+                  </div>
+                  <div class="config-option">
+                    <input type="checkbox" id="ec-demo-cvv-hidden" class="config-checkbox">
+                    <div class="config-option-content">
+                      <label for="ec-demo-cvv-hidden" class="config-option-label">CVV hidden (runtime)</label>
+                      <span class="config-option-desc"><code>setCVVHidden(true/false)</code> — the legacy
+                        <code>toggleCvv()</code> equivalent; ignored if the form launched optional</span>
+                    </div>
+                  </div>
+                </div>
                 <details id="ec-extra-fields-section" style="border:1px solid var(--color-gray-200); border-radius:6px; padding:.5rem .75rem; margin-bottom:.75rem;">
                   <summary style="cursor:pointer; font-weight:600;">Extra fields in Express Checkout</summary>
                   <p style="font-size:.85rem; color: var(--color-gray-500); margin-top:.5rem;">
@@ -705,6 +741,18 @@
                         <label for="hf-demo-required" class="config-option-label">Required attribute</label>
                         <span class="config-option-desc">Toggles the HTML5 <code>required</code> attribute on both
                           hosted inputs</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="config-option-row">
+                    <div class="config-option">
+                      <input type="checkbox" id="hf-demo-cvv-optional" class="config-checkbox">
+                      <div class="config-option-content">
+                        <label for="hf-demo-cvv-optional" class="config-option-label">CVV optional</label>
+                        <span class="config-option-desc"><code>setCVVOptional(true/false)</code> — an empty CVV
+                          passes validation and tokenizes with <code>verification_value: ""</code>, for processors
+                          that don't require a CVV. A typed CVV is still validated.</span>
                       </div>
                     </div>
                   </div>

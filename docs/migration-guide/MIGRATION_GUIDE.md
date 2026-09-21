@@ -104,6 +104,7 @@ manages its own UI via `sdk.expressCheckout({...})` configuration
 | `Spreedly.setTitle(field, value)` | `sdk.setTitle('number' \| 'cvv' \| 'submit' \| catalogue type, value)` | ✅ | Sets the `title` attribute on the hosted input. |
 | `Spreedly.setInputMode(field, value)` | `sdk.setInputMode('number' \| 'cvv', value)` | ✅ | Allowed: `'none' \| 'text' \| 'numeric' \| 'decimal' \| 'tel' \| 'search' \| 'email' \| 'url'`. No-op on `'submit'`. |
 | `Spreedly.setRequiredAttribute(field)` | `sdk.setRequiredAttribute('number' \| 'cvv', required = true)` | ⚠️ | New SDK accepts a second `required` boolean (default `true`) so you can also _remove_ the attribute. No-op on `'submit'`. |
+| _(none — iframe never required a CVV value)_ | `sdk.setCVVOptional(boolean)` | ⚠️ | The new SDK requires a CVV by default. Call `setCVVOptional(true)` after `ready` to allow an empty CVV (sent as `verification_value: ""`, same as legacy). A typed CVV is still validated. To also hide the field, hide your own CVV container. Recache and Click to Pay always require a CVV. For the legacy Express `toggleCvv()`, see [Express Checkout](#express-checkout-). |
 | `Spreedly.setNumberFormat('prettyFormat' \| 'plainFormat' \| 'maskedFormat')` | `sdk.setNumberFormat(format)` | ✅ | |
 | `Spreedly.toggleAutoComplete()` | `sdk.toggleAutoComplete()` | ✅ | |
 | `Spreedly.toggleMask()` | `sdk.toggleMask()` | ✅ | |
@@ -628,6 +629,8 @@ sdk.expressCheckout({
 | `sdk.expressCheckout({ parentContainerId?, uiConfig?, submitParams?, id?, className? })` — embedded when `parentContainerId` is given, full-screen dialog otherwise; returns `{ destroy }` | 🆕 |
 | `sdk.updateTextElement(key, value)` | 🆕 |
 | `sdk.addField(name, config)` / `sdk.removeField(name)` / `sdk.setFieldConfig(name, config)` | 🆕 |
+| `sdk.setCVVHidden(boolean)` — shows or hides the CVV field (the legacy `SpreedlyExpress.toggleCvv()` equivalent). Hidden skips CVV validation. Can be set at init time using: `uiConfig.cardPaymentFormFields.verification_value.isHidden: true` (shown by default). Method call is ignored if the form was initialized with `verification_value.isRequired: false`. Recache always shows and requires a CVV. | 🆕 |
+| `sdk.setCVVOptional(boolean)` — sets if the CVV field is required or not. A typed CVV is still validated.  Can be set at init time using : `uiConfig.cardPaymentFormFields.verification_value.isRequired: false` (Is required by default). Method call is ignored if the form was initialized with `verification_value.isHidden: true`. Recache always requires a CVV. | 🆕 |
 | `sdk.close(force?)` | 🆕 |
 | Event: `'close'` | 🆕 |
 

@@ -424,6 +424,87 @@ sdk.on('ready', () => {
 
 ***
 
+#### setCVVHidden()
+
+> **setCVVHidden**(`hidden`): `void`
+
+Hides (or shows) the CVV field. While hidden the field is not rendered, its validation is
+skipped, and an empty cvv is send for tokenization. Showing it again restores the
+field with its configured requirement state.
+
+Can also be set at init time using
+`uiConfig.cardPaymentFormFields.verification_value.isHidden: true` (shown by default).
+The call is ignored (with a warning) if the form was initialized with
+`verification_value.isRequired: false`. If both hidden and optional are set, hidden wins.
+Recache always shows and requires a CVV.
+
+##### Parameters
+
+###### hidden
+
+`boolean`
+
+`true` to remove the CVV field from the form, `false` to show it
+  again. Required.
+
+##### Returns
+
+`void`
+
+##### Example
+
+```javascript
+const sdk = new SpreedlyExpressCheckout(authDetails);
+sdk.expressCheckout({ parentContainerId: 'payment-form-container' });
+
+sdk.on('ready', () => {
+  sdk.setCVVHidden(true);   // no CVV field, like the legacy toggleCvv()
+  sdk.setCVVHidden(false);  // bring it back
+});
+```
+
+***
+
+#### setCVVOptional()
+
+> **setCVVOptional**(`optional`): `void`
+
+Makes the CVV *value* optional (or required again). The field stays visible; its
+label gains an "(optional)" suffix, an empty CVV passes validation, and tokenization sends
+an empty cvv value. A typed CVV is still fully validated and sent for tokenization.
+
+Can also be set at init time using
+`uiConfig.cardPaymentFormFields.verification_value.isRequired: false` (required by default).
+The call is ignored (with a warning) if the form was initialized with
+`verification_value.isHidden: true`. Recache always requires a CVV. Re-initializing via
+`expressCheckout()` resets to the init-time config.
+
+##### Parameters
+
+###### optional
+
+`boolean`
+
+`true` to allow an empty CVV, `false` to require one again. Required.
+
+##### Returns
+
+`void`
+
+##### Example
+
+```javascript
+const sdk = new SpreedlyExpressCheckout(authDetails);
+sdk.expressCheckout({ parentContainerId: 'payment-form-container' });
+
+sdk.on('ready', () => {
+  // The downstream processor does not require a CVV
+  sdk.setCVVOptional(true);
+});
+```
+
+***
+
 #### setFieldConfig()
 
 > **setFieldConfig**(`fieldName`, `config`): `void`
@@ -1283,6 +1364,12 @@ The UTC timestamp that was included when generating the signature, used to bound
 ### fieldName
 
 > **fieldName**: `TCardMandatoryFormFields` \| [`TCardAdditionalFormFields`](#tcardadditionalformfields)
+
+***
+
+### isHidden?
+
+> `optional` **isHidden?**: `boolean`
 
 ***
 
