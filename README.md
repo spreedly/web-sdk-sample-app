@@ -37,10 +37,10 @@ Both options provide the same security guarantees — card data never touches yo
 
 ### Latest version
 
-The latest released version is `1.6.2`, released on 10th Sept'26, available at:
+The latest released version is `1.7.0`, released on 17th Sept'26, available at:
 
-- Hosted Fields: [`https://core.spreedly.com/checkout/sdk/1.6.2/index.js`](https://core.spreedly.com/checkout/sdk/1.6.2/index.js)
-- Express Checkout: [`https://core.spreedly.com/checkout/elements/1.6.2/express-checkout.js`](https://core.spreedly.com/checkout/elements/1.6.2/express-checkout.js)
+- Hosted Fields: [`https://core.spreedly.com/checkout/sdk/1.7.0/index.js`](https://core.spreedly.com/checkout/sdk/1.7.0/index.js)
+- Express Checkout: [`https://core.spreedly.com/checkout/elements/1.7.0/express-checkout.js`](https://core.spreedly.com/checkout/elements/1.7.0/express-checkout.js)
 
 
 
@@ -51,6 +51,7 @@ Previous production releases of the SDK:
 
 | Version | Packages                                                                                                                                                               | Release Date   | Notes |
 | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- | ----- |
+| `1.6.2` | Hosted Fields (`https://core.spreedly.com/checkout/sdk/1.6.2/index.js`) and Express Checkout (`https://core.spreedly.com/checkout/elements/1.6.2/express-checkout.js`) | September 10, 2026 | —     |
 | `1.5.1` | Hosted Fields (`https://core.spreedly.com/checkout/sdk/1.5.1/index.js`) and Express Checkout (`https://core.spreedly.com/checkout/elements/1.5.1/express-checkout.js`) | August 14, 2026  | —     |
 | `1.4.1` | Hosted Fields (`https://core.spreedly.com/checkout/sdk/1.4.1/index.js`) and Express Checkout (`https://core.spreedly.com/checkout/elements/1.4.1/express-checkout.js`) | July 31, 2026  | —     |
 | `1.3.1` | Hosted Fields (`https://core.spreedly.com/checkout/sdk/1.3.1/index.js`) and Express Checkout (`https://core.spreedly.com/checkout/elements/1.3.1/express-checkout.js`) | July 23, 2026  | —     |
@@ -289,18 +290,17 @@ For a detailed comparison, see [Tokenization Overview](./docs/tokenization/OVERV
 
 This sample app demonstrates the following payment flows:
 
-
-| Flow                                     | Description                                             | Documentation                                                                                                                                                      |
-| ---------------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Tokenize a Card**                      | Collect card details and create a payment method token  | [Hosted Fields Guide](./docs/tokenization/hosted-fields/INTEGRATION_GUIDE.md), [Express Checkout Guide](./docs/tokenization/express-checkout/INTEGRATION_GUIDE.md) |
-| **Recache CVV**                          | Update the CVV for a previously retained payment method | [Recaching Guide](./docs/recaching/INTEGRATION_GUIDE.md)                                                                                                           |
-| **Purchase with 3DS (Global)**           | Purchase with Spreedly-managed 3D Secure authentication | [3DS Global Guide](./docs/three-ds/global/INTEGRATION_GUIDE.md)                                                                                                    |
-| **Purchase with 3DS (Gateway Specific)** | Purchase with gateway-managed 3D Secure                 | [3DS Gateway Specific Guide](./docs/three-ds/gateway-specific/INTEGRATION_GUIDE.md)                                                                                |
-| **Offsite Payments**                     | PayPal, PIX, Boleto via transparent redirect or API     | [General Offsite Guide](./docs/offsite-payments/general/INTEGRATION_GUIDE.md)                                                                                      |
-| **Braintree APM**                        | PayPal and Venmo via Braintree                          | [Braintree Guide](./docs/offsite-payments/braintree/INTEGRATION_GUIDE.md)                                                                                          |
-| **Stripe APM**                           | iDEAL, Bancontact, SEPA via Stripe                      | [Stripe APM Guide](./docs/offsite-payments/stripe-apm/INTEGRATION_GUIDE.md)                                                                                        |
-| **Paze Digital Wallet**                  | Paze popup checkout and `securedPayload` payment method | [Paze Guide](./docs/paze/INTEGRATION_GUIDE.md), [Paze API Reference](./docs/paze/API_REFERENCE.md)                                                                 |
-
+| Flow                                     | Description                                                                                                 | Documentation                                                                                                                                                      |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Tokenize a Card**                      | Merchant-hosted form — collect name/expiry/address on the page; only card number and CVV are Spreedly iframes | [Hosted Fields Guide](./docs/tokenization/hosted-fields/INTEGRATION_GUIDE.md), [Express Checkout Guide](./docs/tokenization/express-checkout/INTEGRATION_GUIDE.md) |
+| **Tokenize with SDK Hosted Fields**      | Mount catalogue fields as Spreedly-hosted iframes via `inAppElements()`, plus custom validators               | [Hosted Fields Guide](./docs/tokenization/hosted-fields/INTEGRATION_GUIDE.md), [Express Checkout Guide](./docs/tokenization/express-checkout/INTEGRATION_GUIDE.md) |
+| **Recache CVV**                          | Update the CVV for a previously retained payment method                                                         | [Recaching Guide](./docs/recaching/INTEGRATION_GUIDE.md)                                                                                                           |
+| **Purchase with 3DS (Global)**           | Purchase with Spreedly-managed 3D Secure authentication                                                     | [3DS Global Guide](./docs/three-ds/global/INTEGRATION_GUIDE.md)                                                                                                    |
+| **Purchase with 3DS (Gateway Specific)** | Purchase with gateway-managed 3D Secure                                                                     | [3DS Gateway Specific Guide](./docs/three-ds/gateway-specific/INTEGRATION_GUIDE.md)                                                                                |
+| **Offsite Payments**                     | PayPal, PIX, Boleto via transparent redirect or API                                                         | [General Offsite Guide](./docs/offsite-payments/general/INTEGRATION_GUIDE.md)                                                                                      |
+| **Braintree APM**                        | PayPal and Venmo via Braintree                                                                              | [Braintree Guide](./docs/offsite-payments/braintree/INTEGRATION_GUIDE.md)                                                                                          |
+| **Stripe APM**                           | iDEAL, Bancontact, SEPA via Stripe                                                                          | [Stripe APM Guide](./docs/offsite-payments/stripe-apm/INTEGRATION_GUIDE.md)                                                                                        |
+| **Paze Digital Wallet**                  | Paze popup checkout and `securedPayload` payment method                                                     | [Paze Guide](./docs/paze/INTEGRATION_GUIDE.md), [Paze API Reference](./docs/paze/API_REFERENCE.md)                                                                 |
 
 ---
 
@@ -335,6 +335,7 @@ When integrating the SDK into your production application:
 | Document                                                         | Description                                                     |
 | ---------------------------------------------------------------- | --------------------------------------------------------------- |
 | [Tokenization Overview](./docs/tokenization/OVERVIEW.md)         | Compare Hosted Fields vs Express Checkout                       |
+| [Styling Guide](./docs/tokenization/STYLING_GUIDE.md)            | Brand Hosted Fields (`setStyles`, placeholders, submit button) and Express Checkout themes |
 | [3DS Overview](./docs/three-ds/OVERVIEW.md)                      | Compare Global vs Gateway Specific 3DS                          |
 | [Offsite Payments Overview](./docs/offsite-payments/OVERVIEW.md) | Compare General, Braintree APM, and Stripe APM                  |
 | [Paze Integration Guide](./docs/paze/INTEGRATION_GUIDE.md)       | Paze digital wallet demo and backend payment method create      |

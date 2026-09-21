@@ -1,7 +1,7 @@
 import { purchasePage } from "../pages/3dsPage";
 import { landingPage } from "../pages/landingPage";
 import { test, expect } from "../util/fixtures";
-import { TEST_DATA, waitForAuthParams, getValidYearString, SELECTORS } from "../util/test-constants";
+import { TEST_DATA, waitForAuthParams, getValidYearString, SELECTORS, getValidTwoDigitExpiryString } from "../util/test-constants";
 import { MONOREPO_URLS } from "../util/urls";
 import { helperFunctions } from "../util/utils";
 import { tokenizePage } from "../pages/tokenizePage";
@@ -14,19 +14,17 @@ test.describe('3DS gateway specific flow', () => {
         await waitForAuthParams(page);
         await threeDSGatewayPage.selectTheTransactionAmount(page, '3001');
         await helperFunctions.clickOnNewCardButton(page);
-        await helperFunctions.fillHostedFieldsForm(page, TEST_DATA.THREE_DS2_GATEWAY_SPECIFIC_VALID_CARD_NUMBER, {
+        await helperFunctions.fillHostedFieldsFormWithCatalogueFields(page, TEST_DATA.THREE_DS2_GATEWAY_SPECIFIC_VALID_CARD_NUMBER, {
             firstName: TEST_DATA.FIRST_NAME,
             lastName: TEST_DATA.LAST_NAME,
             cvv: TEST_DATA.CVV,
-            expiryMonth: TEST_DATA.EXPIRY_MONTH,
-            expiryYear: getValidYearString(),
+            twoDigitExpiry: getValidTwoDigitExpiryString(),
         });
-        await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.THREE_DS2_GATEWAY_SPECIFIC_VALID_CARD_NUMBER, {
+        await helperFunctions.verifyFormFieldsHostedFieldsWithCatalogueFields(page, TEST_DATA.THREE_DS2_GATEWAY_SPECIFIC_VALID_CARD_NUMBER, {
             firstName: TEST_DATA.FIRST_NAME,
             lastName: TEST_DATA.LAST_NAME,
             cvv: TEST_DATA.CVV,
-            expiryMonth: TEST_DATA.EXPIRY_MONTH,
-            expiryYear: getValidYearString(),
+            twoDigitExpiry: getValidTwoDigitExpiryString(),
         });
         let apiResponse: any = null;
         page.on('response', async (response) => {
@@ -58,19 +56,17 @@ test.describe('3DS gateway specific flow', () => {
         await waitForAuthParams(page);
         await threeDSGatewayPage.selectTheTransactionAmount(page, '3003');
         await helperFunctions.clickOnNewCardButton(page);
-        await helperFunctions.fillHostedFieldsForm(page, TEST_DATA.THREE_DS2_GATEWAY_SPECIFIC_VALID_CARD_NUMBER, {
+        await helperFunctions.fillHostedFieldsFormWithCatalogueFields(page, TEST_DATA.THREE_DS2_GATEWAY_SPECIFIC_VALID_CARD_NUMBER, {
             firstName: TEST_DATA.FIRST_NAME,
             lastName: TEST_DATA.LAST_NAME,
             cvv: TEST_DATA.CVV,
-            expiryMonth: TEST_DATA.EXPIRY_MONTH,
-            expiryYear: getValidYearString(),
+            twoDigitExpiry: getValidTwoDigitExpiryString(),
         });
-        await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.THREE_DS2_GATEWAY_SPECIFIC_VALID_CARD_NUMBER, {
+        await helperFunctions.verifyFormFieldsHostedFieldsWithCatalogueFields(page, TEST_DATA.THREE_DS2_GATEWAY_SPECIFIC_VALID_CARD_NUMBER, {
             firstName: TEST_DATA.FIRST_NAME,
             lastName: TEST_DATA.LAST_NAME,
             cvv: TEST_DATA.CVV,
-            expiryMonth: TEST_DATA.EXPIRY_MONTH,
-            expiryYear: getValidYearString(),
+            twoDigitExpiry: getValidTwoDigitExpiryString(),
         });
         let apiResponse: any = null;
         page.on('response', async (response) => {
@@ -101,19 +97,17 @@ test.describe('3DS gateway specific flow', () => {
         await waitForAuthParams(page);
         await threeDSGatewayPage.selectTheTransactionAmount(page, '3004');
         await helperFunctions.clickOnNewCardButton(page);
-        await helperFunctions.fillHostedFieldsForm(page, TEST_DATA.THREE_DS2_GATEWAY_SPECIFIC_VALID_CARD_NUMBER, {
+        await helperFunctions.fillHostedFieldsFormWithCatalogueFields(page, TEST_DATA.THREE_DS2_GATEWAY_SPECIFIC_VALID_CARD_NUMBER, {
             firstName: TEST_DATA.FIRST_NAME,
             lastName: TEST_DATA.LAST_NAME,
             cvv: TEST_DATA.CVV,
-            expiryMonth: TEST_DATA.EXPIRY_MONTH,
-            expiryYear: getValidYearString(),
+            twoDigitExpiry: getValidTwoDigitExpiryString(),
         });
-        await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.THREE_DS2_GATEWAY_SPECIFIC_VALID_CARD_NUMBER, {
+        await helperFunctions.verifyFormFieldsHostedFieldsWithCatalogueFields(page, TEST_DATA.THREE_DS2_GATEWAY_SPECIFIC_VALID_CARD_NUMBER, {
             firstName: TEST_DATA.FIRST_NAME,
             lastName: TEST_DATA.LAST_NAME,
             cvv: TEST_DATA.CVV,
-            expiryMonth: TEST_DATA.EXPIRY_MONTH,
-            expiryYear: getValidYearString(),
+            twoDigitExpiry: getValidTwoDigitExpiryString(),
         });
         let apiResponse: any = null;
         page.on('response', async (response) => {
@@ -146,19 +140,17 @@ test.describe('3DS gateway specific flow', () => {
         await waitForAuthParams(page);
         await threeDSGatewayPage.selectTheTransactionAmount(page, '3004');
         await helperFunctions.clickOnNewCardButton(page);
-        await helperFunctions.fillHostedFieldsForm(page, TEST_DATA.THREE_DS2_GATEWAY_SPECIFIC_VALID_CARD_NUMBER, {
+        await helperFunctions.fillHostedFieldsFormWithCatalogueFields(page, TEST_DATA.THREE_DS2_GATEWAY_SPECIFIC_VALID_CARD_NUMBER, {
             firstName: TEST_DATA.FIRST_NAME,
             lastName: TEST_DATA.LAST_NAME,
             cvv: TEST_DATA.CVV,
-            expiryMonth: TEST_DATA.EXPIRY_MONTH,
-            expiryYear: getValidYearString(),
+            twoDigitExpiry: getValidTwoDigitExpiryString(),
         });
-        await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.THREE_DS2_GATEWAY_SPECIFIC_VALID_CARD_NUMBER, {
+        await helperFunctions.verifyFormFieldsHostedFieldsWithCatalogueFields(page, TEST_DATA.THREE_DS2_GATEWAY_SPECIFIC_VALID_CARD_NUMBER, {
             firstName: TEST_DATA.FIRST_NAME,
             lastName: TEST_DATA.LAST_NAME,
             cvv: TEST_DATA.CVV,
-            expiryMonth: TEST_DATA.EXPIRY_MONTH,
-            expiryYear: getValidYearString(),
+            twoDigitExpiry: getValidTwoDigitExpiryString(),
         });
         let apiResponse: any = null;
         page.on('response', async (response) => {
@@ -191,19 +183,17 @@ test.describe('3DS gateway specific flow', () => {
         await waitForAuthParams(page);
         await threeDSGatewayPage.selectTheTransactionAmount(page, '3005');
         await helperFunctions.clickOnNewCardButton(page);
-        await helperFunctions.fillHostedFieldsForm(page, TEST_DATA.THREE_DS2_GATEWAY_SPECIFIC_VALID_CARD_NUMBER, {
+        await helperFunctions.fillHostedFieldsFormWithCatalogueFields(page, TEST_DATA.THREE_DS2_GATEWAY_SPECIFIC_VALID_CARD_NUMBER, {
             firstName: TEST_DATA.FIRST_NAME,
             lastName: TEST_DATA.LAST_NAME,
             cvv: TEST_DATA.CVV,
-            expiryMonth: TEST_DATA.EXPIRY_MONTH,
-            expiryYear: getValidYearString(),
+            twoDigitExpiry: getValidTwoDigitExpiryString(),
         });
-        await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.THREE_DS2_GATEWAY_SPECIFIC_VALID_CARD_NUMBER, {
+        await helperFunctions.verifyFormFieldsHostedFieldsWithCatalogueFields(page, TEST_DATA.THREE_DS2_GATEWAY_SPECIFIC_VALID_CARD_NUMBER, {
             firstName: TEST_DATA.FIRST_NAME,
             lastName: TEST_DATA.LAST_NAME,
             cvv: TEST_DATA.CVV,
-            expiryMonth: TEST_DATA.EXPIRY_MONTH,
-            expiryYear: getValidYearString(),
+            twoDigitExpiry: getValidTwoDigitExpiryString(),
         });
         let apiResponse: any = null;
         page.on('response', async (response) => {
@@ -236,19 +226,17 @@ test.describe('3DS gateway specific flow', () => {
         await waitForAuthParams(page);
         await threeDSGatewayPage.selectTheTransactionAmount(page, '3005');
         await helperFunctions.clickOnNewCardButton(page);
-        await helperFunctions.fillHostedFieldsForm(page, TEST_DATA.THREE_DS2_GATEWAY_SPECIFIC_VALID_CARD_NUMBER, {
+        await helperFunctions.fillHostedFieldsFormWithCatalogueFields(page, TEST_DATA.THREE_DS2_GATEWAY_SPECIFIC_VALID_CARD_NUMBER, {
             firstName: TEST_DATA.FIRST_NAME,
             lastName: TEST_DATA.LAST_NAME,
             cvv: TEST_DATA.CVV,
-            expiryMonth: TEST_DATA.EXPIRY_MONTH,
-            expiryYear: getValidYearString(),
+            twoDigitExpiry: getValidTwoDigitExpiryString(),
         });
-        await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.THREE_DS2_GATEWAY_SPECIFIC_VALID_CARD_NUMBER, {
+        await helperFunctions.verifyFormFieldsHostedFieldsWithCatalogueFields(page, TEST_DATA.THREE_DS2_GATEWAY_SPECIFIC_VALID_CARD_NUMBER, {
             firstName: TEST_DATA.FIRST_NAME,
             lastName: TEST_DATA.LAST_NAME,
             cvv: TEST_DATA.CVV,
-            expiryMonth: TEST_DATA.EXPIRY_MONTH,
-            expiryYear: getValidYearString(),
+            twoDigitExpiry: getValidTwoDigitExpiryString(),
         });
         let apiResponse: any = null;
         page.on('response', async (response) => {
@@ -281,19 +269,17 @@ test.describe('3DS gateway specific flow', () => {
         await waitForAuthParams(page);
         await threeDSGatewayPage.selectTheTransactionAmount(page, '3103');
         await helperFunctions.clickOnNewCardButton(page);
-        await helperFunctions.fillHostedFieldsForm(page, TEST_DATA.THREE_DS2_GATEWAY_SPECIFIC_VALID_CARD_NUMBER, {
+        await helperFunctions.fillHostedFieldsFormWithCatalogueFields(page, TEST_DATA.THREE_DS2_GATEWAY_SPECIFIC_VALID_CARD_NUMBER, {
             firstName: TEST_DATA.FIRST_NAME,
             lastName: TEST_DATA.LAST_NAME,
             cvv: TEST_DATA.CVV,
-            expiryMonth: TEST_DATA.EXPIRY_MONTH,
-            expiryYear: getValidYearString(),
+            twoDigitExpiry: getValidTwoDigitExpiryString(),
         });
-        await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.THREE_DS2_GATEWAY_SPECIFIC_VALID_CARD_NUMBER, {
+        await helperFunctions.verifyFormFieldsHostedFieldsWithCatalogueFields(page, TEST_DATA.THREE_DS2_GATEWAY_SPECIFIC_VALID_CARD_NUMBER, {
             firstName: TEST_DATA.FIRST_NAME,
             lastName: TEST_DATA.LAST_NAME,
             cvv: TEST_DATA.CVV,
-            expiryMonth: TEST_DATA.EXPIRY_MONTH,
-            expiryYear: getValidYearString(),
+            twoDigitExpiry: getValidTwoDigitExpiryString(),
         });
         let apiResponse: any = null;
         page.on('response', async (response) => {
@@ -324,19 +310,17 @@ test.describe('3DS gateway specific flow', () => {
         await waitForAuthParams(page);
         await threeDSGatewayPage.selectTheTransactionAmount(page, '3104');
         await helperFunctions.clickOnNewCardButton(page);
-        await helperFunctions.fillHostedFieldsForm(page, TEST_DATA.THREE_DS2_GATEWAY_SPECIFIC_VALID_CARD_NUMBER, {
+        await helperFunctions.fillHostedFieldsFormWithCatalogueFields(page, TEST_DATA.THREE_DS2_GATEWAY_SPECIFIC_VALID_CARD_NUMBER, {
             firstName: TEST_DATA.FIRST_NAME,
             lastName: TEST_DATA.LAST_NAME,
             cvv: TEST_DATA.CVV,
-            expiryMonth: TEST_DATA.EXPIRY_MONTH,
-            expiryYear: getValidYearString(),
+            twoDigitExpiry: getValidTwoDigitExpiryString(),
         });
-        await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.THREE_DS2_GATEWAY_SPECIFIC_VALID_CARD_NUMBER, {
+        await helperFunctions.verifyFormFieldsHostedFieldsWithCatalogueFields(page, TEST_DATA.THREE_DS2_GATEWAY_SPECIFIC_VALID_CARD_NUMBER, {
             firstName: TEST_DATA.FIRST_NAME,
             lastName: TEST_DATA.LAST_NAME,
             cvv: TEST_DATA.CVV,
-            expiryMonth: TEST_DATA.EXPIRY_MONTH,
-            expiryYear: getValidYearString(),
+            twoDigitExpiry: getValidTwoDigitExpiryString(),
         });
         let apiResponse: any = null;
         page.on('response', async (response) => {
@@ -369,19 +353,17 @@ test.describe('3DS gateway specific flow', () => {
         await waitForAuthParams(page);
         await threeDSGatewayPage.selectTheTransactionAmount(page, '3104');
         await helperFunctions.clickOnNewCardButton(page);
-        await helperFunctions.fillHostedFieldsForm(page, TEST_DATA.THREE_DS2_GATEWAY_SPECIFIC_VALID_CARD_NUMBER, {
+        await helperFunctions.fillHostedFieldsFormWithCatalogueFields(page, TEST_DATA.THREE_DS2_GATEWAY_SPECIFIC_VALID_CARD_NUMBER, {
             firstName: TEST_DATA.FIRST_NAME,
             lastName: TEST_DATA.LAST_NAME,
             cvv: TEST_DATA.CVV,
-            expiryMonth: TEST_DATA.EXPIRY_MONTH,
-            expiryYear: getValidYearString(),
+            twoDigitExpiry: getValidTwoDigitExpiryString(),
         });
-        await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.THREE_DS2_GATEWAY_SPECIFIC_VALID_CARD_NUMBER, {
+        await helperFunctions.verifyFormFieldsHostedFieldsWithCatalogueFields(page, TEST_DATA.THREE_DS2_GATEWAY_SPECIFIC_VALID_CARD_NUMBER, {
             firstName: TEST_DATA.FIRST_NAME,
             lastName: TEST_DATA.LAST_NAME,
             cvv: TEST_DATA.CVV,
-            expiryMonth: TEST_DATA.EXPIRY_MONTH,
-            expiryYear: getValidYearString(),
+            twoDigitExpiry: getValidTwoDigitExpiryString(),
         }); 
         let apiResponse: any = null;
         page.on('response', async (response) => {

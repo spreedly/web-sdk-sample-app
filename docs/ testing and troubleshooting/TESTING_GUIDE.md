@@ -72,6 +72,7 @@ Tokenization is the core flow — collecting card details and creating a payment
 5. **Invalid card is rejected** — entering an invalid card number triggers an `error` event with field-level validation errors.
 6. **Expired date handling** — submitting an expired date triggers an error (unless `allow_expired_date` is set).
 7. **Blank name handling** — submitting without a name triggers an error (unless `allow_blank_name` is set).
+8. **Catalogue / custom validators** — on `/tokenize-catalogue`, mount extras via `inAppElements()` (Hosted Fields) or `addField` (Express Checkout), register `sdk.addValidation()`, and confirm failures surface on `validation.formFields[field].error` (HF) or inline on the EC form. If the hosted submit button is mounted, a click must fire `submitClick` and your handler must call `sdk.submit()`.
 
 ### Quick test (Hosted Fields)
 
@@ -116,6 +117,10 @@ sdk.on('error', (error) => console.log('ERROR:', error));
 
 sdk.expressCheckout({ parentContainerId: 'checkout-container' });
 ```
+
+### Tokenize with SDK-hosted catalogue fields
+
+The `/tokenize-catalogue` flow (Hosted Fields and Express Checkout) demos extras mounted by the SDK rather than merchant HTML: name, expiry, address (including HC-1688 canonical keys), custom validators (`addValidation` / `removeValidation`), and Hosted Fields' optional hosted submit button (`submitClick` → `submit()`). Use it to verify catalogue `containerId`s, `isRequired`, and merchant-owned validation without leaving the sample app.
 
 ### Retained payment method
 
