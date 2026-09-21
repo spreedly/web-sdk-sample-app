@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Hosted Fields:** `setCVVOptional(boolean)`. When optional, an empty CVV passes client-side validation, and an empty cvv value is sent in tokenization. A typed CVV is still fully validated. Call after `ready`. `reload()` resets it like every other customization. The CVV field remains mounted. You can hide your own CVV container with CSS. Recache and Click to Pay are unaffected and always require a CVV.
 - **Express Checkout:** init-time config on `uiConfig.cardPaymentFormFields.verification_value` — `isRequired: false` (cvv field shown but made optional) or `isHidden: true` (cvv field not rendered). Runtime setters `setCVVOptional(boolean)` and `setCVVHidden(boolean)` toggle the same optional / hidden states after `ready`.
 
+### Changed
+
+- **Card brand logos in the card number field**: Hosted Fields and Express Checkout now show the detected brand's logo where they previously showed a text badge (`VISA`, `MASTER`, `AMEX`). Logos ship for Visa, Mastercard, American Express, Discover, Diners Club, JCB, Maestro, UnionPay and Elo; every other brand shows a generic card icon. No API change — `sdk.setShowCardTypeIcon(false)` and `uiConfig.showCardTypeIcon: false` still hide it, and it is still shown by default.
+- Hosted Fields inputs now set their own padding instead of inheriting the browser's, so the text sits in the same place in every browser. Card number `8px 0 8px 12px`, CVV `8px 12px`, catalogue fields `0`. `setStyles(field, { padding: … })` still overrides it.
+
 ### Fixed
 
 - **Hosted Fields: non-digit characters no longer flash in the card number and CVV inputs.** No public API, event, or payload change.
