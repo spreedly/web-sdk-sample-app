@@ -99,11 +99,11 @@
                   <div class="form-row">
                     <div class="form-group">
                       <label class="form-label" for="first_name">First Name</label>
-                      <input type="text" id="first_name" name="first_name" class="form-input" placeholder="John">
+                      <input type="text" id="first_name" name="first_name" class="form-input sdk-styled-input" placeholder="John">
                     </div>
                     <div class="form-group">
                       <label class="form-label" for="last_name">Last Name</label>
-                      <input type="text" id="last_name" name="last_name" class="form-input" placeholder="Doe">
+                      <input type="text" id="last_name" name="last_name" class="form-input sdk-styled-input" placeholder="Doe">
                     </div>
                   </div>
 
@@ -111,42 +111,28 @@
                   <div class="form-group">
                     <label class="form-label" id="hosted-field-label-card-number" role="button" tabindex="0">Card
                       Number</label>
-                    <div id="card-number-field" class="hosted-field-container"></div>
+                    <div id="card-number-field" class="sdk-styled-field"></div>
                     <div id="card-number-error" class="hf-field-error" role="alert" aria-live="polite"></div>
                   </div>
 
-                  <!-- CVV - Hosted Field -->
-                  <div class="form-group">
-                    <label class="form-label" id="hosted-field-label-cvv" role="button" tabindex="0">CVV</label>
-                    <div id="cvv-field" class="hosted-field-container" style="max-width: 120px;"></div>
-                    <div id="cvv-error" class="hf-field-error" role="alert" aria-live="polite"></div>
-                  </div>
-
-                  <!-- Expiry Fields -->
-                  <div id="expiry-separate-fields" class="form-row">
-                    <div class="form-group">
-                      <label class="form-label" for="expiry_month">Expiry Month</label>
-                      <input type="text" id="expiry_month" name="month" class="form-input" placeholder="MM"
-                        maxlength="2" inputmode="numeric" pattern="[0-9]*">
+                  <!-- Expiration date (MM/YY) and Security code, side by side -->
+                  <div class="form-row">
+                    <div id="expiry-combined-field" class="form-group">
+                      <label class="form-label" for="expiry_date">Expiration date</label>
+                      <input type="text" id="expiry_date" name="expiry_date" class="form-input sdk-styled-input"
+                        placeholder="MM / YY" maxlength="5" inputmode="numeric">
                     </div>
                     <div class="form-group">
-                      <label class="form-label" for="expiry_year">Expiry Year</label>
-                      <input type="text" id="expiry_year" name="year" class="form-input" placeholder="YYYY"
-                        maxlength="4" inputmode="numeric" pattern="[0-9]*">
+                      <label class="form-label" id="hosted-field-label-cvv" role="button" tabindex="0">Security code</label>
+                      <div id="cvv-field" class="sdk-styled-field"></div>
+                      <div id="cvv-error" class="hf-field-error" role="alert" aria-live="polite"></div>
                     </div>
-                  </div>
-
-                  <!-- Combined Expiry (for two-digit mode) -->
-                  <div id="expiry-combined-field" class="form-group hidden">
-                    <label class="form-label" for="expiry_date">Expiry Date</label>
-                    <input type="text" id="expiry_date" name="expiry_date" class="form-input" placeholder="MM/YY"
-                      maxlength="5" style="max-width: 140px;">
                   </div>
 
                   <!-- Optional: Email -->
                   <div class="form-group">
                     <label class="form-label" for="email">Email (optional)</label>
-                    <input type="email" id="email" name="email" class="form-input" placeholder="john@example.com">
+                    <input type="email" id="email" name="email" class="form-input sdk-styled-input" placeholder="john@example.com">
                   </div>
 
                   <details id="optional-fields-section" class="form-group" style="border:1px solid var(--color-gray-200); border-radius:6px; padding: .5rem .75rem;">
@@ -444,14 +430,6 @@
                     <span class="config-option-desc">Tokenize without expiration date</span>
                   </div>
                 </div>
-
-                <div class="config-option">
-                  <input type="checkbox" id="config-two-digit-expiry" class="config-checkbox">
-                  <div class="config-option-content">
-                    <label for="config-two-digit-expiry" class="config-option-label">Two Digit Expiry</label>
-                    <span class="config-option-desc">Use MM/YY format</span>
-                  </div>
-                </div>
               </div>
 
               <!-- Legacy setParam parity: applies to both Hosted Fields and Express Checkout -->
@@ -476,6 +454,14 @@
                       <label for="ec-demo-card-type-icon" class="config-option-label">Card type icon</label>
                       <span class="config-option-desc">Show the card brand badge (e.g. VISA) inside the number
                         field via <code>uiConfig.showCardTypeIcon</code></span>
+                    </div>
+                  </div>
+                  <div class="config-option">
+                    <input type="checkbox" id="config-two-digit-expiry" class="config-checkbox">
+                    <div class="config-option-content">
+                      <label for="config-two-digit-expiry" class="config-option-label">Two Digit Expiry</label>
+                      <span class="config-option-desc">Use a single MM/YY expiry field via
+                        <code>uiConfig.twoDigitExpiry</code></span>
                     </div>
                   </div>
                 </div>
