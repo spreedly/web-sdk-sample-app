@@ -492,13 +492,13 @@ async function init() {
   try {
     await loadSpreedlySDK();
 
-    // Only used to tag telemetry; the SDK masks it before sending. Not worth failing the
-    // demo over, so a lookup failure just leaves the key empty.
+    // Optional but recommended by the SDK. Not worth failing the demo over, so a
+    // lookup failure just leaves the key empty.
     try {
       const authParams = await SpreedlyUtils.fetchAuthParams();
       environmentKey = authParams?.environmentKey || '';
     } catch (authError) {
-      console.warn('Could not load the environment key for telemetry:', authError.message);
+      console.warn('Could not load the environment key:', authError.message);
     }
 
     showPaymentSection();
