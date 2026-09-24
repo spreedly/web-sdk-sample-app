@@ -364,6 +364,43 @@ sdk.on('ready', () => {
 
 ***
 
+#### setCVVOptional()
+
+> **setCVVOptional**(`optional`): `void`
+
+Makes the CVV *value* optional (or required again) for tokenization. The CVV field stays
+mounted and looks unchanged. An empty CVV passes client-side validation, is reported as valid in `fieldStateChange` and
+`validation` events, and tokenization sends an empty CVV value. A non-empty CVV is
+still fully validated and sent for tokenization.
+
+Call after the `ready` event.
+Recache and Click to Pay flows are unaffected: they always require a CVV.
+
+##### Parameters
+
+###### optional
+
+`boolean`
+
+`true` to allow an empty CVV, `false` to require one again. Required.
+
+##### Returns
+
+`void`
+
+##### Example
+
+```javascript
+const sdk = new SpreedlyHostedFields(authDetails);
+
+sdk.on('ready', () => {
+  // The downstream processor does not require a CVV
+  sdk.setCVVOptional(true);
+});
+```
+
+***
+
 #### setDisable()
 
 > **setDisable**(`elementType`, `disabled`): `void`

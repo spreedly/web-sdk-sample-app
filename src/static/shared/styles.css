@@ -281,6 +281,49 @@ p {
 }
 
 /* Hosted Fields Container */
+.sdk-styled-field {
+  height: 40px;
+  border: 1px solid #d4d4d4;
+  border-radius: 8px;
+  background: var(--color-white);
+  overflow: hidden;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.sdk-styled-input {
+  height: 40px;
+  padding-top: 0;
+  padding-bottom: 0;
+  font-size: 14px;
+}
+
+#hosted-fields-form .form-group {
+  margin-bottom: 0.75rem;
+}
+
+.sdk-styled-field:focus-within,
+.sdk-styled-field.is-focused,
+.sdk-styled-input:focus {
+  border-color: #2a78d6;
+  box-shadow:
+    0 0 0 1px #2a78d6,
+    0 0 6px 1px rgba(24, 79, 149, 0.6);
+}
+
+.sdk-styled-field.has-error {
+  border-color: #d03b3b;
+  box-shadow: inset 0 0 0 1px #d03b3b;
+}
+
+.sdk-styled-field iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
 .hosted-field-container {
   border: 1px solid var(--color-gray-300);
   border-radius: var(--radius-md);

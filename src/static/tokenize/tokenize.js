@@ -19,6 +19,8 @@ const config = {
   eligibleForCardUpdater: false,
   showCardTypeIcon: true,
   ecExtraFields: [],
+  // Express Checkout CVV mode at launch: '' (required, default) | 'optional' | 'hidden'
+  ecCvvMode: '',
 };
 
 const EC_EXTRA_FIELD_KEYS = Object.freeze([
@@ -52,6 +54,11 @@ let hostedFieldsMaskEnabled = false;
 
 /** Tracks browser autocomplete state for the demo checkbox. */
 let hostedFieldsAutocompleteEnabled = false;
+const HOSTED_FIELD_STYLES = { fontSize: '14px' };
+
+const HOSTED_FIELD_PLACEHOLDERS = { number: '1234 1234 1234 1234', cvv: 'CVC' };
+
+const HOSTED_FIELD_CONTAINER_BY_FIELD = { number: 'card-number-field', cvv: 'cvv-field' };
 
 const HOSTED_FIELDS_PLACEHOLDER_STYLES = {
   default: { color: '#9ca3af', fontWeight: '400', opacity: '1' },
@@ -132,10 +139,6 @@ function updateConfigPanelForSdkType() {
 function setupConfigCheckboxListeners() {
   document.getElementById('config-two-digit-expiry')?.addEventListener('change', function () {
     config.twoDigitExpiryYear = this.checked;
-    if (isReady && sdkType === 'hosted-fields') {
-      updateExpiryFieldDisplay();
-      updateFormState();
-    }
   });
 
   document.getElementById('config-allow-blank-name')?.addEventListener('change', function () {
@@ -165,6 +168,18 @@ function setupConfigCheckboxListeners() {
   // Express Checkout: card-type badge is a launch-time uiConfig flag.
   document.getElementById('ec-demo-card-type-icon')?.addEventListener('change', function () {
     config.showCardTypeIcon = this.checked;
+  });
+
+  // Express Checkout no-CVV runtime setters. A cross call
+  // (e.g. setCVVHidden after launching optional) is ignored with a console warning.
+  document.getElementById('ec-demo-cvv-optional')?.addEventListener('change', function () {
+    if (!sdk || sdkType !== 'express-checkout' || !isReady) return;
+    sdk.setCVVOptional(this.checked);
+  });
+
+  document.getElementById('ec-demo-cvv-hidden')?.addEventListener('change', function () {
+    if (!sdk || sdkType !== 'express-checkout' || !isReady) return;
+    sdk.setCVVHidden(this.checked);
   });
 
   document.querySelectorAll('input[data-ec-field]').forEach((checkbox) => {
@@ -228,6 +243,20 @@ function buildEcExtraFieldsConfig(fieldKeys) {
   return out;
 }
 
+// No-CVV support
+function buildEcCvvFieldOverride(mode) {
+  return {
+    fieldName: 'verification_value',
+    isRequired: mode !== 'optional',
+    ...(mode === 'hidden' ? { isHidden: true } : {}),
+    label: 'CVV',
+    placeholder: '123',
+    size: 6,
+    isMasked: true,
+    styles: {},
+  };
+}
+
 // Sync config state from checkbox values (called when SDK becomes ready)
 function syncConfigFromCheckboxes() {
   config.twoDigitExpiryYear = document.getElementById('config-two-digit-expiry')?.checked || false;
@@ -237,6 +266,7 @@ function syncConfigFromCheckboxes() {
   config.eligibleForCardUpdater = document.getElementById('config-eligible-for-card-updater')?.checked || false;
   const ecCardTypeIcon = document.getElementById('ec-demo-card-type-icon');
   config.showCardTypeIcon = ecCardTypeIcon ? ecCardTypeIcon.checked : true;
+  config.ecCvvMode = document.getElementById('ec-demo-cvv-mode')?.value || '';
   syncEcExtraFieldsFromCheckboxes();
 }
 
@@ -314,7 +344,14 @@ function setupHostedFieldsSdkDemoPanel(sdkInstance) {
   if (hostedFieldsSdkDemoEventHandlersWiredFor !== sdkInstance) {
     hostedFieldsSdkDemoEventHandlersWiredFor = sdkInstance;
     sdkInstance.on('validation', updateHostedFieldsDemoLastValidation);
-    sdkInstance.on('fieldStateChange', console.log);
+    sdkInstance.on('fieldStateChange', (payload) => {
+      const field = payload && payload.field;
+      const containerId = HOSTED_FIELD_CONTAINER_BY_FIELD[field];
+      if (containerId) {
+        const container = document.getElementById(containerId);
+        if (container) container.classList.toggle('is-focused', Boolean(payload.focused));
+      }
+    });
     sdkInstance.on('consoleError', (payload) => {
       console.warn('Hosted Fields consoleError:', payload);
       updateHostedFieldsDemoLastConsoleError(payload);
@@ -346,15 +383,53 @@ function setupHostedFieldsSdkDemoPanel(sdkInstance) {
   setupHostedFieldsConfigPanel(sdkInstance);
 }
 
+/**
+ * Applies the CVV-optional demo setting. the merchant page updates its own label text (and the
+ * hosted input's accessible name via `setLabel`) to tell the shopper the CVV is optional.
+ */
+function applyHostedFieldsCvvOptional(sdkInstance, optional) {
+  sdkInstance.setCVVOptional(optional);
+  sdkInstance.setLabel('cvv', optional ? 'CVV (optional)' : 'CVV');
+  const cvvLabel = document.getElementById('hosted-field-label-cvv');
+  if (cvvLabel) cvvLabel.textContent = optional ? 'CVV (optional)' : 'CVV';
+}
+
+/**
+ * Applies the CVV-hidden demo setting. This is merchant-side only: the SDK has no API to hide the
+ * CVV field, and the CVV iframe must stay mounted or `ready` never fires. The page hides its own
+ * container with `display: none`. Before hiding, use sdkInstance.setCVVOptional(true) to make CVV optional.
+ * Recache and Click to Pay always require a CVV.
+ */
+function applyHostedFieldsCvvHidden(sdkInstance, hidden) {
+  const group = document.getElementById('cvv-form-group');
+  if (group) group.style.display = hidden ? 'none' : '';
+  const cvvOptionalCheckbox = document.getElementById('hf-demo-cvv-optional');
+  if (hidden && cvvOptionalCheckbox && !cvvOptionalCheckbox.checked) {
+    cvvOptionalCheckbox.checked = true;
+    if (typeof sdkInstance.setCVVOptional === 'function') {
+      applyHostedFieldsCvvOptional(sdkInstance, true);
+    }
+  }
+}
+
 /** Configures hosted field display defaults when fields are ready. */
 function configureHostedFieldsOnReady(sdkInstance) {
   sdkInstance.setTitle('number', 'Credit card number');
   sdkInstance.setTitle('cvv', 'Security code');
   sdkInstance.setPlaceholderStyles(HOSTED_FIELDS_PLACEHOLDER_STYLES.default);
   sdkInstance.setNumberFormat('prettyFormat');
+  sdkInstance.setPlaceholder('number', HOSTED_FIELD_PLACEHOLDERS.number);
+  sdkInstance.setPlaceholder('cvv', HOSTED_FIELD_PLACEHOLDERS.cvv);
+  sdkInstance.setStyles('number', HOSTED_FIELD_STYLES);
+  sdkInstance.setStyles('cvv', HOSTED_FIELD_STYLES);
   // Respect the card-type-icon checkbox even if toggled before the form was opened.
   const cardTypeIcon = document.getElementById('hf-demo-card-type-icon');
   sdkInstance.setShowCardTypeIcon(cardTypeIcon ? cardTypeIcon.checked : true);
+  // Re-apply CVV-optional after (re)mount.
+  const cvvOptional = document.getElementById('hf-demo-cvv-optional');
+  if (cvvOptional?.checked && typeof sdkInstance.setCVVOptional === 'function') {
+    applyHostedFieldsCvvOptional(sdkInstance, true);
+  }
 }
 
 /** Wires SDK Configuration panel controls to hosted fields SDK methods. */
@@ -448,6 +523,28 @@ function setupHostedFieldsConfigPanel(sdkInstance) {
     };
   }
 
+  const cvvOptionalCheckbox = document.getElementById('hf-demo-cvv-optional');
+  if (cvvOptionalCheckbox) {
+    cvvOptionalCheckbox.onchange = function handleHostedFieldsCvvOptionalChange() {
+      if (!sdk || sdk !== sdkInstance || !isReady) return;
+      applyHostedFieldsCvvOptional(sdkInstance, this.checked);
+      // A hidden CVV must stay optional; making it required again shows the field.
+      const cvvHiddenCheckbox = document.getElementById('hf-demo-cvv-hidden');
+      if (!this.checked && cvvHiddenCheckbox?.checked) {
+        cvvHiddenCheckbox.checked = false;
+        applyHostedFieldsCvvHidden(sdkInstance, false);
+      }
+    };
+  }
+
+  const cvvHiddenCheckbox = document.getElementById('hf-demo-cvv-hidden');
+  if (cvvHiddenCheckbox) {
+    cvvHiddenCheckbox.onchange = function handleHostedFieldsCvvHiddenChange() {
+      if (!sdk || sdk !== sdkInstance || !isReady) return;
+      applyHostedFieldsCvvHidden(sdkInstance, this.checked);
+    };
+  }
+
   const cardTypeIconCheckbox = document.getElementById('hf-demo-card-type-icon');
   if (cardTypeIconCheckbox) {
     cardTypeIconCheckbox.onchange = function handleHostedFieldsCardTypeIconChange() {
@@ -510,7 +607,7 @@ function registerHostedFieldsSdkHandlers(sdkInstance) {
     isReady = true;
 
     sdkInstance.setLabel('number', 'Card Number');
-    sdkInstance.setLabel('cvv', 'CVV');
+    sdkInstance.setLabel('cvv', 'Security code');
     configureHostedFieldsOnReady(sdkInstance);
 
     const numberFormatSelect = document.getElementById('hf-demo-number-format');
@@ -618,8 +715,8 @@ window.openHostedFieldsForm = function () {
   SpreedlyUtils.setButtonLoading('open-hosted-fields-btn', true, 'Loading...');
 
   sdk.inAppElements({
-    cvv: { containerId: 'cvv-field' },
-    number: { containerId: 'card-number-field' },
+    cvv: { containerId: 'cvv-field', styles: HOSTED_FIELD_STYLES },
+    number: { containerId: 'card-number-field', styles: HOSTED_FIELD_STYLES },
   });
 }
 
@@ -701,8 +798,15 @@ window.openExpressCheckoutForm = function () {
           },
         },
       },
-      ...(config.ecExtraFields.length > 0
-        ? { cardPaymentFormFields: buildEcExtraFieldsConfig(config.ecExtraFields) }
+      ...(config.ecExtraFields.length > 0 || config.ecCvvMode
+        ? {
+            cardPaymentFormFields: {
+              ...buildEcExtraFieldsConfig(config.ecExtraFields),
+              ...(config.ecCvvMode
+                ? { verification_value: buildEcCvvFieldOverride(config.ecCvvMode) }
+                : {}),
+            },
+          }
         : {}),
     },
     submitParams: {
@@ -731,7 +835,7 @@ function setupHostedFieldsEventListeners() {
     form.addEventListener('submit', handleFormSubmit);
   }
 
-  const fieldIds = ['first_name', 'last_name', 'expiry_month', 'expiry_year', 'expiry_date'];
+  const fieldIds = ['first_name', 'last_name', 'expiry_date'];
   fieldIds.forEach(id => {
     const el = document.getElementById(id);
     if (el) {
@@ -780,7 +884,6 @@ function setupHostedFieldsEventListeners() {
   // Apply initial config state to UI
   updateNameFieldsRequired();
   updateDateFieldsRequired();
-  updateExpiryFieldDisplay();
 }
 
 // Update required attribute on name fields based on allowBlankName config
@@ -805,25 +908,15 @@ function updateNameFieldsRequired() {
 
 // Update required attribute on date fields based on allowBlankDate config
 function updateDateFieldsRequired() {
-  const monthInput = document.getElementById('expiry_month');
-  const yearInput = document.getElementById('expiry_year');
   const expiryDateInput = document.getElementById('expiry_date');
-  const monthLabel = document.querySelector('label[for="expiry_month"]');
-  const yearLabel = document.querySelector('label[for="expiry_year"]');
   const expiryDateLabel = document.querySelector('label[for="expiry_date"]');
 
   if (config.allowBlankDate) {
-    monthInput?.removeAttribute('required');
-    yearInput?.removeAttribute('required');
     expiryDateInput?.removeAttribute('required');
-    if (monthLabel) monthLabel.textContent = 'Expiry Month (optional)';
-    if (yearLabel) yearLabel.textContent = 'Expiry Year (optional)';
-    if (expiryDateLabel) expiryDateLabel.textContent = 'Expiry Date (optional)';
+    if (expiryDateLabel) expiryDateLabel.textContent = 'Expiration date (optional)';
   } else {
-    // Don't set required on these - the JS validation handles it
-    if (monthLabel) monthLabel.textContent = 'Expiry Month';
-    if (yearLabel) yearLabel.textContent = 'Expiry Year';
-    if (expiryDateLabel) expiryDateLabel.textContent = 'Expiry Date';
+    // Don't set required here - the JS validation handles it
+    if (expiryDateLabel) expiryDateLabel.textContent = 'Expiration date';
   }
 }
 
@@ -895,13 +988,9 @@ function updateFormState() {
 
   if (config.allowBlankDate) {
     expiryValid = true;
-  } else if (config.twoDigitExpiryYear) {
+  } else {
     const expiryDate = document.getElementById('expiry_date')?.value.trim() || '';
     expiryValid = /^\d{2}\/\d{2}$/.test(expiryDate);
-  } else {
-    const month = document.getElementById('expiry_month')?.value.trim() || '';
-    const year = document.getElementById('expiry_year')?.value.trim() || '';
-    expiryValid = month.length >= 1 && year.length >= 2;
   }
 
   const nameValid = config.allowBlankName || (firstName && lastName);
@@ -911,17 +1000,11 @@ function updateFormState() {
 }
 
 function getExpiryData() {
-  if (config.twoDigitExpiryYear) {
-    const expiryDate = document.getElementById('expiry_date')?.value.trim() || '';
-    const parts = expiryDate.split('/');
-    return {
-      month: parts[0] || '',
-      year: parts[1] ? '20' + parts[1] : ''
-    };
-  }
+  const expiryDate = document.getElementById('expiry_date')?.value.trim() || '';
+  const parts = expiryDate.split('/');
   return {
-    month: document.getElementById('expiry_month')?.value.trim() || '',
-    year: document.getElementById('expiry_year')?.value.trim() || ''
+    month: parts[0] || '',
+    year: parts[1] ? '20' + parts[1] : ''
   };
 }
 
@@ -931,19 +1014,6 @@ function formatExpiryDate(input) {
     value = value.substring(0, 2) + '/' + value.substring(2, 4);
   }
   input.value = value;
-}
-
-function updateExpiryFieldDisplay() {
-  const separateFields = document.getElementById('expiry-separate-fields');
-  const combinedField = document.getElementById('expiry-combined-field');
-
-  if (config.twoDigitExpiryYear) {
-    separateFields?.classList.add('hidden');
-    combinedField?.classList.remove('hidden');
-  } else {
-    separateFields?.classList.remove('hidden');
-    combinedField?.classList.add('hidden');
-  }
 }
 
 // Response Handlers

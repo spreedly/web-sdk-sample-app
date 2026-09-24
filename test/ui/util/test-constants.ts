@@ -11,7 +11,7 @@ export const SELECTORS = {
   //ALLOW_BLANK_NAME: "#allow_blank_name",
   ALLOW_BLANK_NAME: "allow-blank-name",
   //TWO_DIGIT_EXPIRY: "#two_digit_expiry",
-  TWO_DIGIT_EXPIRY: "two-digit-expiry",
+  TWO_DIGIT_EXPIRY: "#expiry_date",
   //ALLOW_EXPIRED_DATE: "#allow_expired_date",
   ALLOW_EXPIRED_DATE: "allow-expired-date",
   //OPEN_IN_EMBEDDED_MODE: "#open_in_embedded_mode",
@@ -422,6 +422,12 @@ export const getValidTwoDigitExpiryString = (): string => {
   const year = getValidYear().toString().slice(-2);
   return `12/${year}`;
 };
+
+export const getExpiredTwoDigitExpiryString = (): string => {
+  const year = getExpiredYear().toString().slice(-2);
+  return `12/${year}`;
+};
+
 /**
  * Returns a valid two-digit year for testing (current year + 1)
  * Example usage: await mmyyField.fill(`12/${getValidTwoDigitYear()}`);

@@ -146,7 +146,7 @@
       width: 100%;
     }
 
-    .paze-button-wrap.disabled {
+    .paze-button-wrap.busy {
       opacity: 0.5;
       pointer-events: none;
     }
@@ -269,9 +269,8 @@
 
                 <div id="review-panel" class="review-panel hidden"></div>
 
-                <div id="paze-pay-btn" class="paze-button-wrap hidden">
-                  <paze-button></paze-button>
-                </div>
+                <!-- Empty by design: SpreedlyPaze.mount() creates the <paze-button> in here -->
+                <div id="paze-button-container" class="paze-button-wrap"></div>
                 <button type="button" id="paze-complete-btn" class="submit-btn secondary hidden">Complete
                   Payment</button>
                 <button type="button" id="paze-reset-btn" class="submit-btn secondary hidden">Reset</button>
