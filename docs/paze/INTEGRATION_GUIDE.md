@@ -321,5 +321,3 @@ Also keep your existing Spreedly CSP (`https://*.spreedly.com` / `https://core.s
 ## Guide contents
 
 - **[API_REFERENCE.md](./API_REFERENCE.md)** — constructor, methods, events, options, and error codes.
-- **[ARCHITECTURE.md](./ARCHITECTURE.md)** — how `SpreedlyPaze` is implemented in the SDK (internal).
-- Sample app: `web-sdk-sample-app/src/static/paze/` and that repo's `docs/paze/`.
