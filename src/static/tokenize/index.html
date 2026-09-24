@@ -115,7 +115,6 @@
                     <div id="card-number-error" class="hf-field-error" role="alert" aria-live="polite"></div>
                   </div>
 
-<<<<<<< HEAD
                   <!-- CVV - Hosted Field. The iframe must stay mounted (`ready` never fires without it);
                        to hide the field a merchant hides this container with their own CSS. -->
                   <div class="form-group" id="cvv-form-group">
@@ -124,20 +123,12 @@
                     <div id="cvv-error" class="hf-field-error" role="alert" aria-live="polite"></div>
                   </div>
 
-                  <!-- Expiry Fields -->
-                  <div id="expiry-separate-fields" class="form-row">
-                    <div class="form-group">
-                      <label class="form-label" for="expiry_month">Expiry Month</label>
-                      <input type="text" id="expiry_month" name="month" class="form-input" placeholder="MM"
-                        maxlength="2" inputmode="numeric" pattern="[0-9]*">
-=======
                   <!-- Expiration date (MM/YY) and Security code, side by side -->
                   <div class="form-row">
                     <div id="expiry-combined-field" class="form-group">
                       <label class="form-label" for="expiry_date">Expiration date</label>
                       <input type="text" id="expiry_date" name="expiry_date" class="form-input sdk-styled-input"
                         placeholder="MM / YY" maxlength="5" inputmode="numeric">
->>>>>>> release/1.8.0
                     </div>
                     <div class="form-group">
                       <label class="form-label" id="hosted-field-label-cvv" role="button" tabindex="0">Security code</label>
@@ -808,7 +799,6 @@
                           that don't require a CVV. A typed CVV is still validated.</span>
                       </div>
                     </div>
-<<<<<<< HEAD
 
                     <div class="config-option">
                       <input type="checkbox" id="hf-demo-cvv-hidden" class="config-checkbox">
@@ -818,8 +808,6 @@
                           Turn CVV optional on, and then hide the CVV field. Ex: <code>#cvv-form-group { display: none; }</code>.
                       </div>
                     </div>
-=======
->>>>>>> release/1.8.0
                   </div>
 
                   <div class="config-option-row">
