@@ -115,8 +115,9 @@
                     <div id="card-number-error" class="hf-field-error" role="alert" aria-live="polite"></div>
                   </div>
 
-                  <!-- CVV - Hosted Field -->
-                  <div class="form-group">
+                  <!-- CVV - Hosted Field. The iframe must stay mounted (`ready` never fires without it);
+                       to hide the field a merchant hides this container with their own CSS. -->
+                  <div class="form-group" id="cvv-form-group">
                     <label class="form-label" id="hosted-field-label-cvv" role="button" tabindex="0">CVV</label>
                     <div id="cvv-field" class="hosted-field-container" style="max-width: 120px;"></div>
                     <div id="cvv-error" class="hf-field-error" role="alert" aria-live="polite"></div>
@@ -767,6 +768,15 @@
                         <span class="config-option-desc"><code>setCVVOptional(true/false)</code> — an empty CVV
                           passes validation and tokenizes with <code>verification_value: ""</code>, for processors
                           that don't require a CVV. A typed CVV is still validated.</span>
+                      </div>
+                    </div>
+
+                    <div class="config-option">
+                      <input type="checkbox" id="hf-demo-cvv-hidden" class="config-checkbox">
+                      <div class="config-option-content">
+                        <label for="hf-demo-cvv-hidden" class="config-option-label">CVV hidden (your CSS)</label>
+                        <span class="config-option-desc">No SDK call. You can hide the CVV field by using your own CSS.
+                          Turn CVV optional on, and then hide the CVV field. Ex: <code>#cvv-form-group { display: none; }</code>.
                       </div>
                     </div>
                   </div>
