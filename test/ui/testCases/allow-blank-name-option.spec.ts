@@ -16,6 +16,7 @@ import {
   getMaskedCardNumber,
   SELECTORS,
   ERROR_MESSAGES,
+  getValidTwoDigitExpiryString,
 } from "../util/test-constants";
 
 
@@ -92,16 +93,14 @@ test.describe("Allow Blank Name Option - Monorepo", () => {
     await tokenizePage.clickOnOpenPaymentFormButtonHostedFields(page);
     await helperFunctions.fillHostedFieldsForm(page, TEST_DATA.CARD_NUMBER, {
       cvv: TEST_DATA.CVV,
-      expiryMonth: TEST_DATA.EXPIRY_MONTH,
-      expiryYear: getValidYearString(),
+      twoDigitExpiry: getValidTwoDigitExpiryString(),
     }
   );
    await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.CARD_NUMBER_FORMATTED, {
     firstName: "",
     lastName: "",
     cvv: TEST_DATA.CVV,
-    expiryMonth: TEST_DATA.EXPIRY_MONTH,
-    expiryYear: getValidYearString(),
+    twoDigitExpiry: getValidTwoDigitExpiryString(),
    });
    await helperFunctions.clickOnHostedFieldsSubmitButton(page);
    const resultTitle = await tokenizePage.getResultCardTitle(page);
@@ -123,16 +122,14 @@ test.describe("Allow Blank Name Option - Monorepo", () => {
     await tokenizePage.clickOnOpenPaymentFormButtonHostedFields(page);
     await helperFunctions.fillHostedFieldsForm(page, TEST_DATA.CARD_NUMBER, {
       cvv: TEST_DATA.CVV,
-      expiryMonth: TEST_DATA.EXPIRY_MONTH,
-      expiryYear: getValidYearString(),
+      twoDigitExpiry: getValidTwoDigitExpiryString(),
     }
   );
    await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.CARD_NUMBER_FORMATTED, {
     firstName: "",
     lastName: "",
     cvv: TEST_DATA.CVV,
-    expiryMonth: TEST_DATA.EXPIRY_MONTH,
-    expiryYear: getValidYearString(),
+    twoDigitExpiry: getValidTwoDigitExpiryString(),
    });
    await expect(await helperFunctions.getHostedFieldsSubmitButton(page)).toBeDisabled();
   });
