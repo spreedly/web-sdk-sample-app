@@ -9,6 +9,8 @@ import {
   getValidYearString,
   getExpiredYearString,
   waitForAuthParams,
+  getExpiredTwoDigitExpiryString,
+  getValidTwoDigitExpiryString,
 } from '../util/test-constants';
 
 test.describe('Token Generation', () => {
@@ -91,16 +93,14 @@ test.describe('Token Generation', () => {
     
     await helperFunctions.fillHostedFieldsForm(page, TEST_DATA.CARD_NUMBER, {
       cvv: TEST_DATA.CVV,
-      expiryMonth: TEST_DATA.EXPIRY_MONTH,
-      expiryYear: getExpiredYearString(),
+      twoDigitExpiry: getExpiredTwoDigitExpiryString(),
     });
     
     await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.CARD_NUMBER_FORMATTED, {
       cvv: TEST_DATA.CVV,
       firstName: "",
       lastName: "",
-      expiryMonth: TEST_DATA.EXPIRY_MONTH,
-      expiryYear: getExpiredYearString(),
+      twoDigitExpiry: getExpiredTwoDigitExpiryString(),
     });
     
     let apiResponse: any = null;
@@ -224,16 +224,14 @@ test.describe('Token Generation', () => {
       firstName: TEST_DATA.FIRST_NAME,
       lastName: TEST_DATA.LAST_NAME,
       cvv: TEST_DATA.CVV,
-      expiryMonth: TEST_DATA.EXPIRY_MONTH,
-      expiryYear: getValidYearString(),
+      twoDigitExpiry: getValidTwoDigitExpiryString(),
     });
     
     await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.CARD_NUMBER_FORMATTED, {
       cvv: TEST_DATA.CVV,
       firstName: TEST_DATA.FIRST_NAME,
       lastName: TEST_DATA.LAST_NAME,
-      expiryMonth: TEST_DATA.EXPIRY_MONTH,
-      expiryYear: getValidYearString(),
+      twoDigitExpiry: getValidTwoDigitExpiryString(),
     });
     
     let apiResponse: any = null;

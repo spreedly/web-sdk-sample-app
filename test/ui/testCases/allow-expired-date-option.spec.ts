@@ -16,7 +16,9 @@ import {
   getExpiredYearString,
   waitForAuthParams,
   getMaskedCardNumber,
-  getValidYearString
+  getValidYearString,
+  getValidTwoDigitExpiryString,
+  getExpiredTwoDigitExpiryString
 } from '../util/test-constants';
 
 test.describe("Allow Expired Date Option", () => {
@@ -97,15 +99,13 @@ test.describe("Allow Expired Date Option", () => {
           firstName: TEST_DATA.FIRST_NAME,
           lastName: TEST_DATA.LAST_NAME,
           cvv: TEST_DATA.CVV,
-          expiryMonth: TEST_DATA.EXPIRY_MONTH,
-          expiryYear: getExpiredYearString(),
+          twoDigitExpiry: getExpiredTwoDigitExpiryString(),
         });
         await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.CARD_NUMBER_FORMATTED, {
             cvv: TEST_DATA.CVV,
             firstName: TEST_DATA.FIRST_NAME,
             lastName: TEST_DATA.LAST_NAME,
-            expiryMonth: TEST_DATA.EXPIRY_MONTH,
-            expiryYear: getExpiredYearString(),
+            twoDigitExpiry: getExpiredTwoDigitExpiryString(),
           });
         await helperFunctions.clickOnHostedFieldsSubmitButton(page);
         const resultTitle = await tokenizePage.getResultCardTitle(page);
@@ -129,15 +129,13 @@ test.describe("Allow Expired Date Option", () => {
           firstName: TEST_DATA.FIRST_NAME,
           lastName: TEST_DATA.LAST_NAME,
           cvv: TEST_DATA.CVV,
-          expiryMonth: TEST_DATA.EXPIRY_MONTH,
-          expiryYear: getExpiredYearString(),
+          twoDigitExpiry: getExpiredTwoDigitExpiryString(),
         });
         await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.CARD_NUMBER_FORMATTED, {
             cvv: TEST_DATA.CVV,
             firstName: TEST_DATA.FIRST_NAME,
             lastName: TEST_DATA.LAST_NAME,
-            expiryMonth: TEST_DATA.EXPIRY_MONTH,
-            expiryYear: getExpiredYearString(),
+            twoDigitExpiry: getExpiredTwoDigitExpiryString(),
           });
         await helperFunctions.clickOnHostedFieldsSubmitButton(page);
         await expect(await helperFunctions.getTokenizationFailedMessage(page)).toBeVisible();

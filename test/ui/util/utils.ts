@@ -276,6 +276,9 @@ export const PLACEHOLDERS = {
     getACHBankNameField: async (page: Page) => {
         return page.getByPlaceholder(PLACEHOLDERS.ACH_BANK_NAME);
     },
+    getHostedFieldsTwoDigitExpiryField: async (page: Page) => {
+        return page.locator(SELECTORS.TWO_DIGIT_EXPIRY);
+    },
 
     verifyFormFieldsHostedFields: async (page: Page, cardNumber: string, options?: {
         firstName?: string;
@@ -283,6 +286,7 @@ export const PLACEHOLDERS = {
         cvv?: string;
         expiryMonth?: string;
         expiryYear?: string;
+        twoDigitExpiry?: string;
     }) => {
         // TODO: Change to masked once implemented
         await expect(await helperFunctions.getHostedFieldsCardNumberField(page)).toHaveValue(cardNumber);
@@ -300,6 +304,9 @@ export const PLACEHOLDERS = {
         }
         if (options?.cvv) {
             await expect(await helperFunctions.getHostedFieldsCvvField(page)).toHaveValue(options?.cvv);
+        }
+        if (options?.twoDigitExpiry) {
+            await expect(await helperFunctions.getHostedFieldsTwoDigitExpiryField(page)).toHaveValue(options.twoDigitExpiry);
         }
     },
 
@@ -365,6 +372,7 @@ export const PLACEHOLDERS = {
         cvv?: string;
         expiryMonth?: string;
         expiryYear?: string;
+        twoDigitExpiry?: string;
     }) => {
     const firstNameField = await helperFunctions.getHostedFieldsFirstNameField(page);
     const lastNameField = await helperFunctions.getHostedFieldsLastNameField(page);
@@ -372,6 +380,7 @@ export const PLACEHOLDERS = {
     const expiryYearField = await helperFunctions.getHostedFieldsExpiryYearField(page);
     const cardNumberField = await helperFunctions.getHostedFieldsCardNumberField(page);
     const cvvField = await helperFunctions.getHostedFieldsCvvField(page);
+    const twoDigitExpiryField = await helperFunctions.getHostedFieldsTwoDigitExpiryField(page);
     await cardNumberField.type(cardNumber, { delay: 50 });
     if (options?.firstName) {
         await firstNameField.fill(options.firstName);
@@ -387,6 +396,9 @@ export const PLACEHOLDERS = {
     }
     if (options?.cvv) {
         await cvvField.fill(options.cvv);
+    }
+    if (options?.twoDigitExpiry) {
+        await twoDigitExpiryField.fill(options.twoDigitExpiry);
     }
     },
 

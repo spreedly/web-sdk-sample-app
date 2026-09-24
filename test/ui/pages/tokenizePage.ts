@@ -11,6 +11,7 @@ export const SELECTORS = {
     allowExpiredDateCheckbox: '#config-allow-expired-date',
     allowBlankDateCheckbox: '#config-allow-blank-date',
     twoDigitExpiryCheckbox: '#config-two-digit-expiry',
+    cvvOptionalCheckbox: '#hf-demo-cvv-optional',
     hostedFieldsForm: '#hosted-fields-form',
     expressCheckoutForm: '#express-checkout-form, #express-checkout-dialog',
     resultCard: '#result-card',
@@ -24,6 +25,7 @@ export const SELECTORS = {
     dialogMode: 'label.display-mode-option:has(input[value="dialog"])',
     NUMBER_FORMAT_SELECT: '#hf-demo-number-format',
     INPUT_MODE_SELECT: '#hf-demo-input-mode',
+    CVV_AT_LAUNCH_SELECT: '#ec-demo-cvv-mode',
 }
 
 export const tokenizePage={
@@ -63,6 +65,12 @@ export const tokenizePage={
     await twoDigitExpiryCheckbox.check();
     await expect(twoDigitExpiryCheckbox).toBeChecked();
 },
+    checkCvvOptionalCheckbox: async (page: Page) => {
+    const cvvOptionalCheckbox = page.locator(SELECTORS.cvvOptionalCheckbox);
+    await expect(cvvOptionalCheckbox).toBeVisible();
+    await cvvOptionalCheckbox.check();
+    await expect(cvvOptionalCheckbox).toBeChecked();
+},
     getResultCardTitle: async (page: Page) => {
     await expect(page.locator(SELECTORS.resultCard)).toBeVisible({ timeout: 10000 });
     await expect(page.locator(SELECTORS.resultTitle)).toBeVisible();
@@ -84,6 +92,13 @@ export const tokenizePage={
         await parityOptionElement.check();
         await expect(parityOptionElement).toBeChecked();
     }
+},
+
+    checkExpressCheckoutCvvRuntimeOption: async (page: Page, cvvRuntimeOption: string) => {
+    const cvvRuntimeCheckbox = page.locator(`#ec-demo-cvv-${cvvRuntimeOption}`);
+    await expect(cvvRuntimeCheckbox).toBeVisible();
+    await cvvRuntimeCheckbox.check();
+    await expect(cvvRuntimeCheckbox).toBeChecked();
 },
     
  
@@ -111,6 +126,17 @@ export const tokenizePage={
         await expect(inputModeSelect).toHaveValue(inputModeOption);
         await page.waitForTimeout(2000);
   },
+
+    selectDropdownOption: async (page: Page, dropdownSelector: string, optionValue: string) => {
+        const dropdown = page.locator(dropdownSelector);
+        await expect(dropdown).toBeVisible();
+        await dropdown.selectOption(optionValue);
+        await expect(dropdown).toHaveValue(optionValue);
+    },
+
+    selectCvvAtLaunchOption: async (page: Page, cvvMode: string) => {
+        await tokenizePage.selectDropdownOption(page, SELECTORS.CVV_AT_LAUNCH_SELECT, cvvMode);
+    },
 
     getCardNumberFieldInputMode: async (page: Page) => {
         const cardNumberField = await helperFunctions.getHostedFieldsCardNumberField(page);
