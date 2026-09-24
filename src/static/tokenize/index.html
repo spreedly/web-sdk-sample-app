@@ -122,7 +122,9 @@
                       <input type="text" id="expiry_date" name="expiry_date" class="form-input sdk-styled-input"
                         placeholder="MM / YY" maxlength="5" inputmode="numeric">
                     </div>
-                    <div class="form-group">
+                    <!-- The CVV iframe must stay mounted (`ready` never fires without it); to hide the
+                         field, hide this container with your own CSS. -->
+                    <div class="form-group" id="cvv-form-group">
                       <label class="form-label" id="hosted-field-label-cvv" role="button" tabindex="0">Security code</label>
                       <div id="cvv-field" class="sdk-styled-field"></div>
                       <div id="cvv-error" class="hf-field-error" role="alert" aria-live="polite"></div>
@@ -753,6 +755,15 @@
                         <span class="config-option-desc"><code>setCVVOptional(true/false)</code> — an empty CVV
                           passes validation and tokenizes with <code>verification_value: ""</code>, for processors
                           that don't require a CVV. A typed CVV is still validated.</span>
+                      </div>
+                    </div>
+
+                    <div class="config-option">
+                      <input type="checkbox" id="hf-demo-cvv-hidden" class="config-checkbox">
+                      <div class="config-option-content">
+                        <label for="hf-demo-cvv-hidden" class="config-option-label">CVV hidden (your CSS)</label>
+                        <span class="config-option-desc">No SDK call. You can hide the CVV field by using your own CSS.
+                          Turn CVV optional on, and then hide the CVV field. Ex: <code>#cvv-form-group { display: none; }</code>.</span>
                       </div>
                     </div>
                   </div>

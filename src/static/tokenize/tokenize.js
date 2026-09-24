@@ -394,6 +394,24 @@ function applyHostedFieldsCvvOptional(sdkInstance, optional) {
   if (cvvLabel) cvvLabel.textContent = optional ? 'CVV (optional)' : 'CVV';
 }
 
+/**
+ * Applies the CVV-hidden demo setting. This is merchant-side only: the SDK has no API to hide the
+ * CVV field, and the CVV iframe must stay mounted or `ready` never fires. The page hides its own
+ * container with `display: none`. Before hiding, use sdkInstance.setCVVOptional(true) to make CVV optional.
+ * Recache and Click to Pay always require a CVV.
+ */
+function applyHostedFieldsCvvHidden(sdkInstance, hidden) {
+  const group = document.getElementById('cvv-form-group');
+  if (group) group.style.display = hidden ? 'none' : '';
+  const cvvOptionalCheckbox = document.getElementById('hf-demo-cvv-optional');
+  if (hidden && cvvOptionalCheckbox && !cvvOptionalCheckbox.checked) {
+    cvvOptionalCheckbox.checked = true;
+    if (typeof sdkInstance.setCVVOptional === 'function') {
+      applyHostedFieldsCvvOptional(sdkInstance, true);
+    }
+  }
+}
+
 /** Configures hosted field display defaults when fields are ready. */
 function configureHostedFieldsOnReady(sdkInstance) {
   sdkInstance.setTitle('number', 'Credit card number');
@@ -510,6 +528,20 @@ function setupHostedFieldsConfigPanel(sdkInstance) {
     cvvOptionalCheckbox.onchange = function handleHostedFieldsCvvOptionalChange() {
       if (!sdk || sdk !== sdkInstance || !isReady) return;
       applyHostedFieldsCvvOptional(sdkInstance, this.checked);
+      // A hidden CVV must stay optional; making it required again shows the field.
+      const cvvHiddenCheckbox = document.getElementById('hf-demo-cvv-hidden');
+      if (!this.checked && cvvHiddenCheckbox?.checked) {
+        cvvHiddenCheckbox.checked = false;
+        applyHostedFieldsCvvHidden(sdkInstance, false);
+      }
+    };
+  }
+
+  const cvvHiddenCheckbox = document.getElementById('hf-demo-cvv-hidden');
+  if (cvvHiddenCheckbox) {
+    cvvHiddenCheckbox.onchange = function handleHostedFieldsCvvHiddenChange() {
+      if (!sdk || sdk !== sdkInstance || !isReady) return;
+      applyHostedFieldsCvvHidden(sdkInstance, this.checked);
     };
   }
 
