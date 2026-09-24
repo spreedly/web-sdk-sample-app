@@ -1,203 +1,325 @@
 # Paze — Integration Guide
 
-This sample app shows how to add **Paze** (Early Warning digital wallet) using `SpreedlyPaze` from
-the Spreedly checkout SDK. A shopper can be recognized by email, pick a card in Paze's popup, and
-the demo creates a Spreedly `third_party_network_token` payment method from the `securedPayload`.
+Add **Paze** (Early Warning digital wallet) to your checkout using the Spreedly checkout SDK. A
+shopper can be recognized by email, pick a card in Paze's popup, and you get back a
+**`securedPayload`**. Your server turns that into a Spreedly `third_party_network_token` payment
+method you charge like any other Spreedly token.
 
-Card data never touch the page — they stay inside Paze's hosted UI. Spreedly only orchestrates
-`window.DIGITAL_WALLET_SDK`.
-
-The SDK API (methods, events, error codes) is documented in [API_REFERENCE.md](./API_REFERENCE.md).
-The checkout-web-sdk copies of these docs live at `checkout-web-sdk/docs/paze/`.
+Card data never touch your page — they stay inside Paze's hosted UI. Spreedly only orchestrates
+the Paze SDK (`window.DIGITAL_WALLET_SDK`) and returns the encrypted payload.
 
 ## Who this guide is for
 
-Merchants/integrators wiring Paze into a web checkout, using this repo as the reference
-implementation. It assumes you can use Spreedly for payment methods and have a gateway that
-supports `third_party_network_token` transactions.
+Merchants/integrators wiring Paze into a web checkout. It assumes you already use (or can use)
+Spreedly for payment methods and have a gateway that supports `third_party_network_token`
+transactions.
 
 ## What you'll need
 
-- **Paze merchant onboarding** — Client ID, Client Name, and Profile ID (the demo ships sandbox
-  values in `src/static/paze/paze.js` and `.env`).
-- **`PAZE_CERTIFICATE_TOKEN`** in the sample app environment — Spreedly certificate used when
-  creating the payment method on the server.
-- A **gateway with network tokenization** if you charge the token outside this demo (the demo UI
-  stops at payment method creation).
+- **Paze merchant onboarding** — Client ID, Client Name, and Profile ID from Paze.
+- A **Spreedly certificate** (`certificate_token`) for Paze / third-party network tokens — used on
+  your server when creating the payment method, not by `SpreedlyPaze` in the browser.
+- A **gateway with network tokenization** enabled.
+- A **server endpoint** that creates the Spreedly payment method from `securedPayload` (see
+  [Process payment from your backend](#process-payment-from-your-backend)).
 
 ## How the pieces fit
 
 | Piece | Role |
 |-------|------|
-| **Paze `digitalwallet-sdk.js`** | Loaded at the end of `src/static/paze/index.html` |
-| **`<paze-button>`** | Paze branded button, **created by the SDK** in `mount()`. The page only supplies an empty `#paze-button-container` |
-| **`SpreedlyPaze`** | Orchestrator in `src/static/paze/paze.js` |
-| **Sample app server** | `POST /api/v1/paze-payment-method`, and `GET /api/v1/auth/params` for the environment key |
+| **Paze `digitalwallet-sdk.js`** | Paze's client — you load it; the SDK drives `initialize` / `canCheckout` / `checkout` / `complete` |
+| **`<paze-button>`** | Paze's branded button. **Spreedly creates and owns it** — you provide an empty container and call `mount()` |
+| **`SpreedlyPaze`** | The orchestrator you call: `setup`, `mount`, `complete`, events |
+| **Your server** | Creates the payment method and later runs the purchase |
 
-The demo does not build a `<paze-button>` or call `checkout()` to start a flow — the SDK owns
-both so it can count how often the Paze option was presented (`paze.button_rendered`).
+You interact almost entirely with `SpreedlyPaze`; the SDK handles Paze. Payment method creation
+is **your backend**, not a browser tokenization call.
+
+> **Custom CTAs are not supported.** The Paze flow must start from the button `mount()` creates,
+> so Spreedly can report how often the Paze option was presented to shoppers (Paze TPV Exposure).
+> Creating your own `<paze-button>` and calling `checkout()` to start a flow is rejected with
+> `pazeError` / `UNSUPPORTED_ACTION`.
 
 ---
 
-## Quick start (run the demo)
+## Quick start
 
-1. Configure `.env` with Spreedly credentials and `PAZE_CERTIFICATE_TOKEN` (optional:
-   `PAZE_CLIENT_ID`, `PAZE_CLIENT_NAME`, `PAZE_PROFILE_ID` — the page currently uses the client
-   config hardcoded in `paze.js` for the Paze `initialize` call).
-2. `npm run build && npm run start`, open the app, choose **Paze Digital Wallet**.
-3. Confirm the Paze sandbox script is in the page (end of `index.html`).
-4. Use a Paze-enrolled sandbox email (the demo prefills `integrations@spreedly.com`).
+### 1. Load the scripts
 
-### Scripts on the demo page
+Put the **Paze** script at the **end of `<body>`** (with `defer` recommended) **before** calling
+`SpreedlyPaze.setup()`. The Paze SDK appends UI elements to `document.body` on load — do not place
+it in `<head>` before the body exists. Then load a Spreedly bundle that exposes `SpreedlyPaze`
+(Hosted Fields or Express Checkout — both export the same global):
 
 ```html
-<script src="https://checkout.wallet.cat.earlywarning.io/web/resources/js/digitalwallet-sdk.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-<script src="../shared/utils.js"></script>
-<script src="./paze.js"></script>
+<!-- Sandbox — place before closing </body> -->
+<script defer src="https://checkout.wallet.cat.earlywarning.io/web/resources/js/digitalwallet-sdk.js"></script>
+
+<!-- Production -->
+<!-- <script defer src="https://checkout.paze.com/web/resources/js/digitalwallet-sdk.js"></script> -->
+
+<script src="https://core-test.spreedly.com/checkout/sdk/{version}/index.js"></script>
+<!-- or Express Checkout: /checkout/elements/{version}/express-checkout.js -->
+```
+Replace the version with your SDK version. Paze is available as an offering above versions 1.5.1.
+
+> Use the Early Warning sandbox host for testing and `checkout.paze.com` for live. Spreedly does
+> **not** inject the Paze script.
+
+### 2. Add a container for the button
+
+Give the SDK an empty element to mount into. Do **not** put a `<paze-button>` inside it — the SDK
+creates that element itself.
+
+```html
+<div id="paze-button-container"></div>
 ```
 
-`SpreedlyUtils.loadSDKScript()` then loads the Spreedly Hosted Fields / Express Checkout bundle
-from the sample app's configured CDN. `window.SpreedlyPaze` must exist after that load.
+### 3. Create the orchestrator and set up Paze
 
-### Demo flow in `paze.js`
+```js
+const paze = new window.SpreedlyPaze({
+  clientConfig: {
+    id: 'YOUR_PAZE_CLIENT_ID',
+    name: 'YOUR_MERCHANT_NAME',
+    profileId: 'YOUR_PAZE_PROFILE_ID',
+  },
+  environment: 'sandbox', // or 'production'
+  environmentKey: 'YOUR_SPREEDLY_ENVIRONMENT_KEY',
+  paymentElements: { paze: 'paze-button-container' },
+  displayMode: 'static', // or 'dynamic' — see step 5
+  buttonStyle: { color: 'pazeblue', shape: 'default' },
+  // Read on every click, so a changing cart total or email is always current.
+  // Must be synchronous — see below.
+  getCheckoutOptions: () => ({
+    emailAddress: emailInput.value.trim().toLowerCase(),
+    transactionValue: {
+      transactionAmount: '10.00',
+      transactionCurrencyCode: 'USD',
+    },
+  }),
+});
 
+paze.on('pazeReady', () => {
+  // Safe to call mount / canCheckout
+});
+paze.on('pazeButtonClicked', () => {
+  // Shopper pressed the SDK-owned button; checkout has started
+});
+paze.on('pazeCheckoutComplete', (data) => {
+  // data.maskedCard, data.consumer, data.shippingAddress — show a review step, or call complete()
+});
+paze.on('pazeTokenGenerated', (data) => {
+  // Send data.securedPayload, data.sessionId, data.payloadId to your backend
+});
+paze.on('pazeError', (error) => {
+  console.error(`[${error.code}] ${error.message}`);
+});
+
+const result = await paze.setup();
+if (result.error) {
+  console.error(result.error); // typically: Paze script not on the page
+}
 ```
-GET /api/v1/auth/params                      // environmentKey, for telemetry only
-new SpreedlyPaze({ clientConfig, paymentElements: { paze: 'paze-button-container' },
-                   displayMode, buttonStyle, environmentKey, getCheckoutOptions })
-  → on(pazeReady / pazeButtonClicked / pazeCheckoutComplete / pazeTokenGenerated / pazeError)
-  → setup()
-  → mount()              // SDK creates <paze-button> in the empty container
-  → canCheckout(email)   // on blur; in dynamic mode this is what reveals the button
-  → [shopper clicks the SDK's button] → pazeButtonClicked → SDK reads getCheckoutOptions() → Paze popup
-  → [Review & Pay] Complete button  or  [Express Pay] auto complete()
-  → POST /api/v1/paze-payment-method
+
+Register listeners **before** `setup()` so you do not miss `pazeReady`.
+
+> `getCheckoutOptions` must return synchronously. Awaiting inside a click handler spends the
+> browser's user-activation token and Paze's popup gets blocked — read values you already have
+> rather than fetching. `environmentKey` is only used to tag telemetry, and it is masked before
+> it is sent.
+
+### 4. Mount the button
+
+```js
+const { error } = await paze.mount();
+if (error) {
+  console.error(error); // container missing, or the Paze script never registered <paze-button>
+}
 ```
 
-`getCheckoutOptions()` returns the current email, the fixed `TRANSACTION_VALUE`, and the selected
-`intent`. It is synchronous by requirement — the SDK calls it inside the click handler, and an
-await there would cost the click's user activation and get Paze's popup blocked. The demo resets
-its review/result panels from `pazeButtonClicked`, not from a DOM click on `#paze-button-container`.
+`mount()` creates the branded `<paze-button>` in your container, applies `buttonStyle`, and wires
+the click to the Paze checkout. Shoppers start the flow by pressing it; you do not call
+`checkout()` yourself.
 
-Emails are trimmed and lowercased before `canCheckout` / checkout (Paze expects RFC 5322
-lowercase).
+### 5. Show the button only to enrolled shoppers (optional)
+
+With `displayMode: 'dynamic'`, `mount()` inserts the button hidden and `canCheckout()` reveals it.
+**Call `mount()` before `canCheckout()`** — the SDK does not cache eligibility results, so a
+`canCheckout()` that resolves before `mount()` has run has nothing to reveal, and the button stays
+hidden until you call `canCheckout()` again. Emails should be **lowercase** (RFC 5322).
+
+```js
+// displayMode: 'dynamic'
+await paze.canCheckout('customer@example.com'); // shows the button when a wallet is found
+```
+
+The returned `{ consumerPresent }` is still yours to use — with `displayMode: 'static'` the button
+stays visible either way and you can drive your own messaging from it.
+
+Every `canCheckout()` resolution also emits `pazeEligibilityChecked` with `{ eligible }`,
+regardless of display mode. In `dynamic` mode this is the SDK's own button visibility changing —
+the SDK only ever toggles `display` on the `<paze-button>` element it created, so if your page
+wraps that container in its own box (margin, border, a "pay with" heading), an ineligible
+shopper is left looking at an empty box. Listen for the event and collapse your own wrapper
+instead:
+
+```js
+paze.on('pazeEligibilityChecked', ({ eligible }) => {
+  document.getElementById('paze-button-container').classList.toggle('hidden', !eligible);
+});
+```
+
+### 6. Complete the flow
+
+The button click produces `pazeCheckoutComplete`. Then ask Paze for the credentials:
+
+**Review & Pay** (shopper confirms on your page after the popup):
+
+```js
+paze.on('pazeCheckoutComplete', async (data) => {
+  // show data.maskedCard / data.shippingAddress, then on confirm:
+  await paze.complete({
+    transactionType: 'PURCHASE',
+    transactionValue: {
+      transactionAmount: '10.00',
+      transactionCurrencyCode: 'USD',
+    },
+  });
+});
+```
+
+**Express Pay** — return `intent: 'EXPRESS_CHECKOUT'` from `getCheckoutOptions` and Paze skips
+extra review in the wallet; call `complete()` as soon as `pazeCheckoutComplete` arrives.
+
+To change card or shipping **mid-flow** (same session), call `checkout()` with
+`actionCode: 'CHANGE_CARD'` or `'CHANGE_SHIPPING_ADDRESS'` — omit `emailAddress`; the SDK reuses
+the session the button started.
+
+```js
+await paze.checkout({
+  actionCode: 'CHANGE_CARD',
+  transactionValue: { transactionAmount: '10.00', transactionCurrencyCode: 'USD' },
+});
+```
+
+Both checkout and complete resolve into events (`pazeCheckoutComplete` / `pazeTokenGenerated` or
+`pazeError`) — see [API_REFERENCE.md](./API_REFERENCE.md).
+
+### 7. Charge from your server
+
+The SDK stops at `securedPayload`. Your backend creates the payment method, then purchases.
 
 ---
 
-## Demo controls
+## Process payment from your backend
 
-| Control | Behavior |
-|---------|----------|
-| **Button Display — Static** | `displayMode: 'static'`; `mount()` shows the button straight away |
-| **Button Display — Dynamic** | `displayMode: 'dynamic'`; the button stays hidden until `canCheckout` returns `consumerPresent` |
-| **Checkout Intent — Review & Pay** | After the popup, show the review panel and **Complete Payment** |
-| **Checkout Intent — Express Pay** | `getCheckoutOptions` returns `intent: 'EXPRESS_CHECKOUT'`; on `pazeCheckoutComplete` auto-calls `complete()` |
-| **Retain payment method** | Sends `retained: true` and `provisionNetworkToken: true` on create |
-| **Color / Shape / Disable max height** | Feeds `buttonStyle`. Read once at `mount()`, so changing one destroys the instance and remounts (`rebuildPazeInstance()`) |
-| **Change Card** | `checkout({ actionCode: 'CHANGE_CARD', transactionValue })` |
-| **Change Shipping Address** | `checkout({ actionCode: 'CHANGE_SHIPPING_ADDRESS', transactionValue })` |
-| **Reset** | Reloads the page (`destroy()` also runs on `beforeunload`) |
+Spreedly recommends creating a payment method first, then purchasing with the returned token.
 
-Transaction amount in the demo is fixed at `10.00 USD`.
+### Primary flow: Create payment method, then purchase
 
----
+**Create payment method**
 
-## Process payment (sample app backend)
-
-The demo **creates a payment method only**. It does not call Spreedly purchase.
-
-### `POST /api/v1/paze-payment-method`
-
-Implemented in `src/controllers/payments.ts` (`createPazePaymentMethod`). Proxies to Spreedly
-`POST /v1/payment_methods.json` with Basic auth.
-
-Browser helper: `SpreedlyUtils.createPazePaymentMethod` in `src/static/shared/utils.js`.
-
-**Request body**
-
-| Field | Required | Description |
-|-------|----------|-------------|
-| `securedPayload` | Yes | From `pazeTokenGenerated` |
-| `sessionId` | No | From `pazeTokenGenerated` |
-| `payloadId` | No | From `pazeTokenGenerated` |
-| `shippingAddress` | No | Snake_case shipping fields mapped from `pazeCheckoutComplete.shippingAddress` |
-| `retained` | No | When true, sets `payment_method.retained` |
-| `provisionNetworkToken` | No | When true, sets `payment_method.provision_network_token` |
-
-Shipping is included only when checkout returned `shippingAddress.line1`. Mapping:
-
-| Paze field | Spreedly field |
-|------------|----------------|
-| `line1` | `shipping_address1` |
-| `city` | `shipping_city` |
-| `countryCode` | `shipping_country` |
-| `state` | `shipping_state` |
-| `zip` | `shipping_zip` |
-
-**Spreedly body the server sends**
+```
+POST https://core.spreedly.com/v1/payment_methods.json
+```
 
 ```json
 {
   "payment_method": {
     "third_party_network_token": {
-      "certificate_token": "<PAZE_CERTIFICATE_TOKEN>",
-      "secured_payload": "...",
-      "session_id": "...",
-      "payload_id": "...",
-      "source": "paze",
-      "shipping_address1": "..."
-    },
-    "retained": true,
-    "provision_network_token": true
+      "certificate_token": "YOUR_SPREEDLY_CERTIFICATE_TOKEN",
+      "session_id": "SESSION_ID_FROM_SDK",
+      "payload_id": "PAYLOAD_ID_FROM_SDK",
+      "secured_payload": "SECURED_PAYLOAD_FROM_SDK",
+      "source": "paze"
+    }
   }
 }
 ```
 
-`certificate_token` comes from env, not from the browser.
+**Purchase with payment method token**
 
-**Response (200)**
+```
+POST https://core.spreedly.com/v1/gateways/{gateway_token}/purchase.json
+```
 
 ```json
 {
-  "success": true,
-  "payment_method_token": "...",
-  "payment_method": {},
-  "transaction": {}
+  "transaction": {
+    "amount": 1000,
+    "currency_code": "USD",
+    "payment_method_token": "PAYMENT_METHOD_TOKEN_FROM_CREATE"
+  }
 }
 ```
 
-Missing `securedPayload` returns **400**. Spreedly errors are forwarded with their status.
+The sample app implements create via `POST /api/v1/paze-payment-method` (it does not purchase in
+the demo UI).
 
-To **purchase** after create, call Spreedly from your own server:
+### Alternative: Pass-through purchase (single API call)
 
+You can include `third_party_network_token` directly on the purchase:
+
+```json
+{
+  "transaction": {
+    "amount": 1000,
+    "currency_code": "USD",
+    "third_party_network_token": {
+      "certificate_token": "YOUR_SPREEDLY_CERTIFICATE_TOKEN",
+      "session_id": "SESSION_ID_FROM_SDK",
+      "payload_id": "PAYLOAD_ID_FROM_SDK",
+      "secured_payload": "SECURED_PAYLOAD_FROM_SDK",
+      "source": "paze"
+    }
+  }
+}
 ```
-POST /v1/gateways/{gateway_token}/purchase.json
-{ "transaction": { "payment_method_token": "...", "amount": 1000, "currency_code": "USD" } }
+
+### Retaining payment methods
+
+When retaining, include `retained: true` and `provision_network_token: true` on payment method
+creation, or `retain_on_success: true` and `provision_network_token: true` on purchase. Requires
+Advanced Vault and a TRID configured with Spreedly.
+
+### Returning users
+
+For subsequent purchases with a stored Paze payment method token, include
+`attempt_network_token: true`:
+
+```json
+{
+  "transaction": {
+    "amount": 1000,
+    "currency_code": "USD",
+    "payment_method_token": "STORED_PAYMENT_METHOD_TOKEN",
+    "attempt_network_token": true
+  }
+}
 ```
-
-Pass-through purchase (token on the transaction, no prior PM) is documented in the SDK
-integration guide; this sample app does not expose that route.
-
-### Retaining / returning users
-
-Retain: check **Retain payment method** in the demo (Advanced Vault + TRID required on the
-Spreedly side). Returning charges with a stored token should send `attempt_network_token: true`
-on purchase.
 
 ---
 
-## Content Security Policy
+## Content Security Policy (CSP)
 
-`src/middlewares/cspMiddleware.ts` allows sandbox and production Paze hosts on `script-src`,
-`connect-src`, and `frame-src`:
+Allow Paze's hosts in `script-src`, `connect-src`, and `frame-src`:
 
-- `https://checkout.wallet.cat.earlywarning.io`
-- `https://checkout.paze.com`
+- **Sandbox:** `https://checkout.wallet.cat.earlywarning.io`
+- **Production:** `https://checkout.paze.com`
+
+```
+script-src: https://checkout.wallet.cat.earlywarning.io https://checkout.paze.com
+connect-src: https://checkout.wallet.cat.earlywarning.io https://checkout.paze.com
+frame-src: https://checkout.wallet.cat.earlywarning.io https://checkout.paze.com
+```
+
+Also keep your existing Spreedly CSP (`https://*.spreedly.com` / `https://core.spreedly.com`).
 
 ---
 
 ## Guide contents
 
-- **[API_REFERENCE.md](./API_REFERENCE.md)** — `SpreedlyPaze` methods/events plus this app's HTTP API.
-- Canonical demo: `src/static/paze/{index.html,paze.js}`.
+- **[API_REFERENCE.md](./API_REFERENCE.md)** — constructor, methods, events, options, and error codes.
+- **[ARCHITECTURE.md](./ARCHITECTURE.md)** — how `SpreedlyPaze` is implemented in the SDK (internal).
+- Sample app: `web-sdk-sample-app/src/static/paze/` and that repo's `docs/paze/`.
