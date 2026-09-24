@@ -1,5 +1,5 @@
 import { landingPage } from "../pages/landingPage";
-import {CSS_PROPERTIES, getValidYearString, HEADINGS, SELECTORS, TEST_DATA, waitForAuthParams} from "../util/test-constants";
+import {CSS_PROPERTIES, getValidTwoDigitExpiryString, getValidYearString, HEADINGS, SELECTORS, TEST_DATA, waitForAuthParams} from "../util/test-constants";
 import { MONOREPO_URLS } from "../util/urls";
 import { expect, test } from "../util/fixtures";
 import { tokenizePage } from "../pages/tokenizePage";
@@ -97,16 +97,14 @@ test.describe('Iframe Parity tests', () => {
       firstName: TEST_DATA.FIRST_NAME,
       lastName: TEST_DATA.LAST_NAME,
       cvv: TEST_DATA.CVV,
-      expiryMonth: TEST_DATA.EXPIRY_MONTH,
-      expiryYear: getValidYearString(),
+      twoDigitExpiry: getValidTwoDigitExpiryString(),
     });
     
     await helperFunctions.verifyFormFieldsHostedFields(page, TEST_DATA.CARD_NUMBER_FORMATTED, {
       cvv: TEST_DATA.CVV,
       firstName: TEST_DATA.FIRST_NAME,
       lastName: TEST_DATA.LAST_NAME,
-      expiryMonth: TEST_DATA.EXPIRY_MONTH,
-      expiryYear: getValidYearString(),
+      twoDigitExpiry: getValidTwoDigitExpiryString(),
     });
     
     let apiResponse: any = null;
