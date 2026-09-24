@@ -16,9 +16,10 @@ const paze = new window.SpreedlyPaze(config);
 | `config` | `PazeConfig` | See [PazeConfig](#pazeconfig). |
 
 The constructor **throws synchronously** on missing `clientConfig.id` / `clientConfig.name` /
-`clientConfig.profileId`.
+`clientConfig.profileId` / `paymentElements.paze`, or a non-function `getCheckoutOptions`.
 
-The demo constructs this in `src/static/paze/paze.js` after loading the Spreedly script.
+The demo constructs this in `src/static/paze/paze.js` (`createAndMountPaze()`) after loading the
+Spreedly script.
 
 ### Methods
 
@@ -33,21 +34,37 @@ paze.on('pazeTokenGenerated', (payload) => { /* … */ });
 #### `setup(): Promise<PazeSetupResult>`
 
 Validates `window.DIGITAL_WALLET_SDK`, initializes Paze with `clientConfig`, emits `pazeReady`.
-**Await it before `canCheckout` / `checkout`.** Missing script returns `{ error: string }` instead
+**Await it before `mount` / `canCheckout`.** Missing script returns `{ error: string }` instead
 of throwing. `initialize()` failures also emit `pazeError` (`INITIALIZATION_FAILED`).
+
+#### `mount(): Promise<PazeMountResult>`
+
+Creates the SDK-owned `<paze-button>` inside `paymentElements.paze` and wires its click to the
+Paze checkout. Returns `{ error?: string }`; failures also emit `pazeError` with `MOUNT_FAILED`
+(container missing) or `BUTTON_UNAVAILABLE` (the Paze script never registered the element).
+
+The demo mounts into the empty `#paze-button-container` in `src/static/paze/index.html`. It never
+creates a `<paze-button>` of its own.
+
+#### `isMounted(): boolean`
+
+`true` between a successful `mount()` and `destroy()`.
 
 #### `canCheckout(email): Promise<{ consumerPresent: boolean }>`
 
-Wallet enrollment check. The demo calls this on email blur and, in dynamic button mode, hides
-`<paze-button>` unless `consumerPresent` is true.
+Wallet enrollment check. The demo calls this on email blur; in dynamic display mode this is what
+reveals the SDK's button (and records the impression).
 
 #### `checkout(options): Promise<void>`
 
-Opens the Paze popup. Outcomes arrive as `pazeCheckoutComplete` or `pazeError`. Throws if
-`setup()` has not succeeded.
+Reopens the popup to change card or shipping. Outcomes arrive as `pazeCheckoutComplete` or
+`pazeError`. Throws if `setup()` has not succeeded.
 
-The demo passes `emailAddress`, `transactionValue`, and optionally `intent: 'EXPRESS_CHECKOUT'`.
-Change Card / Change Shipping use `actionCode` `'CHANGE_CARD'` / `'CHANGE_SHIPPING_ADDRESS'`.
+`actionCode` must be `'CHANGE_CARD'` or `'CHANGE_SHIPPING_ADDRESS'` — the demo's Change Card /
+Change Shipping Address buttons. Starting a flow (`'START_FLOW'`, or omitting `actionCode`) is
+rejected with `pazeError` / `UNSUPPORTED_ACTION`; the mounted button starts flows, using the
+`getCheckoutOptions` callback the demo supplies for `emailAddress`, `transactionValue`, and the
+optional `intent: 'EXPRESS_CHECKOUT'`.
 
 #### `complete(options): Promise<void>`
 
@@ -66,7 +83,9 @@ Clears the in-memory session id.
 
 #### `destroy(): void`
 
-Terminal teardown. The demo calls this on `beforeunload`.
+Terminal teardown; removes the `<paze-button>` the SDK mounted. The demo calls this on
+`beforeunload`, and again in `rebuildPazeInstance()` — `displayMode` and `buttonStyle` are read
+once at `mount()`, so the display/color/shape controls destroy the instance and build a new one.
 
 ---
 
@@ -77,18 +96,25 @@ Terminal teardown. The demo calls this on `beforeunload`.
 | `clientConfig.id` | `string` | Yes | Paze Client ID |
 | `clientConfig.name` | `string` | Yes | Merchant display name |
 | `clientConfig.profileId` | `string` | Yes | Paze Profile ID |
+| `paymentElements.paze` | `string` | Yes | Container element id. Demo uses `'paze-button-container'`. |
+| `getCheckoutOptions` | `() => PazeCheckoutOptions` | Yes | Called on each button click. **Must be synchronous** — awaiting would spend the click's user activation and Paze's popup would be blocked. Demo returns the current email, `TRANSACTION_VALUE`, and the selected `intent`. |
+| `displayMode` | `'static' \| 'dynamic'` | No | Defaults to `'static'`. Demo binds it to the Button Display control. |
+| `buttonStyle` | `{ color?, shape?, disableMaxHeight? }` | No | Demo binds it to the Color / Shape / Disable max height controls. |
+| `environmentKey` | `string` | No | Masked onto telemetry. Demo reads it from `GET /api/v1/auth/params`. |
 | `environment` | `'sandbox' \| 'production'` | No | Demo uses `'sandbox'` |
 
 ---
 
 ## `checkout()` options
 
+Also the shape `getCheckoutOptions` returns, minus `actionCode`.
+
 | Option | Type | Description |
 |--------|------|-------------|
 | `transactionValue` | `{ transactionAmount: string, transactionCurrencyCode: string }` | Required. Demo uses `'10.00'` / `'USD'` (major units). |
-| `emailAddress` | `string` | Shopper email (lowercase). Used on `START_FLOW`. |
+| `emailAddress` | `string` | Shopper email (lowercase). Demo supplies it from `getCheckoutOptions`. |
 | `intent` | `'EXPRESS_CHECKOUT'` | Express Pay. Demo still calls `complete()` after `pazeCheckoutComplete`. |
-| `actionCode` | `'START_FLOW' \| 'CHANGE_CARD' \| 'CHANGE_SHIPPING_ADDRESS'` | Defaults to `'START_FLOW'`. |
+| `actionCode` | `'CHANGE_CARD' \| 'CHANGE_SHIPPING_ADDRESS'` | Required on `checkout()`. `'START_FLOW'` (the default when omitted) is rejected — the mounted button starts flows. |
 | `shippingPreference` | `'NONE' \| string` | Forwarded to Paze when set. |
 
 ---
@@ -108,7 +134,8 @@ Terminal teardown. The demo calls this on `beforeunload`.
 
 | Event | Payload | Fires when |
 |-------|---------|-----------|
-| `pazeReady` | `undefined` | Paze initialized. Demo enables the payment section / button. |
+| `pazeReady` | `undefined` | Paze initialized. Demo is then safe to `mount()`. |
+| `pazeButtonClicked` | `undefined` | Shopper clicked the SDK-owned button. Demo resets review/result panels and shows "Opening Paze checkout...". |
 | `pazeCheckoutComplete` | `PazeCheckoutResult` | Popup completed. Demo shows the review panel, or auto-`complete()` in Express Pay. |
 | `pazeTokenGenerated` | `PazeCompleteResult` | `securedPayload` ready. Demo POSTs `/api/v1/paze-payment-method`. |
 | `pazeError` | `PazeError` | Flow error. Demo shows `code` + `message`. |
@@ -130,9 +157,12 @@ Terminal teardown. The demo calls this on `beforeunload`.
 | Error code | Scenario | Recommended action |
 |-----------|----------|-------------------|
 | `INITIALIZATION_FAILED` | `initialize()` threw | Verify client config / Paze sandbox health |
-| `NOT_INITIALIZED` | Called before `setup()`, after `destroy()`, or `complete()` before `checkout()` | Wait for `pazeReady`; call methods in order |
+| `NOT_INITIALIZED` | Called before `setup()`, after `destroy()`, or `complete()` before checkout | Wait for `pazeReady`; call methods in order |
+| `MOUNT_FAILED` | `mount()` could not find `#paze-button-container` | Render the container before mounting |
+| `BUTTON_UNAVAILABLE` | Paze script never registered `<paze-button>` (10 s) | Check the Paze script tag and CSP |
+| `UNSUPPORTED_ACTION` | `checkout()` called with `START_FLOW` / no `actionCode` | Let the mounted button start the flow |
 | `CHECKOUT_INCOMPLETE` | Popup closed or timed out | Retry |
-| `CHECKOUT_FAILED` | `checkout()` threw | Check popup blockers |
+| `CHECKOUT_FAILED` | The checkout threw, `getCheckoutOptions` threw, or the button reported an error | Check popup blockers; keep `getCheckoutOptions` synchronous |
 | `COMPLETE_FAILED` | `complete()` failed | Retry or another payment method |
 | `NO_SECURED_PAYLOAD` | Complete JWT missing payload | Contact support |
 
