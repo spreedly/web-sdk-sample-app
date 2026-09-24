@@ -5,6 +5,34 @@ All notable changes to the Spreedly Web SDK will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0] - 2026-09-24
+
+### Added
+
+- **Optional CVV** support.
+- **Hosted Fields:** `setCVVOptional(boolean)`. When optional, an empty CVV passes client-side validation, and an empty cvv value is sent in tokenization. A typed CVV is still fully validated. Call after `ready`. `reload()` resets it like every other customization. The CVV field remains mounted. You can hide your own CVV container with CSS. Recache and Click to Pay are unaffected and always require a CVV.
+- **Express Checkout:** init-time config on `uiConfig.cardPaymentFormFields.verification_value` — `isRequired: false` (cvv field shown but made optional) or `isHidden: true` (cvv field not rendered). Runtime setters `setCVVOptional(boolean)` and `setCVVHidden(boolean)` toggle the same optional / hidden states after `ready`.
+- **Paze `mount()` / `isMounted()`**: `mount()` creates the Spreedly-owned `<paze-button>` in `paymentElements.paze`, applies the optional `buttonStyle` (`color`, `shape`, `label`, `disableMaxHeight`), and wires the click to Paze checkout. `displayMode: 'dynamic'` inserts it hidden until an eligible `canCheckout()`. See `docs/paze/INTEGRATION_GUIDE.md`.
+- **Paze `environmentKey` config**: optional field so a standalone Paze integration (no other Spreedly SDK on the page) can still be attributed to your environment.
+- **Paze `pazeButtonClicked` event**: the SDK-owned `<paze-button>` emits `pazeButtonClicked` when clicked (before `getCheckoutOptions()` runs). Listen with `paze.on('pazeButtonClicked', …)` — don't attach a click handler to the merchant container. `CHANGE_CARD` / `CHANGE_SHIPPING_ADDRESS` do not emit this event.
+- **Paze `pazeEligibilityChecked` event**: every `canCheckout()` resolution emits `pazeEligibilityChecked` with `{ eligible: boolean }`, in both display modes, so your page can keep its own button-container visibility in sync. Listen with `paze.on('pazeEligibilityChecked', ({ eligible }) => …)`.
+
+### Changed
+
+- **Card brand logos in the card number field**: Hosted Fields and Express Checkout now show the detected brand's logo where they previously showed a text badge (`VISA`, `MASTER`, `AMEX`). Logos ship for Visa, Mastercard, American Express, Discover, Diners Club, JCB, Maestro, UnionPay and Elo; every other brand shows a generic card icon. No API change — `sdk.setShowCardTypeIcon(false)` and `uiConfig.showCardTypeIcon: false` still hide it, and it is still shown by default.
+- Hosted Fields inputs now set their own padding instead of inheriting the browser's, so the text sits in the same place in every browser. Card number `8px 48px 8px 12px` (the 48px on the right keeps the card brand logo clear of the digits), CVV `8px 12px`, catalogue fields `0`. `setStyles(field, { padding: … })` still overrides it — keep the right padding on the card number field.
+
+- **Breaking (Paze): the SDK now owns the `<paze-button>`**. `SpreedlyPaze` gains a `mount()` that creates the branded button. Three API changes follow:
+  - `paymentElements: { paze: '<container-element-id>' }` is now **required**.
+  - `getCheckoutOptions: () => PazeCheckoutOptions` is now **required**, called on every button click, and must be **synchronous**.
+  - `checkout()` no longer starts a flow — `actionCode: 'START_FLOW'` is rejected with `pazeError` / `UNSUPPORTED_ACTION`; only `'CHANGE_CARD'` and `'CHANGE_SHIPPING_ADDRESS'` are supported.
+
+  See `docs/paze/INTEGRATION_GUIDE.md` for migration steps.
+
+### Fixed
+
+- **Hosted Fields: non-digit characters no longer flash in the card number and CVV inputs.** No public API, event, or payload change.
+
 ## [1.7.0] - 2026-09-17
 
 ### Added
