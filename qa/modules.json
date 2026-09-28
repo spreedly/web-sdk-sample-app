@@ -1,0 +1,1100 @@
+{
+  "$comment": "Modules the sdk-dev-qa skill can test. Paths are relative to this repo. Add a block per module; never edit the skill.",
+  "sharedDocs": [
+    "docs/errors/ERROR_KEYS_REFERENCE.md",
+    "docs/ testing and troubleshooting/TESTING_GUIDE.md",
+    "docs/ testing and troubleshooting/TROUBLESHOOTING_GUIDE.md",
+    "README.md",
+    "SECURITY.md"
+  ],
+  "modules": {
+    "hosted-fields": {
+      "title": "Hosted Fields — card tokenization",
+      "idPrefix": "HF",
+      "docs": [
+        "docs/tokenization/OVERVIEW.md",
+        "docs/tokenization/hosted-fields/INTEGRATION_GUIDE.md",
+        "docs/HOSTED_FIELDS_API_REFERENCE.md",
+        "docs/migration-guide/MIGRATION_GUIDE.md"
+      ],
+      "pages": [
+        "src/static/tokenize/index.html",
+        "src/static/tokenize/tokenize.js",
+        "src/static/tokenize-catalogue/tokenize.js",
+        "src/static/tokenize-catalogue/index.html",
+        "src/static/purchase/index.html",
+        "src/static/purchase/purchase.js",
+        "src/static/shared/utils.js"
+      ],
+      "server": [
+        "src/routes.ts",
+        "src/controllers/auth.ts",
+        "src/controllers/payments.ts"
+      ],
+      "bundle": {
+        "rc": "https://core-test.spreedly.com/checkout/sdk/rc/index.js",
+        "staging": "https://core-test.spreedly.com/checkout/sdk/{version}/index.js",
+        "production": "https://core.spreedly.com/checkout/sdk/{version}/index.js"
+      },
+      "globalName": "SpreedlyHostedFields",
+      "setup": [
+        "npm install",
+        "Get a .env from the team and put it in the repo root. Hosted fields needs SPREEDLY_ENVIRONMENT_KEY_NEW, CERTIFICATE_TOKEN_NEW, PRIVATE_KEY_NEW, SPREEDLY_ACCESS_SECRET_NEW, SPREEDLY_URL, and SPREEDLY_GATEWAY_TOKEN_NEW for purchase cases. Never commit it.",
+        "npm run dev — backend on http://localhost:3000. Or skip the .env and point pages at testData.apiBaseHeroku.",
+        "python3 -m http.server 4173 -d qa/hosted-fields/pages — serves the built pages for step 3."
+      ],
+      "testData": {
+        "apiBase": "http://localhost:3000/api/v1",
+        "apiBaseHeroku": "https://checkout-web-sample-app-049a3c617015.herokuapp.com/api/v1",
+        "authParamsRoute": "GET /auth/params",
+        "cards": [
+          {
+            "brand": "Visa",
+            "number": "4111111111111111",
+            "cvv": "123",
+            "expiry": "any future date"
+          },
+          {
+            "brand": "Mastercard",
+            "number": "5555555555554444",
+            "cvv": "123",
+            "expiry": "any future date"
+          },
+          {
+            "brand": "American Express",
+            "number": "378282246310005",
+            "cvv": "1234",
+            "expiry": "any future date"
+          }
+        ],
+        "moreTestData": "https://developer.spreedly.com/docs/test-data — includes cards that decline, for error cases"
+      },
+      "upstream": [
+        "https://core-test.spreedly.com — Spreedly staging: tokenization API and the bundle CDN",
+        "https://checkout-web-sample-app-049a3c617015.herokuapp.com — the hosted backend, when used instead of localhost"
+      ],
+      "seedDefects": [
+        {
+          "kind": "rename",
+          "file": "docs/tokenization/hosted-fields/INTEGRATION_GUIDE.md",
+          "from": "tokenGenerated",
+          "to": "tokenGenerate",
+          "note": "every guide example now registers an event that never fires; token handling must come out BROKEN / doc wrong"
+        },
+        {
+          "kind": "deleteSection",
+          "file": "docs/HOSTED_FIELDS_API_REFERENCE.md",
+          "match": "setPlaceholder()",
+          "note": "the method vanishes from the reference while the guide's Step 4 still calls it; expect UNDOCUMENTED or a guide-vs-reference disagreement"
+        },
+        {
+          "kind": "deleteRow",
+          "file": "docs/tokenization/hosted-fields/INTEGRATION_GUIDE.md",
+          "match": "expiry",
+          "note": "the combined MM/YY submit key disappears from the guide's config table; expect DOC-GAP or PARTIAL since the reference still mentions CombinedExpiryField"
+        }
+      ],
+      "runsUnder": [
+        "hosted-fields"
+      ]
+    },
+    "express-checkout": {
+      "title": "Express Checkout — SDK-hosted card form",
+      "idPrefix": "EC",
+      "docs": [
+        "docs/tokenization/OVERVIEW.md",
+        "docs/tokenization/express-checkout/INTEGRATION_GUIDE.md",
+        "docs/EXPRESS_CHECKOUT_API_REFERENCE.md",
+        "docs/migration-guide/MIGRATION_GUIDE.md"
+      ],
+      "pages": [
+        "src/static/tokenize/index.html",
+        "src/static/tokenize/tokenize.js",
+        "src/static/purchase/index.html",
+        "src/static/purchase/purchase.js",
+        "src/static/shared/utils.js"
+      ],
+      "server": [
+        "src/routes.ts",
+        "src/controllers/auth.ts",
+        "src/controllers/payments.ts"
+      ],
+      "bundle": {
+        "rc": "https://core-test.spreedly.com/checkout/elements/rc/express-checkout.js",
+        "staging": "https://core-test.spreedly.com/checkout/elements/{version}/express-checkout.js",
+        "production": "https://core.spreedly.com/checkout/elements/{version}/express-checkout.js"
+      },
+      "globalName": "SpreedlyExpressCheckout",
+      "setup": [
+        "npm install",
+        "Get a .env from the team and put it in the repo root. This module needs SPREEDLY_ENVIRONMENT_KEY_NEW, CERTIFICATE_TOKEN_NEW, PRIVATE_KEY_NEW, SPREEDLY_ACCESS_SECRET_NEW, SPREEDLY_URL, SPREEDLY_GATEWAY_TOKEN_NEW for purchase cases. Never commit it.",
+        "npm run dev — backend on http://localhost:3000. Or skip the .env and point pages at testData.apiBaseHeroku.",
+        "python3 -m http.server 4173 -d qa/express-checkout/pages — serves the built pages for step 3.",
+        "On the demo pages pick the 'Express Checkout' radio on the landing page; the same tokenize and purchase flows then use this SDK."
+      ],
+      "testData": {
+        "apiBase": "http://localhost:3000/api/v1",
+        "apiBaseHeroku": "https://checkout-web-sample-app-049a3c617015.herokuapp.com/api/v1",
+        "authParamsRoute": "GET /auth/params",
+        "cards": [
+          {
+            "brand": "Visa",
+            "number": "4111111111111111",
+            "cvv": "123",
+            "expiry": "any future date"
+          },
+          {
+            "brand": "Mastercard",
+            "number": "5555555555554444",
+            "cvv": "123",
+            "expiry": "any future date"
+          },
+          {
+            "brand": "American Express",
+            "number": "378282246310005",
+            "cvv": "1234",
+            "expiry": "any future date"
+          }
+        ],
+        "moreTestData": "https://developer.spreedly.com/docs/test-data"
+      },
+      "upstream": [
+        "https://core-test.spreedly.com — Spreedly staging: API and the bundle CDN",
+        "https://checkout-web-sample-app-049a3c617015.herokuapp.com — the hosted backend, when used instead of localhost"
+      ],
+      "seedDefects": [
+        {
+          "kind": "rename",
+          "file": "docs/tokenization/express-checkout/INTEGRATION_GUIDE.md",
+          "from": "tokenGenerated",
+          "to": "tokenGenerate",
+          "note": "every guide example now registers an event that never fires; token handling must come out BROKEN / doc wrong"
+        },
+        {
+          "kind": "deleteSection",
+          "file": "docs/EXPRESS_CHECKOUT_API_REFERENCE.md",
+          "match": "setFieldConfig()",
+          "note": "the method vanishes from the reference while the guide's 'Configuring existing fields' still uses it; expect UNDOCUMENTED or a guide-vs-reference disagreement"
+        },
+        {
+          "kind": "deleteSection",
+          "file": "docs/tokenization/express-checkout/INTEGRATION_GUIDE.md",
+          "match": "Updating submit params after initialization",
+          "note": "the guide no longer explains updateSubmitParams; the reference still has it, so expect PARTIAL or DOC-GAP"
+        }
+      ]
+    },
+    "three-ds-global": {
+      "title": "3DS2 Global (Forter-managed) — purchase with challenge",
+      "idPrefix": "TDG",
+      "docs": [
+        "docs/three-ds/OVERVIEW.md",
+        "docs/three-ds/global/INTEGRATION_GUIDE.md"
+      ],
+      "pages": [
+        "src/static/purchase-with-3ds/index.html",
+        "src/static/purchase-with-3ds/purchase-with-3ds.js",
+        "src/static/shared/utils.js"
+      ],
+      "server": [
+        "src/routes.ts",
+        "src/controllers/auth.ts",
+        "src/controllers/payments.ts"
+      ],
+      "bundle": {
+        "rc": "https://core-test.spreedly.com/checkout/sdk/rc/index.js",
+        "staging": "https://core-test.spreedly.com/checkout/sdk/{version}/index.js",
+        "production": "https://core.spreedly.com/checkout/sdk/{version}/index.js"
+      },
+      "globalName": "SpreedlyHostedFields",
+      "bundleExpressCheckout": {
+        "rc": "https://core-test.spreedly.com/checkout/elements/rc/express-checkout.js",
+        "staging": "https://core-test.spreedly.com/checkout/elements/{version}/express-checkout.js",
+        "production": "https://core.spreedly.com/checkout/elements/{version}/express-checkout.js"
+      },
+      "globalNameExpressCheckout": "SpreedlyExpressCheckout",
+      "runsUnder": [
+        "hosted-fields",
+        "express-checkout"
+      ],
+      "setup": [
+        "npm install",
+        "Get a .env from the team and put it in the repo root. This module needs SPREEDLY_ENVIRONMENT_KEY_NEW, CERTIFICATE_TOKEN_NEW, PRIVATE_KEY_NEW, SPREEDLY_ACCESS_SECRET_NEW, SPREEDLY_URL, SPREEDLY_GATEWAY_TOKEN_NEW, SPREEDLY_SCA_PROVIDER_KEY_NEW and SPREEDLY_SCA_PROVIDER_KEY_TEST_SCENARIO_NEW. Never commit it.",
+        "npm run dev — backend on http://localhost:3000. Or skip the .env and point pages at testData.apiBaseHeroku.",
+        "python3 -m http.server 4173 -d qa/three-ds-global/pages — serves the built pages for step 3."
+      ],
+      "testData": {
+        "apiBase": "http://localhost:3000/api/v1",
+        "apiBaseHeroku": "https://checkout-web-sample-app-049a3c617015.herokuapp.com/api/v1",
+        "authParamsRoute": "GET /auth/params",
+        "cards": [
+          {
+            "brand": "Visa",
+            "number": "4111111111111111",
+            "cvv": "123",
+            "expiry": "any future date"
+          },
+          {
+            "brand": "Mastercard",
+            "number": "5555555555554444",
+            "cvv": "123",
+            "expiry": "any future date"
+          },
+          {
+            "brand": "American Express",
+            "number": "378282246310005",
+            "cvv": "1234",
+            "expiry": "any future date"
+          }
+        ],
+        "note": "Frictionless vs challenge outcomes are driven by test amounts and the test SCA provider; the guide and the demo page's controls say which. Ask the team if the amounts are not documented — that itself is a finding."
+      },
+      "upstream": [
+        "https://core-test.spreedly.com — Spreedly staging: API and the bundle CDN",
+        "Spreedly's test SCA provider (Forter-managed flow) — challenge iframes come from it",
+        "https://checkout-web-sample-app-049a3c617015.herokuapp.com — the hosted backend, when used instead of localhost"
+      ],
+      "seedDefects": [
+        {
+          "kind": "deleteRow",
+          "file": "docs/three-ds/global/INTEGRATION_GUIDE.md",
+          "match": "challengeIframeLocation",
+          "note": "a required option disappears from the Configuration Options table; the demo page still passes it, so expect DOC-GAP"
+        },
+        {
+          "kind": "rename",
+          "file": "docs/three-ds/global/INTEGRATION_GUIDE.md",
+          "from": "onSuccess",
+          "to": "onSucceeded",
+          "note": "the success callback is misnamed throughout the guide while the OVERVIEW still says onSuccess; expect BROKEN / doc wrong or 'two docs disagree'"
+        },
+        {
+          "kind": "deleteSection",
+          "file": "docs/three-ds/global/INTEGRATION_GUIDE.md",
+          "match": "Lifecycle Methods",
+          "note": "the lifecycle methods are no longer documented; expect UNDOCUMENTED for start/stop style cases"
+        }
+      ]
+    },
+    "three-ds-gateway-specific": {
+      "title": "3DS2 Gateway Specific — device fingerprint and challenge",
+      "idPrefix": "TDS",
+      "docs": [
+        "docs/three-ds/OVERVIEW.md",
+        "docs/three-ds/gateway-specific/INTEGRATION_GUIDE.md"
+      ],
+      "pages": [
+        "src/static/purchase-with-3ds-gateway-specific/index.html",
+        "src/static/purchase-with-3ds-gateway-specific/purchase-with-3ds-gateway-specific.js",
+        "src/static/shared/utils.js"
+      ],
+      "server": [
+        "src/routes.ts",
+        "src/controllers/auth.ts",
+        "src/controllers/payments.ts"
+      ],
+      "bundle": {
+        "rc": "https://core-test.spreedly.com/checkout/sdk/rc/index.js",
+        "staging": "https://core-test.spreedly.com/checkout/sdk/{version}/index.js",
+        "production": "https://core.spreedly.com/checkout/sdk/{version}/index.js"
+      },
+      "globalName": "SpreedlyHostedFields",
+      "bundleExpressCheckout": {
+        "rc": "https://core-test.spreedly.com/checkout/elements/rc/express-checkout.js",
+        "staging": "https://core-test.spreedly.com/checkout/elements/{version}/express-checkout.js",
+        "production": "https://core.spreedly.com/checkout/elements/{version}/express-checkout.js"
+      },
+      "globalNameExpressCheckout": "SpreedlyExpressCheckout",
+      "runsUnder": [
+        "hosted-fields",
+        "express-checkout"
+      ],
+      "setup": [
+        "npm install",
+        "Get a .env from the team and put it in the repo root. This module needs SPREEDLY_ENVIRONMENT_KEY_NEW, CERTIFICATE_TOKEN_NEW, PRIVATE_KEY_NEW, SPREEDLY_ACCESS_SECRET_NEW, SPREEDLY_URL, SPREEDLY_GATEWAY_TOKEN_NEW (the Spreedly test gateway simulates the gateway's 3DS). Never commit it.",
+        "npm run dev — backend on http://localhost:3000. Or skip the .env and point pages at testData.apiBaseHeroku.",
+        "python3 -m http.server 4173 -d qa/three-ds-gateway-specific/pages — serves the built pages for step 3."
+      ],
+      "testData": {
+        "apiBase": "http://localhost:3000/api/v1",
+        "apiBaseHeroku": "https://checkout-web-sample-app-049a3c617015.herokuapp.com/api/v1",
+        "authParamsRoute": "GET /auth/params",
+        "cards": [
+          {
+            "brand": "Visa",
+            "number": "4111111111111111",
+            "cvv": "123",
+            "expiry": "any future date"
+          },
+          {
+            "brand": "Mastercard",
+            "number": "5555555555554444",
+            "cvv": "123",
+            "expiry": "any future date"
+          },
+          {
+            "brand": "American Express",
+            "number": "378282246310005",
+            "cvv": "1234",
+            "expiry": "any future date"
+          }
+        ],
+        "note": "Outcomes are chosen by amount: see the guide § 'Test Amounts (Spreedly Test Gateway)'."
+      },
+      "upstream": [
+        "https://core-test.spreedly.com — Spreedly staging: API and the bundle CDN",
+        "Spreedly test gateway 3DS simulation",
+        "https://checkout-web-sample-app-049a3c617015.herokuapp.com — the hosted backend, when used instead of localhost"
+      ],
+      "seedDefects": [
+        {
+          "kind": "deleteSection",
+          "file": "docs/three-ds/gateway-specific/INTEGRATION_GUIDE.md",
+          "match": "The `onTriggerCompletion` Flow",
+          "note": "the onTriggerCompletion flow — the part that differs from Global 3DS — becomes undocumented; expect UNDOCUMENTED or DOC-GAP"
+        },
+        {
+          "kind": "deleteRow",
+          "file": "docs/three-ds/gateway-specific/INTEGRATION_GUIDE.md",
+          "match": "onDeviceFingerprint",
+          "note": "a callback disappears from the Callbacks Reference; the OVERVIEW still lists it, so expect PARTIAL"
+        },
+        {
+          "kind": "dropAwait",
+          "file": "docs/three-ds/gateway-specific/INTEGRATION_GUIDE.md",
+          "match": "fetch(",
+          "note": "the complete-endpoint example now reads a Promise as JSON; the example must come out BROKEN / doc wrong"
+        }
+      ]
+    },
+    "recaching": {
+      "title": "Recaching — re-collect the CVV for a retained card",
+      "idPrefix": "RC",
+      "docs": [
+        "docs/recaching/INTEGRATION_GUIDE.md"
+      ],
+      "pages": [
+        "src/static/recache/index.html",
+        "src/static/recache/recache.js",
+        "src/static/shared/utils.js"
+      ],
+      "server": [
+        "src/routes.ts",
+        "src/controllers/auth.ts",
+        "src/controllers/payments.ts"
+      ],
+      "bundle": {
+        "rc": "https://core-test.spreedly.com/checkout/sdk/rc/index.js",
+        "staging": "https://core-test.spreedly.com/checkout/sdk/{version}/index.js",
+        "production": "https://core.spreedly.com/checkout/sdk/{version}/index.js"
+      },
+      "globalName": "SpreedlyHostedFields",
+      "bundleExpressCheckout": {
+        "rc": "https://core-test.spreedly.com/checkout/elements/rc/express-checkout.js",
+        "staging": "https://core-test.spreedly.com/checkout/elements/{version}/express-checkout.js",
+        "production": "https://core.spreedly.com/checkout/elements/{version}/express-checkout.js"
+      },
+      "globalNameExpressCheckout": "SpreedlyExpressCheckout",
+      "runsUnder": [
+        "hosted-fields",
+        "express-checkout"
+      ],
+      "setup": [
+        "npm install",
+        "Get a .env from the team and put it in the repo root. This module needs SPREEDLY_ENVIRONMENT_KEY_NEW, CERTIFICATE_TOKEN_NEW, PRIVATE_KEY_NEW, SPREEDLY_ACCESS_SECRET_NEW, SPREEDLY_URL, nothing beyond the base keys. Never commit it.",
+        "npm run dev — backend on http://localhost:3000. Or skip the .env and point pages at testData.apiBaseHeroku.",
+        "python3 -m http.server 4173 -d qa/recaching/pages — serves the built pages for step 3.",
+        "A retained payment method is needed first: tokenize a test card, then PUT /api/v1/payment_methods/{token}/retain."
+      ],
+      "testData": {
+        "apiBase": "http://localhost:3000/api/v1",
+        "apiBaseHeroku": "https://checkout-web-sample-app-049a3c617015.herokuapp.com/api/v1",
+        "authParamsRoute": "GET /auth/params",
+        "cards": [
+          {
+            "brand": "Visa",
+            "number": "4111111111111111",
+            "cvv": "123",
+            "expiry": "any future date"
+          },
+          {
+            "brand": "Mastercard",
+            "number": "5555555555554444",
+            "cvv": "123",
+            "expiry": "any future date"
+          },
+          {
+            "brand": "American Express",
+            "number": "378282246310005",
+            "cvv": "1234",
+            "expiry": "any future date"
+          }
+        ],
+        "retainRoute": "PUT /payment_methods/{token}/retain",
+        "listRoute": "GET /payment_methods"
+      },
+      "upstream": [
+        "https://core-test.spreedly.com — Spreedly staging: API and the bundle CDN",
+        "https://checkout-web-sample-app-049a3c617015.herokuapp.com — the hosted backend, when used instead of localhost"
+      ],
+      "seedDefects": [
+        {
+          "kind": "rename",
+          "file": "docs/recaching/INTEGRATION_GUIDE.md",
+          "from": "recacheReady",
+          "to": "recacheIsReady",
+          "note": "every example waits for an event that never fires; recache cases must come out BROKEN / doc wrong"
+        },
+        {
+          "kind": "deleteRow",
+          "file": "docs/recaching/INTEGRATION_GUIDE.md",
+          "match": "last_four_digits",
+          "note": "a required RecacheOptions field disappears; the demo page still passes it, so expect DOC-GAP"
+        },
+        {
+          "kind": "deleteSection",
+          "file": "docs/recaching/INTEGRATION_GUIDE.md",
+          "match": "Step 4 — Enable recache mode (after `ready` fires)",
+          "note": "the hosted-fields recache-mode step is gone; the express-checkout copy of the step remains, so expect PARTIAL"
+        }
+      ]
+    },
+    "offsite-payments": {
+      "title": "Offsite Payments — redirect methods (PayPal, EBANX and others)",
+      "idPrefix": "OFF",
+      "docs": [
+        "docs/offsite-payments/OVERVIEW.md",
+        "docs/offsite-payments/general/INTEGRATION_GUIDE.md"
+      ],
+      "pages": [
+        "src/static/offsite-payments/index.html",
+        "src/static/offsite-payments/offsite-payments.js",
+        "src/static/offsite-payments/ebanx/index.html",
+        "src/static/offsite-payments/ebanx/ebanx.js",
+        "src/static/offsite-payments/handle_redirect.html",
+        "src/static/offsite-payments/handle_callback.html",
+        "src/static/offsite-payments/transparent_redirect_complete.html",
+        "src/static/shared/utils.js"
+      ],
+      "server": [
+        "src/routes.ts",
+        "src/controllers/auth.ts",
+        "src/controllers/payments.ts"
+      ],
+      "bundle": {
+        "rc": "https://core-test.spreedly.com/checkout/sdk/rc/index.js",
+        "staging": "https://core-test.spreedly.com/checkout/sdk/{version}/index.js",
+        "production": "https://core.spreedly.com/checkout/sdk/{version}/index.js"
+      },
+      "globalName": "SpreedlyHostedFields",
+      "bundleExpressCheckout": {
+        "rc": "https://core-test.spreedly.com/checkout/elements/rc/express-checkout.js",
+        "staging": "https://core-test.spreedly.com/checkout/elements/{version}/express-checkout.js",
+        "production": "https://core.spreedly.com/checkout/elements/{version}/express-checkout.js"
+      },
+      "globalNameExpressCheckout": "SpreedlyExpressCheckout",
+      "runsUnder": [
+        "hosted-fields",
+        "express-checkout"
+      ],
+      "setup": [
+        "npm install",
+        "Get a .env from the team and put it in the repo root. This module needs SPREEDLY_ENVIRONMENT_KEY_NEW, CERTIFICATE_TOKEN_NEW, PRIVATE_KEY_NEW, SPREEDLY_ACCESS_SECRET_NEW, SPREEDLY_URL, PAYPAL_GATEWAY_TOKEN_NEW and EBANX_GATEWAY_TOKEN_NEW (the offsite-purchase route picks the gateway from the request body). Never commit it.",
+        "npm run dev — backend on http://localhost:3000. Or skip the .env and point pages at testData.apiBaseHeroku.",
+        "python3 -m http.server 4173 -d qa/offsite-payments/pages — serves the built pages for step 3."
+      ],
+      "testData": {
+        "apiBase": "http://localhost:3000/api/v1",
+        "apiBaseHeroku": "https://checkout-web-sample-app-049a3c617015.herokuapp.com/api/v1",
+        "authParamsRoute": "GET /auth/params",
+        "note": "Redirect flows leave the page: the runner must follow the redirect to the gateway sandbox and back to handle_redirect.html. Ask the team for the PayPal sandbox buyer and the EBANX test document ids."
+      },
+      "upstream": [
+        "https://core-test.spreedly.com — Spreedly staging: API and the bundle CDN",
+        "PayPal sandbox (legacy offsite)",
+        "EBANX sandbox",
+        "https://checkout-web-sample-app-049a3c617015.herokuapp.com — the hosted backend, when used instead of localhost"
+      ],
+      "seedDefects": [
+        {
+          "kind": "rename",
+          "file": "docs/offsite-payments/general/INTEGRATION_GUIDE.md",
+          "from": "offsiteTokenGenerated",
+          "to": "offsiteTokenGenerate",
+          "note": "the success event is misnamed in the guide; expect BROKEN / doc wrong"
+        },
+        {
+          "kind": "deleteRow",
+          "file": "docs/offsite-payments/general/INTEGRATION_GUIDE.md",
+          "match": "paymentMethodType",
+          "note": "the required paymentMethodType option disappears from the config table; the demo still passes it, so expect DOC-GAP"
+        },
+        {
+          "kind": "deleteSection",
+          "file": "docs/offsite-payments/general/INTEGRATION_GUIDE.md",
+          "match": "Step 7: Handle Redirect Back",
+          "note": "handling the return redirect is no longer documented; handle_redirect.html shows it, so expect DOC-GAP"
+        }
+      ]
+    },
+    "offsite-braintree": {
+      "title": "Braintree APM — PayPal and Venmo buttons",
+      "idPrefix": "OBT",
+      "docs": [
+        "docs/offsite-payments/OVERVIEW.md",
+        "docs/offsite-payments/braintree/INTEGRATION_GUIDE.md"
+      ],
+      "pages": [
+        "src/static/offsite-payments/braintree/index.html",
+        "src/static/offsite-payments/braintree/braintree.js",
+        "src/static/shared/utils.js"
+      ],
+      "server": [
+        "src/routes.ts",
+        "src/controllers/auth.ts",
+        "src/controllers/payments.ts"
+      ],
+      "bundle": {
+        "rc": "https://core-test.spreedly.com/checkout/sdk/rc/index.js",
+        "staging": "https://core-test.spreedly.com/checkout/sdk/{version}/index.js",
+        "production": "https://core.spreedly.com/checkout/sdk/{version}/index.js"
+      },
+      "globalName": "SpreedlyHostedFields",
+      "bundleExpressCheckout": {
+        "rc": "https://core-test.spreedly.com/checkout/elements/rc/express-checkout.js",
+        "staging": "https://core-test.spreedly.com/checkout/elements/{version}/express-checkout.js",
+        "production": "https://core.spreedly.com/checkout/elements/{version}/express-checkout.js"
+      },
+      "globalNameExpressCheckout": "SpreedlyExpressCheckout",
+      "runsUnder": [
+        "hosted-fields",
+        "express-checkout"
+      ],
+      "setup": [
+        "npm install",
+        "Get a .env from the team and put it in the repo root. This module needs SPREEDLY_ENVIRONMENT_KEY_NEW, CERTIFICATE_TOKEN_NEW, PRIVATE_KEY_NEW, SPREEDLY_ACCESS_SECRET_NEW, SPREEDLY_URL, BRAINTREE_GATEWAY_TOKEN_NEW. Never commit it.",
+        "npm run dev — backend on http://localhost:3000. Or skip the .env and point pages at testData.apiBaseHeroku.",
+        "python3 -m http.server 4173 -d qa/offsite-braintree/pages — serves the built pages for step 3."
+      ],
+      "testData": {
+        "apiBase": "http://localhost:3000/api/v1",
+        "apiBaseHeroku": "https://checkout-web-sample-app-049a3c617015.herokuapp.com/api/v1",
+        "authParamsRoute": "GET /auth/params",
+        "note": "PayPal and Venmo open popups; the runner must handle a popup window. Ask the team for the Braintree sandbox PayPal buyer login."
+      },
+      "upstream": [
+        "https://core-test.spreedly.com — Spreedly staging: API and the bundle CDN",
+        "Braintree sandbox",
+        "PayPal sandbox (buyer login in the popup)",
+        "https://checkout-web-sample-app-049a3c617015.herokuapp.com — the hosted backend, when used instead of localhost"
+      ],
+      "seedDefects": [
+        {
+          "kind": "deleteRow",
+          "file": "docs/offsite-payments/braintree/INTEGRATION_GUIDE.md",
+          "match": "onPaymentResult",
+          "note": "the required onPaymentResult callback disappears from the config table; expect DOC-GAP"
+        },
+        {
+          "kind": "deleteSection",
+          "file": "docs/offsite-payments/braintree/INTEGRATION_GUIDE.md",
+          "match": "Step 6: Confirm Transaction",
+          "note": "the confirm step is gone, so the guide ends with an unconfirmed transaction; expect DOC-GAP via the demo's confirm call"
+        },
+        {
+          "kind": "dropAwait",
+          "file": "docs/offsite-payments/braintree/INTEGRATION_GUIDE.md",
+          "match": "braintree-purchase",
+          "note": "the pending-purchase example now reads a Promise as JSON; expect BROKEN / doc wrong"
+        }
+      ]
+    },
+    "offsite-stripe-apm": {
+      "title": "Stripe APM — Stripe Payment Element via Spreedly",
+      "idPrefix": "OSA",
+      "docs": [
+        "docs/offsite-payments/OVERVIEW.md",
+        "docs/offsite-payments/stripe-apm/INTEGRATION_GUIDE.md"
+      ],
+      "pages": [
+        "src/static/offsite-payments/stripe-apm/index.html",
+        "src/static/offsite-payments/stripe-apm/stripe-apm.js",
+        "src/static/offsite-payments/stripe-apm/complete.html",
+        "src/static/shared/utils.js"
+      ],
+      "server": [
+        "src/routes.ts",
+        "src/controllers/auth.ts",
+        "src/controllers/payments.ts"
+      ],
+      "bundle": {
+        "rc": "https://core-test.spreedly.com/checkout/sdk/rc/index.js",
+        "staging": "https://core-test.spreedly.com/checkout/sdk/{version}/index.js",
+        "production": "https://core.spreedly.com/checkout/sdk/{version}/index.js"
+      },
+      "globalName": "SpreedlyHostedFields",
+      "bundleExpressCheckout": {
+        "rc": "https://core-test.spreedly.com/checkout/elements/rc/express-checkout.js",
+        "staging": "https://core-test.spreedly.com/checkout/elements/{version}/express-checkout.js",
+        "production": "https://core.spreedly.com/checkout/elements/{version}/express-checkout.js"
+      },
+      "globalNameExpressCheckout": "SpreedlyExpressCheckout",
+      "runsUnder": [
+        "hosted-fields",
+        "express-checkout"
+      ],
+      "extraScripts": [
+        "https://js.stripe.com/v3/"
+      ],
+      "setup": [
+        "npm install",
+        "Get a .env from the team and put it in the repo root. This module needs SPREEDLY_ENVIRONMENT_KEY_NEW, CERTIFICATE_TOKEN_NEW, PRIVATE_KEY_NEW, SPREEDLY_ACCESS_SECRET_NEW, SPREEDLY_URL, STRIPE_GATEWAY_TOKEN_NEW; the page also needs the matching Stripe test publishable key. Never commit it.",
+        "npm run dev — backend on http://localhost:3000. Or skip the .env and point pages at testData.apiBaseHeroku.",
+        "python3 -m http.server 4173 -d qa/offsite-stripe-apm/pages — serves the built pages for step 3."
+      ],
+      "testData": {
+        "apiBase": "http://localhost:3000/api/v1",
+        "apiBaseHeroku": "https://checkout-web-sample-app-049a3c617015.herokuapp.com/api/v1",
+        "authParamsRoute": "GET /auth/params",
+        "note": "Use Stripe's test payment methods (https://docs.stripe.com/testing). The publishable key must belong to the same Stripe account as the gateway."
+      },
+      "upstream": [
+        "https://core-test.spreedly.com — Spreedly staging: API and the bundle CDN",
+        "Stripe sandbox (Stripe.js and the Payment Element)",
+        "https://checkout-web-sample-app-049a3c617015.herokuapp.com — the hosted backend, when used instead of localhost"
+      ],
+      "seedDefects": [
+        {
+          "kind": "deleteRow",
+          "file": "docs/offsite-payments/stripe-apm/INTEGRATION_GUIDE.md",
+          "match": "clientSecret",
+          "note": "the required clientSecret option disappears; expect DOC-GAP"
+        },
+        {
+          "kind": "deleteSection",
+          "file": "docs/offsite-payments/stripe-apm/INTEGRATION_GUIDE.md",
+          "match": "Step 6: Handle Redirect and Check Transaction Status",
+          "note": "return handling and status check are gone; complete.html shows it, so expect DOC-GAP"
+        },
+        {
+          "kind": "rename",
+          "file": "docs/offsite-payments/stripe-apm/INTEGRATION_GUIDE.md",
+          "from": "confirmPayment",
+          "to": "confirmPaymentIntent",
+          "note": "the submit method is misnamed throughout; expect BROKEN / doc wrong"
+        }
+      ]
+    },
+    "ppcp": {
+      "title": "PayPal Complete Payments — SpreedlyPPCP buttons, vault and Venmo",
+      "idPrefix": "PPCP",
+      "docs": [
+        "docs/ppcp/INTEGRATION_GUIDE.md",
+        "docs/ppcp/API_REFERENCE.md"
+      ],
+      "pages": [
+        "src/static/ppcp/index.html",
+        "src/static/ppcp/ppcp.js",
+        "src/static/ppcp/overview/index.html",
+        "src/static/ppcp/return/index.html",
+        "src/static/ppcp/return/return.js",
+        "src/static/shared/utils.js"
+      ],
+      "server": [
+        "src/routes.ts",
+        "src/controllers/ppcp.ts",
+        "src/controllers/ppcp-spreedly.ts"
+      ],
+      "bundle": {
+        "rc": "https://core-test.spreedly.com/checkout/sdk/rc/index.js",
+        "staging": "https://core-test.spreedly.com/checkout/sdk/{version}/index.js",
+        "production": "https://core.spreedly.com/checkout/sdk/{version}/index.js"
+      },
+      "globalName": "SpreedlyPPCP",
+      "bundleExpressCheckout": {
+        "rc": "https://core-test.spreedly.com/checkout/elements/rc/express-checkout.js",
+        "staging": "https://core-test.spreedly.com/checkout/elements/{version}/express-checkout.js",
+        "production": "https://core.spreedly.com/checkout/elements/{version}/express-checkout.js"
+      },
+      "globalNameExpressCheckout": "SpreedlyExpressCheckout",
+      "runsUnder": [
+        "hosted-fields",
+        "express-checkout"
+      ],
+      "extraScripts": [
+        "https://www.sandbox.paypal.com/web-sdk/v6/core"
+      ],
+      "setup": [
+        "npm install",
+        "Get a .env from the team and put it in the repo root. This module needs SPREEDLY_ENVIRONMENT_KEY_NEW, CERTIFICATE_TOKEN_NEW, PRIVATE_KEY_NEW, SPREEDLY_ACCESS_SECRET_NEW, SPREEDLY_URL, PPCP_GATEWAY_TOKEN_NEW, PAYPAL_PPCP_CLIENT_ID_NEW, PAYPAL_PPCP_CLIENT_SECRET_NEW, PAYPAL_API_BASE_URL_NEW (sandbox). Never commit it.",
+        "npm run dev — backend on http://localhost:3000. Or skip the .env and point pages at testData.apiBaseHeroku.",
+        "python3 -m http.server 4173 -d qa/ppcp/pages — serves the built pages for step 3.",
+        "The page must load PayPal's v6 core (sandbox: https://www.sandbox.paypal.com/web-sdk/v6/core) before either Spreedly bundle; both bundles expose window.SpreedlyPPCP.",
+        "src/static/ppcp/spike is an internal experiment and is deliberately not listed — do not read it."
+      ],
+      "testData": {
+        "apiBase": "http://localhost:3000/api/v1",
+        "apiBaseHeroku": "https://checkout-web-sample-app-049a3c617015.herokuapp.com/api/v1",
+        "authParamsRoute": "GET /auth/params",
+        "note": "Ask the team for the PayPal sandbox buyer account. Amounts are decimal strings ('12.99'). Popup and redirect presentation modes both need handling by the runner."
+      },
+      "upstream": [
+        "https://core-test.spreedly.com — Spreedly staging: API and the bundle CDN",
+        "PayPal sandbox (web SDK v6, Orders v2, vault)",
+        "https://checkout-web-sample-app-049a3c617015.herokuapp.com — the hosted backend, when used instead of localhost"
+      ],
+      "seedDefects": [
+        {
+          "kind": "rename",
+          "file": "docs/ppcp/INTEGRATION_GUIDE.md",
+          "from": "onPaymentResult",
+          "to": "onPaymentResponse",
+          "note": "the required result callback is misnamed throughout the guide while the reference keeps onPaymentResult; the constructor must reject it, so expect BROKEN / doc wrong plus 'two docs disagree'"
+        },
+        {
+          "kind": "deleteRow",
+          "file": "docs/ppcp/API_REFERENCE.md",
+          "match": "createOrder",
+          "note": "the required createOrder callback disappears from the 'Every field' table; the guide still explains it, so expect PARTIAL"
+        },
+        {
+          "kind": "dropAwait",
+          "file": "docs/ppcp/INTEGRATION_GUIDE.md",
+          "match": "ppcp.mount()",
+          "note": "the mount example now reads rendered flags off a Promise; expect BROKEN / doc wrong"
+        }
+      ]
+    },
+    "ach-payments": {
+      "title": "ACH — bank account tokenization and purchase",
+      "idPrefix": "ACH",
+      "docs": [
+        "docs/ach-payments/INTEGRATION_GUIDE.md"
+      ],
+      "pages": [
+        "src/static/ach-payments/index.html",
+        "src/static/ach-payments/ach-payments.js",
+        "src/static/shared/utils.js"
+      ],
+      "server": [
+        "src/routes.ts",
+        "src/controllers/auth.ts",
+        "src/controllers/payments.ts"
+      ],
+      "bundle": {
+        "rc": "https://core-test.spreedly.com/checkout/sdk/rc/index.js",
+        "staging": "https://core-test.spreedly.com/checkout/sdk/{version}/index.js",
+        "production": "https://core.spreedly.com/checkout/sdk/{version}/index.js"
+      },
+      "globalName": "SpreedlyHostedFields",
+      "bundleExpressCheckout": {
+        "rc": "https://core-test.spreedly.com/checkout/elements/rc/express-checkout.js",
+        "staging": "https://core-test.spreedly.com/checkout/elements/{version}/express-checkout.js",
+        "production": "https://core.spreedly.com/checkout/elements/{version}/express-checkout.js"
+      },
+      "globalNameExpressCheckout": "SpreedlyExpressCheckout",
+      "runsUnder": [
+        "hosted-fields",
+        "express-checkout"
+      ],
+      "setup": [
+        "npm install",
+        "Get a .env from the team and put it in the repo root. This module needs SPREEDLY_ENVIRONMENT_KEY_NEW, CERTIFICATE_TOKEN_NEW, PRIVATE_KEY_NEW, SPREEDLY_ACCESS_SECRET_NEW, SPREEDLY_URL, SPREEDLY_GATEWAY_TOKEN_NEW (an ACH-capable test gateway). Never commit it.",
+        "npm run dev — backend on http://localhost:3000. Or skip the .env and point pages at testData.apiBaseHeroku.",
+        "python3 -m http.server 4173 -d qa/ach-payments/pages — serves the built pages for step 3."
+      ],
+      "testData": {
+        "apiBase": "http://localhost:3000/api/v1",
+        "apiBaseHeroku": "https://checkout-web-sample-app-049a3c617015.herokuapp.com/api/v1",
+        "authParamsRoute": "GET /auth/params",
+        "note": "Test routing and account numbers: see the guide § ACHPaymentConfig and https://developer.spreedly.com/docs/test-data."
+      },
+      "upstream": [
+        "https://core-test.spreedly.com — Spreedly staging: API and the bundle CDN",
+        "https://checkout-web-sample-app-049a3c617015.herokuapp.com — the hosted backend, when used instead of localhost"
+      ],
+      "seedDefects": [
+        {
+          "kind": "deleteRow",
+          "file": "docs/ach-payments/INTEGRATION_GUIDE.md",
+          "match": "bankRoutingNumber",
+          "note": "the required routing-number field disappears; the demo still sends it, so expect DOC-GAP"
+        },
+        {
+          "kind": "rename",
+          "file": "docs/ach-payments/INTEGRATION_GUIDE.md",
+          "from": "achTokenGenerated",
+          "to": "achTokenGenerate",
+          "note": "the success event is misnamed; expect BROKEN / doc wrong"
+        },
+        {
+          "kind": "deleteSection",
+          "file": "docs/ach-payments/INTEGRATION_GUIDE.md",
+          "match": "`clearACHPayment(): void`",
+          "note": "clearACHPayment is no longer documented; expect UNDOCUMENTED for the teardown case"
+        }
+      ]
+    },
+    "click-to-pay": {
+      "title": "Click to Pay — Mastercard SRC with hosted card fields",
+      "idPrefix": "C2P",
+      "docs": [
+        "docs/click-to-pay/integration-guide/README.md",
+        "docs/click-to-pay/integration-guide/configuration.md",
+        "docs/click-to-pay/integration-guide/components.md",
+        "docs/click-to-pay/integration-guide/flows.md",
+        "docs/click-to-pay/integration-guide/tokenization.md",
+        "docs/click-to-pay/integration-guide/api-reference.md",
+        "docs/click-to-pay/integration-guide/migrating-from-legacy.md"
+      ],
+      "pages": [
+        "src/static/click-to-pay/index.html",
+        "src/static/click-to-pay/click-to-pay.js",
+        "src/static/shared/utils.js"
+      ],
+      "server": [
+        "src/routes.ts",
+        "src/controllers/auth.ts",
+        "src/controllers/payments.ts"
+      ],
+      "bundle": {
+        "rc": "https://core-test.spreedly.com/checkout/sdk/rc/index.js",
+        "staging": "https://core-test.spreedly.com/checkout/sdk/{version}/index.js",
+        "production": "https://core.spreedly.com/checkout/sdk/{version}/index.js"
+      },
+      "globalName": "SpreedlyClickToPay",
+      "extraScripts": [
+        "https://sandbox.src.mastercard.com/srci/integration/components/src-ui-kit/src-ui-kit.esm.js",
+        "https://sandbox.src.mastercard.com/srci/integration/2/lib.js?srcDpaId=YOUR_DPA_ID&locale=en_US"
+      ],
+      "setup": [
+        "npm install",
+        "Get a .env from the team and put it in the repo root. This module needs SPREEDLY_ENVIRONMENT_KEY_NEW, CERTIFICATE_TOKEN_NEW, PRIVATE_KEY_NEW, SPREEDLY_ACCESS_SECRET_NEW, SPREEDLY_URL, nothing beyond the base keys; the page needs Mastercard's sandbox srcDpaId. Never commit it.",
+        "npm run dev — backend on http://localhost:3000. Or skip the .env and point pages at testData.apiBaseHeroku.",
+        "python3 -m http.server 4173 -d qa/click-to-pay/pages — serves the built pages for step 3.",
+        "Mastercard sandbox lib.js must be loaded with the team's sandbox srcDpaId; ask for it.",
+        "Run step 3 with one page at a time: the Mastercard kit uses WebGL and browsers cap the number of contexts, so parallel pages fail for reasons unrelated to the docs."
+      ],
+      "testData": {
+        "apiBase": "http://localhost:3000/api/v1",
+        "apiBaseHeroku": "https://checkout-web-sample-app-049a3c617015.herokuapp.com/api/v1",
+        "authParamsRoute": "GET /auth/params",
+        "cards": [
+          {
+            "brand": "Visa",
+            "number": "4111111111111111",
+            "cvv": "123",
+            "expiry": "any future date"
+          },
+          {
+            "brand": "Mastercard",
+            "number": "5555555555554444",
+            "cvv": "123",
+            "expiry": "any future date"
+          },
+          {
+            "brand": "American Express",
+            "number": "378282246310005",
+            "cvv": "1234",
+            "expiry": "any future date"
+          }
+        ],
+        "note": "Mastercard sandbox test cards, OTP codes and an enrolled sandbox shopper come from Mastercard's SRC sandbox docs; ask the team."
+      },
+      "upstream": [
+        "https://core-test.spreedly.com — Spreedly staging: API and the bundle CDN",
+        "Mastercard Click to Pay sandbox (src-ui-kit, lib.js, OTP)",
+        "https://checkout-web-sample-app-049a3c617015.herokuapp.com — the hosted backend, when used instead of localhost"
+      ],
+      "seedDefects": [
+        {
+          "kind": "rename",
+          "file": "docs/click-to-pay/integration-guide/README.md",
+          "from": "c2p.init(",
+          "to": "c2p.initialize(",
+          "note": "the quick start calls a method that does not exist while api-reference.md still says init(); expect BROKEN / doc wrong and 'two docs disagree'"
+        },
+        {
+          "kind": "deleteSection",
+          "file": "docs/click-to-pay/integration-guide/configuration.md",
+          "match": "1. `c2pConfig` — Mastercard init config (required)",
+          "note": "the required Mastercard config block vanishes; the demo page still has it, so expect DOC-GAP"
+        },
+        {
+          "kind": "deleteRow",
+          "file": "docs/click-to-pay/integration-guide/api-reference.md",
+          "match": "withSelectedCard",
+          "note": "a checkout option disappears from the options table; expect UNDOCUMENTED for the saved-card checkout case"
+        }
+      ]
+    },
+    "paze": {
+      "title": "Paze — wallet checkout via SpreedlyPaze",
+      "idPrefix": "PAZE",
+      "docs": [
+        "docs/paze/INTEGRATION_GUIDE.md",
+        "docs/paze/API_REFERENCE.md"
+      ],
+      "pages": [
+        "src/static/paze/index.html",
+        "src/static/paze/paze.js",
+        "src/static/shared/utils.js"
+      ],
+      "server": [
+        "src/routes.ts",
+        "src/controllers/auth.ts",
+        "src/controllers/payments.ts"
+      ],
+      "bundle": {
+        "rc": "https://core-test.spreedly.com/checkout/sdk/rc/index.js",
+        "staging": "https://core-test.spreedly.com/checkout/sdk/{version}/index.js",
+        "production": "https://core.spreedly.com/checkout/sdk/{version}/index.js"
+      },
+      "globalName": "SpreedlyPaze",
+      "bundleExpressCheckout": {
+        "rc": "https://core-test.spreedly.com/checkout/elements/rc/express-checkout.js",
+        "staging": "https://core-test.spreedly.com/checkout/elements/{version}/express-checkout.js",
+        "production": "https://core.spreedly.com/checkout/elements/{version}/express-checkout.js"
+      },
+      "globalNameExpressCheckout": "SpreedlyExpressCheckout",
+      "runsUnder": [
+        "hosted-fields",
+        "express-checkout"
+      ],
+      "extraScripts": [
+        "https://checkout.wallet.cat.earlywarning.io/web/resources/js/digitalwallet-sdk.js"
+      ],
+      "setup": [
+        "npm install",
+        "Get a .env from the team and put it in the repo root. This module needs SPREEDLY_ENVIRONMENT_KEY_NEW, CERTIFICATE_TOKEN_NEW, PRIVATE_KEY_NEW, SPREEDLY_ACCESS_SECRET_NEW, SPREEDLY_URL, PAZE_CERTIFICATE_TOKEN, PAZE_CLIENT_ID, PAZE_CLIENT_NAME, PAZE_PROFILE_ID. Never commit it.",
+        "npm run dev — backend on http://localhost:3000. Or skip the .env and point pages at testData.apiBaseHeroku.",
+        "python3 -m http.server 4173 -d qa/paze/pages — serves the built pages for step 3."
+      ],
+      "testData": {
+        "apiBase": "http://localhost:3000/api/v1",
+        "apiBaseHeroku": "https://checkout-web-sample-app-049a3c617015.herokuapp.com/api/v1",
+        "authParamsRoute": "GET /auth/params",
+        "note": "Needs a shopper enrolled in the Paze sandbox; ask the team for the email and the wallet login."
+      },
+      "upstream": [
+        "https://core-test.spreedly.com — Spreedly staging: API and the bundle CDN",
+        "Paze sandbox (checkout.wallet.cat.earlywarning.io)",
+        "https://checkout-web-sample-app-049a3c617015.herokuapp.com — the hosted backend, when used instead of localhost"
+      ],
+      "seedDefects": [
+        {
+          "kind": "deleteRow",
+          "file": "docs/paze/API_REFERENCE.md",
+          "match": "clientConfig.profileId",
+          "note": "a required PazeConfig field disappears; the demo still passes it, so expect DOC-GAP"
+        },
+        {
+          "kind": "rename",
+          "file": "docs/paze/INTEGRATION_GUIDE.md",
+          "from": "pazeTokenGenerated",
+          "to": "pazeTokenGenerate",
+          "note": "the guide's event name no longer matches the reference; expect 'two docs disagree' or BROKEN"
+        },
+        {
+          "kind": "deleteSection",
+          "file": "docs/paze/API_REFERENCE.md",
+          "match": "`canCheckout(email): Promise<{ consumerPresent: boolean }>`",
+          "note": "canCheckout is no longer documented; expect UNDOCUMENTED for the returning-shopper case"
+        }
+      ]
+    },
+    "stripe-radar": {
+      "title": "Stripe Radar — fraud session id on a Stripe purchase",
+      "idPrefix": "RADAR",
+      "docs": [
+        "docs/stripe-radar/INTEGRATION_GUIDE.md"
+      ],
+      "pages": [
+        "src/static/stripe-radar/index.html",
+        "src/static/stripe-radar/stripe-radar.js",
+        "src/static/shared/utils.js"
+      ],
+      "server": [
+        "src/routes.ts",
+        "src/controllers/auth.ts",
+        "src/controllers/payments.ts"
+      ],
+      "bundle": {
+        "rc": "https://core-test.spreedly.com/checkout/sdk/rc/index.js",
+        "staging": "https://core-test.spreedly.com/checkout/sdk/{version}/index.js",
+        "production": "https://core.spreedly.com/checkout/sdk/{version}/index.js"
+      },
+      "globalName": "SpreedlyHostedFields",
+      "bundleExpressCheckout": {
+        "rc": "https://core-test.spreedly.com/checkout/elements/rc/express-checkout.js",
+        "staging": "https://core-test.spreedly.com/checkout/elements/{version}/express-checkout.js",
+        "production": "https://core.spreedly.com/checkout/elements/{version}/express-checkout.js"
+      },
+      "globalNameExpressCheckout": "SpreedlyExpressCheckout",
+      "runsUnder": [
+        "hosted-fields",
+        "express-checkout"
+      ],
+      "extraScripts": [
+        "https://js.stripe.com/v3/"
+      ],
+      "setup": [
+        "npm install",
+        "Get a .env from the team and put it in the repo root. This module needs SPREEDLY_ENVIRONMENT_KEY_NEW, CERTIFICATE_TOKEN_NEW, PRIVATE_KEY_NEW, SPREEDLY_ACCESS_SECRET_NEW, SPREEDLY_URL, STRIPE_GATEWAY_TOKEN_NEW; the page needs the matching Stripe test publishable key. Never commit it.",
+        "npm run dev — backend on http://localhost:3000. Or skip the .env and point pages at testData.apiBaseHeroku.",
+        "python3 -m http.server 4173 -d qa/stripe-radar/pages — serves the built pages for step 3."
+      ],
+      "testData": {
+        "apiBase": "http://localhost:3000/api/v1",
+        "apiBaseHeroku": "https://checkout-web-sample-app-049a3c617015.herokuapp.com/api/v1",
+        "authParamsRoute": "GET /auth/params",
+        "cards": [
+          {
+            "brand": "Visa",
+            "number": "4111111111111111",
+            "cvv": "123",
+            "expiry": "any future date"
+          },
+          {
+            "brand": "Mastercard",
+            "number": "5555555555554444",
+            "cvv": "123",
+            "expiry": "any future date"
+          },
+          {
+            "brand": "American Express",
+            "number": "378282246310005",
+            "cvv": "1234",
+            "expiry": "any future date"
+          }
+        ],
+        "note": "The publishable key must belong to the same Stripe account as the gateway token, or Radar rejects the session."
+      },
+      "upstream": [
+        "https://core-test.spreedly.com — Spreedly staging: API and the bundle CDN",
+        "Stripe sandbox (Stripe.js Radar sessions)",
+        "https://checkout-web-sample-app-049a3c617015.herokuapp.com — the hosted backend, when used instead of localhost"
+      ],
+      "seedDefects": [
+        {
+          "kind": "dropAwait",
+          "file": "docs/stripe-radar/INTEGRATION_GUIDE.md",
+          "match": "stripeRadar(",
+          "note": "the session id becomes a Promise and the purchase sends '[object Promise]'; expect BROKEN / doc wrong"
+        },
+        {
+          "kind": "deleteRow",
+          "file": "docs/stripe-radar/INTEGRATION_GUIDE.md",
+          "match": "stripeAccount",
+          "note": "the stripeAccount option disappears; expect UNDOCUMENTED for the connected-account case"
+        },
+        {
+          "kind": "deleteSection",
+          "file": "docs/stripe-radar/INTEGRATION_GUIDE.md",
+          "match": "Gateway-specific fields (backend)",
+          "note": "how to pass the session id to the purchase is gone; the demo backend shows it, so expect DOC-GAP"
+        }
+      ]
+    }
+  }
+}
