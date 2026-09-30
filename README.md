@@ -279,6 +279,7 @@ This sample app demonstrates the following payment flows:
 | **ACH Bank Account**                     | Tokenize a bank account and run a purchase: `SpreedlyACHFields` (Hosted Fields) or the prebuilt `SpreedlyACHForm` (Express Checkout) | [ACH Overview](./docs/ach-payments/OVERVIEW.md), [ACH Hosted Fields Guide](./docs/ach-payments/ach-hosted-fields/INTEGRATION_GUIDE.md), [ACH Form Guide](./docs/ach-payments/ach-form/INTEGRATION_GUIDE.md) |
 | **PayPal Complete Payments (PPCP)**      | PayPal, Venmo and Pay Later buttons with `SpreedlyPPCP` and PayPal's JS SDK v6                              | [PPCP Guide](./docs/ppcp/INTEGRATION_GUIDE.md), [PPCP API Reference](./docs/ppcp/API_REFERENCE.md)                                                                 |
 | **Click to Pay**                         | Mastercard Click to Pay with Hosted Fields: returning-shopper lookup, new-card enrollment and OTP           | [Click to Pay Guide](./docs/click-to-pay/integration-guide/README.md), [Click to Pay API Reference](./docs/click-to-pay/integration-guide/api-reference.md)         |
+| **Google Pay (POC)**                     | `SpreedlyGooglePay` (Hosted Fields bundle): Google button, in-sheet tokenization, shipping callbacks, purchase | [Google Pay Demo Guide](./docs/google-pay/INTEGRATION_GUIDE.md)                                                                                                    |
 
 ---
 
@@ -323,6 +324,7 @@ When integrating the SDK into your production application:
 | [PPCP Integration Guide](./docs/ppcp/INTEGRATION_GUIDE.md)       | PayPal Complete Payments with `SpreedlyPPCP`                    |
 | [PPCP API Reference](./docs/ppcp/API_REFERENCE.md)               | `SpreedlyPPCP` options, methods and events                      |
 | [Click to Pay Integration Guide](./docs/click-to-pay/integration-guide/README.md) | Mastercard Click to Pay with Hosted Fields   |
+| [Google Pay Demo Guide](./docs/google-pay/INTEGRATION_GUIDE.md) | `SpreedlyGooglePay` POC demo, local run and synthetic e2e stub   |
 | [Testing Guide](./docs/testing/TESTING_GUIDE.md)                 | Test card numbers and how to verify each flow                   |
 | [Troubleshooting Guide](./docs/testing/TROUBLESHOOTING_GUIDE.md) | SDK loading, auth, CSP, tokenization and 3DS issues             |
 
