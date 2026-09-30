@@ -5,6 +5,19 @@ All notable changes to the Spreedly Web SDK will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Google Pay demo (POC)** (`/google-pay`): the standalone `SpreedlyGooglePay` class from the Hosted Fields bundle. The flow covers:
+  - Google's `pay.js` loaded by the page, and Google's button drawn only after `isReadyToPay`
+  - in-sheet tokenization, with a result card showing `googlePayType` and the 3DS guidance
+  - a synthetic shipping-option demo via `onPaymentDataChange`
+  - a purchase that branches on `googlePayType`: `TOKENIZED_CARD` goes to `simple-purchase`; `NON_TOKENIZED_CARD` goes through a 3DS purchase (gateway 3DS by default, or 3DS Global) and `SpreedlyThreeDSLifecycle`. It uses only existing backend routes
+  - a Playwright spec, `google-pay.spec.ts`, that uses a synthetic `window.google` stub and skips itself on SDK builds without the global
+
+  See `docs/google-pay/INTEGRATION_GUIDE.md`.
+
 ## [1.7.0] - 2026-09-17
 
 ### Added
