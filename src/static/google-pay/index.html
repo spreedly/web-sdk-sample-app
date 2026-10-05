@@ -156,7 +156,7 @@
           <span class="logo-icon">S</span>
           Spreedly Web SDK
         </a>
-        <span class="nav-badge">Google Pay (POC)</span>
+        <span class="nav-badge">Google Pay</span>
       </div>
     </header>
 
@@ -175,7 +175,7 @@
             <h1 class="mb-2">Google Pay</h1>
             <p class="mb-6" style="color: var(--color-gray-500);">
               Create a Spreedly payment method with the standalone <code>SpreedlyGooglePay</code> class
-              (Hosted Fields bundle), then run a purchase.
+              (in both SDK bundles), then run a purchase.
             </p>
 
             <div id="loading-state" class="card" style="text-align: center; padding: 3rem;">
@@ -276,7 +276,7 @@
 
                 <h3 class="section-title">Testing</h3>
                 <div class="form-group">
-                  <label class="form-label" for="gp-test-card">Spreedly <code>test_card_number</code> override (TEST only, optional)</label>
+                  <label class="form-label" for="gp-test-card">Spreedly <code>test_card_number</code> override (optional)</label>
                   <input type="text" id="gp-test-card" class="form-input" placeholder="e.g. 4111111111111111">
                 </div>
 
@@ -287,7 +287,7 @@
                   <label><input type="radio" name="gp-3ds-mode" value="gateway" checked> Gateway 3DS
                     (<code>attempt_3dsecure</code>, documented)</label>
                   <label><input type="radio" name="gp-3ds-mode" value="global"> 3DS Global
-                    (<code>sca_provider_key</code>, unverified for Google Pay)</label>
+                    (<code>sca_provider_key</code>, not covered by Spreedly's Google Pay docs)</label>
                   <label><input type="radio" name="gp-3ds-mode" value="none"> No 3DS</label>
                 </div>
                 <div id="gp-3ds-scenarios" class="checkbox-row three-ds-options hidden" style="margin-top: 0.5rem;">
@@ -306,8 +306,8 @@
                 <p style="color: var(--color-gray-500); font-size: 0.8125rem; margin-top: 0.5rem;">
                   Gateway 3DS on the Spreedly test gateway reacts to card <code>4556761029983886</code> and the
                   amount (<code>30.01</code> frictionless, <code>30.05</code> challenge). With Google Pay, put that
-                  card in the <code>test_card_number</code> override. Whether the override drives the 3DS test
-                  behaviour is still to be verified.
+                  card in the <code>test_card_number</code> override. Spreedly's docs don't say whether the
+                  override also drives the 3DS test behaviour.
                 </p>
 
                 <!-- Empty by design: SpreedlyGooglePay.mount() draws Google's button in here -->
@@ -358,7 +358,7 @@
             <div class="config-section">
               <div class="config-section-title">Flow Steps</div>
               <ol style="color: var(--color-gray-600); font-size: 0.875rem; line-height: 1.8; padding-left: 1.25rem;">
-                <li>Load <code>pay.js</code> and the Hosted Fields bundle</li>
+                <li>Load <code>pay.js</code> and the selected SDK bundle</li>
                 <li>Fetch signed auth params from the server</li>
                 <li><code>new SpreedlyGooglePay(config)</code> + <code>mount()</code></li>
                 <li>Shopper taps → Google sheet opens</li>
@@ -374,7 +374,7 @@
               <ul style="color: var(--color-gray-600); font-size: 0.875rem; line-height: 1.8; padding-left: 1.25rem;">
                 <li>Google <code>TEST</code> environment — sign in with a Google account enrolled in the test card suite group</li>
                 <li>Serve over <code>https</code> or <code>localhost</code></li>
-                <li>The SDK global only exists in a build that includes the POC — see the Google Pay guide</li>
+                <li>Until <code>SpreedlyGooglePay</code> reaches the rc CDN, run the SDK locally — see the Google Pay guide</li>
                 <li>Auth params are single-checkout: <em>New checkout</em> fetches fresh ones</li>
               </ul>
             </div>

@@ -5,56 +5,63 @@ import { SELECTORS, TEST_DATA } from '../util/test-constants';
 import { MONOREPO_URLS } from '../util/urls';
 
 /**
- * Google Pay (POC) — SpreedlyGooglePay from the Hosted Fields bundle.
+ * Google Pay — SpreedlyGooglePay, exposed by both the Hosted Fields and Express Checkout bundles.
  *
  * Google's real payment sheet needs a signed-in Google account, so these specs run against a
  * SYNTHETIC window.google stub and fulfil Spreedly's tokenize call with a synthetic response.
- * They skip when the loaded SDK build predates SpreedlyGooglePay (the rc CDN until merge).
+ * They skip when the loaded SDK build predates SpreedlyGooglePay (the rc CDN until release).
  */
 test.describe('Google Pay', () => {
-  test('landing card opens the flow on the Hosted Fields bundle', async ({ page }) => {
+  test('landing card opens the flow on the selected bundle', async ({ page }) => {
     await googlePayPage.installGooglePayStub(page);
     await page.goto(MONOREPO_URLS.BASE);
-    // Even with Express Checkout selected, the page switches to the Hosted Fields bundle.
     await landingPage.clickOnExpressCheckoutButton(page);
     await landingPage.clickOnGooglePayButton(page);
 
-    await expect(page).toHaveURL(/google-pay\/index\.html\?sdk=hosted-fields/);
+    await expect(page).toHaveURL(/google-pay\/index\.html\?sdk=express-checkout/);
   });
 
-  test('draws the button and tokenizes in the sheet', async ({ page }) => {
-    await googlePayPage.installGooglePayStub(page);
-    const tokenizeRequests = await googlePayPage.mockSpreedlyTokenize(page);
-    await page.goto(`${MONOREPO_URLS.GOOGLE_PAY}?sdk=hosted-fields`);
-    test.skip(!(await googlePayPage.hasSdkGlobal(page)), 'SpreedlyGooglePay not in this SDK build');
+  // The `from` tag the SDK puts on the payment method identifies the bundle.
+  const BUNDLES = [
+    { sdk: 'hosted-fields', from: 'web/fields' },
+    { sdk: 'express-checkout', from: 'web/form' },
+  ] as const;
 
-    await googlePayPage.waitForButton(page);
-    await expect(googlePayPage.eventLog(page)).toContainText('googlePayReady');
+  for (const { sdk, from } of BUNDLES) {
+    test(`draws the button and tokenizes in the sheet (${sdk})`, async ({ page }) => {
+      await googlePayPage.installGooglePayStub(page);
+      const tokenizeRequests = await googlePayPage.mockSpreedlyTokenize(page);
+      await page.goto(`${MONOREPO_URLS.GOOGLE_PAY}?sdk=${sdk}`);
+      test.skip(!(await googlePayPage.hasSdkGlobal(page)), 'SpreedlyGooglePay not in this SDK build');
 
-    await googlePayPage.clickGooglePay(page);
+      await googlePayPage.waitForButton(page);
+      await expect(googlePayPage.eventLog(page)).toContainText('googlePayReady');
 
-    const resultCard = page.locator(SELECTORS.GOOGLE_PAY_RESULT_CARD);
-    await expect(resultCard).toContainText('Payment method created', { timeout: 15000 });
-    await expect(resultCard).toContainText('synthetic_google_pay_pm_token');
-    await expect(resultCard).toContainText('NON_TOKENIZED_CARD');
+      await googlePayPage.clickGooglePay(page);
 
-    expect(tokenizeRequests).toHaveLength(1);
-    const [body] = tokenizeRequests;
-    expect(body.environment_key).toBeTruthy();
-    expect(body.signature).toBeTruthy();
-    expect(body.payment_method.google_pay.payment_data).toEqual({
-      signature: 'synthetic-google-signature',
-      protocolVersion: 'ECv2',
-      signedMessage: JSON.stringify({ encryptedMessage: 'synthetic-ciphertext' }),
+      const resultCard = page.locator(SELECTORS.GOOGLE_PAY_RESULT_CARD);
+      await expect(resultCard).toContainText('Payment method created', { timeout: 15000 });
+      await expect(resultCard).toContainText('synthetic_google_pay_pm_token');
+      await expect(resultCard).toContainText('NON_TOKENIZED_CARD');
+
+      expect(tokenizeRequests).toHaveLength(1);
+      const [body] = tokenizeRequests;
+      expect(body.environment_key).toBeTruthy();
+      expect(body.signature).toBeTruthy();
+      expect(body.payment_method.google_pay.payment_data).toEqual({
+        signature: 'synthetic-google-signature',
+        protocolVersion: 'ECv2',
+        signedMessage: JSON.stringify({ encryptedMessage: 'synthetic-ciphertext' }),
+      });
+      expect(body.payment_method.from).toBe(from);
+
+      const request = await page.evaluate(() => (window as any).__gpStub.requests[0]);
+      expect(request.allowedPaymentMethods[0].tokenizationSpecification.parameters).toEqual({
+        gateway: 'spreedly',
+        gatewayMerchantId: body.environment_key,
+      });
     });
-    expect(body.payment_method.from).toBe('web/fields');
-
-    const request = await page.evaluate(() => (window as any).__gpStub.requests[0]);
-    expect(request.allowedPaymentMethods[0].tokenizationSpecification.parameters).toEqual({
-      gateway: 'spreedly',
-      gatewayMerchantId: body.environment_key,
-    });
-  });
+  }
 
   test('keeps the sheet open with an error when Spreedly rejects the token', async ({ page }) => {
     await googlePayPage.installGooglePayStub(page);
