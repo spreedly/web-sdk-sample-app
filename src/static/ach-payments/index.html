@@ -161,7 +161,7 @@
 
             <h1 class="mb-2">ACH Bank Account Payment</h1>
             <p class="mb-6" style="color: var(--color-gray-500);">
-              Collect a US/Canadian bank account with <code>SpreedlyACH</code> secure hosted fields —
+              Collect a US/Canadian bank account with <code>SpreedlyACHFields</code> secure hosted fields —
               the routing and account numbers are typed into Spreedly-hosted iframes and never touch
               this page — then run a purchase against the Spreedly Test gateway.
             </p>
@@ -274,7 +274,7 @@
               </div>
               <p style="font-size: 0.875rem; color: var(--color-gray-600); line-height: 1.6;">
                 ACH payments tokenize a US or Canadian bank account. With
-                <code>SpreedlyACH</code> the routing and account numbers are entered in
+                <code>SpreedlyACHFields</code> the routing and account numbers are entered in
                 Spreedly-hosted iframes and tokenized from inside them — the merchant page never
                 touches the raw numbers, the same secure-field model as card number and CVV. After
                 the SDK emits <code>tokenGenerated</code>, the merchant backend runs a purchase on a
@@ -290,7 +290,7 @@
                 Flow Steps
               </div>
               <ol id="flow-steps-list">
-                <li>Load the hosted-fields SDK and create <code>new SpreedlyACH(auth)</code></li>
+                <li>Load the hosted-fields SDK and create <code>new SpreedlyACHFields(auth)</code></li>
                 <li>Call <code>inAppElements({ routing, account })</code> to mount the secure fields</li>
                 <li>Buyer types the numbers into the iframes; name/type stay plain merchant inputs</li>
                 <li>Call <code>submit(formData)</code> with only the non-sensitive fields</li>
