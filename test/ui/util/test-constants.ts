@@ -141,7 +141,7 @@ export const SELECTORS = {
   ORDER_STATUS_BODY: '.toast-body',
   PAY_BUTTON_PAYPAL: 'Complete Purchase',
   PAY_BUTTON_PAYPAL_LATER: 'submit-button-initial',
-  // Google Pay (POC)
+  // Google Pay
   GOOGLE_PAY_BUTTON: '[data-flow="google-pay"]',
   GOOGLE_PAY_STUB_BUTTON: '#google-pay-button-container #gpay-stub-button',
   GOOGLE_PAY_FALLBACK: '#gp-fallback',

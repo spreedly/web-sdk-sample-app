@@ -1,5 +1,5 @@
 /**
- * Google Pay demo — standalone SpreedlyGooglePay from the Hosted Fields bundle.
+ * Google Pay demo — standalone SpreedlyGooglePay, from either SDK bundle (?sdk=).
  *
  * The page (the "merchant") loads Google's pay.js and signs auth params server-side. The SDK owns
  * everything Google-shaped and emits a Spreedly payment method token plus googlePayType, which
@@ -482,7 +482,7 @@ async function simplePurchase(cents) {
 }
 
 async function purchaseWith3DS(mode, cents) {
-  // From the Hosted Fields bundle, like SpreedlyThreeDSLifecycle.
+  // A bundle global, like SpreedlyThreeDSLifecycle.
   const browserInfo = serializeBrowserInfo(THREE_DS.browserSize, THREE_DS.acceptHeader);
 
   let transaction;
@@ -658,14 +658,7 @@ function wireControls() {
 }
 
 function init() {
-  // SpreedlyGooglePay ships in the Hosted Fields bundle only (POC scope).
-  if (SpreedlyUtils.getSDKType() !== 'hosted-fields') {
-    const url = new URL(window.location.href);
-    url.searchParams.set('sdk', 'hosted-fields');
-    window.location.replace(url.toString());
-    return;
-  }
-
+  // Both bundles (Hosted Fields and Express Checkout) expose window.SpreedlyGooglePay.
   SpreedlyUtils.loadSDKScript(async error => {
     if (error) {
       showFatal('Failed to load the Spreedly SDK. Please refresh.');
@@ -673,8 +666,8 @@ function init() {
     }
     if (typeof window.SpreedlyGooglePay === 'undefined') {
       showFatal(
-        'SpreedlyGooglePay is not in this SDK build. Build the google-pay-web-poc branch locally ' +
-          '(npm run dev in checkout-web-sdk) and enable the local-SDK block in shared/utils.js.'
+        'SpreedlyGooglePay is not in this SDK build yet. Run checkout-web-sdk locally (npm run dev) ' +
+          'and enable the local-SDK block in shared/utils.js — see the Google Pay guide.'
       );
       return;
     }

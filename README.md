@@ -302,7 +302,7 @@ This sample app demonstrates the following payment flows:
 | **Braintree APM**                        | PayPal and Venmo via Braintree                                                                              | [Braintree Guide](./docs/offsite-payments/braintree/INTEGRATION_GUIDE.md)                                                                                          |
 | **Stripe APM**                           | iDEAL, Bancontact, SEPA via Stripe                                                                          | [Stripe APM Guide](./docs/offsite-payments/stripe-apm/INTEGRATION_GUIDE.md)                                                                                        |
 | **Paze Digital Wallet**                  | Paze popup checkout and `securedPayload` payment method                                                     | [Paze Guide](./docs/paze/INTEGRATION_GUIDE.md), [Paze API Reference](./docs/paze/API_REFERENCE.md)                                                                 |
-| **Google Pay (POC)**                     | `SpreedlyGooglePay` (Hosted Fields bundle): Google button, in-sheet tokenization, shipping callbacks, purchase | [Google Pay Demo Guide](./docs/google-pay/INTEGRATION_GUIDE.md)                                                                                                    |
+| **Google Pay**                           | `SpreedlyGooglePay` (both bundles): Google button, in-sheet tokenization, shipping callbacks, purchase         | [Google Pay Demo Guide](./docs/google-pay/INTEGRATION_GUIDE.md)                                                                                                    |
 
 ---
 
@@ -342,7 +342,7 @@ When integrating the SDK into your production application:
 | [Offsite Payments Overview](./docs/offsite-payments/OVERVIEW.md) | Compare General, Braintree APM, and Stripe APM                  |
 | [Paze Integration Guide](./docs/paze/INTEGRATION_GUIDE.md)       | Paze digital wallet demo and backend payment method create      |
 | [Paze API Reference](./docs/paze/API_REFERENCE.md)               | `SpreedlyPaze` methods/events and `/api/v1/paze-payment-method` |
-| [Google Pay Demo Guide](./docs/google-pay/INTEGRATION_GUIDE.md) | `SpreedlyGooglePay` POC demo, local run and synthetic e2e stub   |
+| [Google Pay Demo Guide](./docs/google-pay/INTEGRATION_GUIDE.md) | `SpreedlyGooglePay` demo, local run and synthetic e2e stub       |
 | [Testing Guide](./docs/testing/TESTING_GUIDE.md)                 | Test card numbers and how to verify each flow                   |
 
 

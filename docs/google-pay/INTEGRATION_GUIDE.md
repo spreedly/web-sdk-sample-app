@@ -1,13 +1,13 @@
-# Google Pay — Demo Guide (proof of concept)
+# Google Pay — Demo Guide
 
-The `/google-pay` flow demos `SpreedlyGooglePay` from the Hosted Fields bundle. The SDK repo's
+The `/google-pay` flow demos `SpreedlyGooglePay`, which both SDK bundles expose. The SDK repo's
 [`docs/google-pay/`](https://github.com/spreedly/checkout-web-sdk/tree/main/docs/google-pay) is
 canonical — integration guide, API reference and architecture live there.
 
 ## What the page does
 
-1. Loads Google's `pay.js` (`<script async>`) — the merchant's job — plus the Hosted Fields
-   bundle. The page forces `?sdk=hosted-fields`, since the POC global only ships there.
+1. Loads Google's `pay.js` (`<script async>`) — the merchant's job — plus the SDK bundle chosen on
+   the landing page (`?sdk=hosted-fields` or `?sdk=express-checkout`).
 2. Fetches signed auth params from `GET /api/v1/auth/params`.
 3. `new SpreedlyGooglePay({ environment: 'TEST', authDetails, merchantInfo, transactionInfo, … })`
    and `mount('google-pay-button-container')`. Google's own button is drawn only if
@@ -55,13 +55,14 @@ canonical — integration guide, API reference and architecture live there.
 
 ## Running it locally
 
-The rc CDN bundle does not contain `SpreedlyGooglePay` until the POC merges to the SDK's `main`,
-so run the SDK locally:
+The rc CDN bundles contain `SpreedlyGooglePay` only once the SDK change merges to `main` and
+deploys. Until then, run the SDK locally:
 
-1. In `checkout-web-sdk` (branch `google-pay-web-poc`): `npm run dev` (Hosted Fields on `:5000`).
+1. In `checkout-web-sdk`: `npm run dev` (Hosted Fields on `:5000`, Express Checkout on `:5173`).
 2. In this repo, temporarily uncomment the local-SDK block in `src/static/shared/utils.js`
    (`getSDKScriptUrl`) — do not commit it.
-3. `npm run dev`, then open `http://localhost:3000/google-pay/index.html?sdk=hosted-fields`.
+3. `npm run dev`, then open `http://localhost:3000/google-pay/index.html?sdk=hosted-fields` (or
+   `?sdk=express-checkout`).
 
 Google Pay needs a secure context: `localhost` or HTTPS (Heroku). A LAN IP over plain HTTP will not
 work.
@@ -72,7 +73,8 @@ work.
   Google's test card suite group. The tokenize call then goes to Spreedly for real.
 - **Automated:** `test/ui/testCases/google-pay.spec.ts` blocks `pay.js`, installs a **synthetic**
   `window.google.payments.api` stub, and fulfils the Spreedly call via `page.route`. It covers the
-  landing card, the button + in-sheet tokenization (request shape and result card), a Spreedly
+  landing card, the button + in-sheet tokenization on both bundles (request shape, `from` tag and
+  result card), a Spreedly
   422 (in-sheet error, `TOKENIZATION_FAILED`) and the not-ready fallback. The purchase specs fulfil
   the purchase routes with synthetic transactions and check which route runs and what it sends:
   `NON_TOKENIZED_CARD` → gateway 3DS with browser info, `TOKENIZED_CARD` → `simple-purchase`,
@@ -82,7 +84,7 @@ work.
 - **Manual 3DS on the Spreedly test gateway:**
   - Gateway 3DS uses card `4556761029983886` and magic amounts: `30.01` frictionless, `30.05`
     challenge (the 3DS demo's `3001` / `3005` cents). Put the card in the `test_card_number` override.
-    Whether the override also drives the 3DS test behaviour is still to be verified.
+    Spreedly's docs don't say whether the override also drives the 3DS test behaviour.
   - 3DS Global's test SCA provider picks the outcome by scenario, whatever the card.
 
   ```bash
