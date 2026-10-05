@@ -1,92 +1,465 @@
-# Google Pay — Demo Guide
+# Google Pay — Integration Guide
 
-The `/google-pay` flow demos `SpreedlyGooglePay`, which both SDK bundles expose. The SDK repo's
-[`docs/google-pay/`](https://github.com/spreedly/checkout-web-sdk/tree/main/docs/google-pay) is
-canonical — integration guide, API reference and architecture live there.
+Add a **Pay with Google Pay** button to your checkout using the Spreedly checkout SDK. The SDK
+checks whether the shopper can pay, draws Google's own button, opens the payment sheet, and turns
+Google's encrypted token into a **Spreedly payment method token** you charge from your server
+like any other Spreedly token.
 
-## What the page does
+Card data never touch your page. Google seals the payment token for Spreedly
+(`gateway: "spreedly"`), so only Spreedly can decrypt it — the SDK carries it to Spreedly Core
+unopened. Once decrypted, the credential can be routed to any Google Pay-capable Spreedly gateway.
 
-1. Loads Google's `pay.js` (`<script async>`) — the merchant's job — plus the SDK bundle chosen on
-   the landing page (`?sdk=hosted-fields` or `?sdk=express-checkout`).
-2. Fetches signed auth params from `GET /api/v1/auth/params`.
-3. `new SpreedlyGooglePay({ environment: 'TEST', authDetails, merchantInfo, transactionInfo, … })`
-   and `mount('google-pay-button-container')`. Google's own button is drawn only if
-   `isReadyToPay` succeeds; otherwise the fallback note shows the `googlePayUnavailable` reason.
-4. On tap, the SDK opens the sheet and tokenizes inside `onPaymentAuthorized`
-   (`POST core.spreedly.com/v1/payment_methods.json`), then emits `googlePayTokenGenerated`.
-5. The result card shows the token, `googlePayType` and the matching 3DS guidance.
-6. **Purchase** branches on `googlePayType`, following Spreedly's "tokenize first, then branch on
-   `google_pay_type`" option. It uses only existing backend routes:
+## Who this guide is for
 
-   | `googlePayType` | Route |
-   |---|---|
-   | `TOKENIZED_CARD` | `POST /api/v1/simple-purchase`. The device cryptogram already carries authentication, so no 3DS. |
-   | `NON_TOKENIZED_CARD`, or missing | A 3DS purchase with `serializeBrowserInfo()`. If the transaction comes back `pending`, the page runs `SpreedlyThreeDSLifecycle` (device fingerprint and/or the challenge modal), exactly as the 3DS demo pages do. |
+Merchants/integrators wiring Google Pay into a web checkout. It assumes you already use (or can
+use) Spreedly for payment methods and have a gateway that supports Google Pay.
 
-   The **Purchase (3DS)** controls choose the 3DS route:
-   - **Gateway 3DS** (default): `POST /create-purchase-with-3ds-gateway-specific` with
-     `attempt_3dsecure: true`, and `onTriggerCompletion` → `POST /transactions/:t/complete`. This is
-     the route Spreedly's Google Pay docs describe.
-   - **3DS Global**: `POST /create-purchase-with-3ds` with the test SCA provider and a scenario
-     (`challenge` / `authenticated` / `not_authenticated`). Spreedly's Google Pay docs don't
-     mention `sca_provider_key`, so treat this as an experiment.
-   - **No 3DS**: always `simple-purchase`.
-   - **Run 3DS for every card** also sends `TOKENIZED_CARD` through 3DS. Spreedly documents that it
-     then bypasses 3DS with the warning "Bypassing Spreedly 3DS authentication for GooglePay
-     payment methods that are CRYPTOGRAM_3DS". The page logs any `transaction.warning` it gets back.
-7. **New checkout** fetches fresh auth params and remounts (certificate auth is per checkout).
+## What you'll need
 
-**Controls**
-- The order total calls `setTransactionInfo()` without a remount, for one-time payments only.
-- Every other control rebuilds the instance:
-  - auth methods and networks
-  - billing, shipping and email
-  - retain
-  - the card filters (refuse prepaid / credit, `assuranceDetailsRequired`)
-  - `checkoutOption`
-  - the transaction type: one-time, or a synthetic subscription with a 7-day trial / deferred charge / auto-reload enrollment
-  - button style
-  - `testCardNumber`
+- A **Google Pay & Wallet Console** account (Terms of Service accepted with a business email on
+  your own domain) and your **Google Merchant ID** — required only in `PRODUCTION`.
+- Your **production domains registered** in the Wallet Console, and Google's
+  [web integration checklist](https://developers.google.com/pay/api/web/guides/test-and-deploy/integration-checklist)
+  completed before going live.
+- For testing: your tester's Google account enrolled in Google's **test card suite** group.
+- A **Spreedly environment** and a **server endpoint that signs auth params** (`nonce`,
+  `timestamp`, `signature`, `certificate_token`, `environment_key`) — the same certificate-based
+  auth the Hosted Fields card form uses.
+- A **Spreedly gateway that supports Google Pay** (and, for recurring / stored credentials, one
+  on Spreedly's Google Pay recurring list — see [Recurring transactions](#recurring-transactions)).
 
-**Demos driven by `onPaymentDataChange`**
-- **Shipping:** two synthetic options (Standard free / Express $10.00), US addresses only.
-- **Promo codes** (the `OFFER` intent): the synthetic code `SAVE10` takes 10% off. Any other code
-  returns `OFFER_INVALID`.
+Unlike Apple Pay there is **no merchant validation call, no certificate for you to manage and no
+domain association file** to host.
 
-## Running it locally
+## How the pieces fit
 
-The rc CDN bundles contain `SpreedlyGooglePay` only once the SDK change merges to `main` and
-deploys. Until then, run the SDK locally:
+| Piece | Role |
+|-------|------|
+| **Google `pay.js`** | Google's client. **You load it**; the SDK waits up to 10 s for it to define `window.google.payments.api` |
+| **Google Pay button** | Drawn by Google's `createButton()`, so it follows Google's brand guidelines. **The SDK creates it** — you provide an empty container |
+| **`SpreedlyGooglePay`** | The class you call: `on()`, `mount()`, `setTransactionInfo()`, `destroy()` |
+| **Spreedly Core** | Decrypts the token and creates the payment method (the SDK calls it while the sheet is open) |
+| **Your server** | Signs auth params, then runs the purchase/authorize with the returned token |
 
-1. In `checkout-web-sdk`: `npm run dev` (Hosted Fields on `:5000`, Express Checkout on `:5173`).
-2. In this repo, temporarily uncomment the local-SDK block in `src/static/shared/utils.js`
-   (`getSDKScriptUrl`) — do not commit it.
-3. `npm run dev`, then open `http://localhost:3000/google-pay/index.html?sdk=hosted-fields` (or
-   `?sdk=express-checkout`).
+You interact almost entirely with `SpreedlyGooglePay`; the SDK handles Google. The payment method
+is created **in the browser**, while the sheet is still open, so a Spreedly failure is shown to the
+shopper inside the sheet and they can pick another card. Your server only runs the transaction.
 
-Google Pay needs a secure context: `localhost` or HTTPS (Heroku). A LAN IP over plain HTTP will not
-work.
+> **Nothing can run between the tap and the sheet.** Google requires `loadPaymentData()` to be
+> called while the browser is still handling the tap, so the SDK builds the request from what it
+> already has. Keep the price current with `setTransactionInfo()` *before* the tap — see
+> [step 5](#5-keep-the-price-current).
 
-## Testing
+---
 
-- **Manual (real sheet):** Google `TEST` environment, signed in with a Google account enrolled in
-  Google's test card suite group. The tokenize call then goes to Spreedly for real.
-- **Automated:** `test/ui/testCases/google-pay.spec.ts` blocks `pay.js`, installs a **synthetic**
-  `window.google.payments.api` stub, and fulfils the Spreedly call via `page.route`. It covers the
-  landing card, the button + in-sheet tokenization on both bundles (request shape, `from` tag and
-  result card), a Spreedly
-  422 (in-sheet error, `TOKENIZATION_FAILED`) and the not-ready fallback. The purchase specs fulfil
-  the purchase routes with synthetic transactions and check which route runs and what it sends:
-  `NON_TOKENIZED_CARD` → gateway 3DS with browser info, `TOKENIZED_CARD` → `simple-purchase`,
-  3DS Global → the test SCA provider and scenario. The real 3DS challenge (a `pending` transaction)
-  needs Spreedly and stays a manual check. Specs skip themselves when the loaded SDK build has no
-  `SpreedlyGooglePay`.
-- **Manual 3DS on the Spreedly test gateway:**
-  - Gateway 3DS uses card `4556761029983886` and magic amounts: `30.01` frictionless, `30.05`
-    challenge (the 3DS demo's `3001` / `3005` cents). Put the card in the `test_card_number` override.
-    Spreedly's docs don't say whether the override also drives the 3DS test behaviour.
-  - 3DS Global's test SCA provider picks the outcome by scenario, whatever the card.
+## Quick start
 
-  ```bash
-  npm run test:e2e:local -- test/ui/testCases/google-pay.spec.ts
-  ```
+### 1. Load the scripts
+
+Load Google's `pay.js`, then a Spreedly bundle that exposes `SpreedlyGooglePay` (Hosted Fields or
+Express Checkout — both export the same global):
+
+```html
+<script async src="https://pay.google.com/gp/p/js/pay.js"></script>
+
+<script src="https://core.spreedly.com/checkout/sdk/{version}/index.js"></script>
+<!-- or Express Checkout: /checkout/elements/{version}/express-checkout.js -->
+```
+
+Replace `{version}` with your SDK version. `async` is fine — `mount()` waits for Google's API to
+appear. The Google Pay button sits on your page next to the card form with either bundle.
+
+> Spreedly does **not** inject `pay.js`. Google's `TEST` and `PRODUCTION` environments use the
+> same script; you choose the environment in the config.
+
+### 2. Add a container for the button
+
+Give the SDK an empty element to mount into. The SDK appends Google's button to it.
+
+```html
+<div id="google-pay-button-container"></div>
+```
+
+### 3. Create the instance and listen for events
+
+```js
+// authDetails come from your server: { environment_key, certificate_token, nonce, signature, timestamp }
+const googlePay = new window.SpreedlyGooglePay({
+  environment: 'TEST', // 'PRODUCTION' requires merchantInfo.merchantId
+  authDetails,
+  merchantInfo: { merchantName: 'Example Merchant' /*, merchantId: 'BCR2DN...' */ },
+  transactionInfo: { totalPrice: '42.00', currencyCode: 'USD', countryCode: 'US' },
+  button: { buttonType: 'pay', buttonColor: 'black' },
+});
+
+googlePay.on('googlePayReady', () => {
+  // Google's button is on the page
+});
+googlePay.on('googlePayUnavailable', ({ reason }) => {
+  // Nothing was drawn. Keep your card form as the payment option.
+});
+googlePay.on('googlePayTokenGenerated', async ({ token, googlePayType, cardNetwork, last4 }) => {
+  await fetch('/checkout/purchase', { method: 'POST', body: JSON.stringify({ token, googlePayType }) });
+});
+googlePay.on('googlePayCancelled', () => {
+  // Shopper closed the sheet. Not an error — they can tap again.
+});
+googlePay.on('googlePayError', ({ code, message, details }) => {
+  console.error(`[${code}] ${message}`, details);
+});
+```
+
+Register listeners **before** `mount()` so you do not miss `googlePayReady` /
+`googlePayUnavailable`.
+
+The constructor throws for configuration mistakes (missing fields, `merchantId` absent in
+`PRODUCTION`, an invalid price) and does nothing else — no DOM, no network.
+`gatewayMerchantId` is derived from `authDetails.environment_key`; you never type it.
+
+### 4. Mount the button
+
+```js
+const { error } = await googlePay.mount('google-pay-button-container');
+if (error) {
+  // Google Pay is not available here; the card form stays the only option.
+}
+```
+
+`mount()` calls Google's `isReadyToPay()` and draws the button **only** if the shopper can pay.
+Otherwise nothing is drawn, `googlePayUnavailable` fires with the reason, and `{ error }` is
+returned. A failed mount can be retried.
+
+### 5. Keep the price current
+
+Nothing can be awaited between the shopper's tap and Google opening the sheet, so the total must
+be known *before* the tap. Update it whenever the cart changes:
+
+```js
+googlePay.setTransactionInfo({ totalPrice: '52.00', currencyCode: 'USD', countryCode: 'US' });
+```
+
+### 6. Charge from your server
+
+The tap produces `googlePayTokenGenerated` with a Spreedly payment method token and
+`googlePayType`. Send both to your backend, which runs the purchase — see
+[Process payment from your backend](#process-payment-from-your-backend).
+
+### 7. Start a new checkout
+
+`authDetails` work as they do for the Hosted Fields card form: they are signed for one checkout
+and fixed for the life of the instance. Spreedly expects a fresh `nonce` for each checkout, and
+the `nonce` and `timestamp` expire after
+[30 minutes](https://developer.spreedly.com/docs/iframe-api-lifecycle#security-requirements). When
+the shopper starts another checkout on the same page (or the page has been open a long time),
+replace the instance:
+
+```js
+googlePay.destroy();
+const authDetails = await fetch('/checkout/auth-params').then(r => r.json());
+googlePay = new window.SpreedlyGooglePay({ ...config, authDetails });
+// register your on(...) handlers again, then:
+await googlePay.mount('google-pay-button-container');
+```
+
+---
+
+## Process payment from your backend
+
+The SDK stops at the Spreedly payment method token. Your server runs the transaction with your
+environment key and access secret.
+
+### Purchase with the payment method token
+
+```
+POST https://core.spreedly.com/v1/gateways/{gateway_token}/purchase.json
+```
+
+```json
+{
+  "transaction": {
+    "amount": 4200,
+    "currency_code": "USD",
+    "payment_method_token": "PAYMENT_METHOD_TOKEN_FROM_SDK"
+  }
+}
+```
+
+### `googlePayType` and 3DS
+
+| `googlePayType` | Comes from | Guidance |
+|---|---|---|
+| `TOKENIZED_CARD` | `CRYPTOGRAM_3DS` | Device token with cryptogram — authentication is already carried. **Do not send `attempt_3dsecure: true`.** |
+| `NON_TOKENIZED_CARD` | `PAN_ONLY` | Card on file with Google, no cryptogram. May need a 3DS step-up depending on region and gateway. |
+
+The SDK hands you `googlePayType` before your first transaction call, so your server can branch
+on it (Spreedly's "tokenize first, then transact" option). On the web most payloads are
+`PAN_ONLY` — device tokens come mainly from Chrome on Android. To avoid 3DS entirely, pass
+`allowedAuthMethods: ['CRYPTOGRAM_3DS']`, at the cost of excluding shoppers whose card is not
+tokenized on their device.
+
+The sample app implements this branching: `TOKENIZED_CARD` goes to `POST /api/v1/simple-purchase`,
+and `NON_TOKENIZED_CARD` goes through a 3DS purchase and `SpreedlyThreeDSLifecycle`.
+
+### Retaining payment methods
+
+Pass `retained: true` (and optionally `metadata`) to retain the payment method on creation instead
+of leaving it cached for ~12 hours.
+
+### Recurring transactions
+
+Recurring Google Pay charges use Spreedly's
+[stored credential framework](https://developer.spreedly.com/docs/stored-credentials). Retain the
+payment method, then send `stored_credential_initiator` and `stored_credential_reason_type` on
+your transactions — for example `cardholder` / `recurring` on the first charge while the shopper
+is present, and `merchant` / `recurring` on later ones:
+
+```json
+{
+  "transaction": {
+    "amount": 999,
+    "currency_code": "USD",
+    "payment_method_token": "RETAINED_PAYMENT_METHOD_TOKEN",
+    "stored_credential_initiator": "merchant",
+    "stored_credential_reason_type": "recurring"
+  }
+}
+```
+
+Only some gateways support recurring Google Pay transactions (Spreedly lists Adyen, Checkout.com,
+CyberSource, CyberSource REST, NMI, Stripe Payment Intents and WorldPay). On other gateways
+Spreedly ignores the stored credential flags. To show the shopper a subscription in the sheet,
+see [Subscriptions, deferred charges and automatic reload](#subscriptions-deferred-charges-and-automatic-reload).
+
+---
+
+## Shipping address and options
+
+Request shipping and recalculate the total while the sheet is open:
+
+```js
+const googlePay = new SpreedlyGooglePay({
+  // ...
+  shippingAddressRequired: true,
+  shippingAddressParameters: { allowedCountryCodes: ['US'] },
+  shippingOptionRequired: true,
+  shippingOptionParameters: {
+    defaultSelectedOptionId: 'standard',
+    shippingOptions: [
+      { id: 'standard', label: 'Standard (free)' },
+      { id: 'express', label: 'Express ($10.00)' },
+    ],
+  },
+  onPaymentDataChange: async ({ trigger, shippingAddress, shippingOptionId }) => {
+    if (shippingAddress?.countryCode !== 'US') {
+      return { error: { reason: 'SHIPPING_ADDRESS_UNSERVICEABLE', message: 'We ship to the US only' } };
+    }
+    const shipping = shippingOptionId === 'express' ? 10 : 0;
+    return {
+      transactionInfo: {
+        totalPrice: (42 + shipping).toFixed(2),
+        currencyCode: 'USD',
+        countryCode: 'US',
+      },
+    };
+  },
+});
+```
+
+You return **data**; the SDK builds Google's update. Return the **full** `transactionInfo` —
+Google replaces it rather than merging. The callback must settle within 20 s; if it throws or
+times out the shopper sees an error in the sheet and `googlePayError` fires with
+`PAYMENT_DATA_CHANGE_FAILED`. Google redacts the address (country, region, city, postal code)
+until the shopper authorizes; the full address arrives in `googlePayTokenGenerated`.
+
+## Billing address and email
+
+```js
+{ billingAddressRequired: true, billingAddressParameters: { format: 'FULL' }, emailRequired: true }
+```
+
+When requested, the billing name and address are sent to Spreedly on the `google_pay` payment
+method (`first_name`, `last_name`, `address_1`, `address_2`, `city`, `state`, `zip`, `country`)
+and the email on the payment method. Both are also returned to you in `googlePayTokenGenerated`.
+
+## Promo codes (offers)
+
+Declare the `OFFER` intent to show a promo-code field in the sheet. Validate the codes in
+`onPaymentDataChange` and return the offers you accept together with the discounted total:
+
+```js
+const googlePay = new SpreedlyGooglePay({
+  // ...
+  callbackIntents: ['OFFER'],
+  offerInfo: { offers: [] }, // optional: offers applied when the sheet opens
+  onPaymentDataChange: async ({ trigger, redemptionCodes = [] }) => {
+    const accepted = redemptionCodes.filter(code => code === 'SAVE10');
+    if (trigger === 'OFFER' && accepted.length !== redemptionCodes.length) {
+      return { error: { reason: 'OFFER_INVALID', message: 'This code is not valid.' } };
+    }
+    const discount = accepted.length ? 4.2 : 0;
+    return {
+      offerInfo: { offers: accepted.map(code => ({ redemptionCode: code, description: '10% off' })) },
+      transactionInfo: {
+        totalPrice: (42 - discount).toFixed(2),
+        currencyCode: 'USD',
+        countryCode: 'US',
+        totalPriceLabel: 'Total',
+        displayItems: [
+          { label: 'Subtotal', type: 'SUBTOTAL', price: '42.00' },
+          ...(discount ? [{ label: 'Promo', type: 'DISCOUNT', price: `-${discount.toFixed(2)}` }] : []),
+        ],
+      },
+    };
+  },
+});
+```
+
+Offers don't change the price by themselves, so always return the recalculated
+`transactionInfo`. `redemptionCodes` includes codes you already approved.
+
+## Subscriptions, deferred charges and automatic reload
+
+For an enrollment rather than a one-time payment, pass one of these **instead of**
+`transactionInfo` (exactly one of the four is required):
+
+| Config | Use it for | Key fields |
+|---|---|---|
+| `recurringTransactionInfo` | Subscriptions | `recurrenceItems` (price, `recurrencePeriod` + `recurrencePeriodCount`), optional `introductoryPeriodInfo` (a free trial) |
+| `deferredTransactionInfo` | A charge later (a reservation or pre-order) | `billingDateTime`, `priceStatus`, `price`, `label` |
+| `automaticReloadTransactionInfo` | Stored-balance top-ups | `minimumBalanceAmount`, `reloadAmount`, `label` |
+
+All three take `currencyCode`, `countryCode`, `immediateTotalPrice` (due today, can be `'0.00'`)
+and, optionally, `managementUrl`, `tokenUpdateUrl` and `billingAgreement`.
+
+```js
+const googlePay = new SpreedlyGooglePay({
+  environment: 'TEST',
+  authDetails,
+  merchantInfo: { merchantName: 'Example Streaming' },
+  recurringTransactionInfo: {
+    currencyCode: 'USD',
+    countryCode: 'US',
+    immediateTotalPrice: '0.00',
+    managementUrl: 'https://example.com/account/subscription',
+    billingAgreement: 'Renews monthly. Cancel any time from your account page.',
+    introductoryPeriodInfo: {
+      introductoryPeriodEndDateTime: '2026-11-07T00:00:00Z',
+      label: '7 Day Free Trial',
+      totalPrice: '0.00',
+    },
+    recurrenceItems: [
+      {
+        billingInitialDateTime: '2026-11-07T00:00:00Z',
+        label: 'Premium Monthly',
+        price: '9.99',
+        priceStatus: 'FINAL',
+        recurrencePeriod: 'MONTH',
+        recurrencePeriodCount: 1,
+      },
+    ],
+  },
+  retained: true, // keep the credential for the later charges
+});
+```
+
+- **Retain the payment method** (`retained: true`) so it outlives the ~12-hour cache, and send the
+  stored-credential fields on your server-side transactions (see
+  [Recurring transactions](#recurring-transactions)).
+- The enrollment is fixed at construction: `setTransactionInfo()` throws on these instances. Create
+  a new `SpreedlyGooglePay` to change it.
+- Dates are RFC 3339. The SDK checks formats and required fields; Google checks the date ordering.
+
+## Restricting cards and checking assurance
+
+```js
+{
+  allowPrepaidCards: false,             // refuse prepaid cards
+  allowCreditCards: false,              // debit only (e.g. UK gambling)
+  allowedIssuerCountryCodes: ['US'],    // or blockedIssuerCountryCodes — not both
+  assuranceDetailsRequired: true,       // adds assuranceDetails to googlePayTokenGenerated
+}
+```
+
+`googlePayTokenGenerated` then carries `assuranceDetails: { accountVerified,
+cardHolderAuthenticated }` and `cardFundingSource` (`CREDIT` / `DEBIT` / `PREPAID` / `UNKNOWN`).
+When both assurance flags are `true`, Google says no step-up is needed. Otherwise apply your usual
+risk checks, and 3DS where applicable. Use this alongside `googlePayType`.
+
+## Sheet button label and transaction id
+
+On `transactionInfo`:
+- `checkoutOption: 'COMPLETE_IMMEDIATE_PURCHASE'` labels the sheet button "Pay now" (the total
+  must be `FINAL`).
+- `'CONTINUE_TO_REVIEW'` labels it "Review Order".
+- `'DEFAULT'` lets Google choose.
+- `transactionId` tags the attempt for Google's troubleshooting.
+
+---
+
+## Handling errors
+
+`googlePayError` carries `{ code, message, details? }`. `details` is either a sanitized Spreedly
+Core error (`{ message, status?, errors? }`) or Google's `{ statusCode, statusMessage }` — never
+request data or the token. The most common cases:
+
+- **`googlePayUnavailable`** (with `reason: 'NOT_READY_TO_PAY'`) is normal: the shopper's browser
+  or account can't pay with Google Pay. Show your card form.
+- **`TOKENIZATION_FAILED` / `TOKENIZATION_TIMEOUT`**: the sheet stays open so the shopper can pick
+  another card. Key your order on your own order id, not the token.
+- **`DEVELOPER_ERROR`**: Google rejected the request — check your Wallet Console setup and config.
+
+Every code, with what to do about it, is in the [API reference](./API_REFERENCE.md#googlepayerror).
+
+## Testing and go-live
+
+Spreedly's [Google Pay testing guidelines](https://developer.spreedly.com/docs/google-pay#testing-guidelines)
+run in three steps:
+
+1. **Google test card suite**: `environment: 'TEST'`, with your tester enrolled in Google's test
+   group. Don't set `testCardNumber` here.
+2. **Real card, test override**: `environment: 'PRODUCTION'`, a real card in the Google account and
+   `testCardNumber` set (for example `4111111111111111`). Spreedly decrypts the genuine payload
+   but stores the test PAN, so the payment method can only be used on a test gateway. The SDK logs
+   a warning while `testCardNumber` is set in `PRODUCTION`.
+3. **Production micro-transaction** (around $1) on your live gateway, with `testCardNumber`
+   removed.
+
+Remove `testCardNumber` before going live. If it is left in, payment methods are created with the
+test card and live charges fail.
+
+---
+
+## Content Security Policy (CSP)
+
+Allow Google Pay and Spreedly:
+
+```
+script-src: https://pay.google.com
+connect-src: https://pay.google.com https://core.spreedly.com
+frame-src: https://pay.google.com
+```
+
+Also keep your existing Spreedly CSP (`https://*.spreedly.com` / `https://core.spreedly.com`).
+Google does not publish an exhaustive host list. Confirm against your CSP violation reports in the
+`TEST` environment (button images may need an `img-src` entry).
+
+With a nonce-based CSP, pass the nonce as `cspNonce`, which Google receives as its `nonce` option
+and applies to the `<style>` / `<script>` it injects. Put the same `nonce` attribute on your
+`pay.js` `<script>` tag.
+
+---
+
+## Limitations
+
+- The button is drawn on your page, next to whichever card form you use. Express Checkout's
+  hosted form does not draw a Google Pay button inside its iframe.
+- `SpreedlyGooglePay` always seals the token for Spreedly (`gateway: "spreedly"`).
+  [Third Party Google Pay](https://developer.spreedly.com/docs/third-party-google-pay), where
+  another gateway decrypts the token, is not supported by this class.
+
+---
+
+## Guide contents
+
+- **[API_REFERENCE.md](./API_REFERENCE.md)** — constructor, config, methods, events, payloads, and
+  error codes.
