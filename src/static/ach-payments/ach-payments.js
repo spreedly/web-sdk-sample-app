@@ -2,7 +2,7 @@
  * ACH Payments Flow — Spreedly Web SDK Demo (hosted secure fields)
  *
  * 1. Load the hosted-fields SDK bundle and fetch auth params from the backend
- * 2. Create a SpreedlyACH instance and mount the two secure iframes
+ * 2. Create a SpreedlyACHFields instance and mount the two secure iframes
  *    (routing + account) into container divs
  * 3. On `ready`, the buyer types the numbers straight into the iframes —
  *    they never touch this page. Name / account type / holder type are plain
@@ -38,11 +38,11 @@ async function init() {
   try {
     await loadHostedFieldsSDK();
 
-    if (typeof window.SpreedlyACH !== 'function') {
+    if (typeof window.SpreedlyACHFields !== 'function') {
       hideLoading();
       elements.paymentSection().classList.remove('hidden');
       showError(
-        'SpreedlyACH is not available in the loaded SDK bundle. The rc channel only ' +
+        'SpreedlyACHFields is not available in the loaded SDK bundle. The rc channel only ' +
           'carries it once the ACH hosted-fields branch is merged to the SDK’s main. ' +
           'Point shared/utils.js at a local SDK build to try it now.'
       );
@@ -82,7 +82,7 @@ function loadHostedFieldsSDK() {
 async function createAchInstanceAndMountFields() {
   const authParams = await SpreedlyUtils.fetchAuthParams();
 
-  ach = new window.SpreedlyACH({
+  ach = new window.SpreedlyACHFields({
     environment_key: authParams.environmentKey,
     nonce: authParams.nonce,
     timestamp: authParams.timestamp,
