@@ -667,7 +667,7 @@ function init() {
     if (typeof window.SpreedlyGooglePay === 'undefined') {
       showFatal(
         'SpreedlyGooglePay is not in this SDK build yet. Run checkout-web-sdk locally (npm run dev) ' +
-          'and enable the local-SDK block in shared/utils.js — see the Google Pay guide.'
+          'and enable the local-SDK block in shared/utils.js — see docs/google-pay/DEMO_GUIDE.md.'
       );
       return;
     }
