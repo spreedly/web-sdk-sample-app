@@ -202,8 +202,11 @@ and `NON_TOKENIZED_CARD` goes through a 3DS purchase and `SpreedlyThreeDSLifecyc
 
 ### Retaining payment methods
 
-Pass `retained: true` (and optionally `metadata`) to retain the payment method on creation instead
-of leaving it cached for ~12 hours.
+The SDK creates the payment method cached: it can be charged once, and Spreedly purges it after
+~12 hours. To keep it, retain it from your server with
+[`PUT /v1/payment_methods/<token>/retain`](https://developer.spreedly.com/reference/retain-payment-method),
+or send `retain_on_success: true` with the first purchase. Spreedly ignores `retained` when the
+payment method is created from the browser.
 
 ### Recurring transactions
 
@@ -358,13 +361,12 @@ const googlePay = new SpreedlyGooglePay({
       },
     ],
   },
-  retained: true, // keep the credential for the later charges
 });
 ```
 
-- **Retain the payment method** (`retained: true`) so it outlives the ~12-hour cache, and send the
-  stored-credential fields on your server-side transactions (see
-  [Recurring transactions](#recurring-transactions)).
+- **Retain the payment method** from your server so it outlives the ~12-hour cache (see
+  [Retaining payment methods](#retaining-payment-methods)), and send the stored-credential fields
+  on your server-side transactions (see [Recurring transactions](#recurring-transactions)).
 - The enrollment is fixed at construction: `setTransactionInfo()` throws on these instances. Create
   a new `SpreedlyGooglePay` to change it.
 - Dates are RFC 3339. The SDK checks formats and required fields; Google checks the date ordering.

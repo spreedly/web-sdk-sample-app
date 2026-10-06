@@ -114,7 +114,6 @@ start again — for example for a new checkout, with freshly signed `authDetails
 | `existingPaymentMethodRequired` | `boolean` | No | Also asks whether the shopper already has a matching card; reported on `googlePayReady`. Always `true` in `TEST`. |
 | `cspNonce` | `string` | No | Google's `nonce` option: the CSP nonce Google applies to the `<style>` / `<script>` it injects. Put the same nonce on your `pay.js` tag. |
 | `testCardNumber` | `string` | No | Sent as `test_card_number`: Spreedly decrypts the payload but stores this test PAN, so the payment method only works on a test gateway. For the real-card testing step, with `PRODUCTION` (a warning is logged). Remove before going live. |
-| `retained` | `boolean` | No | Retain the payment method on creation. |
 | `metadata` | `Record<string, string>` | No | Stored on the payment method. |
 
 ### `GooglePayTransactionInfo`

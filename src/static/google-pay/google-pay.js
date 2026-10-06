@@ -245,7 +245,6 @@ function readConfig() {
     billingAddressRequired: $('gp-billing').checked,
     billingAddressParameters: { format: 'FULL' },
     emailRequired: $('gp-email').checked,
-    retained: $('gp-retain').checked,
     ...(shipping
       ? {
           shippingAddressRequired: true,
@@ -304,9 +303,25 @@ function registerEvents(instance) {
     logEvent(`googlePayPaymentAuthorized — ${cardNetwork || 'card'} •••• ${last4 || '????'}, tokenizing`);
   });
 
-  instance.on('googlePayTokenGenerated', result => {
+  instance.on('googlePayTokenGenerated', async result => {
     lastResult = result;
     logEvent(`googlePayTokenGenerated — ${result.googlePayType || 'type unknown'}`, 'success');
+
+    // The SDK creates the payment method cached (Core ignores `retained` on the browser's
+    // certificate-auth request), so retain it from the server, as the card demos do.
+    if ($('gp-retain').checked && result.paymentMethod?.storage_state !== 'retained') {
+      try {
+        const retained = await SpreedlyUtils.retainPaymentMethod(result.token);
+        const paymentMethod = retained?.transaction?.payment_method;
+        if (paymentMethod) {
+          result.paymentMethod = { ...result.paymentMethod, ...paymentMethod };
+        }
+        logEvent(`Payment method retained — ${result.paymentMethod?.storage_state}`, 'success');
+      } catch (error) {
+        logEvent(`Retain failed: ${error.message}`, 'error');
+        setStatus('The payment method could not be retained.', 'error');
+      }
+    }
     showTokenResult(result);
   });
 
@@ -391,7 +406,11 @@ function showTokenResult(result) {
     </dl>
     <p class="guidance">${escape(guidanceFor(result.googlePayType))}</p>`;
   $('gp-purchase-btn').classList.remove('hidden');
-  $('gp-purchase-btn').disabled = false;
+  if ($('gp-retain').checked) {
+    $('gp-purchase-btn').disabled = false;
+  } else {
+    $('gp-purchase-btn').disabled = true;
+  }
   $('gp-new-checkout-btn').classList.remove('hidden');
 }
 
@@ -425,7 +444,11 @@ function showPurchaseResult(success, transaction, fallbackMessage) {
     `Purchase ${success ? 'succeeded' : 'failed'}: ${tx.message || fallbackMessage || tx.state}`,
     success ? 'success' : 'error'
   );
-  $('gp-purchase-btn').disabled = success;
+  if ($('gp-retain').checked) {
+    $('gp-purchase-btn').disabled = false;
+  } else {
+    $('gp-purchase-btn').disabled = success;
+  }
 }
 
 /** Spreedly error bodies come back as `{ transaction }` or `{ errors: [...] }`. */
@@ -451,7 +474,11 @@ function hideChallengeModal() {
 
 async function purchase() {
   if (!lastResult) return;
-  $('gp-purchase-btn').disabled = true;
+  if ($('gp-retain').checked) {
+    $('gp-purchase-btn').disabled = false;
+  } else {
+    $('gp-purchase-btn').disabled = true;
+  }
   const cents = Math.round(orderTotal() * 100);
   const mode = threeDSMode();
 
