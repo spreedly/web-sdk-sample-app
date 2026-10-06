@@ -340,11 +340,7 @@ function showTokenResult(result) {
     </dl>
     <p class="guidance">${escape(guidanceFor(result.googlePayType))}</p>`;
   $('gp-purchase-btn').classList.remove('hidden');
-  if ($('gp-retain').checked) {
-    $('gp-purchase-btn').disabled = false;
-  } else {
-    $('gp-purchase-btn').disabled = true;
-  }
+  $('gp-purchase-btn').disabled = false;
   $('gp-new-checkout-btn').classList.remove('hidden');
 }
 
@@ -378,11 +374,9 @@ function showPurchaseResult(success, transaction, fallbackMessage) {
     `Purchase ${success ? 'succeeded' : 'failed'}: ${tx.message || fallbackMessage || tx.state}`,
     success ? 'success' : 'error'
   );
-  if ($('gp-retain').checked) {
-    $('gp-purchase-btn').disabled = false;
-  } else {
-    $('gp-purchase-btn').disabled = success;
-  }
+  // A retained payment method can be charged again; a cached one gets a single attempt.
+  const retained = lastResult?.paymentMethod?.storage_state === 'retained';
+  $('gp-purchase-btn').disabled = !retained;
 }
 
 /** Spreedly error bodies come back as `{ transaction }` or `{ errors: [...] }`. */
@@ -408,11 +402,8 @@ function hideChallengeModal() {
 
 async function purchase() {
   if (!lastResult) return;
-  if ($('gp-retain').checked) {
-    $('gp-purchase-btn').disabled = false;
-  } else {
-    $('gp-purchase-btn').disabled = true;
-  }
+  // Disabled while the purchase runs, so a double click can't charge twice.
+  $('gp-purchase-btn').disabled = true;
   const cents = Math.round(orderTotal() * 100);
   const mode = threeDSMode();
 
