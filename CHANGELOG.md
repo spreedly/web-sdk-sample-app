@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Google's `pay.js` loaded by the page, and Google's button drawn only after `isReadyToPay`
   - in-sheet tokenization, with a result card showing `googlePayType` and the 3DS guidance
   - a synthetic shipping-option demo via `onPaymentDataChange`
-  - a purchase that branches on `googlePayType`: `TOKENIZED_CARD` goes to `simple-purchase`; `NON_TOKENIZED_CARD` goes through a 3DS purchase (gateway 3DS by default, or 3DS Global) and `SpreedlyThreeDSLifecycle`. It uses only existing backend routes
+  - a purchase that branches on `googlePayType`: `TOKENIZED_CARD` goes to `simple-purchase`; `NON_TOKENIZED_CARD` goes through a 3DS purchase (3DS Global by default, or gateway 3DS, which Spreedly refuses for Google Pay) and `SpreedlyThreeDSLifecycle`. It uses only existing backend routes
   - a Playwright spec, `google-pay.spec.ts`, that uses a synthetic `window.google` stub, tokenizes on both bundles and skips itself on SDK builds without the global
 
   Docs: `docs/google-pay/INTEGRATION_GUIDE.md` and `API_REFERENCE.md` (mirrored from the SDK repo, as for Paze) and `DEMO_GUIDE.md` for the demo page.

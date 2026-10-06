@@ -26,12 +26,14 @@ which also holds the architecture notes).
    | `NON_TOKENIZED_CARD`, or missing | A 3DS purchase with `serializeBrowserInfo()`. If the transaction comes back `pending`, the page runs `SpreedlyThreeDSLifecycle` (device fingerprint and/or the challenge modal), exactly as the 3DS demo pages do. |
 
    The **Purchase (3DS)** controls choose the 3DS route:
-   - **Gateway 3DS** (default): `POST /create-purchase-with-3ds-gateway-specific` with
-     `attempt_3dsecure: true`, and `onTriggerCompletion` → `POST /transactions/:t/complete`. This is
-     the route Spreedly's Google Pay docs describe.
-   - **3DS Global**: `POST /create-purchase-with-3ds` with the test SCA provider and a scenario
-     (`challenge` / `authenticated` / `not_authenticated`). Spreedly's Google Pay docs don't
-     mention `sca_provider_key`, so treat this as an experiment.
+   - **3DS Global** (default): `POST /create-purchase-with-3ds` with the test SCA provider and a
+     scenario (`challenge` / `authenticated` / `not_authenticated`). On the Spreedly test gateway,
+     a Google Pay payment method goes `pending` with a 3DS authentication, as a card does.
+   - **Gateway 3DS**: `POST /create-purchase-with-3ds-gateway-specific` with
+     `attempt_3dsecure: true`, and `onTriggerCompletion` → `POST /transactions/:t/complete`. On the
+     Spreedly test gateway, Spreedly refuses it for Google Pay payment methods with the warning
+     "attempt_3dsecure is not supported for this payment method type. 3DS is only available for
+     credit cards."
    - **No 3DS**: always `simple-purchase`.
    - **Run 3DS for every card** also sends `TOKENIZED_CARD` through 3DS. Spreedly documents that it
      then bypasses 3DS with the warning "Bypassing Spreedly 3DS authentication for GooglePay
@@ -84,10 +86,12 @@ work.
   needs Spreedly and stays a manual check. Specs skip themselves when the loaded SDK build has no
   `SpreedlyGooglePay`.
 - **Manual 3DS on the Spreedly test gateway:**
-  - Gateway 3DS uses card `4556761029983886` and magic amounts: `30.01` frictionless, `30.05`
-    challenge (the 3DS demo's `3001` / `3005` cents). Put the card in the `test_card_number` override.
-    Spreedly's docs don't say whether the override also drives the 3DS test behaviour.
-  - 3DS Global's test SCA provider picks the outcome by scenario, whatever the card.
+  - 3DS Global's test SCA provider picks the outcome by scenario, whatever the card. Use it to see
+    the challenge.
+  - Gateway 3DS is refused for Google Pay (see above). The `test_card_number` override does reach
+    the test gateway (the payment method stores the override card), but Spreedly drops the 3DS
+    fields: with `4556761029983886` at `30.05` the purchase fails with "browser_info is required for
+    3D Secure 2 based transactions".
 
   ```bash
   npm run test:e2e:local -- test/ui/testCases/google-pay.spec.ts

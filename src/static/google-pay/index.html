@@ -275,13 +275,13 @@
                      3DS choice only affects the server-side purchase, not the Google Pay request. -->
                 <h3 class="section-title">Purchase (3DS)</h3>
                 <div class="checkbox-row three-ds-options">
-                  <label><input type="radio" name="gp-3ds-mode" value="gateway" checked> Gateway 3DS
+                  <label><input type="radio" name="gp-3ds-mode" value="gateway"> Gateway 3DS
                     (<code>attempt_3dsecure</code>)</label>
-                  <label><input type="radio" name="gp-3ds-mode" value="global"> 3DS Global
+                  <label><input type="radio" name="gp-3ds-mode" value="global" checked> 3DS Global
                     (<code>sca_provider_key</code>)</label>
                   <label><input type="radio" name="gp-3ds-mode" value="none"> No 3DS</label>
                 </div>
-                <div id="gp-3ds-scenarios" class="checkbox-row three-ds-options hidden" style="margin-top: 0.5rem;">
+                <div id="gp-3ds-scenarios" class="checkbox-row three-ds-options" style="margin-top: 0.5rem;">
                   <span>Test SCA scenario:</span>
                   <label><input type="radio" name="gp-3ds-scenario" value="challenge" checked> challenge</label>
                   <label><input type="radio" name="gp-3ds-scenario" value="authenticated"> Frictionless - success</label>
