@@ -342,7 +342,7 @@ When integrating the SDK into your production application:
 | [Offsite Payments Overview](./docs/offsite-payments/OVERVIEW.md) | Compare General, Braintree APM, and Stripe APM                  |
 | [Paze Integration Guide](./docs/paze/INTEGRATION_GUIDE.md)       | Paze digital wallet demo and backend payment method create      |
 | [Paze API Reference](./docs/paze/API_REFERENCE.md)               | `SpreedlyPaze` methods/events and `/api/v1/paze-payment-method` |
-| [Google Pay Integration Guide](./docs/google-pay/INTEGRATION_GUIDE.md) | `SpreedlyGooglePay` setup, events, shipping/offers/enrollments, backend purchase and 3DS |
+| [Google Pay Integration Guide](./docs/google-pay/INTEGRATION_GUIDE.md) | `SpreedlyGooglePay` setup, events, shipping and offers, backend purchase and 3DS |
 | [Google Pay API Reference](./docs/google-pay/API_REFERENCE.md)   | `SpreedlyGooglePay` config, methods, events and error codes     |
 | [Google Pay Demo Guide](./docs/google-pay/DEMO_GUIDE.md)         | The `/google-pay` demo page, local run and synthetic e2e stub   |
 | [Testing Guide](./docs/testing/TESTING_GUIDE.md)                 | Test card numbers and how to verify each flow                   |
