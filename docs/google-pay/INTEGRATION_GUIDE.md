@@ -188,8 +188,8 @@ POST https://core.spreedly.com/v1/gateways/{gateway_token}/purchase.json
 
 | `googlePayType` | Comes from | Guidance |
 |---|---|---|
-| `TOKENIZED_CARD` | `CRYPTOGRAM_3DS` | Device token with cryptogram — authentication is already carried. **Do not send `attempt_3dsecure: true`.** |
-| `NON_TOKENIZED_CARD` | `PAN_ONLY` | Card on file with Google, no cryptogram. May need a 3DS step-up depending on region and gateway. |
+| `TOKENIZED_CARD` | `CRYPTOGRAM_3DS` | Device token with cryptogram — authentication is already carried. Run the transaction without 3DS. |
+| `NON_TOKENIZED_CARD` | `PAN_ONLY` | Card on file with Google, no cryptogram. May need a 3DS step-up depending on region and gateway — use 3DS Global (below). |
 
 The SDK hands you `googlePayType` before your first transaction call, so your server can branch
 on it (Spreedly's "tokenize first, then transact" option). On the web most payloads are
@@ -197,8 +197,31 @@ on it (Spreedly's "tokenize first, then transact" option). On the web most paylo
 `allowedAuthMethods: ['CRYPTOGRAM_3DS']`, at the cost of excluding shoppers whose card is not
 tokenized on their device.
 
+**Run 3DS through 3DS Global, not gateway-specific 3DS.** Send `sca_provider_key` and
+`browser_info` (from the SDK's `serializeBrowserInfo()`) on the purchase, and run
+`SpreedlyThreeDSLifecycle` when the transaction comes back `pending` — see Spreedly's
+[3DS2 Global guide](https://developer.spreedly.com/docs/spreedly-3ds2-global-guide):
+
+```json
+{
+  "transaction": {
+    "amount": 4200,
+    "currency_code": "USD",
+    "payment_method_token": "PAYMENT_METHOD_TOKEN_FROM_SDK",
+    "sca_provider_key": "YOUR_SCA_PROVIDER_KEY",
+    "browser_info": "SERIALIZED_BROWSER_INFO"
+  }
+}
+```
+
+Spreedly refuses gateway-specific 3DS (`attempt_3dsecure: true`) for Google Pay payment methods,
+on any gateway. The transaction carries the warning "attempt_3dsecure is not supported for this
+payment method type. 3DS is only available for credit cards.", Spreedly drops `browser_info`,
+and the gateway can then fail with "browser_info is required for 3D Secure 2 based transactions".
+If you send `sca_provider_key` for a `TOKENIZED_CARD`, Spreedly skips 3DS and adds a warning.
+
 The sample app implements this branching: `TOKENIZED_CARD` goes to `POST /api/v1/simple-purchase`,
-and `NON_TOKENIZED_CARD` goes through a 3DS purchase and `SpreedlyThreeDSLifecycle`.
+and `NON_TOKENIZED_CARD` goes through a 3DS Global purchase and `SpreedlyThreeDSLifecycle`.
 
 ### Retaining payment methods
 

@@ -109,6 +109,7 @@ test.describe('Google Pay', () => {
       await page.goto(`${MONOREPO_URLS.GOOGLE_PAY}?sdk=hosted-fields`);
       test.skip(!(await googlePayPage.hasSdkGlobal(page)), 'SpreedlyGooglePay not in this SDK build');
 
+      await googlePayPage.choose3DSMode(page, 'gateway');
       await googlePayPage.tokenize(page);
       await googlePayPage.clickPurchase(page);
 

@@ -345,7 +345,7 @@ function showTokenResult(result) {
 }
 
 function threeDSMode() {
-  return document.querySelector('input[name="gp-3ds-mode"]:checked')?.value || 'gateway';
+  return document.querySelector('input[name="gp-3ds-mode"]:checked')?.value || 'global';
 }
 
 function threeDSScenario() {
@@ -368,7 +368,9 @@ function showPurchaseResult(success, transaction, fallbackMessage) {
     'beforeend',
     `<dl class="result-grid"><dt>Transaction</dt><dd>${escape(token || '—')}</dd>` +
       `<dt>State</dt><dd>${escape(tx.state || (success ? 'succeeded' : 'failed'))}</dd>` +
-      `<dt>Message</dt><dd>${escape(tx.message || fallbackMessage || '—')}</dd></dl>`
+      `<dt>Message</dt><dd>${escape(tx.message || fallbackMessage || '—')}</dd>` +
+      (tx.warning ? `<dt>Warning</dt><dd>${escape(tx.warning)}</dd>` : '') +
+      '</dl>'
   );
   logEvent(
     `Purchase ${success ? 'succeeded' : 'failed'}: ${tx.message || fallbackMessage || tx.state}`,
@@ -463,7 +465,13 @@ async function purchaseWith3DS(mode, cents) {
       ));
     }
   } catch (error) {
-    showPurchaseResult(false, error?.response?.data?.transaction || error?.transaction, purchaseErrorMessage(error));
+    const failed = error?.response?.data?.transaction || error?.transaction;
+    // e.g. "attempt_3dsecure is not supported for this payment method type. 3DS is only available
+    // for credit cards." — Spreedly's reason, which the gateway's message doesn't give.
+    if (failed?.warning) {
+      logEvent(`Spreedly warning: ${failed.warning}`, 'error');
+    }
+    showPurchaseResult(false, failed, purchaseErrorMessage(error));
     return;
   }
 
