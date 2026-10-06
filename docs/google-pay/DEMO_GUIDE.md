@@ -43,7 +43,8 @@ which also holds the architecture notes).
 - Every other control rebuilds the instance:
   - auth methods and networks
   - billing, shipping and email
-  - retain
+  - retain (the page retains the new payment method from the server, through
+    `PUT /api/v1/payment_methods/:token/retain`, after `googlePayTokenGenerated`)
   - the card filters (refuse prepaid / credit, `assuranceDetailsRequired`)
   - `checkoutOption`
   - the transaction type: one-time, or a synthetic subscription with a 7-day trial / deferred charge / auto-reload enrollment
