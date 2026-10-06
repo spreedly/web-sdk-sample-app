@@ -39,7 +39,7 @@ which also holds the architecture notes).
 7. **New checkout** fetches fresh auth params and remounts (certificate auth is per checkout).
 
 **Controls**
-- The order total calls `setTransactionInfo()` without a remount, for one-time payments only.
+- The order total calls `setTransactionInfo()` without a remount.
 - Every other control rebuilds the instance:
   - auth methods and networks
   - billing, shipping and email
@@ -47,7 +47,6 @@ which also holds the architecture notes).
     `PUT /api/v1/payment_methods/:token/retain`, after `googlePayTokenGenerated`)
   - the card filters (refuse prepaid / credit, `assuranceDetailsRequired`)
   - `checkoutOption`
-  - the transaction type: one-time, or a synthetic subscription with a 7-day trial / deferred charge / auto-reload enrollment
   - button style
   - `testCardNumber`
 

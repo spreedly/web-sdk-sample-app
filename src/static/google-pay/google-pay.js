@@ -76,10 +76,6 @@ function orderTotal() {
   return Number.isFinite(value) && value > 0 ? value : 0;
 }
 
-function isOneTime() {
-  return $('gp-tx-type').value === 'standard';
-}
-
 function discountFor(subtotal) {
   // Rounded to cents so the DISCOUNT line and the total agree.
   return sheetState.redemptionCodes.includes(DEMO.promoCode)
@@ -109,66 +105,6 @@ function transactionInfo() {
         ? [{ label: 'Shipping', type: 'SHIPPING_OPTION', price: shippingCost.toFixed(2) }]
         : []),
     ],
-  };
-}
-
-/** RFC 3339, `days` from now. */
-function inDays(days) {
-  return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
-}
-
-/** SYNTHETIC enrollment presets; the order total drives the recurring / later / reload amount. */
-function enrollmentInfo(type) {
-  const amount = orderTotal().toFixed(2);
-  const common = {
-    currencyCode: DEMO.currencyCode,
-    countryCode: DEMO.countryCode,
-    managementUrl: 'https://merchant.example/account',
-    billingAgreement: 'Synthetic demo terms: cancel any time from your account page.',
-  };
-  if (type === 'recurring') {
-    return {
-      recurringTransactionInfo: {
-        ...common,
-        immediateTotalPrice: '0.00',
-        introductoryPeriodInfo: {
-          introductoryPeriodEndDateTime: inDays(7),
-          label: '7 Day Free Trial',
-          totalPrice: '0.00',
-        },
-        recurrenceItems: [
-          {
-            billingInitialDateTime: inDays(7),
-            label: 'Demo Monthly Plan',
-            price: amount,
-            priceStatus: 'FINAL',
-            recurrencePeriod: 'MONTH',
-            recurrencePeriodCount: 1,
-          },
-        ],
-      },
-    };
-  }
-  if (type === 'deferred') {
-    return {
-      deferredTransactionInfo: {
-        ...common,
-        immediateTotalPrice: '0.00',
-        billingDateTime: inDays(14),
-        priceStatus: 'FINAL',
-        price: amount,
-        label: 'Demo Reservation',
-      },
-    };
-  }
-  return {
-    automaticReloadTransactionInfo: {
-      ...common,
-      immediateTotalPrice: amount,
-      minimumBalanceAmount: '5.00',
-      reloadAmount: amount,
-      label: 'Demo Balance Reload',
-    },
   };
 }
 
@@ -210,9 +146,8 @@ function onPaymentDataChange({ trigger, shippingAddress, shippingOptionId, redem
       }
     : undefined;
 
-  // Enrollments are fixed at construction; only one-time totals are recalculated in the sheet.
   return {
-    ...(isOneTime() ? { transactionInfo: transactionInfo() } : {}),
+    transactionInfo: transactionInfo(),
     ...(offerInfo ? { offerInfo } : {}),
   };
 }
@@ -228,7 +163,6 @@ function readConfig() {
   const shipping = $('gp-shipping').checked;
   const promo = $('gp-promo').checked;
   const testCardNumber = $('gp-test-card').value.trim();
-  const txType = $('gp-tx-type').value;
   sheetState.shippingCost = 0;
   sheetState.redemptionCodes = [];
 
@@ -236,7 +170,7 @@ function readConfig() {
     environment: 'TEST',
     authDetails,
     merchantInfo: { merchantName: DEMO.merchantName },
-    ...(txType === 'standard' ? { transactionInfo: transactionInfo() } : enrollmentInfo(txType)),
+    transactionInfo: transactionInfo(),
     allowedAuthMethods,
     allowedCardNetworks,
     ...($('gp-no-prepaid').checked ? { allowPrepaidCards: false } : {}),
@@ -306,7 +240,6 @@ function registerEvents(instance) {
   instance.on('googlePayTokenGenerated', async result => {
     lastResult = result;
     logEvent(`googlePayTokenGenerated — ${result.googlePayType || 'type unknown'}`, 'success');
-
     // The SDK creates the payment method cached (Core ignores `retained` on the browser's
     // certificate-auth request), so retain it from the server, as the card demos do.
     if ($('gp-retain').checked && result.paymentMethod?.storage_state !== 'retained') {
@@ -348,7 +281,8 @@ async function mountGooglePay() {
   clearStatus();
 
   try {
-    googlePay = new window.SpreedlyGooglePay(readConfig());
+    const conf = readConfig();
+    googlePay = new window.SpreedlyGooglePay(conf);
   } catch (error) {
     // Configuration mistakes throw synchronously from the constructor.
     logEvent(`Config error: ${error.message}`, 'error');
@@ -655,11 +589,6 @@ function wireControls() {
   // The total changes often and needs no remount — that's what setTransactionInfo() is for.
   $('gp-amount').addEventListener('input', () => {
     if (!googlePay || orderTotal() <= 0) return;
-    // Enrollments are fixed at construction; rebuild instead.
-    if (!isOneTime()) {
-      mountGooglePay();
-      return;
-    }
     try {
       googlePay.setTransactionInfo(transactionInfo());
     } catch (error) {

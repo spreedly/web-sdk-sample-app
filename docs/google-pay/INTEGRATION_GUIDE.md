@@ -230,8 +230,7 @@ is present, and `merchant` / `recurring` on later ones:
 
 Only some gateways support recurring Google Pay transactions (Spreedly lists Adyen, Checkout.com,
 CyberSource, CyberSource REST, NMI, Stripe Payment Intents and WorldPay). On other gateways
-Spreedly ignores the stored credential flags. To show the shopper a subscription in the sheet,
-see [Subscriptions, deferred charges and automatic reload](#subscriptions-deferred-charges-and-automatic-reload).
+Spreedly ignores the stored credential flags.
 
 ---
 
@@ -319,57 +318,6 @@ const googlePay = new SpreedlyGooglePay({
 
 Offers don't change the price by themselves, so always return the recalculated
 `transactionInfo`. `redemptionCodes` includes codes you already approved.
-
-## Subscriptions, deferred charges and automatic reload
-
-For an enrollment rather than a one-time payment, pass one of these **instead of**
-`transactionInfo` (exactly one of the four is required):
-
-| Config | Use it for | Key fields |
-|---|---|---|
-| `recurringTransactionInfo` | Subscriptions | `recurrenceItems` (price, `recurrencePeriod` + `recurrencePeriodCount`), optional `introductoryPeriodInfo` (a free trial) |
-| `deferredTransactionInfo` | A charge later (a reservation or pre-order) | `billingDateTime`, `priceStatus`, `price`, `label` |
-| `automaticReloadTransactionInfo` | Stored-balance top-ups | `minimumBalanceAmount`, `reloadAmount`, `label` |
-
-All three take `currencyCode`, `countryCode`, `immediateTotalPrice` (due today, can be `'0.00'`)
-and, optionally, `managementUrl`, `tokenUpdateUrl` and `billingAgreement`.
-
-```js
-const googlePay = new SpreedlyGooglePay({
-  environment: 'TEST',
-  authDetails,
-  merchantInfo: { merchantName: 'Example Streaming' },
-  recurringTransactionInfo: {
-    currencyCode: 'USD',
-    countryCode: 'US',
-    immediateTotalPrice: '0.00',
-    managementUrl: 'https://example.com/account/subscription',
-    billingAgreement: 'Renews monthly. Cancel any time from your account page.',
-    introductoryPeriodInfo: {
-      introductoryPeriodEndDateTime: '2026-11-07T00:00:00Z',
-      label: '7 Day Free Trial',
-      totalPrice: '0.00',
-    },
-    recurrenceItems: [
-      {
-        billingInitialDateTime: '2026-11-07T00:00:00Z',
-        label: 'Premium Monthly',
-        price: '9.99',
-        priceStatus: 'FINAL',
-        recurrencePeriod: 'MONTH',
-        recurrencePeriodCount: 1,
-      },
-    ],
-  },
-});
-```
-
-- **Retain the payment method** from your server so it outlives the ~12-hour cache (see
-  [Retaining payment methods](#retaining-payment-methods)), and send the stored-credential fields
-  on your server-side transactions (see [Recurring transactions](#recurring-transactions)).
-- The enrollment is fixed at construction: `setTransactionInfo()` throws on these instances. Create
-  a new `SpreedlyGooglePay` to change it.
-- Dates are RFC 3339. The SDK checks formats and required fields; Google checks the date ordering.
 
 ## Restricting cards and checking assurance
 

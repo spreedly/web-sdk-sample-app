@@ -19,8 +19,8 @@ const googlePay = new window.SpreedlyGooglePay(config);
 
 The constructor **throws synchronously** (`Error` with a message naming the field) on any
 configuration mistake: a missing required field, `merchantInfo.merchantId` absent in
-`PRODUCTION`, an invalid price format, more or fewer than one transaction info shape, or callback
-intents without the flags and callback they need. It has no other side effects — no DOM access
+`PRODUCTION`, an invalid price format, or callback intents without the flags and callback they
+need. It has no other side effects — no DOM access
 and no network calls. Construct inside a try/catch if config may be incomplete.
 
 ### Methods
@@ -69,9 +69,7 @@ current.
 googlePay.setTransactionInfo({ totalPrice: '52.00', currencyCode: 'USD', countryCode: 'US' });
 ```
 
-Throws if `info` is incomplete or invalid, or if the instance was configured with an enrollment
-(`recurringTransactionInfo`, `deferredTransactionInfo` or `automaticReloadTransactionInfo`), which
-is fixed at construction.
+Throws if `info` is incomplete or invalid.
 
 #### `destroy(): void`
 
@@ -89,10 +87,7 @@ start again — for example for a new checkout, with freshly signed `authDetails
 | `authDetails` | `{ environment_key, certificate_token, nonce, signature, timestamp }` | Yes | Signed by your server. `environment_key` becomes `gatewayMerchantId`. Fixed for the life of the instance, as with `SpreedlyHostedFields`; create a new instance for each checkout. |
 | `merchantInfo.merchantName` | `string` | Yes | Shown in the sheet. |
 | `merchantInfo.merchantId` | `string` | `PRODUCTION` only | Google Merchant ID. Omitted from the request in `TEST`. |
-| `transactionInfo` | `GooglePayTransactionInfo` | One of four | A one-time payment. See [below](#googlepaytransactioninfo). Update later with `setTransactionInfo()`. |
-| `recurringTransactionInfo` | `GooglePayRecurringTransactionInfo` | One of four | Enrollment for a recurring charge (subscription). See [Enrollments](#enrollments). |
-| `deferredTransactionInfo` | `GooglePayDeferredTransactionInfo` | One of four | Enrollment for a charge at a later date. |
-| `automaticReloadTransactionInfo` | `GooglePayAutomaticReloadTransactionInfo` | One of four | Enrollment for automatic reload of a stored balance. |
+| `transactionInfo` | `GooglePayTransactionInfo` | Yes | The payment. See [below](#googlepaytransactioninfo). Update later with `setTransactionInfo()`. |
 | `allowedAuthMethods` | `('PAN_ONLY' \| 'CRYPTOGRAM_3DS')[]` | No | Default: both. |
 | `allowedCardNetworks` | `('AMEX' \| 'DISCOVER' \| 'INTERAC' \| 'JCB' \| 'MASTERCARD' \| 'VISA' \| 'ELECTRON' \| 'MAESTRO' \| 'ELO' \| 'ELO_DEBIT')[]` | No | Any subset of Google's networks. Default: `AMEX`, `DISCOVER`, `JCB`, `MASTERCARD`, `VISA`. `ELECTRON`, `MAESTRO`, `ELO`, `ELO_DEBIT` are Brazilian combo-card networks and need `transactionInfo.countryCode: 'BR'` with both the credit and debit network listed. `DISCOVER` and `JCB` never return `CRYPTOGRAM_3DS`. List only networks your gateway can process. |
 | `allowPrepaidCards` | `boolean` | No | `false` refuses prepaid cards. Omitted = Google's default (allowed). |
@@ -128,35 +123,6 @@ start again — for example for a new checkout, with freshly signed `authDetails
 | `displayItems` | `{ label, type, price, status? }[]` | No | `type` is one of `LINE_ITEM`, `SUBTOTAL`, `TAX`, `DISCOUNT`, `SHIPPING_OPTION`. `price` may be negative. `status` is `'FINAL'` (default) or `'PENDING'`. |
 | `transactionId` | `string` | No | A unique id per attempt; Google encourages it for troubleshooting. |
 | `checkoutOption` | `'DEFAULT' \| 'COMPLETE_IMMEDIATE_PURCHASE' \| 'CONTINUE_TO_REVIEW'` | No | The sheet's submit button: Google's choice, "Pay now" (`FINAL` only) or "Review Order". |
-
-### Enrollments
-
-Use exactly one of these instead of `transactionInfo`. They share these fields:
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `currencyCode` | `string` | Yes | ISO 4217. |
-| `countryCode` | `string` | Yes | ISO 3166-1 alpha-2 of the acquirer. |
-| `immediateTotalPrice` | `string` | Yes | Due today, non-negative (`'0.00'` for a free trial). |
-| `immediateDisplayItems` | `DisplayItem[]` | No | One-time items charged today. |
-| `transactionId` | `string` | No | |
-| `tokenUpdateUrl` | `string` | No | HTTPS, no trailing slash, query or fragment. Where token lifecycle updates are sent. |
-| `managementUrl` | `string` | No | HTTPS, same rules. Where the shopper manages the enrollment. |
-| `billingAgreement` | `string` | No | Localized cancellation terms, at most 300 characters. |
-
-`recurringTransactionInfo` adds:
-- `recurrenceItems` (required, at least one): `{ label, priceStatus, price?, recurrencePeriod, recurrencePeriodCount, billingInitialDateTime?, billingFinalDateTime?, displayItems? }`.
-  - `priceStatus` is `'FINAL'`, `'ESTIMATED'` or `'NOT_CURRENTLY_KNOWN'`. `price` is required for the first two and must be omitted for the last.
-  - `recurrencePeriod` is `'YEAR'`, `'MONTH'`, `'WEEK'` or `'DAY'`; `recurrencePeriodCount` is a positive integer.
-  - Dates are RFC 3339.
-- `introductoryPeriodInfo` (optional): `{ introductoryPeriodEndDateTime, label, totalPrice, introductoryPeriodStartDateTime?, displayItems? }`.
-
-`deferredTransactionInfo` adds `billingDateTime` (RFC 3339, in the future), `priceStatus`, `price` (non-zero when set), `label` and `displayItems?`.
-
-`automaticReloadTransactionInfo` adds `minimumBalanceAmount` (may be `'0.00'`), `reloadAmount` (non-zero) and `label`.
-
-Labels are at most 100 characters. Google checks the ordering of dates (introductory period before
-recurrence, and so on) when the sheet opens.
 
 ### `onPaymentDataChange`
 

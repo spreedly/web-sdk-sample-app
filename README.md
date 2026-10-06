@@ -324,7 +324,7 @@ When integrating the SDK into your production application:
 | [PPCP Integration Guide](./docs/ppcp/INTEGRATION_GUIDE.md)       | PayPal Complete Payments with `SpreedlyPPCP`                    |
 | [PPCP API Reference](./docs/ppcp/API_REFERENCE.md)               | `SpreedlyPPCP` options, methods and events                      |
 | [Click to Pay Integration Guide](./docs/click-to-pay/integration-guide/README.md) | Mastercard Click to Pay with Hosted Fields   |
-| [Google Pay Integration Guide](./docs/google-pay/INTEGRATION_GUIDE.md) | `SpreedlyGooglePay` setup, events, shipping/offers/enrollments, backend purchase and 3DS |
+| [Google Pay Integration Guide](./docs/google-pay/INTEGRATION_GUIDE.md) | `SpreedlyGooglePay` setup, events, shipping and offers, backend purchase and 3DS |
 | [Google Pay API Reference](./docs/google-pay/API_REFERENCE.md)   | `SpreedlyGooglePay` config, methods, events and error codes     |
 | [Google Pay Demo Guide](./docs/google-pay/DEMO_GUIDE.md)         | The `/google-pay` demo page, local run and synthetic e2e stub   |
 | [Testing Guide](./docs/testing/TESTING_GUIDE.md)                 | Test card numbers and how to verify each flow                   |
