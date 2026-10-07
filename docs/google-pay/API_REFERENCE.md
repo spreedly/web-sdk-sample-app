@@ -5,7 +5,9 @@ The `SpreedlyGooglePay` methods, events, and types. Integration steps are in
 
 `SpreedlyGooglePay` is a **standalone** class (it does not extend `SpreedlyHostedFields` /
 `SpreedlyExpressCheckout`). Both CDN bundles expose it as `window.SpreedlyGooglePay`, and both
-re-export its types (`GooglePayConfig`, `GooglePayTokenResult`, …).
+re-export its types (`GooglePayConfig`, `GooglePayTokenResult`, …). Express Checkout can also
+create one for you and draw it above its card form — see
+[In Express Checkout](#in-express-checkout).
 
 ## `SpreedlyGooglePay`
 
@@ -184,6 +186,24 @@ Every other field maps 1:1 to the config above.
 
 ---
 
+## In Express Checkout
+
+`SpreedlyExpressCheckout` draws Google Pay above its card form when `expressCheckout()` gets a
+`googlePay` option. It creates and manages the `SpreedlyGooglePay` instance itself.
+
+| API | Description |
+|-----|-------------|
+| `expressCheckout({ googlePay })` | `ExpressCheckoutGooglePayConfig`: a [`GooglePayConfig`](#googlepayconfig) without `authDetails`, which come from the Express Checkout instance. `button.buttonSizeMode` defaults to `'fill'`. Draws a wallet row above the iframe (Google's button, then a divider), shown only after `googlePayReady`. Does not throw for an invalid config: the form mounts without the row, and `googlePayError` and `googlePayUnavailable` fire with `DEVELOPER_ERROR`. |
+| `setGooglePayTransactionInfo(info)` | Same as [`setTransactionInfo()`](#settransactioninfoinfo-void), and keeps `info` for the next `expressCheckout()` call. Throws if `info` is invalid. Logs a warning and does nothing without a `googlePay` option. |
+| `on('googlePay…', cb)` | The [events](#events) below, with the same payloads, emitted by the Express Checkout instance. Card tokens still arrive on `tokenGenerated`. |
+| `updateTextElement('walletDividerText', text)` | Changes the divider copy. Default: "or pay with card". Also settable as `uiConfig.textConfig.walletDividerText`. |
+| `close()`, `setRecache()` | Remove the row and destroy the button. |
+
+The row is removed, not disabled, when `googlePayUnavailable` fires or Google's button can't be
+drawn. It takes the form's `styles.paper.backgroundColor` and `styles.typography.fontFamily`.
+
+---
+
 ## Events
 
 Register with `googlePay.on(name, cb)`.
@@ -191,7 +211,7 @@ Register with `googlePay.on(name, cb)`.
 | Event | Payload | Fires when |
 |-------|---------|-----------|
 | `googlePayReady` | `{ paymentMethodPresent? }` | `mount()` drew Google's button. `paymentMethodPresent` only with `existingPaymentMethodRequired`. |
-| `googlePayUnavailable` | `{ reason: 'NOT_READY_TO_PAY' \| 'API_NOT_LOADED' \| 'PAYMENTS_CLIENT_ERROR' }` | `mount()` drew nothing. Show your card form. |
+| `googlePayUnavailable` | `{ reason: 'NOT_READY_TO_PAY' \| 'API_NOT_LOADED' \| 'PAYMENTS_CLIENT_ERROR' \| 'DEVELOPER_ERROR' }` | `mount()` drew nothing. Show your card form. `DEVELOPER_ERROR` only comes from Express Checkout, for an invalid `googlePay` config. |
 | `googlePayButtonClicked` | `undefined` | Shopper tapped the button; the sheet is opening. Use it for merchant UI — do not listen on the container. |
 | `googlePayPaymentAuthorized` | `GooglePayPaymentSummary` | Shopper approved in the sheet; tokenization is starting. Display only. |
 | `googlePayTokenGenerated` | `GooglePayTokenResult` | The sheet closed with a Spreedly payment method. Send `token` to your server. |
@@ -242,7 +262,7 @@ The `googlePayPaymentAuthorized` payload: the display fields of `GooglePayTokenR
 | `API_NOT_LOADED` | `pay.js` did not define `window.google.payments.api` within 10 s | Check the `<script>` tag and your CSP. `googlePayUnavailable` also fires. |
 | `NOT_READY_TO_PAY` | Only as a `googlePayUnavailable` reason: the shopper or browser can't pay | Normal — show the card form. |
 | `MOUNT_FAILED` | The container element is missing, or Google could not draw the button | Render the container before calling `mount()`; check the id. |
-| `DEVELOPER_ERROR` | Google rejected the request (e.g. merchant info), or the request could not be built | Check the Wallet Console setup and config. |
+| `DEVELOPER_ERROR` | Google rejected the request (e.g. merchant info), or the request could not be built. In Express Checkout, also an invalid `googlePay` config | Check the Wallet Console setup and config. |
 | `TOKENIZATION_FAILED` | Spreedly could not create the payment method | See `details`. The sheet stays open so the shopper can pick another card. |
 | `TOKENIZATION_TIMEOUT` | Spreedly did not answer within 20 s | Same as above. Key your order on your own order id, not the token. |
 | `PAYMENT_DATA_CHANGE_FAILED` | Your `onPaymentDataChange` threw, timed out or returned an invalid total | Fix the callback; the shopper sees a generic error in the sheet. |

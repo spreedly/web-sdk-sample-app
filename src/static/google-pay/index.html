@@ -56,6 +56,137 @@
       width: 100%;
     }
 
+    .gp-ec-container {
+      border: 1px solid var(--color-gray-200);
+      border-radius: 8px;
+      height: 660px;
+      margin: 1.5rem 0 0.75rem;
+      overflow: hidden;
+    }
+
+    /* The page's own dialog, sized for the wallet row plus the embedded form */
+    #gp-ec-dialog .express-dialog-content {
+      height: min(720px, 92vh);
+      max-width: 94vw;
+    }
+
+    .gp-ec-dialog-header {
+      align-items: center;
+      border-bottom: 1px solid var(--color-gray-200);
+      display: flex;
+      justify-content: space-between;
+      padding: 0.75rem 1rem;
+    }
+
+    .gp-ec-dialog-close {
+      background: none;
+      border: none;
+      color: var(--color-gray-500);
+      cursor: pointer;
+      font-size: 1.5rem;
+      line-height: 1;
+      min-height: 44px;
+      min-width: 44px;
+    }
+
+    #gp-ec-dialog-container {
+      flex: 1;
+      min-height: 0;
+    }
+
+    .gp-columns {
+      align-items: start;
+      display: grid;
+      gap: 1.5rem;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+
+    .gp-column {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      min-width: 0;
+    }
+
+    .gp-controls {
+      max-height: 780px;
+      overflow-y: auto;
+    }
+
+    .gp-demo {
+      margin-bottom: 0;
+    }
+
+    .gp-demo .gpay-button-wrap,
+    .gp-demo .gp-ec-container {
+      margin-top: 0;
+    }
+
+    .gp-logs,
+    .gp-snippet {
+      display: flex;
+      flex-direction: column;
+      height: 380px;
+      margin-top: 0;
+    }
+
+    .gp-logs .event-log,
+    .gp-code {
+      flex: 1;
+      max-height: none;
+      min-height: 0;
+      overflow: auto;
+    }
+
+    .gp-copy-btn {
+      align-items: center;
+      background: none;
+      border: 1px solid var(--color-gray-700);
+      border-radius: var(--radius-md);
+      color: var(--color-gray-400);
+      cursor: pointer;
+      display: inline-flex;
+      height: 32px;
+      justify-content: center;
+      width: 32px;
+    }
+
+    .gp-copy-btn:hover,
+    .gp-copy-btn:focus-visible {
+      border-color: var(--color-gray-500);
+      color: var(--color-white);
+    }
+
+    .gp-copy-btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.4;
+    }
+
+    .gp-copy-btn svg {
+      height: 16px;
+      width: 16px;
+    }
+
+    .gp-code {
+      color: var(--color-gray-300);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      line-height: 1.5;
+      margin: 0.5rem 0 0;
+      white-space: pre;
+    }
+
+    .gp-notes {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-top: 1.5rem;
+    }
+
+    .gp-notes .config-section {
+      margin-bottom: 0;
+    }
+
     .fallback-note {
       background: var(--color-gray-50);
       border: 1px dashed var(--color-gray-300);
@@ -142,6 +273,17 @@
     .event-log-entry.info { color: #60a5fa; }
     .event-log-entry .time { color: var(--color-gray-500); }
 
+    @media (max-width: 900px) {
+      /* One column: demo first, then controls, log and snippet */
+      .gp-columns { align-items: stretch; display: flex; flex-direction: column; }
+      .gp-column { display: contents; }
+      .gp-demo { order: 1; }
+      .gp-controls { order: 2; max-height: none; }
+      .gp-logs { order: 3; }
+      .gp-snippet { order: 4; }
+      .gp-notes { grid-template-columns: minmax(0, 1fr); }
+    }
+
     @media (max-width: 640px) {
       .settings-grid { grid-template-columns: 1fr; }
     }
@@ -162,207 +304,257 @@
 
     <main class="main">
       <div class="container">
-        <div class="tokenize-layout">
-          <div class="tokenize-form">
-            <a href="../index.html" class="back-link">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
-                stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
-              </svg>
-              Back to flows
-            </a>
+        <a href="../index.html" class="back-link">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+            stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+          </svg>
+          Back to flows
+        </a>
 
-            <h1 class="mb-2">Google Pay</h1>
-            <p class="mb-6" style="color: var(--color-gray-500);">
-              Create a Spreedly payment method with the standalone <code>SpreedlyGooglePay</code> class
-              (in both SDK bundles), then run a purchase.
-            </p>
+        <h1 class="mb-2">Google Pay</h1>
+        <p class="mb-6" style="color: var(--color-gray-500);">
+          Create a Spreedly payment method with the standalone <code>SpreedlyGooglePay</code> class
+          (in both SDK bundles), or let the Express Checkout form draw Google Pay above its card
+          fields, then run a purchase.
+        </p>
 
-            <div id="loading-state" class="card" style="text-align: center; padding: 3rem;">
-              <div class="loading">
-                <span class="spinner"></span>
-                <span>Loading Google Pay...</span>
+        <div id="loading-state" class="card" style="text-align: center; padding: 3rem;">
+          <div class="loading">
+            <span class="spinner"></span>
+            <span>Loading Google Pay...</span>
+          </div>
+        </div>
+
+        <div id="error-state" class="card hidden" style="border-top: 4px solid var(--color-error);">
+          <h3 style="color: var(--color-error); margin-bottom: 1rem;">Error</h3>
+          <p id="error-message" style="color: var(--color-gray-600);"></p>
+          <button onclick="window.location.reload()" class="btn btn-secondary" style="margin-top: 1rem;">
+            Try Again
+          </button>
+        </div>
+
+        <!-- Two independent columns, so a short cell never leaves a gap above the next one -->
+        <div id="gp-workspace" class="gp-columns hidden">
+          <div class="gp-column">
+            <section id="payment-section" class="card gp-controls" aria-labelledby="gp-controls-title">
+              <div class="config-section-title" id="gp-controls-title">Configuration</div>
+              <div class="order-summary">
+                <label class="form-label" for="gp-amount"><strong>Order total (USD)</strong></label>
+                <input type="text" id="gp-amount" class="form-input" value="42.00" inputmode="decimal">
               </div>
-            </div>
+              <p style="color: var(--color-gray-500); font-size: 0.8125rem; margin-top: 0.5rem;">
+                Changing the total calls <code>setTransactionInfo()</code>
+                (<code>setGooglePayTransactionInfo()</code> in the Express Checkout form) — no remount needed.
+              </p>
 
-            <div id="payment-section" class="hidden">
-              <div class="card" style="margin-top: 1.5rem;">
-                <div class="order-summary">
-                  <label class="form-label" for="gp-amount"><strong>Order total (USD)</strong></label>
-                  <input type="text" id="gp-amount" class="form-input" value="42.00" inputmode="decimal">
-                </div>
-                <p style="color: var(--color-gray-500); font-size: 0.8125rem; margin-top: 0.5rem;">
-                  Changing the total calls <code>setTransactionInfo()</code> — no remount needed.
-                </p>
-
-                <h3 class="section-title">Payment sheet</h3>
+              <!-- Express Checkout bundle only. Radios, so the checkbox/select remount wiring skips them. -->
+              <div id="gp-placement-section" class="hidden">
+                <h3 class="section-title">Placement</h3>
                 <div class="checkbox-row">
-                  <label><input type="checkbox" id="gp-auth-pan" checked> PAN_ONLY</label>
-                  <label><input type="checkbox" id="gp-auth-cryptogram" checked> CRYPTOGRAM_3DS</label>
+                  <label><input type="radio" name="gp-placement" value="standalone"> Standalone button
+                    (<code>SpreedlyGooglePay</code>)</label>
+                  <label><input type="radio" name="gp-placement" value="express-checkout" checked> Inside the Express
+                    Checkout form (<code>googlePay</code> option)</label>
                 </div>
-                <div class="checkbox-row" style="margin-top: 0.5rem;">
-                  <label><input type="checkbox" class="gp-network" value="AMEX" checked> AMEX</label>
-                  <label><input type="checkbox" class="gp-network" value="DISCOVER" checked> DISCOVER</label>
-                  <label><input type="checkbox" class="gp-network" value="JCB" checked> JCB</label>
-                  <label><input type="checkbox" class="gp-network" value="MASTERCARD" checked> MASTERCARD</label>
-                  <label><input type="checkbox" class="gp-network" value="VISA" checked> VISA</label>
+                <div id="gp-ec-display-row" class="checkbox-row hidden" style="margin-top: 0.5rem;">
+                  <span>Form display:</span>
+                  <label><input type="radio" name="gp-ec-display" value="embedded" checked> Embedded</label>
+                  <label><input type="radio" name="gp-ec-display" value="dialog"> Merchant dialog (form
+                    embedded in the page's own dialog)</label>
                 </div>
-                <div class="checkbox-row" style="margin-top: 0.5rem;">
-                  <label><input type="checkbox" id="gp-billing"> Billing address</label>
-                  <label><input type="checkbox" id="gp-shipping"> Shipping address + options</label>
-                  <label><input type="checkbox" id="gp-email"> Email</label>
-                  <label><input type="checkbox" id="gp-retain"> Retain payment method</label>
-                </div>
-                <div class="checkbox-row" style="margin-top: 0.5rem;">
-                  <label><input type="checkbox" id="gp-promo"> Promo codes (<code>OFFER</code> — try SAVE10)</label>
-                  <label><input type="checkbox" id="gp-no-prepaid"> Refuse prepaid</label>
-                  <label><input type="checkbox" id="gp-no-credit"> Refuse credit</label>
-                  <label><input type="checkbox" id="gp-assurance"> Assurance details</label>
-                </div>
-
-                <h3 class="section-title">Transaction</h3>
-                <div class="settings-grid">
-                  <div class="form-group">
-                    <label class="form-label" for="gp-checkout-option">Sheet button</label>
-                    <select id="gp-checkout-option" class="form-input">
-                      <option value="DEFAULT" selected>DEFAULT</option>
-                      <option value="COMPLETE_IMMEDIATE_PURCHASE">COMPLETE_IMMEDIATE_PURCHASE</option>
-                      <option value="CONTINUE_TO_REVIEW">CONTINUE_TO_REVIEW</option>
-                    </select>
-                  </div>
-                </div>
-
-                <h3 class="section-title">Button</h3>
-                <div class="settings-grid">
-                  <div class="form-group">
-                    <label class="form-label" for="gp-btn-color">Color</label>
-                    <select id="gp-btn-color" class="form-input">
-                      <option value="default" selected>default</option>
-                      <option value="black">black</option>
-                      <option value="white">white</option>
-                    </select>
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label" for="gp-btn-type">Type</label>
-                    <select id="gp-btn-type" class="form-input">
-                      <option value="buy">buy</option>
-                      <option value="pay" selected>pay</option>
-                      <option value="checkout">checkout</option>
-                      <option value="order">order</option>
-                      <option value="plain">plain</option>
-                    </select>
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label" for="gp-btn-size">Size mode</label>
-                    <select id="gp-btn-size" class="form-input">
-                      <option value="fill" selected>fill</option>
-                      <option value="static">static</option>
-                    </select>
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label" for="gp-btn-radius">Corner radius (px)</label>
-                    <input type="number" id="gp-btn-radius" class="form-input" value="4" min="0" max="20">
-                  </div>
-                </div>
-
-                <h3 class="section-title">Testing</h3>
-                <div class="form-group">
-                  <label class="form-label" for="gp-test-card">Spreedly <code>test_card_number</code> override (optional)</label>
-                  <input type="text" id="gp-test-card" class="form-input" placeholder="e.g. 4111111111111111">
-                </div>
-
-                <!-- Radios on purpose: the page remounts Google Pay on checkbox/select changes, and the
-                     3DS choice only affects the server-side purchase, not the Google Pay request. -->
-                <h3 class="section-title">Purchase (3DS)</h3>
-                <div class="checkbox-row three-ds-options">
-                  <label><input type="radio" name="gp-3ds-mode" value="gateway"> Gateway 3DS
-                    (<code>attempt_3dsecure</code>)</label>
-                  <label><input type="radio" name="gp-3ds-mode" value="global" checked> 3DS Global
-                    (<code>sca_provider_key</code>)</label>
-                  <label><input type="radio" name="gp-3ds-mode" value="none"> No 3DS</label>
-                </div>
-                <div id="gp-3ds-scenarios" class="checkbox-row three-ds-options" style="margin-top: 0.5rem;">
-                  <span>Test SCA scenario:</span>
-                  <label><input type="radio" name="gp-3ds-scenario" value="challenge" checked> challenge</label>
-                  <label><input type="radio" name="gp-3ds-scenario" value="authenticated"> Frictionless - success</label>
-                  <label><input type="radio" name="gp-3ds-scenario" value="not_authenticated"> Frictionless - failure</label>
-                </div>
-                <div class="checkbox-row three-ds-options" style="margin-top: 0.5rem;">
-                  <span>Run 3DS for:</span>
-                  <label><input type="radio" name="gp-3ds-when" value="non-tokenized" checked>
-                    NON_TOKENIZED_CARD only (recommended)</label>
-                  <label><input type="radio" name="gp-3ds-when" value="always"> Every card (Spreedly bypasses
-                    TOKENIZED_CARD)</label>
-                </div>
-
-                <!-- Empty by design: SpreedlyGooglePay.mount() draws Google's button in here -->
-                <div id="google-pay-button-container" class="gpay-button-wrap"></div>
-                <div id="gp-fallback" class="fallback-note hidden">
-                  Google Pay is not available in this browser / account (<span id="gp-fallback-reason"></span>).
-                  A real checkout would show only its card form here.
-                </div>
-
-                <div id="result-card" class="result-card hidden">
-                  <h4 id="result-title" style="margin-bottom: 0.25rem;"></h4>
-                  <div id="result-body"></div>
-                  <button type="button" id="gp-purchase-btn" class="submit-btn hidden">Purchase</button>
-                  <button type="button" id="gp-new-checkout-btn" class="submit-btn secondary hidden">New checkout</button>
-                </div>
-
-                <div id="status-message" class="status-message"></div>
-
-                <details class="event-log-container" open>
-                  <summary class="event-log-header" style="cursor: pointer;">
-                    <span class="event-log-title">Event Log</span>
-                  </summary>
-                  <div id="event-log" class="event-log"></div>
-                </details>
               </div>
-            </div>
 
-            <div id="error-state" class="card hidden" style="border-top: 4px solid var(--color-error);">
-              <h3 style="color: var(--color-error); margin-bottom: 1rem;">Error</h3>
-              <p id="error-message" style="color: var(--color-gray-600);"></p>
-              <button onclick="window.location.reload()" class="btn btn-secondary" style="margin-top: 1rem;">
-                Try Again
-              </button>
-            </div>
+              <h3 class="section-title">Payment sheet</h3>
+              <div class="checkbox-row">
+                <label><input type="checkbox" id="gp-auth-pan" checked> PAN_ONLY</label>
+                <label><input type="checkbox" id="gp-auth-cryptogram" checked> CRYPTOGRAM_3DS</label>
+              </div>
+              <div class="checkbox-row" style="margin-top: 0.5rem;">
+                <label><input type="checkbox" class="gp-network" value="AMEX" checked> AMEX</label>
+                <label><input type="checkbox" class="gp-network" value="DISCOVER" checked> DISCOVER</label>
+                <label><input type="checkbox" class="gp-network" value="JCB" checked> JCB</label>
+                <label><input type="checkbox" class="gp-network" value="MASTERCARD" checked> MASTERCARD</label>
+                <label><input type="checkbox" class="gp-network" value="VISA" checked> VISA</label>
+              </div>
+              <div class="checkbox-row" style="margin-top: 0.5rem;">
+                <label><input type="checkbox" id="gp-billing"> Billing address</label>
+                <label><input type="checkbox" id="gp-shipping"> Shipping address + options</label>
+                <label><input type="checkbox" id="gp-email"> Email</label>
+                <label><input type="checkbox" id="gp-retain"> Retain payment method</label>
+              </div>
+              <div class="checkbox-row" style="margin-top: 0.5rem;">
+                <label><input type="checkbox" id="gp-promo"> Promo codes (<code>OFFER</code> — try SAVE10)</label>
+                <label><input type="checkbox" id="gp-no-prepaid"> Refuse prepaid</label>
+                <label><input type="checkbox" id="gp-no-credit"> Refuse credit</label>
+                <label><input type="checkbox" id="gp-assurance"> Assurance details</label>
+              </div>
+
+              <h3 class="section-title">Transaction</h3>
+              <div class="settings-grid">
+                <div class="form-group">
+                  <label class="form-label" for="gp-checkout-option">Sheet button</label>
+                  <select id="gp-checkout-option" class="form-input">
+                    <option value="DEFAULT" selected>DEFAULT</option>
+                    <option value="COMPLETE_IMMEDIATE_PURCHASE">COMPLETE_IMMEDIATE_PURCHASE</option>
+                    <option value="CONTINUE_TO_REVIEW">CONTINUE_TO_REVIEW</option>
+                  </select>
+                </div>
+              </div>
+
+              <h3 class="section-title">Button</h3>
+              <div class="settings-grid">
+                <div class="form-group">
+                  <label class="form-label" for="gp-btn-color">Color</label>
+                  <select id="gp-btn-color" class="form-input">
+                    <option value="default" selected>default</option>
+                    <option value="black">black</option>
+                    <option value="white">white</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="gp-btn-type">Type</label>
+                  <select id="gp-btn-type" class="form-input">
+                    <option value="buy">buy</option>
+                    <option value="pay" selected>pay</option>
+                    <option value="checkout">checkout</option>
+                    <option value="order">order</option>
+                    <option value="plain">plain</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="gp-btn-size">Size mode</label>
+                  <select id="gp-btn-size" class="form-input">
+                    <option value="fill" selected>fill</option>
+                    <option value="static">static</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="gp-btn-radius">Corner radius (px)</label>
+                  <input type="number" id="gp-btn-radius" class="form-input" value="4" min="0" max="20">
+                </div>
+              </div>
+
+              <h3 class="section-title">Testing</h3>
+              <div class="form-group">
+                <label class="form-label" for="gp-test-card">Spreedly <code>test_card_number</code> override (optional)</label>
+                <input type="text" id="gp-test-card" class="form-input" placeholder="e.g. 4111111111111111">
+              </div>
+
+              <!-- Radios on purpose: the page remounts Google Pay on checkbox/select changes, and the
+                   3DS choice only affects the server-side purchase, not the Google Pay request. -->
+              <h3 class="section-title">Purchase (3DS)</h3>
+              <div class="checkbox-row three-ds-options">
+                <label><input type="radio" name="gp-3ds-mode" value="gateway"> Gateway 3DS
+                  (<code>attempt_3dsecure</code>)</label>
+                <label><input type="radio" name="gp-3ds-mode" value="global" checked> 3DS Global
+                  (<code>sca_provider_key</code>)</label>
+                <label><input type="radio" name="gp-3ds-mode" value="none"> No 3DS</label>
+              </div>
+              <div id="gp-3ds-scenarios" class="checkbox-row three-ds-options" style="margin-top: 0.5rem;">
+                <span>Test SCA scenario:</span>
+                <label><input type="radio" name="gp-3ds-scenario" value="challenge" checked> challenge</label>
+                <label><input type="radio" name="gp-3ds-scenario" value="authenticated"> Frictionless - success</label>
+                <label><input type="radio" name="gp-3ds-scenario" value="not_authenticated"> Frictionless - failure</label>
+              </div>
+              <div class="checkbox-row three-ds-options" style="margin-top: 0.5rem;">
+                <span>Run 3DS for:</span>
+                <label><input type="radio" name="gp-3ds-when" value="non-tokenized" checked>
+                  NON_TOKENIZED_CARD only (recommended)</label>
+                <label><input type="radio" name="gp-3ds-when" value="always"> Every card (Spreedly bypasses
+                  TOKENIZED_CARD)</label>
+              </div>
+            </section>
+
+            <section class="event-log-container gp-logs" aria-labelledby="gp-log-title">
+              <div class="event-log-header">
+                <span class="event-log-title" id="gp-log-title">Event Log</span>
+              </div>
+              <div id="event-log" class="event-log"></div>
+            </section>
           </div>
 
-          <div class="config-panel" id="config-panel">
-            <div class="config-section">
-              <div class="config-section-title">About Google Pay</div>
-              <p style="color: var(--color-gray-600); font-size: 0.875rem; line-height: 1.6;">
-                The page loads Google's <code>pay.js</code>. <code>SpreedlyGooglePay</code> checks
-                <code>isReadyToPay</code>, draws Google's button, and tokenizes the encrypted Google Pay
-                token with Spreedly while the sheet is open. Only Spreedly can decrypt it
-                (<code>gateway: "spreedly"</code>).
-              </p>
-            </div>
+          <div class="gp-column">
+            <section id="checkout-panel" class="config-section gp-demo" aria-labelledby="gp-demo-title">
+              <div class="config-section-title" id="gp-demo-title">Google Pay demo</div>
+              <!-- Empty by design: SpreedlyGooglePay.mount() draws Google's button in here -->
+              <div id="google-pay-button-container" class="gpay-button-wrap"></div>
+              <!-- Express Checkout placement: the SDK draws the wallet row and the card form in here -->
+              <div id="gp-express-checkout-container" class="gp-ec-container hidden"></div>
+              <button type="button" id="gp-ec-open-btn" class="submit-btn hidden">Open payment form</button>
+              <div id="gp-fallback" class="fallback-note hidden">
+                Google Pay is not available in this browser / account (<span id="gp-fallback-reason"></span>).
+                A real checkout would show only its card form here.
+              </div>
 
-            <div class="config-section">
-              <div class="config-section-title">Flow Steps</div>
-              <ol style="color: var(--color-gray-600); font-size: 0.875rem; line-height: 1.8; padding-left: 1.25rem;">
-                <li>Load <code>pay.js</code> and the selected SDK bundle</li>
-                <li>Fetch signed auth params from the server</li>
-                <li><code>new SpreedlyGooglePay(config)</code> + <code>mount()</code></li>
-                <li>Shopper taps → Google sheet opens</li>
-                <li>SDK tokenizes in <code>onPaymentAuthorized</code></li>
-                <li><code>googlePayTokenGenerated</code> → token + <code>googlePayType</code></li>
-                <li>Purchase server-side: <code>TOKENIZED_CARD</code> → <code>simple-purchase</code>;
-                  <code>NON_TOKENIZED_CARD</code> → 3DS purchase, then <code>SpreedlyThreeDSLifecycle</code></li>
-              </ol>
-            </div>
+              <div id="result-card" class="result-card hidden">
+                <h4 id="result-title" style="margin-bottom: 0.25rem;"></h4>
+                <div id="result-body"></div>
+                <button type="button" id="gp-purchase-btn" class="submit-btn hidden">Purchase</button>
+                <button type="button" id="gp-new-checkout-btn" class="submit-btn secondary hidden">New checkout</button>
+              </div>
 
-            <div class="config-section">
-              <div class="config-section-title">Testing notes</div>
-              <ul style="color: var(--color-gray-600); font-size: 0.875rem; line-height: 1.8; padding-left: 1.25rem;">
-                <li>Google <code>TEST</code> environment — sign in with a Google account enrolled in the test card suite group</li>
-                <li>Serve over <code>https</code> or <code>localhost</code></li>
-                <li>Until <code>SpreedlyGooglePay</code> reaches the rc CDN, run the SDK locally — see <code>docs/google-pay/DEMO_GUIDE.md</code></li>
-                <li>Auth params are single-checkout: <em>New checkout</em> fetches fresh ones</li>
-              </ul>
-            </div>
+              <div id="status-message" class="status-message"></div>
+            </section>
+
+            <section class="event-log-container gp-snippet" aria-labelledby="gp-snippet-title">
+              <div class="event-log-header">
+                <span class="event-log-title" id="gp-snippet-title">Config passed to Google Pay</span>
+                <button type="button" id="gp-copy-config" class="gp-copy-btn" aria-label="Copy config"
+                  title="Copy config" disabled>
+                  <svg id="gp-copy-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                    stroke-width="2" stroke="currentColor" aria-hidden="true">
+                    <rect x="9" y="9" width="12" height="12" rx="2" />
+                    <path stroke-linecap="round" d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" />
+                  </svg>
+                  <svg id="gp-copied-icon" class="hidden" xmlns="http://www.w3.org/2000/svg" fill="none"
+                    viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                  </svg>
+                </button>
+              </div>
+              <span id="gp-copy-status" class="sr-only" role="status"></span>
+              <pre id="gp-config-snippet" class="gp-code"></pre>
+            </section>
+          </div>
+        </div>
+
+        <div class="gp-notes">
+          <div class="config-section">
+            <div class="config-section-title">About Google Pay</div>
+            <p style="color: var(--color-gray-600); font-size: 0.875rem; line-height: 1.6;">
+              The page loads Google's <code>pay.js</code>. <code>SpreedlyGooglePay</code> checks
+              <code>isReadyToPay</code>, draws Google's button, and tokenizes the encrypted Google Pay
+              token with Spreedly while the sheet is open. Only Spreedly can decrypt it
+              (<code>gateway: "spreedly"</code>).
+            </p>
+          </div>
+
+          <div class="config-section">
+            <div class="config-section-title">Flow Steps</div>
+            <ol style="color: var(--color-gray-600); font-size: 0.875rem; line-height: 1.8; padding-left: 1.25rem;">
+              <li>Load <code>pay.js</code> and the selected SDK bundle</li>
+              <li>Fetch signed auth params from the server</li>
+              <li><code>new SpreedlyGooglePay(config)</code> + <code>mount()</code> — or, with the
+                Express Checkout placement, <code>expressCheckout({ googlePay })</code>, which draws the
+                button above the card form</li>
+              <li>Shopper taps → Google sheet opens</li>
+              <li>SDK tokenizes in <code>onPaymentAuthorized</code></li>
+              <li><code>googlePayTokenGenerated</code> → token + <code>googlePayType</code> (a card from
+                the Express Checkout form arrives on <code>tokenGenerated</code>)</li>
+              <li>Purchase server-side: <code>TOKENIZED_CARD</code> → <code>simple-purchase</code>;
+                <code>NON_TOKENIZED_CARD</code> → 3DS purchase, then <code>SpreedlyThreeDSLifecycle</code></li>
+            </ol>
+          </div>
+
+          <div class="config-section">
+            <div class="config-section-title">Testing notes</div>
+            <ul style="color: var(--color-gray-600); font-size: 0.875rem; line-height: 1.8; padding-left: 1.25rem;">
+              <li>Google <code>TEST</code> environment — sign in with a Google account enrolled in the test card suite group</li>
+              <li>Serve over <code>https</code> or <code>localhost</code></li>
+              <li>Until <code>SpreedlyGooglePay</code> reaches the rc CDN, run the SDK locally — see <code>docs/google-pay/DEMO_GUIDE.md</code></li>
+              <li>Auth params are single-checkout: <em>New checkout</em> fetches fresh ones</li>
+            </ul>
           </div>
         </div>
       </div>
@@ -376,6 +568,18 @@
         </div>
       </div>
     </footer>
+  </div>
+
+  <!-- The merchant's own dialog: the form is mounted into it in embedded mode, wallet row included -->
+  <div id="gp-ec-dialog" class="express-dialog-overlay hidden">
+    <div class="express-dialog-content" role="dialog" aria-modal="true" aria-labelledby="gp-ec-dialog-title">
+      <div class="gp-ec-dialog-header">
+        <strong id="gp-ec-dialog-title">Checkout</strong>
+        <button type="button" id="gp-ec-dialog-close" class="gp-ec-dialog-close"
+          aria-label="Close payment form">&times;</button>
+      </div>
+      <div id="gp-ec-dialog-container"></div>
+    </div>
   </div>
 
   <!-- 3DS: SpreedlyThreeDSLifecycle's hidden device-fingerprint iframe and challenge modal -->

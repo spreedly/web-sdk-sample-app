@@ -6,9 +6,17 @@
  * decides the purchase: TOKENIZED_CARD already carries authentication and goes straight to
  * /simple-purchase; NON_TOKENIZED_CARD goes through a 3DS purchase and SpreedlyThreeDSLifecycle
  * (Spreedly's "tokenize first, then branch on google_pay_type" option).
+ *
+ * With the Express Checkout bundle, the page hands the same config to SpreedlyExpressCheckout's
+ * `googlePay` option by default, which draws the button above its card form; the Placement control
+ * switches back to the standalone button. Cards entered in that form arrive on `tokenGenerated` and
+ * take the same purchase path.
  */
 
 const CONTAINER_ID = 'google-pay-button-container';
+const EC_CONTAINER_ID = 'gp-express-checkout-container';
+const EC_DIALOG_ID = 'gp-ec-dialog';
+const EC_DIALOG_CONTAINER_ID = 'gp-ec-dialog-container';
 
 // Same values the 3DS demo pages use.
 const THREE_DS = {
@@ -35,6 +43,7 @@ const DEMO = {
 const sheetState = { shippingCost: 0, redemptionCodes: [] };
 
 let googlePay = null;
+let checkout = null;
 let authDetails = null;
 let lastResult = null;
 let lifecycle = null;
@@ -64,7 +73,7 @@ function clearStatus() {
 
 function showFatal(message) {
   $('loading-state').classList.add('hidden');
-  $('payment-section').classList.add('hidden');
+  $('gp-workspace').classList.add('hidden');
   $('error-state').classList.remove('hidden');
   $('error-message').textContent = message;
 }
@@ -214,6 +223,75 @@ function readConfig() {
   };
 }
 
+// ── Config snippet ────────────────────────────────────────────────────────────
+
+const AUTH_DETAILS_PLACEHOLDER =
+  '<signed by your server: environment_key, certificate_token, nonce, signature, timestamp>';
+
+let snippet = null;
+
+/** Shows the call the page made, as a merchant would write it. Functions print by name. */
+function showConfigSnippet(config, template) {
+  const copy = JSON.parse(
+    JSON.stringify(config, (key, value) => (typeof value === 'function' ? `[Function ${key}]` : value))
+  );
+  if (copy.authDetails) copy.authDetails = AUTH_DETAILS_PLACEHOLDER;
+  snippet = { config: copy, template };
+  renderConfigSnippet();
+}
+
+function renderConfigSnippet() {
+  $('gp-config-snippet').textContent = snippet
+    ? snippet.template(JSON.stringify(snippet.config, null, 2))
+    : '';
+  $('gp-copy-config').disabled = !snippet;
+}
+
+let copyResetTimer = null;
+
+function setCopyState(copied, message) {
+  $('gp-copy-icon').classList.toggle('hidden', copied);
+  $('gp-copied-icon').classList.toggle('hidden', !copied);
+  $('gp-copy-config').setAttribute('aria-label', copied ? 'Copied' : 'Copy config');
+  $('gp-copy-config').title = copied ? 'Copied' : 'Copy config';
+  $('gp-copy-status').textContent = message;
+}
+
+// For browsers and embedded views that refuse the async Clipboard API.
+function copyWithSelection(text) {
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.setAttribute('readonly', '');
+  textarea.style.position = 'fixed';
+  textarea.style.opacity = '0';
+  document.body.appendChild(textarea);
+  textarea.select();
+  const copied = document.execCommand('copy');
+  textarea.remove();
+  $('gp-copy-config').focus();
+  return copied;
+}
+
+async function copyConfigSnippet() {
+  const text = $('gp-config-snippet').textContent;
+  if (!text) return;
+  let copied;
+  try {
+    await navigator.clipboard.writeText(text);
+    copied = true;
+  } catch {
+    copied = copyWithSelection(text);
+  }
+  if (!copied) {
+    logEvent('Copy failed: the browser blocked clipboard access', 'error');
+    setCopyState(false, 'Copy failed');
+    return;
+  }
+  setCopyState(true, 'Config copied to the clipboard');
+  clearTimeout(copyResetTimer);
+  copyResetTimer = setTimeout(() => setCopyState(false, ''), 1500);
+}
+
 // ── SpreedlyGooglePay lifecycle ───────────────────────────────────────────────
 
 function registerEvents(instance) {
@@ -240,21 +318,7 @@ function registerEvents(instance) {
   instance.on('googlePayTokenGenerated', async result => {
     lastResult = result;
     logEvent(`googlePayTokenGenerated — ${result.googlePayType || 'type unknown'}`, 'success');
-    // The SDK creates the payment method cached (Core ignores `retained` on the browser's
-    // certificate-auth request), so retain it from the server, as the card demos do.
-    if ($('gp-retain').checked && result.paymentMethod?.storage_state !== 'retained') {
-      try {
-        const retained = await SpreedlyUtils.retainPaymentMethod(result.token);
-        const paymentMethod = retained?.transaction?.payment_method;
-        if (paymentMethod) {
-          result.paymentMethod = { ...result.paymentMethod, ...paymentMethod };
-        }
-        logEvent(`Payment method retained — ${result.paymentMethod?.storage_state}`, 'success');
-      } catch (error) {
-        logEvent(`Retain failed: ${error.message}`, 'error');
-        setStatus('The payment method could not be retained.', 'error');
-      }
-    }
+    await retainIfRequested(result);
     showTokenResult(result);
   });
 
@@ -271,17 +335,90 @@ function registerEvents(instance) {
   });
 }
 
-async function mountGooglePay() {
-  if (googlePay) {
-    googlePay.destroy();
-    googlePay = null;
+// The SDK creates payment methods cached (Core ignores `retained` on the browser's
+// certificate-auth request), so retain from the server, as the card demos do.
+async function retainIfRequested(result) {
+  if (!$('gp-retain').checked || result.paymentMethod?.storage_state === 'retained') {
+    return;
   }
+  try {
+    const retained = await SpreedlyUtils.retainPaymentMethod(result.token);
+    const paymentMethod = retained?.transaction?.payment_method;
+    if (paymentMethod) {
+      result.paymentMethod = { ...result.paymentMethod, ...paymentMethod };
+    }
+    logEvent(`Payment method retained — ${result.paymentMethod?.storage_state}`, 'success');
+  } catch (error) {
+    logEvent(`Retain failed: ${error.message}`, 'error');
+    setStatus('The payment method could not be retained.', 'error');
+  }
+}
+
+function placement() {
+  return document.querySelector('input[name="gp-placement"]:checked')?.value || 'standalone';
+}
+
+function ecDisplay() {
+  return document.querySelector('input[name="gp-ec-display"]:checked')?.value || 'embedded';
+}
+
+function payButtonText() {
+  return `Pay $${orderTotal().toFixed(2)}`;
+}
+
+function teardown() {
+  googlePay?.destroy();
+  googlePay = null;
+  checkout?.close(true);
+  checkout = null;
+  $(EC_DIALOG_ID).classList.add('hidden');
+}
+
+function showPlacement() {
+  const inForm = placement() === 'express-checkout';
+  const embedded = ecDisplay() === 'embedded';
+  $(CONTAINER_ID).classList.toggle('hidden', inForm);
+  $(EC_CONTAINER_ID).classList.toggle('hidden', !inForm || !embedded);
+  $('gp-ec-open-btn').classList.toggle('hidden', !inForm || embedded);
+  $('gp-ec-display-row').classList.toggle('hidden', !inForm);
+}
+
+function applyTransactionInfo() {
+  const info = transactionInfo();
+  googlePay?.setTransactionInfo(info);
+  if (checkout) {
+    checkout.setGooglePayTransactionInfo(info);
+    checkout.updateTextElement('submitBtnText', payButtonText());
+  }
+  if (snippet) {
+    (snippet.config.googlePay || snippet.config).transactionInfo = info;
+    if (snippet.config.uiConfig) {
+      snippet.config.uiConfig.textConfig.submitBtnText = payButtonText();
+    }
+    renderConfigSnippet();
+  }
+}
+
+async function mountGooglePay() {
+  teardown();
   $(CONTAINER_ID).innerHTML = '';
   $('gp-fallback').classList.add('hidden');
   clearStatus();
+  showPlacement();
+  snippet = null;
+  renderConfigSnippet();
+
+  if (placement() === 'express-checkout') {
+    mountExpressCheckout();
+    return;
+  }
 
   try {
     const conf = readConfig();
+    showConfigSnippet(
+      conf,
+      json => `const googlePay = new SpreedlyGooglePay(${json});\nawait googlePay.mount('${CONTAINER_ID}');`
+    );
     googlePay = new window.SpreedlyGooglePay(conf);
   } catch (error) {
     // Configuration mistakes throw synchronously from the constructor.
@@ -297,9 +434,102 @@ async function mountGooglePay() {
   }
 }
 
+// ── Express Checkout placement ────────────────────────────────────────────────
+
+/** Express Checkout owns the Google Pay instance; its googlePay* events match the standalone class. */
+function mountExpressCheckout() {
+  checkout = new window.SpreedlyExpressCheckout(authDetails);
+  if (typeof checkout.setGooglePayTransactionInfo !== 'function') {
+    checkout = null;
+    setStatus(
+      'This Express Checkout build has no googlePay option yet. Run checkout-web-sdk locally — ' +
+        'see docs/google-pay/DEMO_GUIDE.md.',
+      'error'
+    );
+    return;
+  }
+
+  registerEvents(checkout);
+  checkout.on('googlePayTokenGenerated', closeDialog);
+  checkout.on('tokenGenerated', onCardToken);
+  checkout.on('ready', () => logEvent('Express Checkout form ready'));
+  checkout.on('error', error => {
+    logEvent(`Express Checkout error: ${JSON.stringify(error)}`, 'error');
+  });
+
+  if (ecDisplay() === 'embedded') {
+    openExpressCheckout();
+  } else {
+    showExpressCheckoutSnippet(expressCheckoutOptions());
+  }
+}
+
+function expressCheckoutOptions() {
+  const googlePayConfig = readConfig();
+  delete googlePayConfig.authDetails;
+  return {
+    parentContainerId: ecDisplay() === 'dialog' ? EC_DIALOG_CONTAINER_ID : EC_CONTAINER_ID,
+    uiConfig: { textConfig: { title: 'Payment details', submitBtnText: payButtonText() } },
+    googlePay: googlePayConfig,
+  };
+}
+
+function showExpressCheckoutSnippet(options) {
+  showConfigSnippet(
+    options,
+    json => `const checkout = new SpreedlyExpressCheckout(authDetails);\ncheckout.expressCheckout(${json});`
+  );
+}
+
+/**
+ * Both displays mount the form in embedded mode. "Merchant dialog" opens the page's own dialog
+ * first, so the wallet row and the form share one card instead of using the SDK's dialog mode.
+ */
+function openExpressCheckout() {
+  if (!checkout) return;
+  if (ecDisplay() === 'dialog') {
+    $(EC_DIALOG_ID).classList.remove('hidden');
+    logEvent('Merchant dialog opened');
+  }
+  const options = expressCheckoutOptions();
+  showExpressCheckoutSnippet(options);
+  checkout.expressCheckout(options);
+}
+
+/** Closing the page's dialog also closes the form, which destroys its Google Pay button. */
+function closeDialog() {
+  if ($(EC_DIALOG_ID).classList.contains('hidden')) return;
+  checkout?.close();
+  $(EC_DIALOG_ID).classList.add('hidden');
+  logEvent('Merchant dialog closed');
+}
+
+/** A card entered in the Express Checkout form: same result card and purchase as Google Pay. */
+async function onCardToken(response) {
+  const paymentMethod = response?.tokenResponse?.payment_method;
+  if (!paymentMethod?.token) return;
+  lastResult = {
+    source: 'card',
+    token: paymentMethod.token,
+    cardNetwork: paymentMethod.card_type,
+    last4: paymentMethod.last_four_digits,
+    paymentMethod,
+  };
+  logEvent(
+    `tokenGenerated — card ${paymentMethod.card_type || ''} •••• ${paymentMethod.last_four_digits || '????'}`,
+    'success'
+  );
+  closeDialog();
+  await retainIfRequested(lastResult);
+  showTokenResult(lastResult);
+}
+
 // ── Result + purchase ─────────────────────────────────────────────────────────
 
-function guidanceFor(googlePayType) {
+function guidanceFor({ source, googlePayType }) {
+  if (source === 'card') {
+    return 'Card from the Express Checkout form: the purchase follows the 3DS setting below.';
+  }
   if (googlePayType === 'TOKENIZED_CARD') {
     return 'TOKENIZED_CARD: the device token already carries authentication — do NOT send attempt_3dsecure.';
   }
@@ -338,7 +568,7 @@ function showTokenResult(result) {
     <dl class="result-grid">
       ${rows.map(([label, value]) => `<dt>${escape(label)}</dt><dd>${escape(value)}</dd>`).join('')}
     </dl>
-    <p class="guidance">${escape(guidanceFor(result.googlePayType))}</p>`;
+    <p class="guidance">${escape(guidanceFor(result))}</p>`;
   $('gp-purchase-btn').classList.remove('hidden');
   $('gp-purchase-btn').disabled = false;
   $('gp-new-checkout-btn').classList.remove('hidden');
@@ -587,9 +817,9 @@ async function refreshAuth() {
 function wireControls() {
   // The total changes often and needs no remount — that's what setTransactionInfo() is for.
   $('gp-amount').addEventListener('input', () => {
-    if (!googlePay || orderTotal() <= 0) return;
+    if ((!googlePay && !checkout) || orderTotal() <= 0) return;
     try {
-      googlePay.setTransactionInfo(transactionInfo());
+      applyTransactionInfo();
     } catch (error) {
       setStatus(error.message, 'error');
     }
@@ -607,9 +837,34 @@ function wireControls() {
     })
   );
 
+  document
+    .querySelectorAll('input[name="gp-placement"], input[name="gp-ec-display"]')
+    .forEach(radio => radio.addEventListener('change', () => mountGooglePay()));
+
+  $('gp-ec-open-btn').addEventListener('click', openExpressCheckout);
+  $('gp-copy-config').addEventListener('click', copyConfigSnippet);
+  $('gp-ec-dialog-close').addEventListener('click', closeDialog);
+  $(EC_DIALOG_ID).addEventListener('click', event => {
+    if (event.target === $(EC_DIALOG_ID)) closeDialog();
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') closeDialog();
+  });
   $('gp-purchase-btn').addEventListener('click', purchase);
   $('gp-new-checkout-btn').addEventListener('click', newCheckout);
-  window.addEventListener('beforeunload', () => googlePay?.destroy());
+  window.addEventListener('beforeunload', teardown);
+}
+
+/** Inside the Express Checkout form by default on that bundle; ?placement=standalone opts out. */
+function initPlacement() {
+  const available = typeof window.SpreedlyExpressCheckout === 'function';
+  const requested = new URLSearchParams(window.location.search).get('placement');
+  const initial = available && requested !== 'standalone' ? 'express-checkout' : 'standalone';
+  // Set explicitly: browsers restore a checked radio on reload, even into the other bundle.
+  document.querySelectorAll('input[name="gp-placement"]').forEach(radio => {
+    radio.checked = radio.value === initial;
+  });
+  $('gp-placement-section').classList.toggle('hidden', !available);
 }
 
 function init() {
@@ -635,8 +890,9 @@ function init() {
     }
 
     $('loading-state').classList.add('hidden');
-    $('payment-section').classList.remove('hidden');
+    $('gp-workspace').classList.remove('hidden');
     logEvent('SDK loaded, auth params fetched');
+    initPlacement();
     wireControls();
     await mountGooglePay();
   });

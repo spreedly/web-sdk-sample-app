@@ -151,6 +151,19 @@ export const googlePayPage = {
     );
   },
 
+  /** false when the loaded Express Checkout build predates its `googlePay` option. */
+  hasExpressCheckoutGooglePay: async (page: Page) => {
+    if (!(await googlePayPage.hasSdkGlobal(page))) return false;
+    // The page reports a build without the option in its status line instead of mounting.
+    return page.evaluate(
+      () => !document.getElementById('status-message')?.textContent?.includes('no googlePay option')
+    );
+  },
+
+  waitForExpressCheckoutButton: async (page: Page) => {
+    await expect(page.locator(SELECTORS.GOOGLE_PAY_EC_STUB_BUTTON)).toBeVisible({ timeout: 15000 });
+  },
+
   /** false when the loaded SDK build predates SpreedlyGooglePay (e.g. the rc CDN before merge). */
   hasSdkGlobal: async (page: Page) => {
     // The page leaves its loading state once the SDK loaded (or failed to).

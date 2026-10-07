@@ -1,7 +1,8 @@
 # Google Pay — Demo Guide
 
-The `/google-pay` flow demos `SpreedlyGooglePay`, which both SDK bundles expose. This guide covers
-the demo page only. For the SDK itself, see the [Integration Guide](./INTEGRATION_GUIDE.md) and
+The `/google-pay` flow demos `SpreedlyGooglePay`, which both SDK bundles expose, and the
+`googlePay` option that draws it above the Express Checkout form. This guide covers the demo page
+only. For the SDK itself, see the [Integration Guide](./INTEGRATION_GUIDE.md) and
 [API Reference](./API_REFERENCE.md) (mirrored from the SDK repo's
 [`docs/google-pay/`](https://github.com/spreedly/checkout-web-sdk/tree/main/docs/google-pay),
 which also holds the architecture notes).
@@ -40,13 +41,39 @@ which also holds the architecture notes).
      payment methods that are CRYPTOGRAM_3DS". The page logs any `transaction.warning` it gets back.
 7. **New checkout** fetches fresh auth params and remounts (certificate auth is per checkout).
 
+**Placement** (Express Checkout bundle only)
+- **Inside the Express Checkout form** (default): `new SpreedlyExpressCheckout(authDetails)` and
+  `expressCheckout({ parentContainerId, googlePay })` with the same config minus `authDetails`. The
+  SDK draws Google's button and an "or pay with card" divider above the card-form iframe, only once
+  `isReadyToPay` passes; otherwise the row never appears and the fallback note shows the reason.
+  The page listens for the same `googlePay*` events on the Express Checkout instance.
+  - **Form display**: both options mount the form in embedded mode (`parentContainerId`).
+    - *Embedded* mounts it into the page right away.
+    - *Merchant dialog* adds an **Open payment form** button that opens the page's own dialog and
+      mounts the form there, so the wallet row and the card fields share one card. The SDK's dialog
+      mode isn't used: it would put the row above the form's title and close button. The page
+      closes its dialog (and the form, which destroys the Google Pay button) after a token, or on
+      its close button, a backdrop click or Escape.
+  - A card entered in the form arrives on `tokenGenerated`; the result card and **Purchase** use
+    the same routes, with a card always going through the chosen 3DS route.
+  - The order total also calls `setGooglePayTransactionInfo()` and updates the submit button text.
+  - `?placement=standalone` opens the page on the standalone button instead.
+  - If the loaded Express Checkout build has no `googlePay` option yet, the status line says so.
+- **Standalone button**: steps 3–4 above, the button in its own container. The only placement on
+  the Hosted Fields bundle.
+
+**Layout**: controls and the event log on the left; the demo, result card and the config the page
+passes to the SDK on the right. The config panel shows the `new SpreedlyGooglePay(…)` +
+`mount()` call or the `expressCheckout({ googlePay })` call, updates on every remount and total
+change, and has a copy button. `authDetails` are shown as a placeholder and callbacks by name.
+
 **Controls**
 - The order total calls `setTransactionInfo()` without a remount.
-- Every other control rebuilds the instance:
+- Every other control rebuilds the instance (or the Express Checkout form):
   - auth methods and networks
   - billing, shipping and email
   - retain (the page retains the new payment method from the server, through
-    `PUT /api/v1/payment_methods/:token/retain`, after `googlePayTokenGenerated`)
+    `PUT /api/v1/payment_methods/:token/retain`, after `googlePayTokenGenerated` or `tokenGenerated`)
   - the card filters (refuse prepaid / credit, `assuranceDetailsRequired`)
   - `checkoutOption`
   - button style
@@ -78,7 +105,8 @@ work.
 - **Automated:** `test/ui/testCases/google-pay.spec.ts` blocks `pay.js`, installs a **synthetic**
   `window.google.payments.api` stub, and fulfils the Spreedly call via `page.route`. It covers the
   landing card, the button + in-sheet tokenization on both bundles (request shape, `from` tag and
-  result card), a Spreedly
+  result card), the button inside the Express Checkout form (row above the iframe, embedded and in
+  the merchant dialog, `web/form` tokenization, and no row when Google Pay isn't ready), a Spreedly
   422 (in-sheet error, `TOKENIZATION_FAILED`) and the not-ready fallback. The purchase specs fulfil
   the purchase routes with synthetic transactions and check which route runs and what it sends:
   `NON_TOKENIZED_CARD` → gateway 3DS with browser info, `TOKENIZED_CARD` → `simple-purchase`,

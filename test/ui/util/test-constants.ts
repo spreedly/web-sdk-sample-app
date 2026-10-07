@@ -144,6 +144,17 @@ export const SELECTORS = {
   // Google Pay
   GOOGLE_PAY_BUTTON: '[data-flow="google-pay"]',
   GOOGLE_PAY_STUB_BUTTON: '#google-pay-button-container #gpay-stub-button',
+  GOOGLE_PAY_EC_CONTAINER: '#gp-express-checkout-container',
+  GOOGLE_PAY_EC_STUB_BUTTON: '#gp-express-checkout-container #gpay-stub-button',
+  GOOGLE_PAY_EC_WALLET_ROW: '#gp-express-checkout-container [data-spreedly-ec="wallet-row"]',
+  GOOGLE_PAY_EC_DISPLAY: (display: 'embedded' | 'dialog') =>
+    `input[name="gp-ec-display"][value="${display}"]`,
+  GOOGLE_PAY_EC_OPEN_BUTTON: '#gp-ec-open-btn',
+  GOOGLE_PAY_EC_DIALOG: '#gp-ec-dialog',
+  GOOGLE_PAY_EC_DIALOG_CONTAINER: '#gp-ec-dialog-container',
+  GOOGLE_PAY_EC_DIALOG_STUB_BUTTON: '#gp-ec-dialog-container #gpay-stub-button',
+  GOOGLE_PAY_CONFIG_SNIPPET: '#gp-config-snippet',
+  GOOGLE_PAY_COPY_CONFIG: '#gp-copy-config',
   GOOGLE_PAY_FALLBACK: '#gp-fallback',
   GOOGLE_PAY_RESULT_CARD: '#result-card',
   GOOGLE_PAY_EVENT_LOG: '#event-log',

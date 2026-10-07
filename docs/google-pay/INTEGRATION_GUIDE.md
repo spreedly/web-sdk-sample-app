@@ -67,7 +67,9 @@ Express Checkout — both export the same global):
 ```
 
 Replace `{version}` with your SDK version. `async` is fine — `mount()` waits for Google's API to
-appear. The Google Pay button sits on your page next to the card form with either bundle.
+appear. With either bundle you can place the Google Pay button on your page next to your card
+form. With Express Checkout, the form can also draw it above its card fields for you — see
+[Google Pay inside Express Checkout](#google-pay-inside-express-checkout).
 
 > Spreedly does **not** inject `pay.js`. Google's `TEST` and `PRODUCTION` environments use the
 > same script; you choose the environment in the config.
@@ -160,6 +162,62 @@ googlePay = new window.SpreedlyGooglePay({ ...config, authDetails });
 // register your on(...) handlers again, then:
 await googlePay.mount('google-pay-button-container');
 ```
+
+---
+
+## Google Pay inside Express Checkout
+
+With the Express Checkout bundle, the form can draw Google Pay for you instead of steps 2–4. Pass a
+`googlePay` option to `expressCheckout()`. It takes the same configuration as `SpreedlyGooglePay`
+except `authDetails`, which Express Checkout already has. The form then shows a wallet row above
+the card fields: Google's button, then an "or pay with card" divider.
+
+```js
+const checkout = new window.SpreedlyExpressCheckout(authDetails);
+
+checkout.on('googlePayTokenGenerated', ({ token, googlePayType }) => {
+  // Send token and googlePayType to your server, as for the standalone button.
+});
+checkout.on('tokenGenerated', ({ tokenResponse }) => {
+  // Card payments, unchanged.
+});
+
+checkout.expressCheckout({
+  parentContainerId: 'payment-container',
+  googlePay: {
+    environment: 'TEST',
+    merchantInfo: { merchantName: 'Example Merchant' },
+    transactionInfo: { totalPrice: '42.00', currencyCode: 'USD', countryCode: 'US' },
+    button: { buttonType: 'pay', buttonColor: 'black' },
+  },
+});
+
+// When the cart changes, before the shopper taps:
+checkout.setGooglePayTransactionInfo({ totalPrice: '52.00', currencyCode: 'USD', countryCode: 'US' });
+```
+
+- **Your page still loads `pay.js`** ([step 1](#1-load-the-scripts)). The row is drawn on your
+  page, directly above the form's iframe. Google's script never runs inside the card form.
+- **The row only appears when the shopper can pay.** It stays hidden until Google's
+  `isReadyToPay()` passes. If Google Pay is unavailable, the row is removed and the card form is
+  the only option.
+- **Events arrive on the Express Checkout instance**, with the same names and payloads as
+  `SpreedlyGooglePay`: `googlePayReady`, `googlePayTokenGenerated`, `googlePayError` and the rest.
+  Card tokens still arrive on `tokenGenerated`. Register listeners before `expressCheckout()`.
+- **Everything else works the same:** shipping, promo codes and `onPaymentDataChange`, billing
+  address and email, `testCardNumber`. `button.buttonSizeMode` defaults to `'fill'`, so the button
+  spans the row.
+- **An invalid `googlePay` config doesn't stop card payments.** The form mounts without the row,
+  and `googlePayError` and `googlePayUnavailable` fire with `DEVELOPER_ERROR`.
+  `setGooglePayTransactionInfo()` does throw on an invalid price, like `setTransactionInfo()`.
+- **Layout.** In embedded mode, give the container a fixed height: the row takes about 108 px and
+  the form gets the rest. In dialog mode, the row sits above the form's title and close button.
+  Styling and the divider copy (`walletDividerText`) are covered in the
+  [Styling Guide](../tokenization/STYLING_GUIDE.md#google-pay-wallet-row).
+- **Lifecycle.** `close()` and `setRecache()` remove the row and destroy the button, so close the
+  form after `googlePayTokenGenerated`, not while the shopper may still be in Google's sheet. For a
+  new checkout, create a new `SpreedlyExpressCheckout` with freshly signed auth params
+  ([step 7](#7-start-a-new-checkout)).
 
 ---
 
@@ -424,8 +482,8 @@ and applies to the `<style>` / `<script>` it injects. Put the same `nonce` attri
 
 ## Limitations
 
-- The button is drawn on your page, next to whichever card form you use. Express Checkout's
-  hosted form does not draw a Google Pay button inside its iframe.
+- The button is always drawn on your page, never inside Express Checkout's iframe (see
+  [Google Pay inside Express Checkout](#google-pay-inside-express-checkout)).
 - `SpreedlyGooglePay` always seals the token for Spreedly (`gateway: "spreedly"`).
   [Third Party Google Pay](https://developer.spreedly.com/docs/third-party-google-pay), where
   another gateway decrypts the token, is not supported by this class.

@@ -1,3 +1,4 @@
+import { Page } from '@playwright/test';
 import { test, expect } from '../util/fixtures';
 import { landingPage } from '../pages/landingPage';
 import { googlePayPage } from '../pages/googlePayPage';
@@ -31,7 +32,8 @@ test.describe('Google Pay', () => {
     test(`draws the button and tokenizes in the sheet (${sdk})`, async ({ page }) => {
       await googlePayPage.installGooglePayStub(page);
       const tokenizeRequests = await googlePayPage.mockSpreedlyTokenize(page);
-      await page.goto(`${MONOREPO_URLS.GOOGLE_PAY}?sdk=${sdk}`);
+      // The standalone class on both bundles; Express Checkout defaults to the in-form placement.
+      await page.goto(`${MONOREPO_URLS.GOOGLE_PAY}?sdk=${sdk}&placement=standalone`);
       test.skip(!(await googlePayPage.hasSdkGlobal(page)), 'SpreedlyGooglePay not in this SDK build');
 
       await googlePayPage.waitForButton(page);
@@ -90,6 +92,118 @@ test.describe('Google Pay', () => {
     await expect(page.locator(SELECTORS.GOOGLE_PAY_FALLBACK)).toBeVisible({ timeout: 15000 });
     await expect(page.locator(SELECTORS.GOOGLE_PAY_FALLBACK)).toContainText('NOT_READY_TO_PAY');
     await expect(page.locator(SELECTORS.GOOGLE_PAY_STUB_BUTTON)).toHaveCount(0);
+  });
+
+  test('copies the config snippet to the clipboard', async ({ page, context }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    await googlePayPage.installGooglePayStub(page);
+    await page.goto(`${MONOREPO_URLS.GOOGLE_PAY}?sdk=hosted-fields`);
+    test.skip(!(await googlePayPage.hasSdkGlobal(page)), 'SpreedlyGooglePay not in this SDK build');
+
+    const snippet = page.locator(SELECTORS.GOOGLE_PAY_CONFIG_SNIPPET);
+    const copyButton = page.locator(SELECTORS.GOOGLE_PAY_COPY_CONFIG);
+    await expect(snippet).toContainText('new SpreedlyGooglePay(');
+    await expect(copyButton).toBeEnabled();
+
+    await copyButton.click();
+
+    await expect(copyButton).toHaveAttribute('aria-label', 'Copied');
+    const copied = await page.evaluate(() => navigator.clipboard.readText());
+    expect(copied).toBe(await snippet.textContent());
+    // Signed auth params are shown as a placeholder, never copied.
+    expect(copied).not.toMatch(/"(signature|nonce|certificate_token)":/);
+  });
+
+  test.describe('inside the Express Checkout form', () => {
+    // The default placement on the Express Checkout bundle.
+    const IN_FORM_URL = `${MONOREPO_URLS.GOOGLE_PAY}?sdk=express-checkout`;
+
+    /** Tag names inside the SDK's shell: the wallet row (DIV) must come before the iframe. */
+    const shellOrder = (page: Page, containerSelector: string) =>
+      page
+        .locator(containerSelector)
+        .evaluate(container =>
+          Array.from(container.firstElementChild!.children).map(child => child.tagName)
+        );
+
+    test('draws the button above the card form and tokenizes in the sheet', async ({ page }) => {
+      await googlePayPage.installGooglePayStub(page);
+      const tokenizeRequests = await googlePayPage.mockSpreedlyTokenize(page);
+      await page.goto(IN_FORM_URL);
+      test.skip(
+        !(await googlePayPage.hasExpressCheckoutGooglePay(page)),
+        'Express Checkout googlePay option not in this SDK build'
+      );
+
+      await googlePayPage.waitForExpressCheckoutButton(page);
+      const walletRow = page.locator(SELECTORS.GOOGLE_PAY_EC_WALLET_ROW);
+      await expect(walletRow).toContainText('or pay with card');
+      await expect(page.locator(SELECTORS.GOOGLE_PAY_STUB_BUTTON)).toHaveCount(0);
+
+      expect(await shellOrder(page, SELECTORS.GOOGLE_PAY_EC_CONTAINER)).toEqual(['DIV', 'IFRAME']);
+      await expect(
+        page.locator(`${SELECTORS.GOOGLE_PAY_EC_CONTAINER} ${SELECTORS.EXPRESS_IFRAME}`)
+      ).toHaveCount(1);
+
+      await page.locator(SELECTORS.GOOGLE_PAY_EC_STUB_BUTTON).click();
+
+      const resultCard = page.locator(SELECTORS.GOOGLE_PAY_RESULT_CARD);
+      await expect(resultCard).toContainText('Payment method created', { timeout: 15000 });
+      await expect(resultCard).toContainText('synthetic_google_pay_pm_token');
+      expect(tokenizeRequests).toHaveLength(1);
+      expect(tokenizeRequests[0].payment_method.from).toBe('web/form');
+    });
+
+    test('embeds the form and the button in the merchant dialog', async ({ page }) => {
+      await googlePayPage.installGooglePayStub(page);
+      const tokenizeRequests = await googlePayPage.mockSpreedlyTokenize(page);
+      await page.goto(IN_FORM_URL);
+      test.skip(
+        !(await googlePayPage.hasExpressCheckoutGooglePay(page)),
+        'Express Checkout googlePay option not in this SDK build'
+      );
+
+      await page.locator(SELECTORS.GOOGLE_PAY_EC_DISPLAY('dialog')).check();
+      await page.locator(SELECTORS.GOOGLE_PAY_EC_OPEN_BUTTON).click();
+
+      const dialog = page.locator(SELECTORS.GOOGLE_PAY_EC_DIALOG);
+      await expect(dialog).toBeVisible();
+      await expect(page.locator(SELECTORS.GOOGLE_PAY_EC_DIALOG_STUB_BUTTON)).toBeVisible({
+        timeout: 15000,
+      });
+      expect(await shellOrder(page, SELECTORS.GOOGLE_PAY_EC_DIALOG_CONTAINER)).toEqual([
+        'DIV',
+        'IFRAME',
+      ]);
+      // Embedded mode inside the page's dialog, not the SDK's own dialog.
+      await expect(page.locator('#spreedly-checkout-dialog-container')).toHaveCount(0);
+
+      await page.locator(SELECTORS.GOOGLE_PAY_EC_DIALOG_STUB_BUTTON).click();
+
+      await expect(page.locator(SELECTORS.GOOGLE_PAY_RESULT_CARD)).toContainText(
+        'Payment method created',
+        { timeout: 15000 }
+      );
+      await expect(dialog).toBeHidden();
+      expect(tokenizeRequests).toHaveLength(1);
+      expect(tokenizeRequests[0].payment_method.from).toBe('web/form');
+    });
+
+    test('keeps only the card form when Google Pay is not ready', async ({ page }) => {
+      await googlePayPage.installGooglePayStub(page, { ready: false });
+      await page.goto(IN_FORM_URL);
+      test.skip(
+        !(await googlePayPage.hasExpressCheckoutGooglePay(page)),
+        'Express Checkout googlePay option not in this SDK build'
+      );
+
+      await expect(page.locator(SELECTORS.GOOGLE_PAY_FALLBACK)).toBeVisible({ timeout: 15000 });
+      await expect(page.locator(SELECTORS.GOOGLE_PAY_FALLBACK)).toContainText('NOT_READY_TO_PAY');
+      await expect(page.locator(SELECTORS.GOOGLE_PAY_EC_WALLET_ROW)).toHaveCount(0);
+      await expect(
+        page.locator(`${SELECTORS.GOOGLE_PAY_EC_CONTAINER} ${SELECTORS.EXPRESS_IFRAME}`)
+      ).toHaveCount(1);
+    });
   });
 
   test.describe('purchase and 3DS', () => {
