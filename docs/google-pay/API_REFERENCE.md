@@ -229,6 +229,7 @@ Register with `googlePay.on(name, cb)`.
 | `cardFundingSource` | `string` | `'CREDIT'`, `'DEBIT'`, `'PREPAID'` or `'UNKNOWN'`. |
 | `assuranceDetails` | `{ accountVerified?, cardHolderAuthenticated? }` | With `assuranceDetailsRequired`. When both are `true`, Google says no step-up is needed. |
 | `billingAddress` / `shippingAddress` | `GooglePayAddress` | When requested. |
+| `shippingOptionId` | `string` | Id of the shipping option selected in the sheet, when `shippingOptionRequired` is set. Same id as on `onPaymentDataChange`. |
 | `email` | `string` | When requested. |
 | `paymentMethod` | `object` | The Spreedly payment method as returned by Core (masked card fields). |
 
@@ -236,7 +237,7 @@ Register with `googlePay.on(name, cb)`.
 
 The `googlePayPaymentAuthorized` payload: the display fields of `GooglePayTokenResult`
 (`cardNetwork`, `last4`, `cardFundingSource`, `assuranceDetails`, `billingAddress`,
-`shippingAddress`, `email`), all optional, with no token.
+`shippingAddress`, `shippingOptionId`, `email`), all optional, with no token.
 
 ### `GooglePayAddress`
 

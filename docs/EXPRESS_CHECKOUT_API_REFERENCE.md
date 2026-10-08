@@ -2095,6 +2095,14 @@ Present when `assuranceDetailsRequired` is set.
 
 > `optional` **shippingAddress?**: [`GooglePayAddress`](#googlepayaddress)
 
+***
+
+### shippingOptionId?
+
+> `optional` **shippingOptionId?**: `string`
+
+Id of the shipping option selected in the sheet. Present when `shippingOptionRequired` is set. Same value as `shippingOptionId` on `onPaymentDataChange`.
+
 ### GooglePayReady
 
 > **GooglePayReady** = `object`

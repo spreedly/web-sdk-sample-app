@@ -352,7 +352,9 @@ You return **data**; the SDK builds Google's update. Return the **full** `transa
 Google replaces it rather than merging. The callback must settle within 20 s; if it throws or
 times out the shopper sees an error in the sheet and `googlePayError` fires with
 `PAYMENT_DATA_CHANGE_FAILED`. Google redacts the address (country, region, city, postal code)
-until the shopper authorizes; the full address arrives in `googlePayTokenGenerated`.
+until the shopper authorizes; the full address and the selected `shippingOptionId` arrive in
+`googlePayPaymentAuthorized` and `googlePayTokenGenerated`. Charge that id — the last
+`onPaymentDataChange` can be an earlier option.
 
 ## Billing address and email
 
