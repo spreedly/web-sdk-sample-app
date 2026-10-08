@@ -464,21 +464,25 @@ test card and live charges fail.
 
 ## Content Security Policy (CSP)
 
-Allow Google Pay and Spreedly:
+Google Pay runs on your page, so your page's CSP has to allow it. Add these hosts to the
+directives you already ship. Keep your existing Spreedly entries (`https://*.spreedly.com`).
 
-```
-script-src: https://pay.google.com
-connect-src: https://pay.google.com https://core.spreedly.com
-frame-src: https://pay.google.com
-```
+| Directive | Add |
+|---|---|
+| `script-src` | `https://pay.google.com` |
+| `frame-src` | `https://pay.google.com` |
+| `connect-src` | `https://pay.google.com` `https://google.com` `https://www.google.com` `https://account.google.com` `https://core.spreedly.com` |
+| `img-src` | `https://www.gstatic.com` |
 
-Also keep your existing Spreedly CSP (`https://*.spreedly.com` / `https://core.spreedly.com`).
-Google does not publish an exhaustive host list. Confirm against your CSP violation reports in the
-`TEST` environment (button images may need an `img-src` entry).
+`connect-src` for the Google hosts is what Google documents for the payment sheet
+([FAQ](https://developers.google.com/pay/api/web/support/faq)). `https://www.gstatic.com` serves
+the button images. If the sheet is still blocked, the browser's CSP report names the extra host —
+add that host only.
 
 With a nonce-based CSP, pass the nonce as `cspNonce`, which Google receives as its `nonce` option
-and applies to the `<style>` / `<script>` it injects. Put the same `nonce` attribute on your
-`pay.js` `<script>` tag.
+and applies to the `<style>` and `<script>` it injects, including the button. Put the same `nonce`
+attribute on your `pay.js` `<script>` tag. With that nonce you do not need `'unsafe-inline'` on
+`style-src`. Without a nonce, those injected styles are blocked unless `style-src` allows them.
 
 ---
 
