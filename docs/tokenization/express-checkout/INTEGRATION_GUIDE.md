@@ -12,11 +12,12 @@ Use Spreedly Express Checkout (`SpreedlyExpressCheckout`) to drop a complete, pr
 4. [Complete Usage Example](#complete-usage-example)
 5. [Display Modes](#display-modes)
 6. [Customizing the Form](#customizing-the-form)
-7. [Custom field validation](#custom-field-validation)
-8. [Error Handling](#error-handling)
-9. [Testing](#testing)
-10. [API Reference](#api-reference)
-11. [Troubleshooting](#troubleshooting)
+7. [Google Pay above the form](#google-pay-above-the-form)
+8. [Custom field validation](#custom-field-validation)
+9. [Error Handling](#error-handling)
+10. [Testing](#testing)
+11. [API Reference](#api-reference)
+12. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -299,6 +300,7 @@ sdk.updateTextElement('title', 'Complete Your Purchase');
 sdk.updateTextElement('submitBtnText', 'Pay $99.00');
 sdk.updateTextElement('footerText', 'Secured by Spreedly');
 sdk.updateTextElement('processingText', 'Processing payment...');
+sdk.updateTextElement('walletDividerText', 'or pay by card'); // with the googlePay option
 ```
 
 > Hosted Fields has an optional mountable submit button (`inAppElements({ submit })`) with default copy `'Submit'`. Clicks emit `submitClick` (required — a missing listener is an `error`); merchants control disable/text via `setDisable` / `setText`. Express Checkout's button stays inside the checkout iframe — there is no `submitClick` event here. See the [Hosted Fields integration guide](../hosted-fields/INTEGRATION_GUIDE.md#optional-hosted-submit-button).
@@ -349,6 +351,42 @@ sdk.updateSubmitParams({
   metadata: { order_id: 'ORDER-456', customer_id: 'CUST-789' },
 });
 ```
+
+---
+
+## Google Pay above the form
+
+Pass a `googlePay` option to `expressCheckout()` and the SDK draws Google's button in a wallet row
+above the card fields, with an "or pay with card" divider. Your page loads Google's `pay.js`; the
+row only appears when Google's `isReadyToPay()` passes, and stays out of the card-form iframe.
+
+```html
+<script async src="https://pay.google.com/gp/p/js/pay.js"></script>
+```
+
+```javascript
+sdk.on('googlePayTokenGenerated', ({ token, googlePayType }) => {
+  // Send token and googlePayType to your server
+});
+
+sdk.expressCheckout({
+  parentContainerId: 'payment-container',
+  googlePay: {
+    environment: 'TEST',
+    merchantInfo: { merchantName: 'Example Merchant' },
+    transactionInfo: { totalPrice: '42.00', currencyCode: 'USD', countryCode: 'US' },
+  },
+});
+
+// Keep the price current before the shopper taps
+sdk.setGooglePayTransactionInfo({ totalPrice: '52.00', currencyCode: 'USD', countryCode: 'US' });
+```
+
+Card tokens still arrive on `tokenGenerated`. In embedded mode the container needs a fixed height;
+the row uses about 108 px of it. An invalid `googlePay` config never blocks the card form: it is
+reported through `googlePayError` and `googlePayUnavailable` (`DEVELOPER_ERROR`). See the
+[Google Pay integration guide](../../google-pay/INTEGRATION_GUIDE.md#google-pay-inside-express-checkout)
+for the full configuration, events, 3DS guidance and testing.
 
 ---
 

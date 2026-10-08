@@ -6,6 +6,7 @@ export const MONOREPO_URLS = {
     PURCHASE_3DS: "/purchase-with-3ds/index.html",
     Payment_Methods: "/v1/payment_methods",
     PPCP: "/ppcp/index.html",
+    GOOGLE_PAY: "/google-pay/index.html",
   } as const;
 
    
