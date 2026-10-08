@@ -315,10 +315,9 @@ function registerEvents(instance) {
     logEvent(`googlePayPaymentAuthorized — ${cardNetwork || 'card'} •••• ${last4 || '????'}, tokenizing`);
   });
 
-  instance.on('googlePayTokenGenerated', async result => {
+  instance.on('googlePayTokenGenerated', result => {
     lastResult = result;
     logEvent(`googlePayTokenGenerated — ${result.googlePayType || 'type unknown'}`, 'success');
-    await retainIfRequested(result);
     showTokenResult(result);
   });
 
@@ -333,25 +332,6 @@ function registerEvents(instance) {
     }
     setStatus(`${code}: ${message}`, 'error');
   });
-}
-
-// The SDK creates payment methods cached (Core ignores `retained` on the browser's
-// certificate-auth request), so retain from the server, as the card demos do.
-async function retainIfRequested(result) {
-  if (!$('gp-retain').checked || result.paymentMethod?.storage_state === 'retained') {
-    return;
-  }
-  try {
-    const retained = await SpreedlyUtils.retainPaymentMethod(result.token);
-    const paymentMethod = retained?.transaction?.payment_method;
-    if (paymentMethod) {
-      result.paymentMethod = { ...result.paymentMethod, ...paymentMethod };
-    }
-    logEvent(`Payment method retained — ${result.paymentMethod?.storage_state}`, 'success');
-  } catch (error) {
-    logEvent(`Retain failed: ${error.message}`, 'error');
-    setStatus('The payment method could not be retained.', 'error');
-  }
 }
 
 function placement() {
@@ -505,7 +485,7 @@ function closeDialog() {
 }
 
 /** A card entered in the Express Checkout form: same result card and purchase as Google Pay. */
-async function onCardToken(response) {
+function onCardToken(response) {
   const paymentMethod = response?.tokenResponse?.payment_method;
   if (!paymentMethod?.token) return;
   lastResult = {
@@ -520,7 +500,6 @@ async function onCardToken(response) {
     'success'
   );
   closeDialog();
-  await retainIfRequested(lastResult);
   showTokenResult(lastResult);
 }
 
@@ -606,9 +585,8 @@ function showPurchaseResult(success, transaction, fallbackMessage) {
     `Purchase ${success ? 'succeeded' : 'failed'}: ${tx.message || fallbackMessage || tx.state}`,
     success ? 'success' : 'error'
   );
-  // A retained payment method can be charged again; a cached one gets a single attempt.
-  const retained = lastResult?.paymentMethod?.storage_state === 'retained';
-  $('gp-purchase-btn').disabled = !retained;
+  // The payment method is cached, so it gets a single purchase attempt.
+  $('gp-purchase-btn').disabled = true;
 }
 
 /** Spreedly error bodies come back as `{ transaction }` or `{ errors: [...] }`. */
