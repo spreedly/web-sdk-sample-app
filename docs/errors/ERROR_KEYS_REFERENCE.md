@@ -6,8 +6,11 @@ verbatim on its error payloads:
 
 - Card tokenization (Hosted Fields / Express Checkout): the `error` event, as
   `{ message, errors }`.
-- ACH: the `achPaymentError` event, inside the sanitized
-  `{ message, status?, errors? }` payload.
+- ACH (`SpreedlyACHFields` / `SpreedlyACHForm`): the `error` event, as Spreedly's own
+  response body `{ errors }`, unchanged. SDK-side failures (invalid routing or account
+  number, a submit within 2 seconds) arrive as plain strings instead.
+- ACH, deprecated API (`submitACHPayment`): the `achPaymentError` event, inside the
+  sanitized `{ message, status?, errors? }` payload.
 - Offsite (API flow): the `offsitePaymentError` event, inside the sanitized
   `{ message, status?, errors? }` payload.
 
@@ -99,5 +102,10 @@ sdk.on('error', (error) => {
 });
 ```
 
-The same `errors` array (and the same handling) applies to `achPaymentError`
-and `offsitePaymentError`, where it lives under `error.errors`.
+The same example works unchanged for the ACH classes' `error` event (`SpreedlyACHFields`,
+`SpreedlyACHForm`): strings for SDK-side failures, `error.errors` for Spreedly's. For
+example, a bank account with no name comes back as
+`{ errors: [{ attribute: 'full_name', key: 'errors.blank', message: "Full name can't be blank" }] }`.
+
+The same `errors` array (and the same handling) applies to `achPaymentError` (deprecated
+ACH API) and `offsitePaymentError`, where it lives under `error.errors`.

@@ -36,6 +36,12 @@ document.addEventListener('DOMContentLoaded', init);
 
 async function init() {
   try {
+    // ?sdk=express-checkout → the prebuilt SpreedlyACHForm (ach-form.js).
+    if (SpreedlyUtils.getSDKType() === 'express-checkout') {
+      await initACHForm();
+      return;
+    }
+
     await loadHostedFieldsSDK();
 
     if (typeof window.SpreedlyACHFields !== 'function') {
@@ -52,6 +58,7 @@ async function init() {
     await createAchInstanceAndMountFields();
     setupToggleMaskButton();
     setupSubmitHandler();
+    setupFieldsPanel(); // ach-fields-panel.js
   } catch (error) {
     console.error('Failed to initialize ACH demo:', error);
     hideLoading();
@@ -61,9 +68,8 @@ async function init() {
 }
 
 /**
- * ACH secure fields live in the hosted-fields bundle only (v1), so this page
- * always loads that bundle regardless of the `?sdk=` query param the other
- * flows use.
+ * SpreedlyACHFields lives in the hosted-fields bundle only. The `?sdk=express-checkout`
+ * mode uses SpreedlyACHForm from the Express Checkout bundle instead (ach-form.js).
  */
 function loadHostedFieldsSDK() {
   return new Promise((resolve, reject) => {
@@ -93,13 +99,24 @@ async function createAchInstanceAndMountFields() {
   ach.on('ready', () => {
     hideLoading();
     elements.paymentSection().classList.remove('hidden');
-    elements.submitBtn().disabled = false;
-    // Field customization, applied inside the iframes.
-    ach.setPlaceholder('routing', '021000021');
-    ach.setPlaceholder('account', 'Account number');
+    // Placeholders and styles (matching the page's own inputs: same font family, size and
+    // color — web fonts like DM Sans can't load inside the iframe, so the next font in the
+    // list is used), mask state and submit gating, all from the config panel.
+    onHfReady(); // ach-fields-panel.js
   });
 
-  ach.on('tokenGenerated', async ({ token, last4 }) => {
+  // Focus ring: the iframe holds the focus, so mirror it onto the container the way the
+  // page's inputs get their :focus border.
+  ach.on('fieldStateChange', ({ field, focused }) => {
+    const container = document.getElementById(
+      field === 'routing' ? 'ach-routing-field' : 'ach-account-field'
+    );
+    container?.classList.toggle('focused', focused);
+  });
+  ach.on('fieldStateChange', onHfFieldState); // config panel: gating + event log
+
+  ach.on('tokenGenerated', async ({ tokenResponse }) => {
+    const { token, account_number_display_digits: last4 } = tokenResponse.payment_method;
     console.log('ACH payment method created:', { token, last4 });
     await runPurchase(token, last4);
   });
@@ -113,6 +130,7 @@ async function createAchInstanceAndMountFields() {
   ach.on('validation', snapshot => {
     // Lengths + validity only — never the values.
     console.log('ACH validation:', snapshot);
+    onHfValidation(snapshot); // config panel
   });
 
   ach.inAppElements({
@@ -124,12 +142,8 @@ async function createAchInstanceAndMountFields() {
 function setupToggleMaskButton() {
   const button = elements.toggleAccountVisibility();
   if (!button) return;
-  let revealed = false;
-  button.addEventListener('click', () => {
-    ach.toggleMask();
-    revealed = !revealed;
-    button.textContent = revealed ? 'Hide' : 'Show';
-  });
+  // Shares its state with the config panel's "Mask account number" checkbox.
+  button.addEventListener('click', () => setHfMasked(!hfPanel.masked));
 }
 
 function setupSubmitHandler() {
@@ -162,7 +176,7 @@ function handleSubmit() {
   console.log('Waiting for tokenGenerated event...');
 }
 
-async function runPurchase(paymentMethodToken, last4) {
+async function runPurchase(paymentMethodToken, last4, storageState) {
   try {
     // Fixed $10 USD for the demo.
     const amount = 1000;
@@ -173,6 +187,7 @@ async function runPurchase(paymentMethodToken, last4) {
       renderSuccess({
         paymentMethodToken,
         last4,
+        storageState,
         transactionToken: result.transaction.token,
         amount,
         currency,
@@ -195,11 +210,16 @@ async function runPurchase(paymentMethodToken, last4) {
 
 function setSubmitting(submitting) {
   const btn = elements.submitBtn();
-  btn.disabled = submitting;
   btn.textContent = submitting ? 'Processing...' : 'Create payment method & run purchase';
+  if (typeof hfPanel === 'undefined') {
+    btn.disabled = submitting;
+    return;
+  }
+  hfPanel.submitting = submitting;
+  updateHfSubmitEnabled(); // names filled + both secure fields valid
 }
 
-function renderSuccess({ paymentMethodToken, last4, transactionToken, amount, currency }) {
+function renderSuccess({ paymentMethodToken, last4, storageState, transactionToken, amount, currency }) {
   hideLoading();
   elements.paymentSection().classList.add('hidden');
   elements.resultSection().classList.remove('hidden');
@@ -211,6 +231,7 @@ function renderSuccess({ paymentMethodToken, last4, transactionToken, amount, cu
   elements.resultDetails().innerHTML = `
     <div class="result-row"><span>Payment method token</span><code>${escape(paymentMethodToken)}</code></div>
     ${last4 ? `<div class="result-row"><span>Account</span><code>•••• ${escape(last4)}</code></div>` : ''}
+    ${storageState ? `<div class="result-row"><span>Storage</span><code>${escape(storageState)}</code></div>` : ''}
     <div class="result-row"><span>Transaction token</span><code>${escape(transactionToken)}</code></div>
     <div class="result-row"><span>Amount</span><code>${SpreedlyUtils.formatCurrency(amount / 100, currency)}</code></div>
   `;
@@ -224,7 +245,7 @@ function renderError(message) {
   elements.resultIconError().classList.remove('hidden');
   elements.resultTitle().textContent = 'Something went wrong';
   elements.resultDetails().innerHTML = `<div class="result-row"><span>Error</span><span>${SpreedlyUtils.escapeHtml(message)}</span></div>`;
-  SpreedlyUtils.showStatus('status-message', message, 'error');
+  SpreedlyUtils.showStatus(statusMessageId(), message, 'error');
 }
 
 window.resetAchFlow = function () {
@@ -234,6 +255,11 @@ window.resetAchFlow = function () {
   window.location.href = window.location.pathname + window.location.search;
 };
 
+/** The Hosted Fields card holds `status-message`; the Express Checkout mode has its own. */
+function statusMessageId() {
+  return SpreedlyUtils.getSDKType() === 'express-checkout' ? 'ec-status-message' : 'status-message';
+}
+
 function hideLoading() {
   const loading = elements.loadingState();
   if (loading) loading.classList.add('hidden');
@@ -242,5 +268,5 @@ function hideLoading() {
 function showError(message) {
   hideLoading();
   elements.paymentSection().classList.remove('hidden');
-  SpreedlyUtils.showStatus('status-message', message, 'error');
+  SpreedlyUtils.showStatus(statusMessageId(), message, 'error');
 }
