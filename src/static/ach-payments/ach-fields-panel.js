@@ -15,6 +15,7 @@ const hfPanel = {
   submitting: false,
   validRouting: false,
   validAccount: false,
+  remounting: false,
   events: [],
 };
 
@@ -148,13 +149,33 @@ function removeHfHandlers() {
   document.getElementById('hf-handlers-removed').classList.remove('hidden');
 }
 
+/**
+ * Destroy & remount waits on the auth call before creating the new instance. Clicks during
+ * that wait are ignored: otherwise each one would create its own instance, and both would
+ * mount iframes into the same containers.
+ */
 async function remountHfFields() {
+  if (hfPanel.remounting) return;
+  hfPanel.remounting = true;
+  const button = document.getElementById('hf-remount');
+  const label = button.textContent;
+  button.disabled = true;
+  button.textContent = 'Remounting…';
   document.getElementById('hf-handlers-removed').classList.add('hidden');
-  ach.destroy();
-  updateHfIsLoaded(); // false until the new instance mounts (it waits on the auth call)
-  clearHfFieldState();
-  await createAchInstanceAndMountFields();
-  updateHfIsLoaded();
+  try {
+    ach.destroy();
+    updateHfIsLoaded(); // false until the new instance mounts (it waits on the auth call)
+    clearHfFieldState();
+    await createAchInstanceAndMountFields();
+    updateHfIsLoaded();
+  } catch (error) {
+    console.error('Remount failed:', error);
+    showError(`Couldn't remount the fields: ${error?.message || error}`);
+  } finally {
+    hfPanel.remounting = false;
+    button.disabled = false;
+    button.textContent = label;
+  }
 }
 
 function setupFieldsPanel() {
