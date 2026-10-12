@@ -15,15 +15,16 @@ the two, see the [ACH overview](../OVERVIEW.md).
 2. Call `mount()`. Pass a container to embed the form, or nothing to open it as a dialog.
 3. The customer fills in the form and clicks its submit button. The form validates the
    fields and tokenizes inside the iframe.
-4. Your page gets `tokenGenerated` with `{ message, tokenResponse }`, the same shape as the
-   Express Checkout card form. Your backend runs the purchase.
+4. Your page gets `tokenGenerated` with `{ message, tokenResponse, shouldRetain }`, the same
+   shape as the Express Checkout card form plus `shouldRetain` (see
+   [Saving the account](#saving-the-account)). Your backend runs the purchase.
 
 ```
 ┌─────────────────────────────────┐
 │  Merchant page                  │
 │                                 │
 │  new SpreedlyACHForm(auth)      │
-│  .mount({ containerId })        │
+│  .mount({ parentContainerId })  │
 │  ┌───────────────────────────┐  │      tokenize (in the iframe)
 │  │ ACH form iframe           │──┼───────────────▶ ┌──────────────┐
 │  │ (Spreedly-hosted)         │  │                  │ Spreedly Core│
@@ -78,6 +79,11 @@ form.on('error', error => {
 });
 ```
 
+The form shows its own field errors (a missing name, an invalid routing number) inside the
+form, and those don't fire `error`. When Spreedly rejects the request, the form only fires
+`error` and shows nothing, so show the message on your page. The form keeps the values, so
+the customer can fix them and submit again.
+
 The constructor throws if any auth field is missing.
 
 ## Step 3: Mount the form
@@ -95,12 +101,12 @@ with no height, or only a `min-height`, leaves the iframe at the browser's defau
 ```
 
 ```javascript
-form.mount({ containerId: 'ach-form' });
+form.mount({ parentContainerId: 'ach-form' });
 ```
 
 ### Dialog
 
-Leave out `containerId`. The form opens as a dialog: a centered card (up to 560 px wide,
+Leave out `parentContainerId`. The form opens as a dialog: a centered card (up to 560 px wide,
 sized to its content) over a dimmed page, with its own close button. You don't set a height.
 Clicking outside the card doesn't close it.
 When the customer closes it, you get `close`.
@@ -119,7 +125,7 @@ Every option is optional.
 
 ```javascript
 form.mount({
-  containerId: 'ach-form',
+  parentContainerId: 'ach-form',
   uiConfig: {
     textConfig: { title: 'Pay by bank', submitBtnText: 'Pay' },
     achFormFields: {
@@ -134,6 +140,21 @@ form.mount({
 
 `uiConfig.styles` takes the same theme keys as the Express Checkout card form (button,
 text fields, checkbox, background, fonts).
+
+`parentContainerId` is the same option name as the card form's `expressCheckout()`.
+
+If your gateway needs contact or billing details, show the optional fields: `email`,
+`phone_number`, `address1`, `address2`, `city`, `state`, `zip` and `country`. They are
+hidden by default; the customer fills them in.
+
+```javascript
+uiConfig: {
+  achFormFields: {
+    email: { isHidden: false, isRequired: true },
+    zip: { isHidden: false },
+  },
+}
+```
 
 The account holder name, routing number and account number fields are always shown and
 always required. You can change their label, placeholder, size and styles. `placeholder` has

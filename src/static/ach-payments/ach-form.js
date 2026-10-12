@@ -6,7 +6,7 @@
  * iframe with its own submit button, so this page collects nothing itself.
  *
  * 1. Load the Express Checkout SDK bundle and fetch auth params from the backend
- * 2. new SpreedlyACHForm(auth) → mount({ containerId, uiConfig })
+ * 2. new SpreedlyACHForm(auth) → mount({ parentContainerId, uiConfig })
  * 3. The buyer fills in the form and clicks its submit button
  * 4. Listen for `tokenGenerated` ({ tokenResponse, shouldRetain }). If shouldRetain is true,
  *    retain the payment method from the backend (PUT /api/v1/payment_methods/:token/retain),
@@ -167,7 +167,7 @@ function buildMountOptions() {
   const theme = checked('config-custom-theme') ? ACH_CUSTOM_THEME : {};
 
   return {
-    ...(displayMode() === 'embedded' && { containerId: 'ach-form-container' }),
+    ...(displayMode() === 'embedded' && { parentContainerId: 'ach-form-container' }),
     uiConfig: {
       textConfig: {
         title: value('config-text-title'),

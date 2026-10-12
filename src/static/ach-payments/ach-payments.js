@@ -7,7 +7,8 @@
  * 3. On `ready`, the buyer types the numbers straight into the iframes —
  *    they never touch this page. Name / account type / holder type are plain
  *    merchant inputs.
- * 4. Call ach.submit(formData) with only the non-sensitive fields
+ * 4. Call ach.submit(formData) with only the non-sensitive fields (Spreedly's names, like
+ *    the card submit())
  * 5. Listen for `tokenGenerated` → POST to /api/v1/ach-purchase
  * 6. Render success/failure
  *
@@ -167,11 +168,11 @@ function handleSubmit() {
   // Only the non-sensitive fields. The routing and account numbers are read
   // inside the account iframe — they are never collected on this page.
   ach.submit({
-    firstName: (formData.firstName || '').trim(),
-    lastName: (formData.lastName || '').trim(),
-    bankName: (formData.bankName || '').trim() || undefined,
-    bankAccountType: formData.bankAccountType,
-    bankAccountHolderType: formData.bankAccountHolderType,
+    first_name: (formData.firstName || '').trim(),
+    last_name: (formData.lastName || '').trim(),
+    bank_name: (formData.bankName || '').trim() || undefined,
+    bank_account_type: formData.bankAccountType,
+    bank_account_holder_type: formData.bankAccountHolderType,
   });
   console.log('Waiting for tokenGenerated event...');
 }

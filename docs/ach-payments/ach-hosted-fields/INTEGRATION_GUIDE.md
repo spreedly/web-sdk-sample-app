@@ -116,22 +116,35 @@ loaded and connected to each other. The account field is masked by default; call
 
 The customer types the routing and account numbers into the secure fields. Everything
 else (name, account type, holder type, bank name) is collected in your own inputs and
-passed to `submit`:
+passed to `submit`, with Spreedly's field names — the same convention as the card
+`submit()`. `metadata` and `mandate` go in the second argument:
 
 ```javascript
-ach.submit({
-  fullName: 'Bob Smith',              // OR firstName + lastName
-  bankAccountType: 'checking',        // 'checking' | 'savings'
-  bankAccountHolderType: 'personal',  // 'personal' | 'business'
-  bankName: 'First Bank of Elbonia',  // optional
-});
+ach.submit(
+  {
+    full_name: 'Bob Smith',              // OR first_name + last_name
+    bank_account_type: 'checking',       // 'checking' | 'savings'
+    bank_account_holder_type: 'personal', // 'personal' | 'business'
+    bank_name: 'First Bank of Elbonia',  // optional
+  },
+  { metadata: { order_id: '1234' } }     // optional
+);
 ```
 
-The SDK checks the numbers inside the iframe. The routing number must be 9 digits and pass
-the US ABA checksum; a 9-digit number starting with `0` that fails it is sent to Spreedly
-to check (it may be Canadian). The account number must be 4–17 digits. On success it emits
-`tokenGenerated` with `{ message, tokenResponse }` and securely clears the fields.
-Submissions are throttled to one per 2 seconds.
+If your gateway needs contact or billing details, add `email`, `phone_number`, `address1`,
+`address2`, `city`, `state`, `zip` and `country` to the first argument. Other keys are
+ignored.
+
+The SDK checks the numbers inside the iframe:
+- **Routing number:** 9 digits that pass the US ABA checksum. A 9-digit number starting
+  with `0` that fails the checksum is sent to Spreedly anyway, because Canadian numbers
+  (`0` + institution + transit) have no checksum. Spreedly rejects a mistyped US number, and
+  you get its error on `error`.
+- **Account number:** 4–17 digits.
+
+On success it emits `tokenGenerated` with `{ message, tokenResponse }` and securely clears
+the fields. A submit that passes these checks starts a 2-second window in which further
+submits are rejected, and a submit while a request is still running is ignored.
 
 On failure it emits `error`:
 
@@ -141,10 +154,12 @@ On failure it emits `error`:
 | Submit within 2 seconds of the last one | `'Please wait before submitting again'` |
 | Different auth details than the first submit | `'Auth credentials cannot be changed after initial use'` |
 | Spreedly rejects the request | Spreedly's error body (for example, a missing name) |
+| Spreedly responds without a token | `'No payment method token received from ACH API'` |
+| The request fails without a response (network) | The network error message, or `'ACH tokenization failed'` |
 
 For the keys in Spreedly's error body, see the [Error Keys Reference](../../errors/ERROR_KEYS_REFERENCE.md).
 
-> Any `bankRoutingNumber` / `bankAccountNumber` keys you pass to `submit` are ignored —
+> Any `bank_routing_number` / `bank_account_number` keys you pass to `submit` are ignored —
 > those values come only from the secure fields.
 
 ### Account holder name
@@ -152,8 +167,8 @@ For the keys in Spreedly's error body, see the [Error Keys Reference](../../erro
 Send the name one of two ways. Spreedly needs one of them — a bank account with no name is
 rejected (`422 "Full name can't be blank"`).
 
-- `fullName` — one field: `ach.submit({ fullName: 'Bob Smith', … })`
-- `firstName` + `lastName` — two fields: `ach.submit({ firstName: 'Bob', lastName: 'Smith', … })`
+- `full_name` — one field: `ach.submit({ full_name: 'Bob Smith', … })`
+- `first_name` + `last_name` — two fields: `ach.submit({ first_name: 'Bob', last_name: 'Smith', … })`
 
 Use whichever matches your form. If you send both, Spreedly receives both. The SDK doesn't
 check the name in the browser: a missing name comes back from Spreedly on `error`.

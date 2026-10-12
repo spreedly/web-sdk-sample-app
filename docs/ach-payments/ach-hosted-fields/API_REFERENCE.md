@@ -29,7 +29,8 @@ and connected. Warns and skips a field whose container is missing. A second call
 fields are mounted is ignored with a warning — use `reload()` to start over.
 
 Both fields take digits only. Other characters are blocked as they're typed, so they never
-appear; pasted text keeps only its digits. (Same behavior as the card number and CVV fields.)
+appear. Pasted text keeps all its digits (so `1234-5678-9012-3456` becomes 16 digits), cut to
+9 for routing and 17 for account.
 
 ```ts
 ach.inAppElements({
@@ -62,22 +63,31 @@ listener, and drops all callbacks. The instance cannot be reused after this.
 
 ## Tokenization
 
-### `submit(formData?): void`
+### `submit(formData?, submitParams?): void`
 
 Tokenizes the bank account entered in the secure fields. Emits `tokenGenerated` on
-success (and securely clears the fields), `error` on failure. Throttled to one call per
-2 seconds. The routing and account numbers are read from the iframes — any bank number
-keys in `formData` are ignored.
+success (and securely clears the fields), `error` on failure. A submit that passes
+validation starts a 2-second window in which further submits are rejected; a submit while a
+request is still running is ignored. The routing and account numbers are read from the
+iframes — any bank number keys in `formData` are ignored.
 
-| `formData` field        | Type                       | Required | Notes                                          |
-| ----------------------- | -------------------------- | -------- | ---------------------------------------------- |
-| `fullName`              | `string`                   | †        | Either `fullName` OR (`firstName` AND `lastName`) |
-| `firstName` / `lastName`| `string`                   | †        | See above                                      |
-| `bankName`              | `string`                   | no       |                                                |
-| `bankAccountType`       | `'checking' \| 'savings'`  | no       |                                                |
-| `bankAccountHolderType` | `'personal' \| 'business'` | no       |                                                |
-| `metadata`              | `Record<string, string>`   | no       | Forwarded to Spreedly                          |
-| `mandate`               | `object`                   | no       | Forwarded to Spreedly                          |
+`formData` uses Spreedly's `bank_account` names, like the card `submit()`. Other keys are
+ignored.
+
+| `formData` field             | Type                       | Required | Notes |
+| ---------------------------- | -------------------------- | -------- | ----- |
+| `full_name`                  | `string`                   | †        | Either `full_name` OR (`first_name` AND `last_name`) |
+| `first_name` / `last_name`   | `string`                   | †        | See above |
+| `bank_name`                  | `string`                   | no       | |
+| `bank_account_type`          | `'checking' \| 'savings'`  | no       | |
+| `bank_account_holder_type`   | `'personal' \| 'business'` | no       | |
+| `email`, `phone_number`      | `string`                   | no       | Some gateways require them |
+| `address1`, `address2`, `city`, `state`, `zip`, `country` | `string` | no | Billing address; some gateways require it. `country` is a two-letter code (`US` or `CA`) |
+
+| `submitParams` field | Type                     | Notes                 |
+| -------------------- | ------------------------ | --------------------- |
+| `metadata`           | `Record<string, string>` | Forwarded to Spreedly |
+| `mandate`            | `object`                 | Forwarded to Spreedly |
 
 ### `validate(): void`
 
@@ -117,15 +127,15 @@ Clears both inputs and securely wipes the held values.
 | ----------------- | ----------------------------------------------------------------------- |
 | `ready`           | `{ message: string }` — both fields mounted and connected               |
 | `tokenGenerated`  | `{ message: 'Token generated', tokenResponse }` — `tokenResponse` is the whole Spreedly transaction, same as card hosted fields. Token: `tokenResponse.payment_method.token`. Bank numbers are masked by Spreedly (`routing_number: "021*"`, `account_number: "*3210"`). |
-| `error`           | A string for SDK-side failures: `'Routing number is invalid'`, `'Account number is invalid'`, `'Please wait before submitting again'`, `'Auth credentials cannot be changed after initial use'`. Spreedly's error body when Spreedly rejects the request. |
-| `validation`      | `ACHValidation` (below) — from `validate()` or a blocked submit         |
-| `fieldStateChange`| `ACHValidation` + `{ action, field, focused }` — streamed as the customer types |
+| `error`           | A string for SDK-side failures: `'Routing number is invalid'`, `'Account number is invalid'`, `'Please wait before submitting again'`, `'Auth credentials cannot be changed after initial use'`, `'No payment method token received from ACH API'`, or a network error message (`'ACH tokenization failed'` when there is none). Spreedly's error body when Spreedly rejects the request. |
+| `validation`      | `ACHValidationPayload` (below) — from `validate()` or a blocked submit  |
+| `fieldStateChange`| `ACHValidationPayload` + `{ action, field, focused }` — streamed as the customer types |
 
-`ACHValidation`:
+`ACHValidationPayload`:
 
 | Field           | Type      | Notes                                              |
 | --------------- | --------- | -------------------------------------------------- |
-| `validRouting`  | `boolean` | 9 digits and passes the US ABA checksum, or 9 digits starting with `0` (sent to Spreedly to check; may be Canadian) |
+| `validRouting`  | `boolean` | 9 digits that pass the US ABA checksum, or 9 digits starting with `0` (may be Canadian; Spreedly checks it and rejects a mistyped US number) |
 | `validAccount`  | `boolean` | 4–17 digits                                        |
 | `routingLength` | `number`  | current length — never the value                   |
 | `accountLength` | `number`  | current length — never the value                   |
