@@ -7,7 +7,7 @@ verbatim on its error payloads:
 - Card tokenization (Hosted Fields / Express Checkout): the `error` event, as
   `{ message, errors }`.
 - ACH (`SpreedlyACHFields` / `SpreedlyACHForm`): the `error` event, as Spreedly's own
-  response body `{ errors }` (the ACH Form masks the typed bank numbers if they ever appear
+  response body `{ errors }` (both classes mask the typed bank numbers if they ever appear
   in it). SDK-side failures arrive as plain strings instead: for `SpreedlyACHFields`, an
   invalid routing or account number or a submit within 2 seconds; for the ACH Form, a submit
   within 2 seconds. The ACH Form shows its own field errors inside the form, without firing

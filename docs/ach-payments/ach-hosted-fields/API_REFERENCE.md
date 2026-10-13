@@ -129,7 +129,7 @@ Clears both inputs and securely wipes the held values.
 | ----------------- | ----------------------------------------------------------------------- |
 | `ready`           | `{ message: string }` — both fields mounted and connected               |
 | `tokenGenerated`  | `{ message: 'Token generated', tokenResponse }` — `tokenResponse` is the whole Spreedly transaction, same as card hosted fields. Token: `tokenResponse.payment_method.token`. Bank numbers are masked by Spreedly (`routing_number: "021*"`, `account_number: "*3210"`). |
-| `error`           | A string for SDK-side failures: `'Routing number is invalid'`, `'Account number is invalid'`, `'Please wait before submitting again'`, `'Auth credentials cannot be changed after initial use'`, `'No payment method token received from ACH API'`, or a network error message (`'ACH tokenization failed'` when there is none). Spreedly's error body when Spreedly rejects the request. |
+| `error`           | A string for SDK-side failures: `'Routing number is invalid'`, `'Account number is invalid'`, `'Please wait before submitting again'`, `'Auth credentials cannot be changed after initial use'`, `'No payment method token received from ACH API'`, or a network error message (`'ACH tokenization failed'` when there is none). Spreedly's error body when Spreedly rejects the request. The typed bank numbers are masked in either case, in case an error ever echoes them. |
 | `validation`      | `ACHValidationPayload` (below) — from `validate()` or a blocked submit  |
 | `fieldStateChange`| `ACHValidationPayload` + `{ action, field, focused }` — streamed as the customer types |
 

@@ -108,7 +108,7 @@ Sent with the tokenization request. Other keys are dropped.
 | ---------------- | ------- |
 | `ready`          | `{ message: string }` — the form iframe has loaded |
 | `tokenGenerated` | `{ message: 'Token generated', tokenResponse, shouldRetain: boolean }` — `tokenResponse` is the whole Spreedly transaction, same as the Express Checkout card form (token: `tokenResponse.payment_method.token`; bank numbers masked by Spreedly). `shouldRetain` is whether the buyer ticked the save-account checkbox; `false` when it isn't shown. |
-| `error`          | A string for SDK-side failures: `'Please wait before submitting again'`, `'No payment method token received from ACH API'`. Spreedly's error body when Spreedly rejects the request. Field errors show inside the form and don't fire `error`. |
+| `error`          | A string for SDK-side failures: `'Please wait before submitting again'`, `'No payment method token received from ACH API'`. Spreedly's error body when Spreedly rejects the request. The typed bank numbers are masked in either case, in case an error ever echoes them. Field errors show inside the form and don't fire `error`. |
 | `close`          | `{ message: string }` — the customer closed the dialog |
 
 Submits are limited to one every 2 seconds. A submit inside that window emits `error` with
