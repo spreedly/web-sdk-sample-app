@@ -84,7 +84,7 @@ Need to collect a bank account and tokenize?
 `setupACHPayment` / `submitACHPayment` / `clearACHPayment` on `SpreedlyHostedFields` and
 `SpreedlyExpressCheckout` are **deprecated**. They have your page collect the routing and
 account numbers in its own inputs, so the numbers pass through your application state. Use ACH
-Hosted Fields or the ACH Form instead. The methods still work for the time being but will be
-removed in a subsequent release. The earlier releases will still continue to have those methods.
+Hosted Fields or the ACH Form instead. They still work, but a future release will remove them.
+Older versions keep them.
 
 📖 See: [Deprecated merchant-collected API](./DEPRECATED_API.md)

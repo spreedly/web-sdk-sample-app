@@ -7,9 +7,8 @@ application state.
 
 **Use [`SpreedlyACHFields`](./ach-hosted-fields/INTEGRATION_GUIDE.md) (Hosted Fields) or
 [`SpreedlyACHForm`](./ach-form/INTEGRATION_GUIDE.md) (Express Checkout) instead.** The
-deprecated methods still work for the time being but will be removed in a subsequent release.
-The earlier releases will still continue to have those methods. This page documents them for
-existing integrations.
+deprecated methods still work, but a future release will remove them. Older versions keep
+them. This page documents them for existing integrations.
 
 ## Example
 
