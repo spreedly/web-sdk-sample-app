@@ -25,7 +25,8 @@ Creates an instance. Throws if any auth field is missing.
 ### `inAppElements(config): void`
 
 Mounts the two secure iframes into your containers. Fires `ready` once both are loaded
-and connected. Warns and skips a field whose container is missing. A second call while the
+and connected. Both containers must be in the DOM: if either is missing, nothing is mounted
+and a warning names it — call it again once both exist. A second call while the
 fields are mounted is ignored with a warning — use `reload()` to start over.
 
 Both fields take digits only. Other characters are blocked as they're typed, so they never
@@ -106,7 +107,8 @@ Reveals or re-masks the account number field (it mounts masked).
 
 Customize one hosted field. `field` is `'routing'` or `'account'`. `setStyles` takes a
 `Record<string, string>` of camelCase CSS properties; `setLabel` sets `aria-label` and
-`title`.
+`title`; HTML tags are stripped, the text is trimmed and cut to 256 characters, and an
+empty label is ignored (same as the card fields).
 
 ### `setPlaceholderStyles(styles): void`
 

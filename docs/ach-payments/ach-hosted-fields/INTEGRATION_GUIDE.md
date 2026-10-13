@@ -21,25 +21,22 @@ To compare the two, see the [ACH overview](../OVERVIEW.md).
 4. Your backend runs a purchase against an ACH-capable gateway using the token.
 
 ```
-┌──────────────────────────────┐
-│  Merchant page                │
-│                               │
-│  routing iframe  ◀── Spreedly─hosted, secure
-│  account iframe  ◀── Spreedly─hosted, secure (the "brain")
-│                               │
-│  new SpreedlyACHFields(auth)  │
-│  .inAppElements({...})        │      tokenize (routing+account, in-iframe)
-│  .submit(formData) ───────────┼───────────────▶ ┌──────────────┐
-│                               │                  │ Spreedly Core│
-│  on('tokenGenerated',         │ ◀───────────────  └──────┬───────┘
-│     { tokenResponse })        │   { token }              │
-└───────────────┬───────────────┘                          │ POST /v1/gateways/{gw}/purchase
-                │ token                                     ▼
-                ▼                                    ┌────────────────┐
-         ┌────────────────┐                          │ Merchant       │
-         │ Merchant       │ ─────────────────────────│ Backend        │
-         │ Backend        │                          └────────────────┘
-         └────────────────┘
+┌─────────────────────────────────┐                                      ┌───────────────┐
+│ Merchant page                   │ 1. tokenize (in the iframe)          │               │
+│                                 │ ───────────────────────────────────▶ │               │
+│ routing iframe  (Spreedly)      │                                      │               │
+│ account iframe  (Spreedly)      │                                      │ Spreedly Core │
+│                                 │                                      │               │
+│ new SpreedlyACHFields(auth)     │                                      │               │
+│ .inAppElements({ ... })         │ ◀─────────────────────────────────── │               │
+│ .submit(formData)               │ 2. tokenGenerated                    │               │
+│ on('tokenGenerated', ...)       │    { message, tokenResponse }        │               │
+└────────────────┬────────────────┘                                      └───────▲───────┘
+                 │ 3. payment method token                                       │
+                 ▼                                                               │
+       ┌──────────────────┐                                                      │
+       │ Merchant backend │ ─────────────────────────────────────────────────────┘
+       └──────────────────┘  4. purchase: POST /v1/gateways/{gateway}/purchase.json
 ```
 
 ## Prerequisites
@@ -245,16 +242,6 @@ ach.on('ready', () => {
   `SpreedlyACHFields` to show the fields again.
 - `removeHandlers()` removes every `on()` callback. The fields keep working.
 - `isLoaded()` tells you whether the fields are mounted.
-
----
-
-## Customer authorization
-
-<!-- Wording pending product/legal review (Nacha) before publishing. -->
-
-Before you debit a customer's bank account, you must get the customer's authorization for
-the debit. The SDK does not collect it. Show your authorization terms on your page, next to
-the fields, and keep a record of the customer's agreement.
 
 ---
 

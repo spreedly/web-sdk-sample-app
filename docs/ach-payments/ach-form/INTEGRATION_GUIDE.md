@@ -20,24 +20,23 @@ the two, see the [ACH overview](../OVERVIEW.md).
    [Saving the account](#saving-the-account)). Your backend runs the purchase.
 
 ```
-┌─────────────────────────────────┐
-│  Merchant page                  │
-│                                 │
-│  new SpreedlyACHForm(auth)      │
-│  .mount({ parentContainerId })  │
-│  ┌───────────────────────────┐  │      tokenize (in the iframe)
-│  │ ACH form iframe           │──┼───────────────▶ ┌──────────────┐
-│  │ (Spreedly-hosted)         │  │                  │ Spreedly Core│
-│  └───────────────────────────┘  │ ◀───────────────  └──────┬───────┘
-│  on('tokenGenerated',           │   { tokenResponse }      │
-│     { tokenResponse })          │                          │
-└───────────────┬─────────────────┘                          │ POST /v1/gateways/{gw}/purchase
-                │ token                                       ▼
-                ▼                                    ┌────────────────┐
-         ┌────────────────┐                          │ Merchant       │
-         │ Merchant       │ ─────────────────────────│ Backend        │
-         │ Backend        │                          └────────────────┘
-         └────────────────┘
+┌─────────────────────────────────┐                                      ┌───────────────┐
+│ Merchant page                   │ 1. tokenize (in the iframe)          │               │
+│                                 │ ───────────────────────────────────▶ │               │
+│ new SpreedlyACHForm(auth)       │                                      │               │
+│ .mount({ parentContainerId })   │                                      │               │
+│                                 │                                      │ Spreedly Core │
+│ ┌───────────────────────────┐   │                                      │               │
+│ │ ACH form iframe           │   │                                      │               │
+│ │ (Spreedly-hosted)         │   │ ◀─────────────────────────────────── │               │
+│ └───────────────────────────┘   │ 2. tokenGenerated                    │               │
+│ on('tokenGenerated', ...)       │    { message, tokenResponse }        │               │
+└────────────────┬────────────────┘                                      └───────▲───────┘
+                 │ 3. payment method token                                       │
+                 ▼                                                               │
+       ┌──────────────────┐                                                      │
+       │ Merchant backend │ ─────────────────────────────────────────────────────┘
+       └──────────────────┘  4. purchase: POST /v1/gateways/{gateway}/purchase.json
 ```
 
 ## Prerequisites
@@ -209,16 +208,6 @@ form.on('tokenGenerated', async ({ tokenResponse, shouldRetain }) => {
   // Then run the purchase with `token`.
 });
 ```
-
----
-
-## Customer authorization
-
-<!-- Wording pending product/legal review (Nacha) before publishing. -->
-
-Before you debit a customer's bank account, you must get the customer's authorization for
-the debit. The form does not collect it. Show your authorization terms on your page, next to
-the form, and keep a record of the customer's agreement.
 
 ---
 

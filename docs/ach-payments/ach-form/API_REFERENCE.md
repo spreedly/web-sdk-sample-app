@@ -126,5 +126,4 @@ Submits are limited to one every 2 seconds. A submit inside that window emits `e
 
 - ACH data is not PCI-scoped (bank accounts are not cardholder data). The form keeps the
   numbers out of your page, reducing Nacha data-security exposure.
-- You must get the customer's authorization for the debit. The form doesn't collect it.
 - For fields you lay out yourself, see [`SpreedlyACHFields`](../ach-hosted-fields/API_REFERENCE.md).

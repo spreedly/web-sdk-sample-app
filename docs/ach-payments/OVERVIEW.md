@@ -74,8 +74,6 @@ Need to collect a bank account and tokenize?
   The ACH Form also sends `shouldRetain`: whether the customer ticked "Save this account".
 - **Purchase:** run it from your backend, never the browser, so your access secret stays
   private.
-- **Customer authorization:** before you debit a bank account, you must get the customer's
-  authorization. The SDK doesn't collect it.
 - **Security:** bank account data is not cardholder data, so it isn't PCI-scoped. Keeping the
   numbers out of your page reduces your Nacha data-security exposure.
 
