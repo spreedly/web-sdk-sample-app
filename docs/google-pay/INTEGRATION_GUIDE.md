@@ -196,8 +196,7 @@ checkout.expressCheckout({
 checkout.setGooglePayTransactionInfo({ totalPrice: '52.00', currencyCode: 'USD', countryCode: 'US' });
 ```
 
-- **Your page still loads `pay.js`** ([step 1](#1-load-the-scripts)). The row is drawn on your
-  page, directly above the form's iframe. Google's script never runs inside the card form.
+- **Your page still loads `pay.js`** ([step 1](#1-load-the-scripts)).
 - **The row only appears when the shopper can pay.** It stays hidden until Google's
   `isReadyToPay()` passes. If Google Pay is unavailable, the row is removed and the card form is
   the only option.
@@ -210,14 +209,147 @@ checkout.setGooglePayTransactionInfo({ totalPrice: '52.00', currencyCode: 'USD',
 - **An invalid `googlePay` config doesn't stop card payments.** The form mounts without the row,
   and `googlePayError` and `googlePayUnavailable` fire with `DEVELOPER_ERROR`.
   `setGooglePayTransactionInfo()` does throw on an invalid price, like `setTransactionInfo()`.
-- **Layout.** In embedded mode, give the container a fixed height: the row takes about 108 px and
-  the form gets the rest. In dialog mode, the row sits above the form's title and close button.
-  Styling and the divider copy (`walletDividerText`) are covered in the
-  [Styling Guide](../tokenization/STYLING_GUIDE.md#google-pay-wallet-row).
-- **Lifecycle.** `close()` and `setRecache()` remove the row and destroy the button, so close the
-  form after `googlePayTokenGenerated`, not while the shopper may still be in Google's sheet. For a
-  new checkout, create a new `SpreedlyExpressCheckout` with freshly signed auth params
-  ([step 7](#7-start-a-new-checkout)).
+
+### The button is on your page, not inside the form
+
+Google's button is itself an iframe from `pay.google.com`, and `pay.js` can't be pinned with
+Subresource Integrity, so it never runs inside the card form's iframe, which holds the card number
+and CVV. Express Checkout draws the wallet row **on your page**, as a sibling directly above the
+form's iframe, and gives it the form's background, font and padding so the two look like one card:
+
+```
+#payment-container          ← your element: you set its height, border, radius and shadow
+└─ shell (flex column, fills the container)
+   ├─ wallet row            ← about 108 px: Google's button, then "or pay with card"
+   └─ card form iframe      ← fills the height left over; your id / className go here
+```
+
+The SDK styles the row and the iframe; the box around them is yours. That leads to four rules:
+
+1. **Give the container a fixed height** that fits the form plus about 108 px for the row. The
+   iframe fills whatever height the row leaves, so a container sized by its content (no `height`)
+   leaves the form no room. The row stays out of the layout until `googlePayReady`, then takes its
+   108 px from the form. When Google Pay is unavailable, the form keeps the full height. If the
+   form runs out of room, it scrolls inside its iframe.
+2. **Style the container, not the iframe.** The `id` and `className` options of
+   `expressCheckout()` apply to the iframe only. A border or shadow set through them frames the
+   card fields and leaves the Google Pay button outside. Put the border, radius and shadow on the
+   container, with `overflow: hidden` so the row follows the rounded corners. Set colours and fonts
+   through `uiConfig.styles` so the row and the form match (see the
+   [Styling Guide](../tokenization/STYLING_GUIDE.md#google-pay-wallet-row)).
+3. **Make the container visible before calling `expressCheckout()`.** Google measures a fill
+   button from its slot when it draws it. Inside a `display: none` or `hidden` ancestor (a closed
+   dialog, a collapsed accordion, an inactive tab), the button is drawn at 0×0. Show the container
+   first, then mount.
+4. **Don't close or remount while Google's sheet is open**, which is between
+   `googlePayButtonClicked` and `googlePayTokenGenerated` or `googlePayCancelled`. `close()`,
+   `setRecache()` and a new `expressCheckout()` call destroy the button. Destroyed mid-sheet, the
+   shopper sees an error in the sheet, or Spreedly creates the payment method and
+   `googlePayTokenGenerated` never fires. Close the form from your `googlePayTokenGenerated`
+   handler.
+
+### On the page: embed the form
+
+Pass `parentContainerId` and size the container for the row:
+
+```css
+#payment-container {
+  height: 660px;            /* your form's height plus ~108 px for the wallet row */
+  max-height: 92vh;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;         /* clips the wallet row to the rounded corners */
+}
+```
+
+```js
+checkout.expressCheckout({ parentContainerId: 'payment-container', googlePay: { /* ... */ } });
+```
+
+### In a modal: embed the form in your own dialog
+
+Express Checkout's dialog mode (no `parentContainerId`) fills its overlay with the form, so the
+wallet row lands above the form's title and close button, outside the form's header. With
+`googlePay`, open **your own dialog** and embed the form in it. Your dialog owns the header and the
+close control, and the wallet row sits under your header, as part of the form:
+
+```html
+<div id="checkout-dialog" class="checkout-overlay" hidden>
+  <div class="checkout-card" role="dialog" aria-modal="true" aria-labelledby="checkout-title">
+    <header>
+      <h2 id="checkout-title">Checkout</h2>
+      <button type="button" id="checkout-close" aria-label="Close payment form">&times;</button>
+    </header>
+    <div id="checkout-container"></div>
+  </div>
+</div>
+```
+
+```css
+.checkout-card {
+  display: flex;
+  flex-direction: column;
+  height: min(720px, 92vh); /* your header + ~108 px wallet row + the form */
+  overflow: hidden;
+}
+#checkout-container {
+  flex: 1;
+  min-height: 0;            /* lets the form shrink to the height left under your header */
+}
+```
+
+```js
+const dialog = document.getElementById('checkout-dialog');
+const checkout = new window.SpreedlyExpressCheckout(authDetails);
+
+checkout.on('googlePayTokenGenerated', ({ token, googlePayType }) => {
+  closeCheckout(); // the sheet has closed by now
+  // send token and googlePayType to your server
+});
+checkout.on('tokenGenerated', ({ tokenResponse }) => {
+  closeCheckout();
+  // card payment, unchanged
+});
+
+function openCheckout() {
+  dialog.hidden = false; // visible first, so Google can measure the button slot
+  checkout.expressCheckout({
+    parentContainerId: 'checkout-container',
+    googlePay: { /* environment, merchantInfo, transactionInfo, button */ },
+  });
+}
+
+function closeCheckout() {
+  checkout.close(); // removes the form and the wallet row, and destroys Google's button
+  dialog.hidden = true;
+}
+
+document.getElementById('checkout-close').addEventListener('click', closeCheckout);
+```
+
+- **You own every way of closing.** An embedded form has no close button of its own, so wire your
+  close button, Escape key and backdrop click to `closeCheckout()` (and keep them out of the
+  open-sheet window in rule 4 above).
+- **Reopening is cheap.** `close()` is a soft close: listeners stay registered, and
+  `openCheckout()` calls `expressCheckout()` again on the same instance, which draws a fresh row.
+  After a successful payment, start a new checkout instead: create a new
+  `SpreedlyExpressCheckout` with freshly signed auth params ([step 7](#7-start-a-new-checkout)).
+- **Two titles.** Your dialog header and the form's own title (`uiConfig.textConfig.title`) both
+  show. Make them complementary, for example "Checkout" and "Payment details".
+
+### Placing the button somewhere else
+
+The `googlePay` option always puts the button directly above the card fields. To put it somewhere
+else, for example an express-pay section at the top of the page, leave `googlePay` out and mount
+the standalone button ([steps 2–4](#2-add-a-container-for-the-button)) next to the embedded form.
+Pass it the same `authDetails` as the Express Checkout instance; the `googlePay` option does the
+same internally. In that setup:
+
+- Google Pay events arrive on the `SpreedlyGooglePay` instance, not on Express Checkout.
+- You draw any "or pay with card" divider yourself, and hide it on `googlePayUnavailable`.
+- Update the price with `googlePay.setTransactionInfo()`, and call `googlePay.destroy()` when you
+  close the form.
+- The form's container still needs a fixed height, but no extra 108 px for a row.
 
 ---
 
@@ -488,8 +620,10 @@ attribute on your `pay.js` `<script>` tag. With that nonce you do not need `'uns
 
 ## Limitations
 
-- The button is always drawn on your page, never inside Express Checkout's iframe (see
-  [Google Pay inside Express Checkout](#google-pay-inside-express-checkout)).
+- The button is always drawn on your page, never inside Express Checkout's iframe. With
+  Express Checkout, embed the form, or embed it in your own dialog rather than using the SDK's
+  dialog mode (see
+  [The button is on your page, not inside the form](#the-button-is-on-your-page-not-inside-the-form)).
 - `SpreedlyGooglePay` always seals the token for Spreedly (`gateway: "spreedly"`).
   [Third Party Google Pay](https://developer.spreedly.com/docs/third-party-google-pay), where
   another gateway decrypts the token, is not supported by this class.
