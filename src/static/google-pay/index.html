@@ -39,6 +39,11 @@
       gap: 0.35rem;
     }
 
+    .callback-hint {
+      color: var(--color-gray-500);
+      font-size: 0.75rem;
+    }
+
     .order-summary {
       align-items: center;
       display: flex;
@@ -367,8 +372,7 @@
 
               <h3 class="section-title">Payment sheet</h3>
               <div class="checkbox-row">
-                <label><input type="checkbox" id="gp-auth-pan" checked> PAN_ONLY</label>
-                <label><input type="checkbox" id="gp-auth-cryptogram" checked> CRYPTOGRAM_3DS</label>
+                <label><input type="checkbox" id="gp-auth-pan" checked disabled> PAN_ONLY - default</label>
               </div>
               <div class="checkbox-row" style="margin-top: 0.5rem;">
                 <label><input type="checkbox" class="gp-network" value="AMEX" checked> AMEX</label>
@@ -378,15 +382,18 @@
                 <label><input type="checkbox" class="gp-network" value="VISA" checked> VISA</label>
               </div>
               <div class="checkbox-row" style="margin-top: 0.5rem;">
-                <label><input type="checkbox" id="gp-billing"> Billing address</label>
+                <label><input type="checkbox" id="gp-billing"> Billing address
+                  <span class="callback-hint">(returned in callback)</span></label>
                 <label><input type="checkbox" id="gp-shipping"> Shipping address + options</label>
-                <label><input type="checkbox" id="gp-email"> Email</label>
+                <label><input type="checkbox" id="gp-email"> Email
+                  <span class="callback-hint">(returned in callback)</span></label>
               </div>
               <div class="checkbox-row" style="margin-top: 0.5rem;">
                 <label><input type="checkbox" id="gp-promo"> Promo codes (<code>OFFER</code> — try SAVE10)</label>
                 <label><input type="checkbox" id="gp-no-prepaid"> Refuse prepaid</label>
                 <label><input type="checkbox" id="gp-no-credit"> Refuse credit</label>
-                <label><input type="checkbox" id="gp-assurance"> Assurance details</label>
+                <label><input type="checkbox" id="gp-assurance"> Assurance details
+                  <span class="callback-hint">(returned in callback)</span></label>
               </div>
 
               <h3 class="section-title">Transaction</h3>
@@ -432,12 +439,6 @@
                   <label class="form-label" for="gp-btn-radius">Corner radius (px)</label>
                   <input type="number" id="gp-btn-radius" class="form-input" value="4" min="0" max="20">
                 </div>
-              </div>
-
-              <h3 class="section-title">Testing</h3>
-              <div class="form-group">
-                <label class="form-label" for="gp-test-card">Spreedly <code>test_card_number</code> override (optional)</label>
-                <input type="text" id="gp-test-card" class="form-input" placeholder="e.g. 4111111111111111">
               </div>
 
               <!-- Radios on purpose: the page remounts Google Pay on checkbox/select changes, and the

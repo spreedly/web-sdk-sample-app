@@ -164,14 +164,12 @@ function onPaymentDataChange({ trigger, shippingAddress, shippingOptionId, redem
 function readConfig() {
   const allowedAuthMethods = [
     ...($('gp-auth-pan').checked ? ['PAN_ONLY'] : []),
-    ...($('gp-auth-cryptogram').checked ? ['CRYPTOGRAM_3DS'] : []),
   ];
   const allowedCardNetworks = Array.from(document.querySelectorAll('.gp-network:checked')).map(
     input => input.value
   );
   const shipping = $('gp-shipping').checked;
   const promo = $('gp-promo').checked;
-  const testCardNumber = $('gp-test-card').value.trim();
   sheetState.shippingCost = 0;
   sheetState.redemptionCodes = [];
 
@@ -219,7 +217,6 @@ function readConfig() {
       buttonSizeMode: $('gp-btn-size').value,
       buttonRadius: Number($('gp-btn-radius').value) || 0,
     },
-    ...(testCardNumber ? { testCardNumber } : {}),
   };
 }
 
@@ -805,7 +802,7 @@ function wireControls() {
 
   // Everything else changes the request or the button, so rebuild the instance.
   document
-    .querySelectorAll('#payment-section input[type="checkbox"], #payment-section select, #gp-btn-radius, #gp-test-card')
+    .querySelectorAll('#payment-section input[type="checkbox"], #payment-section select, #gp-btn-radius')
     .forEach(control => control.addEventListener('change', () => mountGooglePay()));
 
   // The test SCA scenario only applies to 3DS Global.
