@@ -196,6 +196,7 @@ Every other field maps 1:1 to the config above.
 | `expressCheckout({ googlePay })` | `ExpressCheckoutGooglePayConfig`: a [`GooglePayConfig`](#googlepayconfig) without `authDetails`, which come from the Express Checkout instance. `button.buttonSizeMode` defaults to `'fill'`. Draws a wallet row above the iframe (Google's button, then a divider), shown only after `googlePayReady`. Does not throw for an invalid config: the form mounts without the row, and `googlePayError` and `googlePayUnavailable` fire with `DEVELOPER_ERROR`. |
 | `setGooglePayTransactionInfo(info)` | Same as [`setTransactionInfo()`](#settransactioninfoinfo-void), and keeps `info` for the next `expressCheckout()` call. Throws if `info` is invalid. Logs a warning and does nothing without a `googlePay` option. |
 | `on('googlePay…', cb)` | The [events](#events) below, with the same payloads, emitted by the Express Checkout instance. Card tokens still arrive on `tokenGenerated`. |
+| `submitParams`, `updateSubmitParams()` | Card tokens only. Google Pay payment methods get `googlePay.metadata`, read when `expressCheckout()` mounts the form; `submitParams.metadata` is not added to them. |
 | `updateTextElement('walletDividerText', text)` | Changes the divider copy. Default: "or pay with card". Also settable as `uiConfig.textConfig.walletDividerText`. |
 | `close()`, `setRecache()` | Remove the row and destroy the button. |
 

@@ -206,6 +206,11 @@ checkout.setGooglePayTransactionInfo({ totalPrice: '52.00', currencyCode: 'USD',
 - **Everything else works the same:** shipping, promo codes and `onPaymentDataChange`, billing
   address and email, `testCardNumber`. `button.buttonSizeMode` defaults to `'fill'`, so the button
   spans the row.
+- **`submitParams` and `updateSubmitParams()` apply to card tokens only.** Google Pay payment
+  methods carry `googlePay.metadata` and nothing from `submitParams`, including its `metadata`. To
+  put the same value on both, such as an `order_id`, set it in both places. There is no Google Pay
+  equivalent of `updateSubmitParams()`: `googlePay.metadata` is read when `expressCheckout()` mounts
+  the form.
 - **An invalid `googlePay` config doesn't stop card payments.** The form mounts without the row,
   and `googlePayError` and `googlePayUnavailable` fire with `DEVELOPER_ERROR`.
   `setGooglePayTransactionInfo()` does throw on an invalid price, like `setTransactionInfo()`.
@@ -244,9 +249,9 @@ The SDK styles the row and the iframe; the box around them is yours. That leads 
 4. **Don't close or remount while Google's sheet is open**, which is between
    `googlePayButtonClicked` and `googlePayTokenGenerated` or `googlePayCancelled`. `close()`,
    `setRecache()` and a new `expressCheckout()` call destroy the button. Destroyed mid-sheet, the
-   shopper sees an error in the sheet, or Spreedly creates the payment method and
-   `googlePayTokenGenerated` never fires. Close the form from your `googlePayTokenGenerated`
-   handler.
+   shopper sees an error in the sheet and `googlePayTokenGenerated` never fires, even if Spreedly
+   had already created the (cached, unretained) payment method. Close the form from your
+   `googlePayTokenGenerated` handler.
 
 ### On the page: embed the form
 
