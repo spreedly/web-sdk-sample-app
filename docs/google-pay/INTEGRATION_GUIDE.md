@@ -629,6 +629,8 @@ attribute on your `pay.js` `<script>` tag. With that nonce you do not need `'uns
   Express Checkout, embed the form, or embed it in your own dialog rather than using the SDK's
   dialog mode (see
   [The button is on your page, not inside the form](#the-button-is-on-your-page-not-inside-the-form)).
+- The button container, and Express Checkout's `parentContainerId`, must be in the main document.
+  Both are looked up by id with `document.getElementById`, which can't see inside a shadow root.
 - `SpreedlyGooglePay` always seals the token for Spreedly (`gateway: "spreedly"`).
   [Third Party Google Pay](https://developer.spreedly.com/docs/third-party-google-pay), where
   another gateway decrypts the token, is not supported by this class.
