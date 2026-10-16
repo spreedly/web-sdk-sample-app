@@ -42,7 +42,8 @@ Checks eligibility and, only if the shopper can pay, draws Google's button:
 
 1. Waits up to 10 s for `window.google.payments.api` (your `pay.js` may load `async`).
 2. Creates the `PaymentsClient` and calls `isReadyToPay()`.
-3. Appends Google's button to the element with id `containerId` and emits `googlePayReady`.
+3. Appends Google's button to the element with id `containerId` and emits `googlePayReady`. The
+   element is looked up with `document.getElementById`, so it can't be inside a shadow root.
 
 ```js
 const { error } = await googlePay.mount('google-pay-button-container');
