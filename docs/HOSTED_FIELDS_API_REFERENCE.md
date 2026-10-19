@@ -18,8 +18,9 @@ Methods are grouped into the sections below; type definitions follow.
 | [Tokenization](#tokenization) | Submit the collected card data to create a Spreedly payment method token. |
 | [Recache](#recache) | Update the CVV on an already-retained (previously tokenized) payment method. |
 | [Offsite Payments](#offsite-payments) | Redirect-style / alternative payment methods, inherited from the shared SDK — see the dedicated Offsite Payments reference. |
-| [ACH](#ach) | Bank-account (ACH) tokenization, inherited from the shared SDK — see the dedicated ACH reference. |
+| [ACH (deprecated API)](#ach-deprecated-api) | The merchant-collected ACH methods, inherited from the shared SDK. Deprecated — use [SpreedlyACHFields](#spreedlyachfields) instead. |
 | [Stripe Radar](#stripe-radar) | Create a Stripe Radar fraud session and get its session id, inherited from the shared SDK — see the dedicated Stripe Radar guide. |
+| [SpreedlyACHFields](#spreedlyachfields) | A separate class for bank-account (ACH) collection: create it with `new SpreedlyACHFields(authDetails)`. Its constructor, methods and events. See also the [ACH API reference](ach-payments/ach-hosted-fields/API_REFERENCE.md). |
 | [Type Definitions](#type-definitions) | The parameter and return types used throughout the API. |
 
 ## Example
@@ -84,7 +85,7 @@ use [SpreedlyHostedFields.HostedCvvField](#hostedcvvfield) (`cvv`) rather than
 
 ### SpreedlySDKCallbacks
 
-> `static` **SpreedlySDKCallbacks**: `Readonly`\<\{ `ACHPaymentError`: `"achPaymentError"`; `ACHTokenGenerated`: `"achTokenGenerated"`; `C2PAddNewCard`: `"add-new-card"`; `C2PCheckoutCancelled`: `"checkout-cancelled"`; `C2PCheckoutDifferentPm`: `"checkout-different-pm"`; `C2PCheckoutError`: `"checkout-error"`; `C2PCheckoutWindowClose`: `"checkout-window-close"`; `C2PCheckoutWindowOpen`: `"checkout-window-open"`; `C2PDisplayCardsReady`: `"display-cards-ready"`; `C2PExistingUser`: `"c2p-existing-user"`; `C2PInitialized`: `"c2p-initialized"`; `C2PNewUser`: `"c2p-new-user"`; `C2POtpInitiated`: `"otp-initiated"`; `C2POtpNotYou`: `"otp-not-you"`; `C2POtpResend`: `"otp-resend"`; `C2POtpResponse`: `"otp-response"`; `C2PSessionDeleted`: `"c2p-session-deleted"`; `C2PVerifiedUser`: `"c2p-verified-user"`; `Close`: `"close"`; `ConsoleError`: `"consoleError"`; `Error`: `"error"`; `FieldStateChange`: `"fieldStateChange"`; `OffsitePaymentError`: `"offsitePaymentError"`; `OffsiteTokenGenerated`: `"offsiteTokenGenerated"`; `PazeCheckoutComplete`: `"pazeCheckoutComplete"`; `PazeError`: `"pazeError"`; `PazeReady`: `"pazeReady"`; `PazeTokenGenerated`: `"pazeTokenGenerated"`; `Ready`: `"ready"`; `RecacheReady`: `"recacheReady"`; `RecacheSuccess`: `"recacheSuccess"`; `SubmitClick`: `"submitClick"`; `TokenGenerated`: `"tokenGenerated"`; `Validation`: `"validation"`; \}\>
+> `static` **SpreedlySDKCallbacks**: `Readonly`\<\{ `ACHPaymentError`: `"achPaymentError"`; `ACHTokenGenerated`: `"achTokenGenerated"`; `C2PAddNewCard`: `"add-new-card"`; `C2PCheckoutCancelled`: `"checkout-cancelled"`; `C2PCheckoutDifferentPm`: `"checkout-different-pm"`; `C2PCheckoutError`: `"checkout-error"`; `C2PCheckoutWindowClose`: `"checkout-window-close"`; `C2PCheckoutWindowOpen`: `"checkout-window-open"`; `C2PDisplayCardsReady`: `"display-cards-ready"`; `C2PExistingUser`: `"c2p-existing-user"`; `C2PInitialized`: `"c2p-initialized"`; `C2PNewUser`: `"c2p-new-user"`; `C2POtpInitiated`: `"otp-initiated"`; `C2POtpNotYou`: `"otp-not-you"`; `C2POtpResend`: `"otp-resend"`; `C2POtpResponse`: `"otp-response"`; `C2PSessionDeleted`: `"c2p-session-deleted"`; `C2PVerifiedUser`: `"c2p-verified-user"`; `Close`: `"close"`; `ConsoleError`: `"consoleError"`; `Error`: `"error"`; `FieldStateChange`: `"fieldStateChange"`; `OffsitePaymentError`: `"offsitePaymentError"`; `OffsiteTokenGenerated`: `"offsiteTokenGenerated"`; `PazeButtonClicked`: `"pazeButtonClicked"`; `PazeCheckoutComplete`: `"pazeCheckoutComplete"`; `PazeEligibilityChecked`: `"pazeEligibilityChecked"`; `PazeError`: `"pazeError"`; `PazeReady`: `"pazeReady"`; `PazeTokenGenerated`: `"pazeTokenGenerated"`; `Ready`: `"ready"`; `RecacheReady`: `"recacheReady"`; `RecacheSuccess`: `"recacheSuccess"`; `SubmitClick`: `"submitClick"`; `TokenGenerated`: `"tokenGenerated"`; `Validation`: `"validation"`; \}\>
 
 Available SDK callback events that merchants can listen to
 
@@ -1586,9 +1587,9 @@ sdk.submitOffsitePayment();
 // Token received via 'offsiteTokenGenerated' event
 ```
 
-### ACH
+### ACH (deprecated API)
 
-#### clearACHPayment()
+#### ~~clearACHPayment()~~
 
 > **clearACHPayment**(): `void`
 
@@ -1602,9 +1603,14 @@ before re-collecting account details).
 
 `void`
 
+##### Deprecated
+
+Part of the deprecated merchant-collected ACH API — use `SpreedlyACHFields`
+(Hosted Fields) or `SpreedlyACHForm` (Express Checkout) instead. See the deprecation note on `setupACHPayment`.
+
 ***
 
-#### setupACHPayment()
+#### ~~setupACHPayment()~~
 
 > **setupACHPayment**(`config`): `void`
 
@@ -1633,6 +1639,15 @@ ACH payment configuration
 
 `void`
 
+##### Deprecated
+
+Use `SpreedlyACHFields` (Hosted Fields) or `SpreedlyACHForm` (Express
+Checkout) instead. This method has the merchant collect the routing and account numbers
+in its own inputs, so they pass through the merchant's application state. The new classes
+collect them in Spreedly-hosted iframes (like card number/CVV), keeping them out of the
+merchant's data-security scope. It still works, but a future release will remove it.
+Older versions keep it.
+
 ##### Throws
 
 If required fields are missing
@@ -1651,7 +1666,7 @@ sdk.setupACHPayment({
 
 ***
 
-#### submitACHPayment()
+#### ~~submitACHPayment()~~
 
 > **submitACHPayment**(): `void`
 
@@ -1669,6 +1684,12 @@ Requires `setupACHPayment()` to be called first.
 ##### Returns
 
 `void`
+
+##### Deprecated
+
+Use `SpreedlyACHFields` (Hosted Fields) or `SpreedlyACHForm` (Express
+Checkout) instead — see the deprecation note on `setupACHPayment`. It still works, but a
+future release will remove it.
 
 ##### Throws
 
@@ -1822,7 +1843,531 @@ tokenize: (body) => hostedFields.tokenizeClickToPay(body)
 
 ***
 
+## SpreedlyACHFields
+
+`SpreedlyACHFields` collects a US or Canadian bank account in two Spreedly-hosted secure
+fields: routing number and account number. It's a separate class in the Hosted Fields
+bundle, exposed as `window.SpreedlyACHFields`, and doesn't need a `SpreedlyHostedFields`
+instance. Create it with the same auth details:
+`const ach = new SpreedlyACHFields(authDetails)`, then call `inAppElements()`.
+See `docs/ach-payments/ach-hosted-fields/INTEGRATION_GUIDE.md`.
+
+### Constructor
+
+> **new SpreedlyACHFields**(`authDetails`): `SpreedlyACHFields`
+
+Creates a `SpreedlyACHFields` instance. Call `inAppElements()` afterwards to mount the
+two hosted bank fields, listen for `ready`, then `submit()` to tokenize.
+
+#### Parameters
+
+##### authDetails
+
+`AuthDetails`
+
+Signed, server-generated credentials. All five
+  fields are required non-empty strings or the constructor throws.
+
+#### Returns
+
+`SpreedlyACHFields`
+
+#### Example
+
+```javascript
+const ach = new SpreedlyACHFields({
+  environment_key: 'your_env_key',
+  certificate_token: 'your_cert_token',
+  nonce: 'your_nonce',
+  signature: 'your_signature',
+  timestamp: '1791445548', // Unix seconds, from your backend
+});
+```
+
+### Lifecycle
+
+#### destroy()
+
+> **destroy**(): `void`
+
+Tears down the hosted fields and this instance: removes both iframes (and the bank
+data typed into them) and the message listener, and drops all callbacks. The instance
+cannot be reused.
+
+##### Returns
+
+`void`
+
+##### Example
+
+```javascript
+ach.destroy();
+```
+
+***
+
+#### inAppElements()
+
+> **inAppElements**(`config`): `void`
+
+Mounts the two secure ACH iframes (routing number and account number) into the
+DOM containers you specify. Wait for the `ready` event before calling any other
+method — it fires once both frames are loaded and connected to each other. Both
+containers must be in the DOM: if either is missing, nothing is mounted and a warning
+names it (call `inAppElements()` again once both exist). A second call while the fields are
+mounted is ignored with a warning; use `reload()` to start over. The account field
+renders masked (`type="password"`); use `toggleMask()` to reveal it.
+
+##### Parameters
+
+###### config
+
+`ACHFieldsConfig`
+
+`{ routing: { containerId }, account: { containerId } }`. Required.
+
+##### Returns
+
+`void`
+
+##### Example
+
+```javascript
+ach.inAppElements({
+  routing: { containerId: 'routing-number-container' },
+  account: { containerId: 'account-number-container' },
+});
+ach.on('ready', () => console.log('bank fields ready'));
+```
+
+***
+
+#### isLoaded()
+
+> **isLoaded**(): `boolean`
+
+Whether the hosted fields are mounted and the instance is active. `false` before
+`inAppElements()` and always `false` after `destroy()`. It doesn't wait for `ready`:
+listen for `ready` to know when the fields can be used.
+
+##### Returns
+
+`boolean`
+
+`true` if the routing or account field is in the page.
+
+##### Example
+
+```javascript
+if (!ach.isLoaded()) {
+  ach.inAppElements({ routing: { containerId: 'routing' }, account: { containerId: 'account' } });
+}
+```
+
+***
+
+#### reload()
+
+> **reload**(): `void`
+
+Removes both hosted fields and mounts new ones into the same containers, with the
+config you passed to `inAppElements()`. The instance, its auth details and your
+`on()` callbacks are kept; `ready` fires again when the new fields are connected.
+Typed values go with the old iframes, and placeholders, labels and styles set with
+the `set*` methods are reset — apply them again in your `ready` callback. Ignored with a
+warning if `inAppElements()` was never called or the instance is destroyed.
+
+##### Returns
+
+`void`
+
+##### Example
+
+```javascript
+ach.on('ready', () => ach.setPlaceholder('routing', 'Routing number'));
+ach.reload();
+```
+
+### Field Configuration
+
+#### resetFields()
+
+> **resetFields**(): `void`
+
+Clears both hosted inputs and securely wipes the held bank data.
+
+##### Returns
+
+`void`
+
+##### Example
+
+```javascript
+ach.resetFields();
+```
+
+***
+
+#### setLabel()
+
+> **setLabel**(`field`, `label`): `void`
+
+Sets the accessible label (`aria-label` and `title`) of one hosted bank field. Cleaned
+like the card fields' `setLabel`: HTML tags are stripped, the text is trimmed and cut to
+256 characters, and an empty result is ignored.
+
+##### Parameters
+
+###### field
+
+`ACHField`
+
+Which field to update. Required.
+
+###### label
+
+`string`
+
+Label text. Required.
+
+##### Returns
+
+`void`
+
+##### Example
+
+```javascript
+ach.setLabel('account', 'Bank account number');
+```
+
+***
+
+#### setPlaceholder()
+
+> **setPlaceholder**(`field`, `placeholder`): `void`
+
+Sets the placeholder text of one hosted bank field.
+
+##### Parameters
+
+###### field
+
+`ACHField`
+
+Which field to update. Required.
+
+###### placeholder
+
+`string`
+
+Placeholder text. Required.
+
+##### Returns
+
+`void`
+
+##### Example
+
+```javascript
+ach.setPlaceholder('routing', '9-digit routing number');
+```
+
+***
+
+#### setPlaceholderStyles()
+
+> **setPlaceholderStyles**(`styles`): `void`
+
+Styles the placeholder text of both hosted bank fields (routing and account). Allowed
+properties: `color`, `fontFamily`, `fontSize`, `fontStyle`, `fontWeight`, `letterSpacing`,
+`lineHeight`, `opacity`, `textAlign`. Other properties, and values containing CSS syntax
+such as `;`, `{` or `url(`, are ignored. Each call replaces the previous placeholder styles.
+
+##### Parameters
+
+###### styles
+
+`Partial`\<`CSSStyleDeclaration`\>
+
+CSS properties keyed by camelCase name. Required.
+
+##### Returns
+
+`void`
+
+##### Example
+
+```javascript
+ach.on('ready', () => {
+  ach.setPlaceholderStyles({ color: '#9aa0a6', fontStyle: 'italic' });
+});
+```
+
+***
+
+#### setStyles()
+
+> **setStyles**(`field`, `styles`): `void`
+
+Applies CSS styles to the input inside one hosted bank field. Only real CSS
+style properties are applied.
+
+##### Parameters
+
+###### field
+
+`ACHField`
+
+Which field to style. Required.
+
+###### styles
+
+`Record`\<`string`, `string`\>
+
+CSS properties keyed by camelCase name. Required.
+
+##### Returns
+
+`void`
+
+##### Example
+
+```javascript
+ach.setStyles('account', { fontSize: '16px', color: '#111' });
+```
+
+***
+
+#### toggleMask()
+
+> **toggleMask**(): `void`
+
+Reveals or re-masks the account number field (it mounts masked).
+
+##### Returns
+
+`void`
+
+##### Example
+
+```javascript
+ach.toggleMask();
+```
+
+***
+
+#### transferFocus()
+
+> **transferFocus**(`field`): `void`
+
+Moves keyboard focus into one of the hosted bank fields.
+
+##### Parameters
+
+###### field
+
+`ACHField`
+
+Which field to focus. Required.
+
+##### Returns
+
+`void`
+
+##### Example
+
+```javascript
+ach.transferFocus('routing');
+```
+
+### Validation
+
+#### validate()
+
+> **validate**(): `void`
+
+Asks the account iframe for a validation snapshot of both fields. The result
+arrives on the `validation` event as
+`{ validRouting, validAccount, routingLength, accountLength }` — never the
+values themselves.
+
+##### Returns
+
+`void`
+
+##### Example
+
+```javascript
+ach.on('validation', v => console.log('routing ok?', v.validRouting));
+ach.validate();
+```
+
+### Tokenization
+
+#### submit()
+
+> **submit**(`formData?`, `submitParams?`): `void`
+
+Tokenizes the bank account entered in the hosted fields. Only non-sensitive
+fields are passed here (account holder name, account type, etc.) — the routing
+and account numbers are read inside the account iframe and never touch your
+page. On success the `tokenGenerated` event fires with `{ message, tokenResponse }` and
+the hosted fields are securely cleared; on failure the `error` event fires.
+A submit that passes validation starts a 2-second window in which further submits are
+rejected, and a submit while a request is still running is ignored.
+
+##### Parameters
+
+###### formData?
+
+[`ACHSubmitFormData`](#achsubmitformdata)
+
+Non-sensitive fields, with Spreedly's
+  `bank_account` names. Provide `full_name` or `first_name` + `last_name`; optional
+  `bank_name`, `bank_account_type` (`'checking' | 'savings'`), `bank_account_holder_type`
+  (`'personal' | 'business'`), `email`, `phone_number`, `address1`, `address2`, `city`,
+  `state`, `zip`, `country`. Other keys, including any routing/account number, are ignored.
+
+###### submitParams?
+
+[`ACHSubmitParams`](#achsubmitparams)
+
+Optional `metadata` and `mandate`, forwarded
+  to Spreedly.
+
+##### Returns
+
+`void`
+
+##### Example
+
+```javascript
+ach.submit(
+  {
+    full_name: 'Jane Doe',
+    bank_account_type: 'checking',
+    bank_account_holder_type: 'personal',
+  },
+  { metadata: { order_id: '1234' } }
+);
+```
+
+### Events
+
+#### on()
+
+> **on**(`event`, `callback`): `void`
+
+Registers a callback for one of the SpreedlyACHFields events: `ready` (both hosted
+fields mounted and connected), `tokenGenerated` (`{ message, tokenResponse }` — the
+whole Spreedly transaction, same as card hosted fields), `error`,
+`validation` (snapshot from `validate()` or a blocked submit), and
+`fieldStateChange`.
+
+##### Parameters
+
+###### event
+
+`TSpreedlyACHFieldsCallbacks`
+
+Event name. Required.
+
+###### callback
+
+`SpreedlyACHFieldsCallback`
+
+Invoked with the event payload. Required.
+
+##### Returns
+
+`void`
+
+##### Example
+
+```javascript
+ach.on('ready', () => console.log('ACH fields ready'));
+ach.on('tokenGenerated', ({ tokenResponse }) => {
+  const token = tokenResponse.payment_method.token;
+  // Send the token to your backend to run the gateway purchase
+});
+ach.on('error', err => console.error('ACH error:', err));
+```
+
+***
+
+#### removeHandlers()
+
+> **removeHandlers**(): `void`
+
+Removes every callback registered with `on()`. The fields stay mounted and keep
+working; register new callbacks with `on()`. Use `destroy()` for a full teardown.
+
+##### Returns
+
+`void`
+
+##### Example
+
+```javascript
+ach.removeHandlers();
+ach.on('tokenGenerated', handleToken);
+```
+
+***
+
 ## Type Definitions
+
+### ACHField
+
+> **ACHField** = `"account"` \| `"routing"`
+
+The two ACH secure fields.
+
+### ACHFieldStateChangePayload
+
+> **ACHFieldStateChangePayload** = [`ACHValidationPayload`](#achvalidationpayload) & `object`
+
+Continuous ACH field state for the parent (`fieldStateChange`).
+
+## Type Declaration
+
+### action
+
+> **action**: `"blur"` \| `"enter"` \| `"focus"` \| `"input"`
+
+### field
+
+> **field**: [`ACHField`](#achfield)
+
+### focused
+
+> **focused**: `boolean`
+
+### ACHFieldsConfig
+
+> **ACHFieldsConfig** = `object`
+
+Container configuration passed to `SpreedlyACHFields.inAppElements()`.
+
+## Properties
+
+### account
+
+> **account**: `object`
+
+#### containerId
+
+> **containerId**: `string`
+
+***
+
+### routing
+
+> **routing**: `object`
+
+#### containerId
+
+> **containerId**: `string`
 
 ### ACHPaymentConfig
 
@@ -1987,6 +2532,150 @@ Billing state/province. Optional (gateway-dependent).
 > `optional` **zip?**: `string`
 
 Billing postal/ZIP code. Optional (gateway-dependent).
+
+### ACHSubmitFormData
+
+> **ACHSubmitFormData** = `object`
+
+Non-sensitive fields accepted by `submit()`, using Spreedly's `bank_account` names (the
+same convention as the card `submit()` formData). Routing/account numbers are typed into
+the secure hosted fields iframes. Provide `full_name` or `first_name` + `last_name`.
+The contact and billing address fields are optional.
+
+## Properties
+
+### address1?
+
+> `optional` **address1?**: `string`
+
+***
+
+### address2?
+
+> `optional` **address2?**: `string`
+
+***
+
+### bank\_account\_holder\_type?
+
+> `optional` **bank\_account\_holder\_type?**: `"personal"` \| `"business"`
+
+***
+
+### bank\_account\_type?
+
+> `optional` **bank\_account\_type?**: `"checking"` \| `"savings"`
+
+***
+
+### bank\_name?
+
+> `optional` **bank\_name?**: `string`
+
+***
+
+### city?
+
+> `optional` **city?**: `string`
+
+***
+
+### country?
+
+> `optional` **country?**: `string`
+
+Two-letter country code: Spreedly supports `'US'` and `'CA'` for ACH.
+
+***
+
+### email?
+
+> `optional` **email?**: `string`
+
+***
+
+### first\_name?
+
+> `optional` **first\_name?**: `string`
+
+***
+
+### full\_name?
+
+> `optional` **full\_name?**: `string`
+
+***
+
+### last\_name?
+
+> `optional` **last\_name?**: `string`
+
+***
+
+### phone\_number?
+
+> `optional` **phone\_number?**: `string`
+
+***
+
+### state?
+
+> `optional` **state?**: `string`
+
+***
+
+### zip?
+
+> `optional` **zip?**: `string`
+
+### ACHSubmitParams
+
+> **ACHSubmitParams** = `object`
+
+Extra tokenization options for `submit()`, forwarded to Spreedly.
+
+## Properties
+
+### mandate?
+
+> `optional` **mandate?**: [`Mandate`](#mandate)
+
+***
+
+### metadata?
+
+> `optional` **metadata?**: `Record`\<`string`, `string`\>
+
+### ACHValidationPayload
+
+> **ACHValidationPayload** = `object`
+
+Client-side validation snapshot for the ACH fields. Lengths and validity only —
+never the values themselves.
+
+## Properties
+
+### accountLength
+
+> **accountLength**: `number`
+
+***
+
+### routingLength
+
+> **routingLength**: `number`
+
+***
+
+### validAccount
+
+> **validAccount**: `boolean`
+
+***
+
+### validRouting
+
+> **validRouting**: `boolean`
 
 ### AuthDetails
 
@@ -2614,3 +3303,7 @@ Optional. Free-form key/value metadata stored alongside the resulting payment me
 > `optional` **retained?**: `boolean`
 
 Optional. Requests that Spreedly retain (permanently store) the payment method after tokenization rather than treating it as single-use. Note: not forwarded by the current hosted-fields `submit()` implementation.
+
+### TSpreedlyACHFieldsCallbacks
+
+> **TSpreedlyACHFieldsCallbacks** = *typeof* `SpreedlyACHFieldsCallbacks`\[keyof *typeof* `SpreedlyACHFieldsCallbacks`\]

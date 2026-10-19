@@ -42,7 +42,7 @@ The full config for `setupACHPayment`:
 
 | Field                    | Type                       | Required | Notes                                                 |
 | ------------------------ | -------------------------- | -------- | ----------------------------------------------------- |
-| `bankRoutingNumber`      | `string`                   | yes      | 9-digit US ABA or Canadian electronic routing number  |
+| `bankRoutingNumber`      | `string`                   | yes      | A valid US routing number, or a Canadian one (9 digits starting with `0`) |
 | `bankAccountNumber`      | `string`                   | yes      | Bank account number                                   |
 | `fullName`               | `string`                   | †        | Either `fullName` OR (`firstName` AND `lastName`)     |
 | `firstName` / `lastName` | `string`                   | †        | See above                                             |
@@ -51,8 +51,8 @@ The full config for `setupACHPayment`:
 | `bankAccountHolderType`  | `'personal' \| 'business'` | no       |                                                       |
 | `email` / `phoneNumber`  | `string`                   | no       |                                                       |
 | `address1` … `country`   | `string`                   | no       | Optional billing address; some gateways require it    |
-| `metadata`               | `Record<string, string>`   | no       | Forwarded to Spreedly                                 |
-| `mandate`                | `object`                   | no       | Forwarded to Spreedly                                 |
-| `retained`               | `boolean`                  | no       | Sent to Spreedly. To retain the payment method, call Spreedly's retain API from your backend (`PUT /v1/payment_methods/{token}/retain.json`) |
+| `metadata`               | `Record<string, string>`   | no       | Sent to the Spreedly API                              |
+| `mandate`                | `object`                   | no       | Sent to the Spreedly API                              |
+| `retained`               | `boolean`                  | no       | Sent to the Spreedly API. To retain the payment method, call the Spreedly retain API from your backend (`PUT /v1/payment_methods/{token}/retain.json`) |
 
 > Spreedly supports US (`US`) and Canadian (`CA`) bank accounts only.

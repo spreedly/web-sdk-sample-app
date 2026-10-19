@@ -335,7 +335,7 @@ are marked ⚠️.
 | _none_ | `'close'` (Hosted Fields after `destroy()`, and Express Checkout) | 🆕 | |
 | _none_ | `'submitClick'` (Hosted Fields optional hosted submit button) | 🆕 | Required when `inAppElements({ submit })` is mounted. Fired on click with Spreedly-param-keyed catalogue values (never PAN/CVV). You must call `sdk.submit(...)` yourself. A missing listener logs an error and emits `'error'` with `{ message }`; the SDK does not tokenize. See [Hosted submit button](#hosted-submit-button-). |
 | _none_ | `'offsiteTokenGenerated'` / `'offsitePaymentError'` | 🆕 | See [Offsite payments](#offsite-payments--paypal--redirect-style). |
-| _none_ | `'achTokenGenerated'` / `'achPaymentError'` | 🆕 | See [ACH payments](#ach-payments-). |
+| _none_ | ACH events on `SpreedlyACHFields` / `SpreedlyACHForm` | 🆕 | Each class has its own `on()`: `ready`, `tokenGenerated`, `error`, plus `validation` / `fieldStateChange` (fields) or `close` (form). See [ACH payments](#ach-payments-). |
 
 ---
 
@@ -525,30 +525,59 @@ No equivalent in the legacy iFrame SDK (legacy used a hand-built transparent-red
 form posting `payment_method_type=bank_account` to
 `https://core.spreedly.com/v1/payment_methods`).
 
+The Checkout Web SDK has two ACH classes. Both are standalone: they don't need a
+`SpreedlyHostedFields` or `SpreedlyExpressCheckout` instance.
+
+- **`SpreedlyACHFields`** (Hosted Fields bundle): two secure fields, routing and account
+  number, that you place in your own form.
+- **`SpreedlyACHForm`** (Express Checkout bundle): a prebuilt bank account form in one
+  iframe, embedded or as a dialog.
+
+The routing and account numbers are typed into Spreedly-hosted iframes and tokenized there,
+so they never reach your page.
+
 ```js
-// Checkout Web SDK
-sdk.on('achTokenGenerated', ({ token, last4 }) => {
+// Checkout Web SDK — Hosted Fields
+const ach = new SpreedlyACHFields(authDetails);
+ach.on('tokenGenerated', ({ tokenResponse }) => {
+  const token = tokenResponse.payment_method.token;
   // POST token to your backend → run the gateway purchase
 });
-sdk.on('achPaymentError', (err) => { /* ... */ });
-
-sdk.setupACHPayment({
-  bankRoutingNumber:     '021000021',
-  bankAccountNumber:     '9876543210',
-  fullName:              'Bob Smith',           // OR firstName + lastName
-  bankAccountType:       'checking',            // 'checking' | 'savings'
-  bankAccountHolderType: 'personal',            // 'personal' | 'business'
+ach.on('error', (error) => { /* ... */ });
+ach.inAppElements({
+  routing: { containerId: 'ach-routing' },
+  account: { containerId: 'ach-account' },
 });
-sdk.submitACHPayment();
+
+// Later, from your submit button — only the non-sensitive fields, with Spreedly's names
+// (same as the card submit()):
+ach.submit({
+  full_name:                'Bob Smith',        // OR first_name + last_name
+  bank_account_type:        'checking',         // 'checking' | 'savings'
+  bank_account_holder_type: 'personal',         // 'personal' | 'business'
+});
+```
+
+```js
+// Checkout Web SDK — Express Checkout
+const form = new SpreedlyACHForm(authDetails);
+form.on('tokenGenerated', ({ tokenResponse }) => {
+  const token = tokenResponse.payment_method.token;
+  // POST token to your backend → run the gateway purchase
+});
+form.mount({ parentContainerId: 'ach-form' }); // leave it out to open the form as a dialog
 ```
 
 | Legacy iFrame | Checkout Web SDK | Status |
 |---|---|---|
-| Hand-built `<form>` posting `payment_method_type=bank_account` | `sdk.setupACHPayment(config)` + `sdk.submitACHPayment()` + `sdk.clearACHPayment()` | 🆕 |
-| _none_ | Events: `'achTokenGenerated'` (`{ token, last4 }`), `'achPaymentError'` | 🆕 |
+| Hand-built `<form>` posting `payment_method_type=bank_account` | `new SpreedlyACHFields(auth)` + `inAppElements({ routing, account })` + `submit(formData)` | 🆕 |
+| Hand-built `<form>` posting `payment_method_type=bank_account` | `new SpreedlyACHForm(auth)` + `mount(options)` | 🆕 |
+| _none_ | Event `'tokenGenerated'` with `{ message, tokenResponse }`: the whole Spreedly transaction, with the bank numbers masked | 🆕 |
 
-Reference: `web-sdk-sample-app/src/static/ach-payments/ach-payments.js`,
-`checkout-web-sdk/docs/ach-payments/INTEGRATION_GUIDE.md`
+Reference: `web-sdk-sample-app/src/static/ach-payments/` (`?sdk=hosted-fields` or
+`?sdk=express-checkout`), `checkout-web-sdk/docs/ach-payments/OVERVIEW.md`,
+`checkout-web-sdk/docs/ach-payments/ach-hosted-fields/INTEGRATION_GUIDE.md`,
+`checkout-web-sdk/docs/ach-payments/ach-form/INTEGRATION_GUIDE.md`
 
 ---
 

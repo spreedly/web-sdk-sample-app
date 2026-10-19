@@ -48,14 +48,18 @@ ach.inAppElements({
 ### `reload(): void`
 
 Removes both iframes and mounts new ones in the same containers. Keeps the instance, the
-auth details and your `on()` callbacks; `ready` fires again. Typed values are discarded with
-the old iframes and `set*` customizations are reset, so apply them again in your `ready` callback. Ignored
-before `inAppElements()` and after `destroy()`.
+auth details and your `on()` callbacks. On reload, the `ready` event fires again.
+
+The typed values are discarded with the old iframes. Field customizations go back to their
+defaults: for example, values set with `setLabel`, `setPlaceholder`, `setStyles` and
+`setPlaceholderStyles` are reset, and the account number is masked again. Apply them again in
+your `ready` callback. Ignored before `inAppElements()` and after `destroy()`.
 
 ### `isLoaded(): boolean`
 
-`true` while the fields are mounted and the instance is active. Doesn't wait for `ready`.
-Always `false` after `destroy()`.
+Tells you whether the two iframes are mounted on the page. Returns `true` once
+`inAppElements()` has added them, even before `ready` fires. Returns `false` before
+`inAppElements()` and always after `destroy()`.
 
 ### `destroy(): void`
 
@@ -72,7 +76,7 @@ validation starts a 2-second window in which further submits are rejected; a sub
 request is still running is ignored. The routing and account numbers are read from the
 iframes — any bank number keys in `formData` are ignored.
 
-`formData` uses Spreedly's `bank_account` names, like the card `submit()`. Other keys are
+`formData` uses the `bank_account` field names of the Spreedly API, like the card `submit()`. Other keys are
 ignored.
 
 | `formData` field             | Type                       | Required | Notes |
@@ -82,17 +86,23 @@ ignored.
 | `bank_name`                  | `string`                   | no       | |
 | `bank_account_type`          | `'checking' \| 'savings'`  | no       | |
 | `bank_account_holder_type`   | `'personal' \| 'business'` | no       | |
-| `email`, `phone_number`      | `string`                   | no       | Some gateways require them |
-| `address1`, `address2`, `city`, `state`, `zip`, `country` | `string` | no | Billing address; some gateways require it. `country` is a two-letter code (`US` or `CA`) |
+| `email`, `phone_number`      | `string`                   | no       | |
+| `address1`, `address2`, `city`, `state`, `zip`, `country` | `string` | no | Billing address. `country` is a two-letter code (`US` or `CA`) |
 
 | `submitParams` field | Type                     | Notes                 |
 | -------------------- | ------------------------ | --------------------- |
-| `metadata`           | `Record<string, string>` | Forwarded to Spreedly |
-| `mandate`            | `object`                 | Forwarded to Spreedly |
+| `metadata`           | `Record<string, string>` | Sent to the Spreedly tokenization API |
+| `mandate`            | `object`                 | Sent to the Spreedly tokenization API |
 
 ### `validate(): void`
 
-Posts a one-off validation snapshot on the `validation` event (see event shape below).
+Checks the routing and account numbers the customer has typed, without submitting. The
+result arrives on the `validation` event: whether each number is valid, and how many digits
+each has (see `ACHValidationPayload` below). It never includes the numbers themselves, and it
+doesn't show any error in the fields.
+
+To show an error on a field, such as a red border, see
+[Styling the fields](./INTEGRATION_GUIDE.md#styling-the-fields) in the integration guide.
 
 ## Field configuration
 
@@ -128,8 +138,8 @@ Clears both inputs and securely wipes the held values.
 | Event             | Payload                                                                 |
 | ----------------- | ----------------------------------------------------------------------- |
 | `ready`           | `{ message: string }` — both fields mounted and connected               |
-| `tokenGenerated`  | `{ message: 'Token generated', tokenResponse }` — `tokenResponse` is the whole Spreedly transaction, same as card hosted fields. Token: `tokenResponse.payment_method.token`. Bank numbers are masked by Spreedly (`routing_number: "021*"`, `account_number: "*3210"`). |
-| `error`           | A string for SDK-side failures: `'Routing number is invalid'`, `'Account number is invalid'`, `'Please wait before submitting again'`, `'Auth credentials cannot be changed after initial use'`, `'No payment method token received from ACH API'`, or a network error message (`'ACH tokenization failed'` when there is none). Spreedly's error body when Spreedly rejects the request. The typed bank numbers are masked in either case, in case an error ever echoes them. |
+| `tokenGenerated`  | `{ message: 'Token generated', tokenResponse }` — `tokenResponse` is the whole transaction returned by the Spreedly tokenization API, same as card hosted fields. Token: `tokenResponse.payment_method.token`. The API masks the bank numbers (`routing_number: "021*"`, `account_number: "*3210"`). |
+| `error`           | A string for SDK-side failures: `'Routing number is invalid'`, `'Account number is invalid'`, `'Please wait before submitting again'`, `'Auth credentials cannot be changed after initial use'`, `'No payment method token received from ACH API'`, or a network error message (`'ACH tokenization failed'` when there is none). The error response body when the Spreedly tokenization API rejects the request. The typed bank numbers are masked in either case, in case an error ever echoes them. |
 | `validation`      | `ACHValidationPayload` (below) — from `validate()` or a blocked submit  |
 | `fieldStateChange`| `ACHValidationPayload` + `{ action, field, focused }` — streamed as the customer types |
 
@@ -137,7 +147,7 @@ Clears both inputs and securely wipes the held values.
 
 | Field           | Type      | Notes                                              |
 | --------------- | --------- | -------------------------------------------------- |
-| `validRouting`  | `boolean` | 9 digits that pass the US ABA checksum, or 9 digits starting with `0` (may be Canadian; Spreedly checks it and rejects a mistyped US number) |
+| `validRouting`  | `boolean` | `true` for a valid US routing number, or a Canadian one (9 digits starting with `0`) |
 | `validAccount`  | `boolean` | 4–17 digits                                        |
 | `routingLength` | `number`  | current length — never the value                   |
 | `accountLength` | `number`  | current length — never the value                   |
@@ -145,17 +155,7 @@ Clears both inputs and securely wipes the held values.
 On `fieldStateChange`, `field` is `'routing' | 'account'`, `action` is
 `'input' | 'focus' | 'blur' | 'enter'`, and `focused` is a boolean.
 
-## Telemetry
-
-`SpreedlyACHFields` emits its own `ach.*` events, never the card ones: `ach.initialized`,
-`ach.iframe.loaded`, `ach.tokenization.completed`, `ach.tokenization.throttled`,
-`ach.api.response`, `ach.error.emitted`, `ach.method_invoked` and a few more. None carries a
-bank number. See the ACH section of
-[TELEMETRY_EVENTS_REFERENCE](https://github.com/spreedly/checkout-web-sdk/blob/main/docs/monitoring/TELEMETRY_EVENTS_REFERENCE.md#ach).
-
 ## Notes
 
-- ACH data is not PCI-scoped (bank accounts are not cardholder data). The hosted fields
-  keep the numbers out of your application state, reducing Nacha data-security exposure.
 - The deprecated merchant-collected API (`setupACHPayment` / `submitACHPayment` /
   `clearACHPayment`) is documented in [DEPRECATED_API.md](../DEPRECATED_API.md).

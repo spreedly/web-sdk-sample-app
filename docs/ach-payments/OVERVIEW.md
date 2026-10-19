@@ -37,7 +37,7 @@ Need to collect a bank account and tokenize?
 
 ## 1. ACH Hosted Fields
 
-**Best for:** Merchants who want the bank account fields inside their own form design.
+**Best for:** Merchants who want the bank account fields inside their own form design and want full control over form layout and styling.
 
 **How it works:**
 - You build your own form for the account holder name, account type and bank name
@@ -67,15 +67,19 @@ Need to collect a bank account and tokenize?
 
 ---
 
-## Both options
+## After the customer submits
 
-- **Token:** `tokenGenerated` sends `{ message, tokenResponse }` — the whole Spreedly
-  transaction, with the bank numbers masked. The token is `tokenResponse.payment_method.token`.
-  The ACH Form also sends `shouldRetain`: whether the customer ticked "Save this account".
-- **Purchase:** run it from your backend, never the browser, so your access secret stays
-  private.
-- **Security:** bank account data is not cardholder data, so it isn't PCI-scoped. Keeping the
-  numbers out of your page reduces your Nacha data-security exposure.
+This part works the same way with both options:
+
+1. Your page gets the `tokenGenerated` event. Read the payment method token from
+   `tokenResponse.payment_method.token`. The bank numbers in `tokenResponse` are masked, so
+   you never see the full numbers.
+2. Send the token to your backend.
+3. Your backend runs the purchase with the token. Do this from your backend, not the browser,
+   because the request needs your access secret.
+
+With the ACH Form, `tokenGenerated` also tells you whether the customer ticked "Save this
+account" (`shouldRetain`). With ACH Hosted Fields, you build that checkbox yourself.
 
 ---
 
