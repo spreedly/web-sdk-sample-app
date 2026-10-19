@@ -297,7 +297,7 @@
                 <!-- Dialog mode: the form opens full-page from this button -->
                 <div id="ach-dialog-box" class="card hidden" style="text-align: center; padding: 2.5rem;">
                   <p style="color: var(--color-gray-600); margin-bottom: 1.5rem;">
-                    Dialog mode: <code>mount()</code> with no <code>containerId</code> opens the form as a dialog: a centered card over a dimmed page.
+                    Dialog mode: <code>mount()</code> with no <code>parentContainerId</code> opens the form as a dialog: a centered card over a dimmed page.
                   </p>
                   <button type="button" id="open-ach-dialog-btn" class="btn btn-primary btn-lg">Open bank account form</button>
                 </div>
@@ -430,7 +430,8 @@
               <p class="config-option-desc" style="margin-bottom: 0.5rem;">
                 <code>uiConfig.achFormFields.&lt;field&gt;.isHidden</code> / <code>isRequired</code>. Account holder name,
                 routing number and account number are always shown and required. Bank name, account type and
-                account holder type are optional by default.</p>
+                account holder type are optional by default. The contact and billing address fields are hidden
+                by default.</p>
 
               <div class="ach-panel-row ach-panel-row-3">
                 <div class="config-option" style="display:block;">
@@ -458,6 +459,79 @@
                   </select>
                 </div>
               </div>
+
+              <details id="ach-contact-fields-section"
+                style="border:1px solid var(--color-gray-200); border-radius:6px; padding:.5rem .75rem; margin-top:1rem;">
+                <summary style="cursor:pointer; font-weight:600; font-size:0.875rem;">
+                  Contact &amp; billing address <span id="ach-contact-fields-count" style="font-weight:400; color: var(--color-gray-500);">(none shown)</span>
+                </summary>
+                <div class="ach-panel-row ach-panel-row-3" style="margin-top:0.75rem;">
+                  <div class="config-option" style="display:block;">
+                    <label for="config-field-email" class="config-option-label">Email</label>
+                    <select id="config-field-email" class="form-input ach-panel-input ach-config">
+                      <option value="hidden" selected>Hidden</option>
+                      <option value="optional">Optional</option>
+                      <option value="required">Required</option>
+                    </select>
+                  </div>
+                  <div class="config-option" style="display:block;">
+                    <label for="config-field-phone_number" class="config-option-label">Phone number</label>
+                    <select id="config-field-phone_number" class="form-input ach-panel-input ach-config">
+                      <option value="hidden" selected>Hidden</option>
+                      <option value="optional">Optional</option>
+                      <option value="required">Required</option>
+                    </select>
+                  </div>
+                  <div class="config-option" style="display:block;">
+                    <label for="config-field-address1" class="config-option-label">Address line 1</label>
+                    <select id="config-field-address1" class="form-input ach-panel-input ach-config">
+                      <option value="hidden" selected>Hidden</option>
+                      <option value="optional">Optional</option>
+                      <option value="required">Required</option>
+                    </select>
+                  </div>
+                  <div class="config-option" style="display:block;">
+                    <label for="config-field-address2" class="config-option-label">Address line 2</label>
+                    <select id="config-field-address2" class="form-input ach-panel-input ach-config">
+                      <option value="hidden" selected>Hidden</option>
+                      <option value="optional">Optional</option>
+                      <option value="required">Required</option>
+                    </select>
+                  </div>
+                  <div class="config-option" style="display:block;">
+                    <label for="config-field-city" class="config-option-label">City</label>
+                    <select id="config-field-city" class="form-input ach-panel-input ach-config">
+                      <option value="hidden" selected>Hidden</option>
+                      <option value="optional">Optional</option>
+                      <option value="required">Required</option>
+                    </select>
+                  </div>
+                  <div class="config-option" style="display:block;">
+                    <label for="config-field-state" class="config-option-label">State / province</label>
+                    <select id="config-field-state" class="form-input ach-panel-input ach-config">
+                      <option value="hidden" selected>Hidden</option>
+                      <option value="optional">Optional</option>
+                      <option value="required">Required</option>
+                    </select>
+                  </div>
+                  <div class="config-option" style="display:block;">
+                    <label for="config-field-zip" class="config-option-label">ZIP / postal code</label>
+                    <select id="config-field-zip" class="form-input ach-panel-input ach-config">
+                      <option value="hidden" selected>Hidden</option>
+                      <option value="optional">Optional</option>
+                      <option value="required">Required</option>
+                    </select>
+                  </div>
+                  <div class="config-option" style="display:block;">
+                    <label for="config-field-country" class="config-option-label">Country</label>
+                    <select id="config-field-country" class="form-input ach-panel-input ach-config">
+                      <option value="hidden" selected>Hidden</option>
+                      <option value="optional">Optional</option>
+                      <option value="required">Required</option>
+                    </select>
+                  </div>
+                </div>
+              </details>
 
               <div style="margin: 1rem 0 0.5rem; padding-top: 1rem; border-top: 1px solid var(--color-gray-100); font-size: 0.875rem; font-weight: 500; color: var(--color-gray-700);">Retaining</div>
               <div class="config-option">
@@ -592,7 +666,7 @@
               </div>
               <ol class="ec-only hidden">
                 <li>Load the Express Checkout SDK and create <code>new SpreedlyACHForm(auth)</code></li>
-                <li>Call <code>mount({ containerId, uiConfig })</code> to show the form</li>
+                <li>Call <code>mount({ parentContainerId, uiConfig })</code> to show the form</li>
                 <li>Buyer fills in the form and presses its submit button</li>
                 <li>The form tokenizes inside the iframe → <code>tokenGenerated</code> with Spreedly's transaction (<code>tokenResponse</code>)</li>
                 <li>If <code>shouldRetain</code> is true (Allow retaining on, box ticked) → backend retains the token</li>

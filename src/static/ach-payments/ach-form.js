@@ -112,7 +112,22 @@ async function initACHForm() {
   applyACHFormConfig();
 }
 
-const ACH_OPTIONAL_FIELDS = ['bank_name', 'bank_account_type', 'bank_account_holder_type'];
+const ACH_CONTACT_FIELDS = [
+  'email',
+  'phone_number',
+  'address1',
+  'address2',
+  'city',
+  'state',
+  'zip',
+  'country',
+];
+const ACH_OPTIONAL_FIELDS = [
+  'bank_name',
+  'bank_account_type',
+  'bank_account_holder_type',
+  ...ACH_CONTACT_FIELDS,
+];
 
 /** "Custom labels & placeholders": sample text for every field (the dropdowns take no placeholder). */
 const ACH_CUSTOM_FIELD_TEXT = {
@@ -122,6 +137,14 @@ const ACH_CUSTOM_FIELD_TEXT = {
   bank_account_number: { label: 'Account no.', placeholder: '4–17 digits' },
   bank_account_type: { label: 'Checking or savings' },
   bank_account_holder_type: { label: 'Personal or business' },
+  email: { label: 'Email address', placeholder: 'jane@example.com' },
+  phone_number: { label: 'Phone', placeholder: '+1 555 010 0000' },
+  address1: { label: 'Street address', placeholder: '123 Main St' },
+  address2: { label: 'Apt, suite, etc.', placeholder: 'Suite 400' },
+  city: { label: 'Town or city', placeholder: 'Durham' },
+  state: { label: 'State', placeholder: 'NC' },
+  zip: { label: 'Postal code', placeholder: '27701' },
+  country: { label: 'Country', placeholder: 'US' },
 };
 
 /** "Custom theme": a sample blue theme. Same uiConfig.styles shape as the card form. */
@@ -200,22 +223,48 @@ function displayMode() {
   return document.querySelector('input[name="ach-display-mode"]:checked').value;
 }
 
+/** The form's field order and default widths (out of 12), as in the SDK's ACH form config. */
+const ACH_FORM_LAYOUT = [
+  ['full_name', 12],
+  ['bank_name', 12],
+  ['bank_routing_number', 6],
+  ['bank_account_number', 6],
+  ['bank_account_type', 6],
+  ['bank_account_holder_type', 6],
+  ['email', 6],
+  ['phone_number', 6],
+  ['address1', 12],
+  ['address2', 12],
+  ['city', 6],
+  ['state', 6],
+  ['zip', 6],
+  ['country', 6],
+];
+
 /**
  * The form fills its container and doesn't size itself, so size the container to fit the
  * fields that are shown (measured in Chromium): a fixed part for the title, button and footer,
  * one row per line of fields, and the save checkbox.
  */
-const ACH_FORM_FIXED_HEIGHT = 207;
+const ACH_FORM_FIXED_HEIGHT = 212;
 const ACH_FORM_ROW_HEIGHT = 72;
 const ACH_FORM_SAVE_CHECKBOX_HEIGHT = 58;
 
 function fittedFormHeight() {
-  const shown = field => document.getElementById(`config-field-${field}`).value !== 'hidden';
-  const rows =
-    1 + // account holder name
-    (shown('bank_name') ? 1 : 0) +
-    1 + // routing number + account number
-    (shown('bank_account_type') || shown('bank_account_holder_type') ? 1 : 0);
+  const shown = field => {
+    const select = document.getElementById(`config-field-${field}`);
+    return !select || select.value !== 'hidden';
+  };
+  // Fields fill a 12-column grid in order, wrapping when the next one doesn't fit.
+  let rows = 0;
+  let used = 12;
+  ACH_FORM_LAYOUT.filter(([field]) => shown(field)).forEach(([, size]) => {
+    if (used + size > 12) {
+      rows += 1;
+      used = 0;
+    }
+    used += size;
+  });
   const checkbox = document.getElementById('config-allow-retain').checked;
   return (
     ACH_FORM_FIXED_HEIGHT +
@@ -225,7 +274,17 @@ function fittedFormHeight() {
   );
 }
 
+function updateContactFieldsCount() {
+  const shown = ACH_CONTACT_FIELDS.filter(
+    field => document.getElementById(`config-field-${field}`).value !== 'hidden'
+  ).length;
+  document.getElementById('ach-contact-fields-count').textContent = shown
+    ? `(${shown} shown)`
+    : '(none shown)';
+}
+
 function applyACHFormConfig() {
+  updateContactFieldsCount();
   achForm.close();
   const embedded = displayMode() === 'embedded';
   document.getElementById('ach-embedded-box').classList.toggle('hidden', !embedded);
