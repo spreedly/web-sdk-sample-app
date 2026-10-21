@@ -27,10 +27,6 @@ interface Config {
   pazeClientId: string;
   pazeClientName: string;
   pazeProfileId: string;
-<<<<<<< HEAD
-=======
-  // Paze OAuth for the mobile SDK (POST /api/v1/paze/oauth/token)
->>>>>>> main
   pazeMobileLoginId: string;
   pazeSigningKid: string;
   pazeSigningPrivateKey: string;
@@ -64,11 +60,6 @@ const config: Config = {
   pazeClientId: process.env.PAZE_CLIENT_ID || '',
   pazeClientName: process.env.PAZE_CLIENT_NAME || '',
   pazeProfileId: process.env.PAZE_PROFILE_ID || '',
-<<<<<<< HEAD
-=======
-  // Paze OAuth for the mobile SDK. PAZE_MOBILE_LOGIN_ID is the mobile login id (not PAZE_CLIENT_ID,
-  // the web client id). The private key is PKCS#8 PEM; config vars can store its line breaks as \n.
->>>>>>> main
   pazeMobileLoginId: process.env.PAZE_MOBILE_LOGIN_ID || '',
   pazeSigningKid: process.env.PAZE_SIGNING_KID || '',
   pazeSigningPrivateKey: (process.env.PAZE_SIGNING_PRIVATE_KEY || '').replace(
