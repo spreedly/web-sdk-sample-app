@@ -5,11 +5,7 @@ import { createSign, randomUUID, timingSafeEqual } from 'crypto';
 import config from '../config';
 
 // POST /api/v1/paze/oauth/token
-// Mints a Paze access token for the Spreedly mobile SDK's Paze checkout (CAT/sandbox). A merchant
-// hosts this endpoint in production; the sample app hosts one for the mobile demo apps.
-// The request body is ignored: nothing from the caller is sent to Paze. Paze tokens are single-use
-// per checkout, so every call mints a new one and nothing is cached.
-
+// Mints a Paze access token for the Spreedly mobile SDK's Paze checkout (CAT/sandbox).
 const ASSERTION_LIFETIME_S = 1800; // Paze's limit
 const PAZE_TIMEOUT_MS = 15_000; // well under the SDK's 30 s budget, so this endpoint fails first
 const MAX_TOKEN_BYTES = 8 * 1024; // the SDK rejects larger tokens as malformed
@@ -30,7 +26,6 @@ const isAuthorized = (req: Request): boolean => {
   );
 };
 
-// Heroku's router appends the client's IP as the last X-Forwarded-For entry.
 const callerIp = (req: Request): string => {
   const forwarded = req.get('x-forwarded-for');
   return (
@@ -58,9 +53,6 @@ export const pazeTokenRateLimit = rateLimit({
 const base64url = (value: object): string =>
   Buffer.from(JSON.stringify(value)).toString('base64url');
 
-// RS256 client assertion (RFC 7523). iss and sub are the Paze mobile login id, not the web client
-// id: Paze answers 401 invalid_client to the web one. aud must be the exact token URL, or Paze
-// answers 400 invalid_grant.
 const buildClientAssertion = (): string => {
   const now = Math.floor(Date.now() / 1000);
   const header = { alg: 'RS256', typ: 'JWT', kid: config.pazeSigningKid };
@@ -106,7 +98,6 @@ export const getPazeAccessToken = async (
     return;
   }
 
-  // Exactly these three fields, in every environment. Never session_id.
   const form = new URLSearchParams({
     grant_type: 'client_credentials',
     client_assertion_type:
@@ -129,14 +120,12 @@ export const getPazeAccessToken = async (
     status = response.status;
     data = response.data || {};
   } catch {
-    // Timeout, DNS or connection failure. Never log the error: it holds the request body.
     console.warn(
       `[paze-oauth] upstream unreachable latency_ms=${Date.now() - startedAt}`
     );
     res.status(503).json({ error: 'upstream_unavailable' });
     return;
   }
-  // Status and latency only: never the token, the assertion or Paze's response body.
   console.info(
     `[paze-oauth] upstream status=${status} latency_ms=${Date.now() - startedAt}`
   );
