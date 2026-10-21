@@ -21,6 +21,7 @@ import {
   createAchPurchase,
   createPazePaymentMethod,
 } from './controllers/payments';
+import { getPazeAccessToken } from './controllers/paze-oauth';
 import {
   getPPCPConfig,
   createPPCPOrder,
@@ -1222,5 +1223,42 @@ router.post('/ppcp/vault/purchase-order/:orderId/capture', capturePPCPVaultPurch
  *         description: Error creating payment method
  */
 router.post('/paze-payment-method', createPazePaymentMethod);
+
+/**
+ * @swagger
+ * /api/v1/paze/oauth/token:
+ *   post:
+ *     description: Mint a single-use Paze access token for the Spreedly mobile SDK (Paze CAT). The request body is ignored. Every response has Cache-Control no-store.
+ *     tags: [Paze Payments]
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - in: header
+ *         name: X-Demo-Api-Key
+ *         required: true
+ *         type: string
+ *         description: Shared demo key (PAZE_DEMO_API_KEY)
+ *     responses:
+ *       200:
+ *         description: Token minted
+ *         schema:
+ *           type: object
+ *           properties:
+ *             access_token:
+ *               type: string
+ *             token_type:
+ *               type: string
+ *             expires_in:
+ *               type: string
+ *       401:
+ *         description: Missing or wrong X-Demo-Api-Key ({"error":"unauthorized"})
+ *       429:
+ *         description: More than 10 requests a minute from this caller ({"error":"rate_limited"}, with Retry-After)
+ *       502:
+ *         description: Paze rejected the request ({"error":"upstream_rejected"}) or returned no usable token ({"error":"upstream_invalid"})
+ *       503:
+ *         description: Paze timed out or failed ({"error":"upstream_unavailable"}), or the Paze settings are missing ({"error":"not_configured"})
+ */
+router.post('/paze/oauth/token', getPazeAccessToken);
 
 export default router;
