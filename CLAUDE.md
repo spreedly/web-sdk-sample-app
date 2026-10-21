@@ -59,6 +59,12 @@ backend, plain browser JS frontend (no bundler).
   `{STRIPE,PAYPAL,EBANX,BRAINTREE}_GATEWAY_TOKEN_NEW`, plus `PORT`/`SPREEDLY_URL`).
   Unsuffixed legacy vars in `.env` are dead. README's setup section doesn't mention
   `.env` at all — the server won't work without it.
+- **Exception: the Paze vars are unsuffixed.** Web checkout: `PAZE_CERTIFICATE_TOKEN`,
+  `PAZE_CLIENT_ID` (the web client id), `PAZE_CLIENT_NAME`, `PAZE_PROFILE_ID`. Mobile token
+  endpoint (`POST /api/v1/paze/oauth/token`, CAT): `PAZE_MOBILE_LOGIN_ID` (the mobile login id,
+  not the web client id), `PAZE_SIGNING_KID`, `PAZE_SIGNING_PRIVATE_KEY` (PKCS#8 PEM, line
+  breaks may be `\n`), `PAZE_DEMO_API_KEY` (callers send it as `X-Demo-Api-Key`), optional
+  `PAZE_TOKEN_URL`. Without them that endpoint answers `503 not_configured`; nothing else breaks.
 
 ## Flows (landing page `src/static/index.html`; `?sdk=hosted-fields|express-checkout` threads through URLs)
 

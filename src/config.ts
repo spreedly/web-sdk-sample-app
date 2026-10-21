@@ -27,6 +27,12 @@ interface Config {
   pazeClientId: string;
   pazeClientName: string;
   pazeProfileId: string;
+  // Paze OAuth for the mobile SDK (POST /api/v1/paze/oauth/token)
+  pazeMobileLoginId: string;
+  pazeSigningKid: string;
+  pazeSigningPrivateKey: string;
+  pazeTokenUrl: string;
+  pazeDemoApiKey: string;
 }
 
 const config: Config = {
@@ -55,6 +61,18 @@ const config: Config = {
   pazeClientId: process.env.PAZE_CLIENT_ID || '',
   pazeClientName: process.env.PAZE_CLIENT_NAME || '',
   pazeProfileId: process.env.PAZE_PROFILE_ID || '',
+  // Paze OAuth for the mobile SDK. PAZE_MOBILE_LOGIN_ID is the mobile login id (not PAZE_CLIENT_ID,
+  // the web client id). The private key is PKCS#8 PEM; config vars can store its line breaks as \n.
+  pazeMobileLoginId: process.env.PAZE_MOBILE_LOGIN_ID || '',
+  pazeSigningKid: process.env.PAZE_SIGNING_KID || '',
+  pazeSigningPrivateKey: (process.env.PAZE_SIGNING_PRIVATE_KEY || '').replace(
+    /\\n/g,
+    '\n'
+  ),
+  pazeTokenUrl:
+    process.env.PAZE_TOKEN_URL ||
+    'https://auth.wallet.cat.earlywarning.io/token',
+  pazeDemoApiKey: process.env.PAZE_DEMO_API_KEY || '',
 };
 
 export default config;
