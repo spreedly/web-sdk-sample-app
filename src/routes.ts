@@ -21,7 +21,7 @@ import {
   createAchPurchase,
   createPazePaymentMethod,
 } from './controllers/payments';
-import { getPazeAccessToken } from './controllers/paze-oauth';
+import { getPazeAccessToken, pazeTokenRateLimit } from './controllers/paze-oauth';
 import {
   getPPCPConfig,
   createPPCPOrder,
@@ -1253,12 +1253,12 @@ router.post('/paze-payment-method', createPazePaymentMethod);
  *       401:
  *         description: Missing or wrong X-Demo-Api-Key ({"error":"unauthorized"})
  *       429:
- *         description: More than 10 requests a minute from this caller ({"error":"rate_limited"}, with Retry-After)
+ *         description: More than 10 requests a minute from this caller, with or without a valid key ({"error":"rate_limited"}, with Retry-After)
  *       502:
  *         description: Paze rejected the request ({"error":"upstream_rejected"}) or returned no usable token ({"error":"upstream_invalid"})
  *       503:
  *         description: Paze timed out or failed ({"error":"upstream_unavailable"}), or the Paze settings are missing ({"error":"not_configured"})
  */
-router.post('/paze/oauth/token', getPazeAccessToken);
+router.post('/paze/oauth/token', pazeTokenRateLimit, getPazeAccessToken);
 
 export default router;

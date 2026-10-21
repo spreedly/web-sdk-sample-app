@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { Request, Response } from 'express';
+import { ipKeyGenerator, rateLimit } from 'express-rate-limit';
 import { createSign, randomUUID, timingSafeEqual } from 'crypto';
 import config from '../config';
 
@@ -12,11 +13,6 @@ import config from '../config';
 const ASSERTION_LIFETIME_S = 1800; // Paze's limit
 const PAZE_TIMEOUT_MS = 15_000; // well under the SDK's 30 s budget, so this endpoint fails first
 const MAX_TOKEN_BYTES = 8 * 1024; // the SDK rejects larger tokens as malformed
-const RATE_LIMIT = 10;
-const RATE_WINDOW_MS = 60_000;
-
-const rateWindows = new Map<string, { count: number; resetAt: number }>();
-
 const isConfigured = (): boolean =>
   Boolean(
     config.pazeMobileLoginId &&
@@ -35,29 +31,29 @@ const isAuthorized = (req: Request): boolean => {
 };
 
 // Heroku's router appends the client's IP as the last X-Forwarded-For entry.
-const callerId = (req: Request): string => {
+const callerIp = (req: Request): string => {
   const forwarded = req.get('x-forwarded-for');
   return (
     forwarded?.split(',').pop()?.trim() || req.socket.remoteAddress || 'unknown'
   );
 };
 
-// Returns the seconds to wait when the caller is over the limit, otherwise 0.
-const rateLimitWait = (caller: string): number => {
-  const now = Date.now();
-  for (const [key, window] of rateWindows) {
-    if (window.resetAt <= now) rateWindows.delete(key);
-  }
-  const window = rateWindows.get(caller) || {
-    count: 0,
-    resetAt: now + RATE_WINDOW_MS,
-  };
-  window.count += 1;
-  rateWindows.set(caller, window);
-  return window.count > RATE_LIMIT
-    ? Math.ceil((window.resetAt - now) / 1000)
-    : 0;
-};
+// Runs before the demo key check, so callers with a wrong key are limited too.
+export const pazeTokenRateLimit = rateLimit({
+  windowMs: 60_000,
+  limit: 10,
+  standardHeaders: 'draft-8', // also sets Retry-After on a 429
+  legacyHeaders: false,
+  keyGenerator: req => ipKeyGenerator(callerIp(req)),
+  // callerIp reads X-Forwarded-For itself, so the app doesn't need `trust proxy`.
+  validate: { xForwardedForHeader: false },
+  handler: (_req, res) => {
+    res
+      .set('Cache-Control', 'no-store')
+      .status(429)
+      .json({ error: 'rate_limited' });
+  },
+});
 
 const base64url = (value: object): string =>
   Buffer.from(JSON.stringify(value)).toString('base64url');
@@ -96,14 +92,6 @@ export const getPazeAccessToken = async (
   }
   if (!isAuthorized(req)) {
     res.status(401).json({ error: 'unauthorized' });
-    return;
-  }
-  const wait = rateLimitWait(callerId(req));
-  if (wait > 0) {
-    res
-      .set('Retry-After', String(wait))
-      .status(429)
-      .json({ error: 'rate_limited' });
     return;
   }
 
