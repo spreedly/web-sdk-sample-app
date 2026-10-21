@@ -373,6 +373,7 @@
               <h3 class="section-title">Payment sheet</h3>
               <div class="checkbox-row">
                 <label><input type="checkbox" id="gp-auth-pan" checked disabled> PAN_ONLY - default</label>
+                <label><input type="checkbox" id="gp-auth-cryptogram" checked> CRYPTOGRAM_3DS</label>
               </div>
               <div class="checkbox-row" style="margin-top: 0.5rem;">
                 <label><input type="checkbox" class="gp-network" value="AMEX" checked> AMEX</label>
@@ -384,12 +385,14 @@
               <div class="checkbox-row" style="margin-top: 0.5rem;">
                 <label><input type="checkbox" id="gp-billing"> Billing address
                   <span class="callback-hint">(returned in callback)</span></label>
-                <label><input type="checkbox" id="gp-shipping"> Shipping address + options</label>
+                <label><input type="checkbox" id="gp-shipping"> Shipping address + options
+                  <span class="callback-hint">(one-time only)</span></label>
                 <label><input type="checkbox" id="gp-email"> Email
                   <span class="callback-hint">(returned in callback)</span></label>
               </div>
               <div class="checkbox-row" style="margin-top: 0.5rem;">
-                <label><input type="checkbox" id="gp-promo"> Promo codes (<code>OFFER</code> — try SAVE10)</label>
+                <label><input type="checkbox" id="gp-promo"> Promo codes (<code>OFFER</code> — try SAVE10)
+                  <span class="callback-hint">(one-time only)</span></label>
                 <label><input type="checkbox" id="gp-no-prepaid"> Refuse prepaid</label>
                 <label><input type="checkbox" id="gp-no-credit"> Refuse credit</label>
                 <label><input type="checkbox" id="gp-assurance"> Assurance details
@@ -399,7 +402,16 @@
               <h3 class="section-title">Transaction</h3>
               <div class="settings-grid">
                 <div class="form-group">
-                  <label class="form-label" for="gp-checkout-option">Sheet button</label>
+                  <label class="form-label" for="gp-tx-type">Type</label>
+                  <select id="gp-tx-type" class="form-input">
+                    <option value="standard" selected>One-time (transactionInfo)</option>
+                    <option value="recurring">Subscription (recurringTransactionInfo)</option>
+                    <option value="deferred">Charge later (deferredTransactionInfo)</option>
+                    <option value="automatic_reload">Auto reload (automaticReloadTransactionInfo)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="gp-checkout-option">Sheet button (one-time only)</label>
                   <select id="gp-checkout-option" class="form-input">
                     <option value="DEFAULT" selected>DEFAULT</option>
                     <option value="COMPLETE_IMMEDIATE_PURCHASE">COMPLETE_IMMEDIATE_PURCHASE</option>
