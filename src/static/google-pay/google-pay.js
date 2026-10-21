@@ -85,6 +85,10 @@ function orderTotal() {
   return Number.isFinite(value) && value > 0 ? value : 0;
 }
 
+function isOneTime() {
+  return $('gp-tx-type').value === 'standard';
+}
+
 function discountFor(subtotal) {
   // Rounded to cents so the DISCOUNT line and the total agree.
   return sheetState.redemptionCodes.includes(DEMO.promoCode)
@@ -117,12 +121,94 @@ function transactionInfo() {
   };
 }
 
+/** RFC 3339, `days` from now at 08:00 UTC, the format of Google's example (`2025-12-01T08:00:00Z`). */
+function inDays(days) {
+  const date = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+  return `${date.toISOString().slice(0, 10)}T08:00:00Z`;
+}
+
+/**
+ * SYNTHETIC enrollment presets, field for field Google's request-object examples
+ * (developers.google.com/pay/api/web/reference/request-objects). Only the amount each one is
+ * about comes from the order total; URLs use the reserved `.example` domain with Google's paths.
+ */
+function enrollmentInfo(type) {
+  const amount = orderTotal().toFixed(2);
+  const common = {
+    currencyCode: DEMO.currencyCode,
+    countryCode: DEMO.countryCode,
+    // Synthetic attempt id — Google uses it for troubleshooting.
+    transactionId: `demo-${Date.now()}`,
+    billingAgreement: 'Example localized billing agreement and terms.',
+  };
+  if (type === 'recurring') {
+    // A monthly subscription that begins billing immediately: the first month is due today.
+    return {
+      recurringTransactionInfo: {
+        ...common,
+        immediateTotalPrice: amount,
+        recurrenceItems: [
+          {
+            label: 'Premium Plan Monthly Subscription',
+            price: amount,
+            priceStatus: 'FINAL',
+            recurrencePeriod: 'MONTH',
+            recurrencePeriodCount: 1,
+          },
+        ],
+      },
+    };
+  }
+  if (type === 'deferred') {
+    // Nothing due today; the whole amount is charged on billingDateTime.
+    return {
+      deferredTransactionInfo: {
+        ...common,
+        immediateTotalPrice: '0.00',
+        billingDateTime: inDays(14),
+        price: amount,
+        priceStatus: 'FINAL',
+        label: 'Hotel Room Reservation',
+      },
+    };
+  }
+  // Reload by the order total whenever the balance drops below 20.00; nothing due today.
+  return {
+    automaticReloadTransactionInfo: {
+      ...common,
+      immediateTotalPrice: '0.00',
+      minimumBalanceAmount: '20.00',
+      reloadAmount: amount,
+      label: 'Gift Card Reload',
+    },
+  };
+}
+
+/**
+ * What the Purchase button charges for a Google Pay token: exactly what the sheet showed as due
+ * today. When nothing is due today (a deferred charge, an automatic reload), the demo runs the
+ * later charge now instead.
+ */
+function googlePayCharge() {
+  const type = $('gp-tx-type').value;
+  if (type === 'standard') {
+    return { amount: transactionInfo().totalPrice, note: 'due today' };
+  }
+  const [info] = Object.values(enrollmentInfo(type));
+  if (Number(info.immediateTotalPrice) > 0) {
+    return { amount: info.immediateTotalPrice, note: 'due today' };
+  }
+  return type === 'deferred'
+    ? { amount: info.price, note: 'the deferred charge, run now for the demo' }
+    : { amount: info.reloadAmount, note: 'the first reload, run now for the demo' };
+}
+
 /** Merchant business logic: Google asks, the page answers with data, the SDK builds the update. */
 function onPaymentDataChange({ trigger, shippingAddress, shippingOptionId, redemptionCodes }) {
   logEvent(
     `onPaymentDataChange: ${trigger}` +
-      `${shippingOptionId ? ` (${shippingOptionId})` : ''}` +
-      `${redemptionCodes?.length ? ` codes=${redemptionCodes.join(',')}` : ''}`
+    `${shippingOptionId ? ` (${shippingOptionId})` : ''}` +
+    `${redemptionCodes?.length ? ` codes=${redemptionCodes.join(',')}` : ''}`
   );
 
   if (shippingAddress && !DEMO.shippingCountries.includes(shippingAddress.countryCode)) {
@@ -148,13 +234,14 @@ function onPaymentDataChange({ trigger, shippingAddress, shippingOptionId, redem
 
   const offerInfo = $('gp-promo').checked
     ? {
-        offers: sheetState.redemptionCodes.map(code => ({
-          redemptionCode: code,
-          description: `${DEMO.promoRate * 100}% off (synthetic)`,
-        })),
-      }
+      offers: sheetState.redemptionCodes.map(code => ({
+        redemptionCode: code,
+        description: `${DEMO.promoRate * 100}% off (synthetic)`,
+      })),
+    }
     : undefined;
 
+  // Only one-time payments get here: Google has no dynamic pricing for enrollments.
   return {
     transactionInfo: transactionInfo(),
     ...(offerInfo ? { offerInfo } : {}),
@@ -164,12 +251,15 @@ function onPaymentDataChange({ trigger, shippingAddress, shippingOptionId, redem
 function readConfig() {
   const allowedAuthMethods = [
     ...($('gp-auth-pan').checked ? ['PAN_ONLY'] : []),
+    ...($('gp-auth-cryptogram').checked ? ['CRYPTOGRAM_3DS'] : []),
   ];
   const allowedCardNetworks = Array.from(document.querySelectorAll('.gp-network:checked')).map(
     input => input.value
   );
-  const shipping = $('gp-shipping').checked;
-  const promo = $('gp-promo').checked;
+  const txType = $('gp-tx-type').value;
+  // Enrollments can't use onPaymentDataChange / offerInfo: Google has no dynamic pricing for them.
+  const shipping = txType === 'standard' && $('gp-shipping').checked;
+  const promo = txType === 'standard' && $('gp-promo').checked;
   sheetState.shippingCost = 0;
   sheetState.redemptionCodes = [];
 
@@ -177,7 +267,7 @@ function readConfig() {
     environment: 'TEST',
     authDetails,
     merchantInfo: { merchantName: DEMO.merchantName },
-    transactionInfo: transactionInfo(),
+    ...(txType === 'standard' ? { transactionInfo: transactionInfo() } : enrollmentInfo(txType)),
     allowedAuthMethods,
     allowedCardNetworks,
     ...($('gp-no-prepaid').checked ? { allowPrepaidCards: false } : {}),
@@ -188,28 +278,28 @@ function readConfig() {
     emailRequired: $('gp-email').checked,
     ...(shipping
       ? {
-          shippingAddressRequired: true,
-          shippingAddressParameters: { allowedCountryCodes: DEMO.shippingCountries },
-          shippingOptionRequired: true,
-          shippingOptionParameters: {
-            defaultSelectedOptionId: DEMO.shippingOptions[0].id,
-            shippingOptions: DEMO.shippingOptions.map(({ id, label, description }) => ({
-              id,
-              label,
-              description,
-            })),
-          },
-        }
+        shippingAddressRequired: true,
+        shippingAddressParameters: { allowedCountryCodes: DEMO.shippingCountries },
+        shippingOptionRequired: true,
+        shippingOptionParameters: {
+          defaultSelectedOptionId: DEMO.shippingOptions[0].id,
+          shippingOptions: DEMO.shippingOptions.map(({ id, label, description }) => ({
+            id,
+            label,
+            description,
+          })),
+        },
+      }
       : {}),
     // Explicit intents: PAYMENT_AUTHORIZATION is always added by the SDK.
     ...(shipping || promo
       ? {
-          callbackIntents: [
-            ...(shipping ? ['SHIPPING_ADDRESS', 'SHIPPING_OPTION'] : []),
-            ...(promo ? ['OFFER'] : []),
-          ],
-          onPaymentDataChange,
-        }
+        callbackIntents: [
+          ...(shipping ? ['SHIPPING_ADDRESS', 'SHIPPING_OPTION'] : []),
+          ...(promo ? ['OFFER'] : []),
+        ],
+        onPaymentDataChange,
+      }
       : {}),
     button: {
       buttonColor: $('gp-btn-color').value,
@@ -313,9 +403,10 @@ function registerEvents(instance) {
   });
 
   instance.on('googlePayTokenGenerated', result => {
-    lastResult = result;
+    lastResult = { ...result, charge: googlePayCharge() };
+    console.log('lastResult', lastResult);
     logEvent(`googlePayTokenGenerated — ${result.googlePayType || 'type unknown'}`, 'success');
-    showTokenResult(result);
+    showTokenResult(lastResult);
   });
 
   instance.on('googlePayCancelled', () => {
@@ -420,7 +511,7 @@ function mountExpressCheckout() {
     checkout = null;
     setStatus(
       'This Express Checkout build has no googlePay option yet. Run checkout-web-sdk locally — ' +
-        'see docs/google-pay/DEMO_GUIDE.md.',
+      'see docs/google-pay/DEMO_GUIDE.md.',
       'error'
     );
     return;
@@ -525,12 +616,12 @@ function showTokenResult(result) {
     ...(result.cardFundingSource ? [['Funding source', result.cardFundingSource]] : []),
     ...(result.assuranceDetails
       ? [
-          [
-            'Assurance',
-            `accountVerified=${result.assuranceDetails.accountVerified}, ` +
-              `cardHolderAuthenticated=${result.assuranceDetails.cardHolderAuthenticated}`,
-          ],
-        ]
+        [
+          'Assurance',
+          `accountVerified=${result.assuranceDetails.accountVerified}, ` +
+          `cardHolderAuthenticated=${result.assuranceDetails.cardHolderAuthenticated}`,
+        ],
+      ]
       : []),
     ...(result.email ? [['Email', result.email]] : []),
     ...(result.shippingAddress
@@ -545,6 +636,9 @@ function showTokenResult(result) {
       ${rows.map(([label, value]) => `<dt>${escape(label)}</dt><dd>${escape(value)}</dd>`).join('')}
     </dl>
     <p class="guidance">${escape(guidanceFor(result))}</p>`;
+  $('gp-purchase-btn').textContent = result.charge
+    ? `Purchase $${result.charge.amount} (${result.charge.note})`
+    : 'Purchase';
   $('gp-purchase-btn').classList.remove('hidden');
   $('gp-purchase-btn').disabled = false;
   $('gp-new-checkout-btn').classList.remove('hidden');
@@ -573,10 +667,10 @@ function showPurchaseResult(success, transaction, fallbackMessage) {
   $('result-body').insertAdjacentHTML(
     'beforeend',
     `<dl class="result-grid"><dt>Transaction</dt><dd>${escape(token || '—')}</dd>` +
-      `<dt>State</dt><dd>${escape(tx.state || (success ? 'succeeded' : 'failed'))}</dd>` +
-      `<dt>Message</dt><dd>${escape(tx.message || fallbackMessage || '—')}</dd>` +
-      (tx.warning ? `<dt>Warning</dt><dd>${escape(tx.warning)}</dd>` : '') +
-      '</dl>'
+    `<dt>State</dt><dd>${escape(tx.state || (success ? 'succeeded' : 'failed'))}</dd>` +
+    `<dt>Message</dt><dd>${escape(tx.message || fallbackMessage || '—')}</dd>` +
+    (tx.warning ? `<dt>Warning</dt><dd>${escape(tx.warning)}</dd>` : '') +
+    '</dl>'
   );
   logEvent(
     `Purchase ${success ? 'succeeded' : 'failed'}: ${tx.message || fallbackMessage || tx.state}`,
@@ -611,7 +705,8 @@ async function purchase() {
   if (!lastResult) return;
   // Disabled while the purchase runs, so a double click can't charge twice.
   $('gp-purchase-btn').disabled = true;
-  const cents = Math.round(orderTotal() * 100);
+  // A card from the Express Checkout form pays the order total, like its Pay button.
+  const cents = Math.round(Number(lastResult.charge?.amount ?? orderTotal()) * 100);
   const mode = threeDSMode();
 
   if (mode === 'none') {
@@ -789,16 +884,32 @@ async function refreshAuth() {
 
 // ── Wiring ────────────────────────────────────────────────────────────────────
 
+/** Shipping options, promo codes and the sheet button only apply to one-time payments. */
+function syncTransactionControls() {
+  ['gp-shipping', 'gp-promo', 'gp-checkout-option'].forEach(id => {
+    $(id).disabled = !isOneTime();
+  });
+}
+
 function wireControls() {
   // The total changes often and needs no remount — that's what setTransactionInfo() is for.
   $('gp-amount').addEventListener('input', () => {
     if ((!googlePay && !checkout) || orderTotal() <= 0) return;
+    // Enrollments are fixed at construction; rebuild instead.
+    if (!isOneTime()) {
+      mountGooglePay();
+      return;
+    }
     try {
       applyTransactionInfo();
     } catch (error) {
       setStatus(error.message, 'error');
     }
   });
+
+  // Before the remount below; also run once, as browsers restore a selected option on reload.
+  $('gp-tx-type').addEventListener('change', syncTransactionControls);
+  syncTransactionControls();
 
   // Everything else changes the request or the button, so rebuild the instance.
   document
@@ -852,7 +963,7 @@ function init() {
     if (typeof window.SpreedlyGooglePay === 'undefined') {
       showFatal(
         'SpreedlyGooglePay is not in this SDK build yet. Run checkout-web-sdk locally (npm run dev) ' +
-          'and enable the local-SDK block in shared/utils.js — see docs/google-pay/DEMO_GUIDE.md.'
+        'and enable the local-SDK block in shared/utils.js — see docs/google-pay/DEMO_GUIDE.md.'
       );
       return;
     }

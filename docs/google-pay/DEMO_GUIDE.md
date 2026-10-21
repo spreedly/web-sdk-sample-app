@@ -18,7 +18,13 @@ which also holds the architecture notes).
 4. On tap, the SDK opens the sheet and tokenizes inside `onPaymentAuthorized`
    (`POST core.spreedly.com/v1/payment_methods.json`), then emits `googlePayTokenGenerated`.
 5. The result card shows the token, `googlePayType` and the matching 3DS guidance.
-6. **Purchase** branches on `googlePayType`, following Spreedly's "tokenize first, then branch on
+6. **Purchase** charges what the sheet showed as due today: the one-time total (with promo and
+   shipping), or the enrollment's `immediateTotalPrice`. The deferred charge and the automatic
+   reload have nothing due today, so the demo runs the later `price` / `reloadAmount` now. The
+   button label says which. A card from the Express
+   Checkout form pays the order total.
+
+   Purchase branches on `googlePayType`, following Spreedly's "tokenize first, then branch on
    `google_pay_type`" option. It uses only existing backend routes:
 
    | `googlePayType` | Route |
@@ -76,6 +82,11 @@ change, and has a copy button. `authDetails` are shown as a placeholder and call
     `PUT /api/v1/payment_methods/:token/retain`, after `googlePayTokenGenerated` or `tokenGenerated`)
   - the card filters (refuse prepaid / credit, `assuranceDetailsRequired`)
   - `checkoutOption`
+  - the transaction type: one-time, or a synthetic enrollment built field for field from Google's
+    request-object examples, with the order total as its amount: a monthly subscription billed
+    from today, a hotel reservation charged in 14 days, or a gift-card reload when the balance
+    drops below 20.00 (nothing due today for the last two). Enrollments disable shipping, promo
+    codes and `checkoutOption`, because Google has no dynamic pricing for them.
   - button style
   - `testCardNumber`
 
