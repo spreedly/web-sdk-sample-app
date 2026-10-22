@@ -99,41 +99,42 @@ function applyCustomValidators(sdkInstance) {
  * payment form is built from the merchant's selection: alongside the mandatory number and cvv
  * fields it shows exactly the ticked fields and nothing else, each as its own Spreedly-hosted
  * iframe whose value is read from inside that iframe at `submit()`. `wide` fields span both
- * columns of the form grid.
+ * columns of the form grid. `placeholder` is an example value; the date fields keep the SDK's
+ * format hints (MM/YY, MM, YYYY).
  */
 const HOSTED_FIELD_CATALOGUE = Object.freeze([
   { type: 'expiry', label: 'Expiration date', group: 'Expiration date' },
   { type: 'month', label: 'Expiration month', group: 'Expiration date' },
   { type: 'year', label: 'Expiration year', group: 'Expiration date' },
-  { type: 'first_name', label: 'First name', group: 'Cardholder' },
-  { type: 'last_name', label: 'Last name', group: 'Cardholder' },
-  { type: 'full_name', label: 'Name on card', group: 'Cardholder', wide: true },
-  { type: 'email', label: 'Email', group: 'Cardholder', wide: true },
-  { type: 'company', label: 'Company', group: 'Cardholder', wide: true },
-  { type: 'address1', label: 'Address line 1', group: 'Billing address', wide: true },
-  { type: 'address2', label: 'Address line 2', group: 'Billing address', wide: true },
-  { type: 'city', label: 'City', group: 'Billing address' },
-  { type: 'state', label: 'State', group: 'Billing address' },
-  { type: 'zip', label: 'ZIP / Postal code', group: 'Billing address' },
-  { type: 'country', label: 'Country', group: 'Billing address' },
-  { type: 'phone_number', label: 'Phone', group: 'Billing address', wide: true },
-  { type: 'house_number_or_name', label: 'House number or name', group: 'Billing address' },
-  { type: 'street', label: 'Street', group: 'Billing address', wide: true },
-  { type: 'street_line2', label: 'Street line 2', group: 'Billing address', wide: true },
-  { type: 'phone_number_country_code', label: 'Phone country code', group: 'Billing address' },
-  { type: 'phone_number_area_code', label: 'Phone area code', group: 'Billing address' },
-  { type: 'shipping_address1', label: 'Address line 1', group: 'Shipping address', wide: true },
-  { type: 'shipping_address2', label: 'Address line 2', group: 'Shipping address', wide: true },
-  { type: 'shipping_city', label: 'City', group: 'Shipping address' },
-  { type: 'shipping_state', label: 'State', group: 'Shipping address' },
-  { type: 'shipping_zip', label: 'ZIP / Postal code', group: 'Shipping address' },
-  { type: 'shipping_country', label: 'Country', group: 'Shipping address' },
-  { type: 'shipping_phone_number', label: 'Phone', group: 'Shipping address', wide: true },
-  { type: 'shipping_house_number_or_name', label: 'House number or name', group: 'Shipping address' },
-  { type: 'shipping_street', label: 'Street', group: 'Shipping address', wide: true },
-  { type: 'shipping_street_line2', label: 'Street line 2', group: 'Shipping address', wide: true },
-  { type: 'shipping_phone_number_country_code', label: 'Phone country code', group: 'Shipping address' },
-  { type: 'shipping_phone_number_area_code', label: 'Phone area code', group: 'Shipping address' },
+  { type: 'first_name', label: 'First name', group: 'Cardholder', placeholder: 'Joe' },
+  { type: 'last_name', label: 'Last name', group: 'Cardholder', placeholder: 'Jones' },
+  { type: 'full_name', label: 'Name on card', group: 'Cardholder', wide: true, placeholder: 'Joe Jones' },
+  { type: 'email', label: 'Email', group: 'Cardholder', wide: true, placeholder: 'joe@example.com' },
+  { type: 'company', label: 'Company', group: 'Cardholder', wide: true, placeholder: 'Acme Inc' },
+  { type: 'address1', label: 'Address line 1', group: 'Billing address', wide: true, placeholder: '123 Main St' },
+  { type: 'address2', label: 'Address line 2', group: 'Billing address', wide: true, placeholder: 'Apt 4' },
+  { type: 'city', label: 'City', group: 'Billing address', placeholder: 'New York' },
+  { type: 'state', label: 'State', group: 'Billing address', placeholder: 'NY' },
+  { type: 'zip', label: 'ZIP / Postal code', group: 'Billing address', placeholder: '10001' },
+  { type: 'country', label: 'Country', group: 'Billing address', placeholder: 'US' },
+  { type: 'phone_number', label: 'Phone', group: 'Billing address', wide: true, placeholder: '5551234567' },
+  { type: 'house_number_or_name', label: 'House number or name', group: 'Billing address', placeholder: '123' },
+  { type: 'street', label: 'Street', group: 'Billing address', wide: true, placeholder: 'Main St' },
+  { type: 'street_line2', label: 'Street line 2', group: 'Billing address', wide: true, placeholder: 'Apt 1' },
+  { type: 'phone_number_country_code', label: 'Phone country code', group: 'Billing address', placeholder: '1' },
+  { type: 'phone_number_area_code', label: 'Phone area code', group: 'Billing address', placeholder: '415' },
+  { type: 'shipping_address1', label: 'Address line 1', group: 'Shipping address', wide: true, placeholder: '456 Park Ave' },
+  { type: 'shipping_address2', label: 'Address line 2', group: 'Shipping address', wide: true, placeholder: 'Suite 9' },
+  { type: 'shipping_city', label: 'City', group: 'Shipping address', placeholder: 'Boston' },
+  { type: 'shipping_state', label: 'State', group: 'Shipping address', placeholder: 'MA' },
+  { type: 'shipping_zip', label: 'ZIP / Postal code', group: 'Shipping address', placeholder: '02101' },
+  { type: 'shipping_country', label: 'Country', group: 'Shipping address', placeholder: 'US' },
+  { type: 'shipping_phone_number', label: 'Phone', group: 'Shipping address', wide: true, placeholder: '5559876543' },
+  { type: 'shipping_house_number_or_name', label: 'House number or name', group: 'Shipping address', placeholder: '456' },
+  { type: 'shipping_street', label: 'Street', group: 'Shipping address', wide: true, placeholder: 'Park Ave' },
+  { type: 'shipping_street_line2', label: 'Street line 2', group: 'Shipping address', wide: true, placeholder: 'Suite 9' },
+  { type: 'shipping_phone_number_country_code', label: 'Phone country code', group: 'Shipping address', placeholder: '1' },
+  { type: 'shipping_phone_number_area_code', label: 'Phone area code', group: 'Shipping address', placeholder: '617' },
 ]);
 
 /** Catalogue field types actually mounted by the current `inAppElements` call. */
@@ -546,10 +547,16 @@ function renderHostedFieldContainers(types) {
 
     if (entry.group !== currentGroup) {
       currentGroup = entry.group;
-      const heading = document.createElement('div');
-      heading.className = 'hf-catalogue-heading';
-      heading.textContent = currentGroup;
-      grid.appendChild(heading);
+      // A heading that would only repeat its single field's label (e.g. a lone combined
+      // expiry) is skipped so the label reads once.
+      const groupTypes = types.filter((t) => hostedCatalogueEntry(t)?.group === currentGroup);
+      const isRedundant = groupTypes.length === 1 && entry.label === currentGroup;
+      if (!isRedundant) {
+        const heading = document.createElement('div');
+        heading.className = 'hf-catalogue-heading';
+        heading.textContent = currentGroup;
+        grid.appendChild(heading);
+      }
     }
 
     const group = document.createElement('div');
@@ -557,7 +564,7 @@ function renderHostedFieldContainers(types) {
 
     const label = document.createElement('label');
     label.className = 'form-label';
-    label.textContent = `${entry.label} `;
+    label.textContent = entry.label;
     const badge = document.createElement('span');
     badge.className = 'hf-hosted-badge';
     badge.textContent = 'hosted';
@@ -732,20 +739,21 @@ function configureHostedFieldsOnReady(sdkInstance) {
 }
 
 /**
- * Catalogue iframes render an unstyled input, so push the demo's styles in to match the plain
- * inputs. `ready` tracks the number/cvv handshake and field messages are not queued, so a
- * catalogue frame still loading at that point would drop the message — re-apply once it loads.
+ * Catalogue iframes render an unstyled input whose placeholder defaults to the field label, so
+ * push the demo's styles and an example-value placeholder in. `ready` tracks the number/cvv
+ * handshake and field messages are not queued, so a catalogue frame still loading at that point
+ * would drop the message — re-apply once it loads.
  */
 function applyHostedCatalogueStyles(sdkInstance) {
   mountedCatalogueFields.forEach((type) => {
-    if (type === 'full_name') return;
-    sdkInstance.setStyles(type, HOSTED_INPUT_STYLE);
+    const { placeholder } = hostedCatalogueEntry(type) || {};
+    const apply = () => {
+      if (type !== 'full_name') sdkInstance.setStyles(type, HOSTED_INPUT_STYLE);
+      if (placeholder) sdkInstance.setPlaceholder(type, placeholder);
+    };
+    apply();
     const iframe = document.querySelector(`#${hostedCatalogueContainerId(type)} iframe`);
-    iframe?.addEventListener(
-      'load',
-      () => sdkInstance.setStyles(type, HOSTED_INPUT_STYLE),
-      { once: true }
-    );
+    iframe?.addEventListener('load', apply, { once: true });
   });
 }
 
