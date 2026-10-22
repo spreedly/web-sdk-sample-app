@@ -9,6 +9,8 @@ import config from '../config';
 const ASSERTION_LIFETIME_S = 1800; // Paze's limit
 const PAZE_TIMEOUT_MS = 15_000; // well under the SDK's 30 s budget, so this endpoint fails first
 const MAX_TOKEN_BYTES = 8 * 1024; // the SDK rejects larger tokens as malformed
+// Paze binds the token to the checkout session, so the app sends its session_id (JSON or form body).
+const SESSION_ID_PATTERN = /^[A-Za-z0-9._:-]{1,128}$/;
 const isConfigured = (): boolean =>
   Boolean(
     config.pazeMobileLoginId &&
@@ -86,6 +88,11 @@ export const getPazeAccessToken = async (
     res.status(401).json({ error: 'unauthorized' });
     return;
   }
+  const sessionId = req.body?.session_id;
+  if (typeof sessionId !== 'string' || !SESSION_ID_PATTERN.test(sessionId)) {
+    res.status(400).json({ error: 'invalid_session_id' });
+    return;
+  }
 
   let clientAssertion: string;
   try {
@@ -102,6 +109,7 @@ export const getPazeAccessToken = async (
     grant_type: 'client_credentials',
     client_assertion_type:
       'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+    session_id: sessionId,
     client_assertion: clientAssertion,
   });
 
