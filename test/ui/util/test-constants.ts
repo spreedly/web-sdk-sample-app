@@ -141,6 +141,27 @@ export const SELECTORS = {
   ORDER_STATUS_BODY: '.toast-body',
   PAY_BUTTON_PAYPAL: 'Complete Purchase',
   PAY_BUTTON_PAYPAL_LATER: 'submit-button-initial',
+  // Google Pay
+  GOOGLE_PAY_BUTTON: '[data-flow="google-pay"]',
+  GOOGLE_PAY_STUB_BUTTON: '#google-pay-button-container #gpay-stub-button',
+  GOOGLE_PAY_EC_CONTAINER: '#gp-express-checkout-container',
+  GOOGLE_PAY_EC_STUB_BUTTON: '#gp-express-checkout-container #gpay-stub-button',
+  GOOGLE_PAY_EC_WALLET_ROW: '#gp-express-checkout-container [data-spreedly-ec="wallet-row"]',
+  GOOGLE_PAY_EC_DISPLAY: (display: 'embedded' | 'dialog') =>
+    `input[name="gp-ec-display"][value="${display}"]`,
+  GOOGLE_PAY_EC_OPEN_BUTTON: '#gp-ec-open-btn',
+  GOOGLE_PAY_EC_DIALOG: '#gp-ec-dialog',
+  GOOGLE_PAY_EC_DIALOG_CONTAINER: '#gp-ec-dialog-container',
+  GOOGLE_PAY_EC_DIALOG_STUB_BUTTON: '#gp-ec-dialog-container #gpay-stub-button',
+  GOOGLE_PAY_CONFIG_SNIPPET: '#gp-config-snippet',
+  GOOGLE_PAY_COPY_CONFIG: '#gp-copy-config',
+  GOOGLE_PAY_FALLBACK: '#gp-fallback',
+  GOOGLE_PAY_RESULT_CARD: '#result-card',
+  GOOGLE_PAY_EVENT_LOG: '#event-log',
+  GOOGLE_PAY_PURCHASE_BUTTON: '#gp-purchase-btn',
+  GOOGLE_PAY_RESULT_TITLE: '#result-title',
+  GOOGLE_PAY_3DS_MODE: (mode: 'gateway' | 'global' | 'none') => `input[name="gp-3ds-mode"][value="${mode}"]`,
+  GOOGLE_PAY_3DS_SCENARIO: (scenario: string) => `input[name="gp-3ds-scenario"][value="${scenario}"]`,
 } as const;
 
 export const THREE_DS_SELECTORS = {
@@ -318,6 +339,25 @@ export const TEST_DATA = {
   ORDER_STATUS_SUCCESS: "Payment SuccessfulOrder",
   ORDER_STATUS_CANCELLED: "paypal payment was cancelled",
   ORDER_STATUS_CANCELLED_PAYLATER: "paylater payment was cancelled",
+  // Google Pay — SYNTHETIC envelope and Spreedly response. Nothing here decrypts; the Spreedly
+  // call is fulfilled by page.route in the spec.
+  GOOGLE_PAY_SYNTHETIC_TOKEN: JSON.stringify({
+    signature: "synthetic-google-signature",
+    protocolVersion: "ECv2",
+    signedMessage: JSON.stringify({ encryptedMessage: "synthetic-ciphertext" }),
+  }),
+  GOOGLE_PAY_SYNTHETIC_CORE_RESPONSE: {
+    transaction: {
+      token: "synthetic_transaction_token",
+      succeeded: true,
+      payment_method: {
+        token: "synthetic_google_pay_pm_token",
+        payment_method_type: "google_pay",
+        storage_state: "cached",
+        google_pay_type: "NON_TOKENIZED_CARD",
+      },
+    },
+  },
 };
 
 export const HEADINGS = {
