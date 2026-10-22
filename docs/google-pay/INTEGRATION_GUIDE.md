@@ -632,8 +632,10 @@ request data or the token. The most common cases:
 
 - **`googlePayUnavailable`** (with `reason: 'NOT_READY_TO_PAY'`) is normal: the shopper's browser
   or account can't pay with Google Pay. Show your card form.
-- **`TOKENIZATION_FAILED` / `TOKENIZATION_TIMEOUT`**: the sheet stays open so the shopper can pick
-  another card. Key your order on your own order id, not the token.
+- **`TOKENIZATION_FAILED`**: the sheet stays open so the shopper can pick another card.
+  **`TOKENIZATION_TIMEOUT`**: Spreedly answered after Google's 30 s deadline, so Google has already
+  shown its own timeout error and no token is emitted. Either way, key your order on your own
+  order id, not the token.
 - **`DEVELOPER_ERROR`**: Google rejected the request — check your Wallet Console setup and config.
 
 Every code, with what to do about it, is in the [API reference](./API_REFERENCE.md#googlepayerror).
