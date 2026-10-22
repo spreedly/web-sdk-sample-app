@@ -124,8 +124,8 @@ start again — for example for a new checkout, with freshly signed `authDetails
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `totalPrice` | `string` | Yes | Matches `^[0-9]+(\.[0-9][0-9])?$`, e.g. `'42.00'`. Numbers are rejected. |
-| `currencyCode` | `string` | Yes | ISO 4217. |
-| `countryCode` | `string` | Yes | ISO 3166-1 alpha-2 of the acquirer. Google only requires it for EEA / SCA (and `'BR'` for Brazilian combo cards); the SDK always requires it. |
+| `currencyCode` | `string` | Yes | ISO 4217 alphabetic code, uppercase, e.g. `'USD'`. |
+| `countryCode` | `string` | EEA / SCA | ISO 3166-1 alpha-2 of the acquirer, uppercase, e.g. `'US'`. Google requires it for EEA and other SCA countries, and it must be `'BR'` when `allowedCardNetworks` includes `ELECTRON`, `MAESTRO`, `ELO` or `ELO_DEBIT`. |
 | `totalPriceStatus` | `'FINAL' \| 'ESTIMATED'` | No | Default `'FINAL'`. |
 | `totalPriceLabel` | `string` | With `displayItems` | |
 | `displayItems` | `{ label, type, price, status? }[]` | No | `type` is one of `LINE_ITEM`, `SUBTOTAL`, `TAX`, `DISCOUNT`, `SHIPPING_OPTION`. `price` may be negative. `status` is `'FINAL'` (default) or `'PENDING'`. |
@@ -138,8 +138,8 @@ Use exactly one of these instead of `transactionInfo`. They share these fields:
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `currencyCode` | `string` | Yes | ISO 4217. |
-| `countryCode` | `string` | Yes | ISO 3166-1 alpha-2 of the acquirer. |
+| `currencyCode` | `string` | Yes | ISO 4217 alphabetic code, uppercase, e.g. `'USD'`. |
+| `countryCode` | `string` | Yes | ISO 3166-1 alpha-2 of the acquirer, uppercase, e.g. `'US'`. |
 | `immediateTotalPrice` | `string` | Yes | Due today, non-negative: one-time items plus any charge taken now (`'0.00'` when nothing is charged today, e.g. a free trial). Charge exactly this amount. |
 | `immediateDisplayItems` | `DisplayItem[]` | No | One-time items charged today. |
 | `transactionId` | `string` | No | |
@@ -307,6 +307,6 @@ The `googlePayPaymentAuthorized` payload: the display fields of `GooglePayTokenR
 | `MOUNT_FAILED` | The container element is missing, or Google could not draw the button | Render the container before calling `mount()`; check the id. |
 | `DEVELOPER_ERROR` | Google rejected the request (e.g. merchant info), or the request could not be built. In Express Checkout, also an invalid `googlePay` config | Check the Wallet Console setup and config. |
 | `TOKENIZATION_FAILED` | Spreedly could not create the payment method | See `details`. The sheet stays open so the shopper can pick another card. |
-| `TOKENIZATION_TIMEOUT` | Spreedly did not answer within 20 s | Same as above. Key your order on your own order id, not the token. |
+| `TOKENIZATION_TIMEOUT` | Spreedly answered after Google's 30 s callback deadline; Google has already shown its own timeout error in the sheet, and no token is emitted | Let the shopper try again. Key your order on your own order id, not the token. |
 | `PAYMENT_DATA_CHANGE_FAILED` | Your `onPaymentDataChange` threw, timed out or returned an invalid total | Fix the callback; the shopper sees a generic error in the sheet. |
 | `PAYMENTS_CLIENT_ERROR` | Any other Google failure (raw `statusCode` in `details`) | Retry or fall back to the card form. |
