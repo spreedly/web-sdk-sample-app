@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, urlencoded } from 'express';
 import { getAuthParams } from './controllers/auth';
 import { 
   createPaymentMethod, 
@@ -1228,7 +1228,7 @@ router.post('/paze-payment-method', createPazePaymentMethod);
  * @swagger
  * /api/v1/paze/oauth/token:
  *   post:
- *     description: Mint a single-use Paze access token for the Spreedly mobile SDK (Paze CAT). The request body is ignored. Every response has Cache-Control no-store.
+ *     description: Mint a single-use Paze access token for the Spreedly mobile SDK (Paze CAT), bound to the app's Paze session. Send session_id as JSON or form data. Every response has Cache-Control no-store.
  *     tags: [Paze Payments]
  *     produces:
  *       - application/json
@@ -1238,6 +1238,11 @@ router.post('/paze-payment-method', createPazePaymentMethod);
  *         required: true
  *         type: string
  *         description: Shared demo key (PAZE_DEMO_API_KEY)
+ *       - in: formData
+ *         name: session_id
+ *         required: true
+ *         type: string
+ *         description: The Paze checkout session id (letters, digits, . _ : -; up to 128 characters)
  *     responses:
  *       200:
  *         description: Token minted
@@ -1250,6 +1255,8 @@ router.post('/paze-payment-method', createPazePaymentMethod);
  *               type: string
  *             expires_in:
  *               type: string
+ *       400:
+ *         description: session_id missing or malformed ({"error":"invalid_session_id"})
  *       401:
  *         description: Missing or wrong X-Demo-Api-Key ({"error":"unauthorized"})
  *       429:
@@ -1259,6 +1266,11 @@ router.post('/paze-payment-method', createPazePaymentMethod);
  *       503:
  *         description: Paze timed out or failed ({"error":"upstream_unavailable"}), or the Paze settings are missing ({"error":"not_configured"})
  */
-router.post('/paze/oauth/token', pazeTokenRateLimit, getPazeAccessToken);
+router.post(
+  '/paze/oauth/token',
+  pazeTokenRateLimit,
+  urlencoded({ extended: false }),
+  getPazeAccessToken
+);
 
 export default router;
