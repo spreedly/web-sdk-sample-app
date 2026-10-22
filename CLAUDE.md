@@ -48,9 +48,9 @@ backend, plain browser JS frontend (no bundler).
   `https://core.spreedly.com`) while the SDK loads from core-test. Keep both sides on
   the same Spreedly environment when changing either.
 - **The frontend calls Heroku even when running locally**: `API_BASE_URL` in
-  `shared/utils.js:1` is the hardcoded Heroku URL. `LOCAL_API_URL` exists but is used
-  ONLY by the ACH helper — so ACH is the one flow that's local-only (broken on
-  Heroku) while everything else silently hits Heroku from a local page. More
+  `shared/utils.js:1` is the hardcoded Heroku URL, and every flow (ACH included —
+  `createAchPurchase` uses it) hits Heroku even from a local page. `LOCAL_API_URL` is
+  exported but no longer used. More
   hardcoded Heroku URLs in `offsite-payments/{braintree,stripe-apm}/`, `ebanx.js`,
   and `transparent_redirect_complete.html`.
 - **Env vars: config reads ONLY the `_NEW`-suffixed names** (`PRIVATE_KEY_NEW`,
@@ -76,7 +76,7 @@ backend, plain browser JS frontend (no bundler).
 | `recache/` | CVV recache on a retained card (`setRecache` → `recache()`) — done client-side via SDK; the server recache route goes unused | HF + EC | `auth/params`, `payment_methods` |
 | `purchase-with-3ds/` | 3DS **Global** (`sca_provider_key` server-side), `SpreedlyThreeDSLifecycle` + `serializeBrowserInfo` | HF + EC | `create-purchase-with-3ds` |
 | `purchase-with-3ds-gateway-specific/` | 3DS **gateway-specific** with full callback set incl. `onTriggerCompletion` → `transactions/:t/complete` → `event.finalize()` | HF + EC | `create-purchase-with-3ds-gateway-specific`, `complete` |
-| `ach-payments/` | ACH bank-account tokenize + $10 purchase (no iframes; base-class API) | `setupACHPayment`/`submitACHPayment` | `ach-purchase` (localhost-only!) |
+| `ach-payments/` | ACH bank-account tokenize + $10 purchase. HF: two secure fields + merchant name/type inputs (`ach-payments.js`); EC: the prebuilt form in one iframe (`ach-form.js`) | HF `SpreedlyACHFields`; EC `SpreedlyACHForm` | `ach-purchase` |
 | `offsite-payments/` | Hub: paypal/sprel via `setupOffsitePayment`; subpages `braintree/` (`SpreedlyBraintree`), `stripe-apm/` (`SpreedlyStripeAPM`), `ebanx/` (LATAM methods) | offsite APIs | `offsite-purchase`, `braintree-purchase`, `stripe-apm-purchase`, `create-purchase`, `transactions/:t`, `confirm` |
 
 Backend routes with no frontend caller: `POST /purchase` (the only one exercising the

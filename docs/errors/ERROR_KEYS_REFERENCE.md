@@ -6,7 +6,8 @@ verbatim on its error payloads:
 
 - Card tokenization (Hosted Fields / Express Checkout): the `error` event, as
   `{ message, errors }`.
-- ACH: the `achPaymentError` event, inside the sanitized
+- ACH (`SpreedlyACHFields` / `SpreedlyACHForm`): the `error` event, as `{ errors }`.
+- ACH, deprecated API (`submitACHPayment`): the `achPaymentError` event, inside the sanitized
   `{ message, status?, errors? }` payload.
 - Offsite (API flow): the `offsitePaymentError` event, inside the sanitized
   `{ message, status?, errors? }` payload.
@@ -99,5 +100,6 @@ sdk.on('error', (error) => {
 });
 ```
 
-The same `errors` array (and the same handling) applies to `achPaymentError`
-and `offsitePaymentError`, where it lives under `error.errors`.
+The same `errors` array (and the same handling) applies to the ACH `error` event,
+`achPaymentError` (deprecated ACH API) and `offsitePaymentError`, where it lives under
+`error.errors`.

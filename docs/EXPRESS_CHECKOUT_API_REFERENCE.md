@@ -18,8 +18,9 @@ Methods are grouped into the sections below; type definitions follow.
 | [Validation](#validation) | Trigger client-side validation and configure what the `validation` / `fieldStateChange` events report. |
 | [Recache](#recache) | Update the CVV on an already-retained (previously tokenized) payment method. |
 | [Offsite Payments](#offsite-payments) | Redirect-style / alternative payment methods, inherited from the shared SDK — see the dedicated Offsite Payments reference. |
-| [ACH](#ach) | Bank-account (ACH) tokenization, inherited from the shared SDK — see the dedicated ACH reference. |
+| [ACH (deprecated API)](#ach-deprecated-api) | The merchant-collected ACH methods, inherited from the shared SDK. Deprecated — use [SpreedlyACHForm](#spreedlyachform) instead. |
 | [Stripe Radar](#stripe-radar) | Create a Stripe Radar fraud session and get its session id, inherited from the shared SDK — see the dedicated Stripe Radar guide. |
+| [SpreedlyACHForm](#spreedlyachform) | A separate class for bank-account (ACH) collection: create it with `new SpreedlyACHForm(authDetails)`. Its constructor, methods and events. See also the [ACH API reference](ach-payments/ach-form/API_REFERENCE.md). |
 | [Type Definitions](#type-definitions) | The parameter and return types used throughout the API. |
 
 ## Example
@@ -61,7 +62,7 @@ Mandatory card form fields required for payment processing
 
 ### SpreedlySDKCallbacks
 
-> `static` **SpreedlySDKCallbacks**: `Readonly`\<\{ `ACHPaymentError`: `"achPaymentError"`; `ACHTokenGenerated`: `"achTokenGenerated"`; `C2PAddNewCard`: `"add-new-card"`; `C2PCheckoutCancelled`: `"checkout-cancelled"`; `C2PCheckoutDifferentPm`: `"checkout-different-pm"`; `C2PCheckoutError`: `"checkout-error"`; `C2PCheckoutWindowClose`: `"checkout-window-close"`; `C2PCheckoutWindowOpen`: `"checkout-window-open"`; `C2PDisplayCardsReady`: `"display-cards-ready"`; `C2PExistingUser`: `"c2p-existing-user"`; `C2PInitialized`: `"c2p-initialized"`; `C2PNewUser`: `"c2p-new-user"`; `C2POtpInitiated`: `"otp-initiated"`; `C2POtpNotYou`: `"otp-not-you"`; `C2POtpResend`: `"otp-resend"`; `C2POtpResponse`: `"otp-response"`; `C2PSessionDeleted`: `"c2p-session-deleted"`; `C2PVerifiedUser`: `"c2p-verified-user"`; `Close`: `"close"`; `ConsoleError`: `"consoleError"`; `Error`: `"error"`; `FieldStateChange`: `"fieldStateChange"`; `OffsitePaymentError`: `"offsitePaymentError"`; `OffsiteTokenGenerated`: `"offsiteTokenGenerated"`; `PazeCheckoutComplete`: `"pazeCheckoutComplete"`; `PazeError`: `"pazeError"`; `PazeReady`: `"pazeReady"`; `PazeTokenGenerated`: `"pazeTokenGenerated"`; `Ready`: `"ready"`; `RecacheReady`: `"recacheReady"`; `RecacheSuccess`: `"recacheSuccess"`; `SubmitClick`: `"submitClick"`; `TokenGenerated`: `"tokenGenerated"`; `Validation`: `"validation"`; \}\>
+> `static` **SpreedlySDKCallbacks**: `Readonly`\<\{ `ACHPaymentError`: `"achPaymentError"`; `ACHTokenGenerated`: `"achTokenGenerated"`; `C2PAddNewCard`: `"add-new-card"`; `C2PCheckoutCancelled`: `"checkout-cancelled"`; `C2PCheckoutDifferentPm`: `"checkout-different-pm"`; `C2PCheckoutError`: `"checkout-error"`; `C2PCheckoutWindowClose`: `"checkout-window-close"`; `C2PCheckoutWindowOpen`: `"checkout-window-open"`; `C2PDisplayCardsReady`: `"display-cards-ready"`; `C2PExistingUser`: `"c2p-existing-user"`; `C2PInitialized`: `"c2p-initialized"`; `C2PNewUser`: `"c2p-new-user"`; `C2POtpInitiated`: `"otp-initiated"`; `C2POtpNotYou`: `"otp-not-you"`; `C2POtpResend`: `"otp-resend"`; `C2POtpResponse`: `"otp-response"`; `C2PSessionDeleted`: `"c2p-session-deleted"`; `C2PVerifiedUser`: `"c2p-verified-user"`; `Close`: `"close"`; `ConsoleError`: `"consoleError"`; `Error`: `"error"`; `FieldStateChange`: `"fieldStateChange"`; `OffsitePaymentError`: `"offsitePaymentError"`; `OffsiteTokenGenerated`: `"offsiteTokenGenerated"`; `PazeButtonClicked`: `"pazeButtonClicked"`; `PazeCheckoutComplete`: `"pazeCheckoutComplete"`; `PazeEligibilityChecked`: `"pazeEligibilityChecked"`; `PazeError`: `"pazeError"`; `PazeReady`: `"pazeReady"`; `PazeTokenGenerated`: `"pazeTokenGenerated"`; `Ready`: `"ready"`; `RecacheReady`: `"recacheReady"`; `RecacheSuccess`: `"recacheSuccess"`; `SubmitClick`: `"submitClick"`; `TokenGenerated`: `"tokenGenerated"`; `Validation`: `"validation"`; \}\>
 
 Available SDK callback events that merchants can listen to
 
@@ -855,9 +856,9 @@ sdk.submitOffsitePayment();
 // Token received via 'offsiteTokenGenerated' event
 ```
 
-### ACH
+### ACH (deprecated API)
 
-#### clearACHPayment()
+#### ~~clearACHPayment()~~
 
 > **clearACHPayment**(): `void`
 
@@ -871,9 +872,14 @@ before re-collecting account details).
 
 `void`
 
+##### Deprecated
+
+Part of the deprecated merchant-collected ACH API — use `SpreedlyACHFields`
+(Hosted Fields) or `SpreedlyACHForm` (Express Checkout) instead. See the deprecation note on `setupACHPayment`.
+
 ***
 
-#### setupACHPayment()
+#### ~~setupACHPayment()~~
 
 > **setupACHPayment**(`config`): `void`
 
@@ -902,6 +908,15 @@ ACH payment configuration
 
 `void`
 
+##### Deprecated
+
+Use `SpreedlyACHFields` (Hosted Fields) or `SpreedlyACHForm` (Express
+Checkout) instead. This method has the merchant collect the routing and account numbers
+in its own inputs, so they pass through the merchant's application state. The new classes
+collect them in Spreedly-hosted iframes (like card number/CVV), keeping them out of the
+merchant's data-security scope. It still works, but a future release will remove it.
+Older versions keep it.
+
 ##### Throws
 
 If required fields are missing
@@ -920,7 +935,7 @@ sdk.setupACHPayment({
 
 ***
 
-#### submitACHPayment()
+#### ~~submitACHPayment()~~
 
 > **submitACHPayment**(): `void`
 
@@ -938,6 +953,12 @@ Requires `setupACHPayment()` to be called first.
 ##### Returns
 
 `void`
+
+##### Deprecated
+
+Use `SpreedlyACHFields` (Hosted Fields) or `SpreedlyACHForm` (Express
+Checkout) instead — see the deprecation note on `setupACHPayment`. It still works, but a
+future release will remove it.
 
 ##### Throws
 
@@ -1133,7 +1154,346 @@ sdk.removeValidation('zip');
 
 ***
 
+## SpreedlyACHForm
+
+`SpreedlyACHForm` is a prebuilt bank account form for a US or Canadian bank account, in one
+Spreedly-hosted iframe. It's a separate class in the Express Checkout bundle, exposed as
+`window.SpreedlyACHForm`, and doesn't need a `SpreedlyExpressCheckout` instance. Create it
+with the same auth details: `const form = new SpreedlyACHForm(authDetails)`, then call
+`mount()`. See `docs/ach-payments/ach-form/INTEGRATION_GUIDE.md`.
+
+### Constructor
+
+> **new SpreedlyACHForm**(`authDetails`): `SpreedlyACHForm`
+
+Creates a `SpreedlyACHForm` instance. Call `mount()` afterwards to show the form.
+
+#### Parameters
+
+##### authDetails
+
+`AuthDetails`
+
+Spreedly auth: `environment_key`, `certificate_token`, `nonce`,
+  `signature`, `timestamp`. All are required non-empty strings or the constructor throws.
+
+#### Returns
+
+`SpreedlyACHForm`
+
+#### Example
+
+```ts
+const form = new SpreedlyACHForm({
+  environment_key: 'your-environment-key',
+  certificate_token: 'your-certificate-token',
+  nonce: 'server-generated-nonce',
+  signature: 'server-generated-signature',
+  timestamp: 'server-generated-timestamp',
+});
+```
+
+### Lifecycle
+
+#### close()
+
+> **close**(`hardDestroy?`): `void`
+
+Removes the form from the page. By default this is a soft close: your `on()`
+callbacks are kept, so you can call `mount()` again on the same instance. Pass `true`
+to destroy the instance (same as `destroy()`). Does nothing if the form isn't mounted.
+
+##### Parameters
+
+###### hardDestroy?
+
+`boolean` = `false`
+
+##### Returns
+
+`void`
+
+##### Example
+
+```ts
+form.close();
+```
+
+***
+
+#### destroy()
+
+> **destroy**(): `void`
+
+Removes the form and tears the instance down: the message listener and all `on()`
+callbacks are removed. Create a new `SpreedlyACHForm` to show the form again.
+
+##### Returns
+
+`void`
+
+##### Example
+
+```ts
+form.destroy();
+```
+
+***
+
+#### mount()
+
+> **mount**(`options?`): `void`
+
+Shows the ACH form. Pass `parentContainerId` (same option name as the card form's
+`expressCheckout()`) to embed it in that element; it fills the element, so give the
+element a height. Omit `parentContainerId` to open the form as a
+dialog — a centered card over a dimmed page — with its own close button.
+
+The buyer submits with the form's own button. The form validates, tokenizes inside the
+iframe, and emits `tokenGenerated` with `{ message, tokenResponse, shouldRetain }` (the
+same shape as the card form; the token is at `tokenResponse.payment_method.token`) or
+`error`.
+
+##### Parameters
+
+###### options?
+
+`ACHFormMountOptions` = `{}`
+
+##### Returns
+
+`void`
+
+##### Example
+
+```ts
+// Embedded
+form.mount({ parentContainerId: 'ach-form-container' });
+
+// Dialog, with a custom title and the account holder type field hidden
+form.mount({
+  uiConfig: {
+    textConfig: { title: 'Pay by bank' },
+    achFormFields: { bank_account_holder_type: { isHidden: true } },
+  },
+  submitParams: { metadata: { order_id: '1234' } },
+});
+```
+
+### Events
+
+#### on()
+
+> **on**(`event`, `callback`): `void`
+
+Registers a callback for one of the SpreedlyACHForm events: `ready` (the form iframe
+has loaded), `tokenGenerated`, `error`, or `close` (the buyer closed the dialog).
+Unknown event names are ignored with a warning.
+
+##### Parameters
+
+###### event
+
+`TSpreedlyACHFormCallbacks`
+
+###### callback
+
+`SpreedlyACHFormCallback`
+
+##### Returns
+
+`void`
+
+##### Example
+
+```ts
+form.on('ready', () => console.log('ACH form ready'));
+```
+
+***
+
 ## Type Definitions
+
+### ACHFormFieldConfig
+
+> **ACHFormFieldConfig** = `object`
+
+Per-field settings in `uiConfig.achFormFields`. Every key is optional.
+
+## Properties
+
+### isHidden
+
+> **isHidden**: `boolean`
+
+Ignored for the name, routing and account number fields, which are always shown.
+
+***
+
+### isRequired
+
+> **isRequired**: `boolean`
+
+Ignored for the name, routing and account number fields, which are always required.
+
+***
+
+### label
+
+> **label**: `string`
+
+***
+
+### placeholder
+
+> **placeholder**: `string`
+
+Has no effect on the two dropdowns (account type, account holder type).
+
+***
+
+### size
+
+> **size**: `number`
+
+Grid width out of 12.
+
+***
+
+### styles
+
+> **styles**: `TextfieldStyles`
+
+### ACHFormMountOptions
+
+> **ACHFormMountOptions** = `object`
+
+Options passed to `SpreedlyACHForm.mount()`.
+
+## Properties
+
+### className?
+
+> `optional` **className?**: `string`
+
+Optional CSS class for the generated iframe element.
+
+***
+
+### id?
+
+> `optional` **id?**: `string`
+
+Optional `id` for the generated iframe element.
+
+***
+
+### parentContainerId?
+
+> `optional` **parentContainerId?**: `string`
+
+Element id to embed the form in. Omit it to open the form as a dialog (a centered card over a dimmed page).
+
+***
+
+### submitParams?
+
+> `optional` **submitParams?**: [`ACHFormSubmitParams`](#achformsubmitparams)
+
+***
+
+### uiConfig?
+
+> `optional` **uiConfig?**: `Partial`\<[`ACHFormUIConfig`](#achformuiconfig)\>
+
+### ACHFormSubmitParams
+
+> **ACHFormSubmitParams** = `object`
+
+Non-sensitive values sent with the tokenization request.
+
+## Properties
+
+### mandate?
+
+> `optional` **mandate?**: [`Mandate`](#mandate)
+
+***
+
+### metadata?
+
+> `optional` **metadata?**: `Record`\<`string`, `string`\>
+
+### ACHFormTokenGeneratedPayload
+
+> **ACHFormTokenGeneratedPayload** = `object`
+
+`tokenGenerated` payload — same shape as the Express Checkout card form's: a message and
+the whole Spreedly transaction (`tokenResponse`; the token is at
+`tokenResponse.payment_method.token`). Spreedly masks the bank numbers in it.
+`shouldRetain` is whether the buyer ticked the save-account checkbox — always present,
+`false` when the checkbox isn't shown. The SDK does not retain anything: the merchant's
+backend retains the payment method afterwards if it wants to.
+
+## Properties
+
+### message
+
+> **message**: `string`
+
+***
+
+### shouldRetain
+
+> **shouldRetain**: `boolean`
+
+***
+
+### tokenResponse
+
+> **tokenResponse**: `unknown`
+
+### ACHFormUIConfig
+
+> **ACHFormUIConfig** = `object`
+
+Look and copy of the prebuilt ACH form. Every key is optional; omitted values use the
+defaults (title "Bank account", submit "Submit", footer "Powered by Spreedly",
+processing "Processing...", no save-account checkbox).
+
+## Properties
+
+### achFormFields
+
+> **achFormFields**: `Partial`\<`Record`\<[`TACHFormField`](#tachformfield), `Partial`\<[`ACHFormFieldConfig`](#achformfieldconfig)\>\>\>
+
+***
+
+### saveAccountCheckboxLabel
+
+> **saveAccountCheckboxLabel**: `string`
+
+***
+
+### showSaveAccountCheckbox
+
+> **showSaveAccountCheckbox**: `boolean`
+
+Shows a "save this account" checkbox (default `false`); its value is reported as `shouldRetain`.
+
+***
+
+### styles
+
+> **styles**: `UIStyleConfig`
+
+Theme overrides, same shape as the Express Checkout card form's `uiConfig.styles`.
+
+***
+
+### textConfig
+
+> **textConfig**: `Partial`\<`Record`\<[`TACHFormTextElement`](#tachformtextelement), `string`\>\>
 
 ### ACHPaymentConfig
 
@@ -1848,15 +2208,53 @@ Postal/ZIP code. Optional (method-dependent).
 
 ## Properties
 
+### buttonStyle?
+
+> `optional` **buttonStyle?**: `PazeButtonStyle`
+
+***
+
 ### clientConfig
 
 > **clientConfig**: [`PazeClientConfig`](#pazeclientconfig)
 
 ***
 
+### displayMode?
+
+> `optional` **displayMode?**: `PazeDisplayMode`
+
+***
+
 ### environment?
 
 > `optional` **environment?**: [`PazeEnvironment`](#pazeenvironment)
+
+***
+
+### environmentKey?
+
+> `optional` **environmentKey?**: `string`
+
+***
+
+### getCheckoutOptions
+
+> **getCheckoutOptions**: () => [`PazeCheckoutOptions`](#pazecheckoutoptions)
+
+Read on every button click to build the checkout call, so a changing cart total or email is
+always current. Must be synchronous — awaiting inside the click handler spends the user
+activation and the browser blocks Paze's popup.
+
+#### Returns
+
+[`PazeCheckoutOptions`](#pazecheckoutoptions)
+
+***
+
+### paymentElements
+
+> **paymentElements**: `PazePaymentElements`
 
 ### PazeEnvironment
 
@@ -1886,7 +2284,7 @@ Postal/ZIP code. Optional (method-dependent).
 
 ### PazeErrorCode
 
-> **PazeErrorCode** = `"CHECKOUT_FAILED"` \| `"CHECKOUT_INCOMPLETE"` \| `"COMPLETE_FAILED"` \| `"INITIALIZATION_FAILED"` \| `"NOT_INITIALIZED"` \| `"NO_SECURED_PAYLOAD"`
+> **PazeErrorCode** = `"BUTTON_UNAVAILABLE"` \| `"CHECKOUT_FAILED"` \| `"CHECKOUT_INCOMPLETE"` \| `"COMPLETE_FAILED"` \| `"INITIALIZATION_FAILED"` \| `"MOUNT_FAILED"` \| `"NOT_INITIALIZED"` \| `"NO_SECURED_PAYLOAD"` \| `"UNSUPPORTED_ACTION"`
 
 ### PazeSetupResult
 
@@ -2164,6 +2562,14 @@ Optional. Free-form key/value metadata stored alongside the resulting payment me
 
 Optional. Requests that Spreedly retain (permanently store) the payment method after tokenization rather than treating it as single-use. Note: not forwarded by the current hosted-fields `submit()` implementation.
 
+### TACHFormField
+
+> **TACHFormField** = *typeof* `ACHFormFields`\[keyof *typeof* `ACHFormFields`\]
+
+### TACHFormTextElement
+
+> **TACHFormTextElement** = *typeof* `ACHFormTextElement`\[keyof *typeof* `ACHFormTextElement`\]
+
 ### TCardAdditionalFormFields
 
 > **TCardAdditionalFormFields** = *typeof* `AdditionalCardPaymentFormFields`\[keyof *typeof* `AdditionalCardPaymentFormFields`\]
@@ -2171,6 +2577,10 @@ Optional. Requests that Spreedly retain (permanently store) the payment method a
 ### TCardPaymentFormFields
 
 > **TCardPaymentFormFields** = *typeof* `AllCardPaymentFormFields`\[keyof *typeof* `AllCardPaymentFormFields`\]
+
+### TSpreedlyACHFormCallbacks
+
+> **TSpreedlyACHFormCallbacks** = *typeof* `SpreedlyACHFormCallbacks`\[keyof *typeof* `SpreedlyACHFormCallbacks`\]
 
 ### TTextElement
 
