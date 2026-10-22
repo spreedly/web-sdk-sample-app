@@ -182,6 +182,11 @@
       border-color: var(--color-primary);
     }
 
+    .ach-form .hosted-field.invalid,
+    .ach-form input.invalid {
+      border-color: var(--color-error);
+    }
+
     .ach-form .hosted-field iframe {
       width: 100%;
       height: 100%;
@@ -333,7 +338,6 @@
                     <div class="field">
                       <label for="ach-routing-field">Routing number</label>
                       <div id="ach-routing-field" class="hosted-field"></div>
-                      <span class="field-hint">Secure Spreedly field. 9-digit US ABA number or Canadian electronic routing number.</span>
                     </div>
 
                     <div class="field account-row">
@@ -342,7 +346,6 @@
                         <div id="ach-account-field" class="hosted-field"></div>
                         <button type="button" class="toggle-account-visibility" id="toggle-account-visibility">Show</button>
                       </div>
-                      <span class="field-hint">Secure Spreedly field, masked by default.</span>
                     </div>
 
                     <div class="form-row">
@@ -634,7 +637,7 @@
 
               <div style="margin: 1rem 0 0.5rem; padding-top: 1rem; border-top: 1px solid var(--color-gray-100); font-size: 0.875rem; font-weight: 500; color: var(--color-gray-700);">Validation</div>
               <div class="config-option" style="display:block;">
-                <span class="config-option-desc">The form's Validate button calls the SDK's <code>validate()</code> method.</span>
+                <span class="config-option-desc">The form's Validate button calls the SDK's <code>validate()</code> method. Required fields that aren't ready get a red outline, set by the page from the <code>validation</code> event.</span>
                 <pre id="hf-last-validation" class="ach-panel-pre">—</pre>
               </div>
 

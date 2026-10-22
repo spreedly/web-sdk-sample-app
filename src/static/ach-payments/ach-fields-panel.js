@@ -78,6 +78,23 @@ function setHfMasked(masked) {
 
 const hfFilled = id => document.getElementById(id).value.trim() !== '';
 
+const HF_REQUIRED_INPUTS = ['ach-first-name', 'ach-last-name'];
+const HF_SECURE_CONTAINERS = { routing: 'ach-routing-field', account: 'ach-account-field' };
+
+const markHfInvalid = (id, invalid) =>
+  document.getElementById(id).classList.toggle('invalid', invalid);
+
+function validateHfForm() {
+  HF_REQUIRED_INPUTS.forEach(id => markHfInvalid(id, !hfFilled(id)));
+  ach.validate();
+}
+
+function clearHfInvalidWhenReady() {
+  HF_REQUIRED_INPUTS.forEach(id => hfFilled(id) && markHfInvalid(id, false));
+  if (hfPanel.validRouting) markHfInvalid(HF_SECURE_CONTAINERS.routing, false);
+  if (hfPanel.validAccount) markHfInvalid(HF_SECURE_CONTAINERS.account, false);
+}
+
 /**
  * Submit stays disabled while submitting, and until the first and last name are filled and
  * `fieldStateChange` reports both secure fields valid. This is page code — the SDK doesn't gate.
@@ -115,10 +132,14 @@ function onHfFieldState({ field, action, focused, validRouting, validAccount }) 
     .map(event => JSON.stringify(event))
     .join('\n');
   updateHfSubmitEnabled();
+  clearHfInvalidWhenReady();
 }
 
+/** Called on `validation`: after Validate, or when the SDK blocks a submit. */
 function onHfValidation(snapshot) {
   document.getElementById('hf-last-validation').textContent = JSON.stringify(snapshot, null, 2);
+  markHfInvalid(HF_SECURE_CONTAINERS.routing, !snapshot.validRouting);
+  markHfInvalid(HF_SECURE_CONTAINERS.account, !snapshot.validAccount);
 }
 
 /** New iframes start empty: forget the old field state until the new ones report in. */
@@ -127,8 +148,8 @@ function clearHfFieldState() {
   hfPanel.validAccount = false;
   hfPanel.submitting = false;
   document
-    .querySelectorAll('.hosted-field.focused')
-    .forEach(container => container.classList.remove('focused'));
+    .querySelectorAll('.hosted-field.focused, .ach-form .invalid')
+    .forEach(field => field.classList.remove('focused', 'invalid'));
   elements.submitBtn().disabled = true; // until the new fields are ready
 }
 
@@ -185,13 +206,18 @@ function setupFieldsPanel() {
   on('hf-account-placeholder', 'change', applyHfPlaceholders);
   on('hf-custom-styles', 'change', applyHfStyles);
   on('hf-masked', 'change', event => setHfMasked(event.target.checked));
-  on('ach-first-name', 'input', updateHfSubmitEnabled);
-  on('ach-last-name', 'input', updateHfSubmitEnabled);
-  on('hf-validate', 'click', () => ach.validate());
+  HF_REQUIRED_INPUTS.forEach(id =>
+    on(id, 'input', () => {
+      updateHfSubmitEnabled();
+      clearHfInvalidWhenReady();
+    })
+  );
+  on('hf-validate', 'click', validateHfForm);
   on('hf-focus-routing', 'click', () => ach.transferFocus('routing'));
   on('hf-focus-account', 'click', () => ach.transferFocus('account'));
   on('hf-reset', 'click', () => {
     ach.resetFields();
+    ['routing', 'account'].forEach(field => markHfInvalid(HF_SECURE_CONTAINERS[field], false));
     updateHfIsLoaded(); // still true: reset clears the values, the fields stay mounted
   });
   on('hf-reload', 'click', reloadHfFields);
