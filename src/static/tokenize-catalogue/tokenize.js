@@ -312,6 +312,7 @@ function setupConfigCheckboxListeners() {
   document.querySelectorAll('input[data-hosted-field]').forEach((checkbox) => {
     checkbox.addEventListener('change', () => {
       enforceExpiryCheckboxExclusivity();
+      enforceNameCheckboxExclusivity();
       syncHostedCatalogueFromCheckboxes();
       updateHostedCatalogueSummary();
     });
@@ -335,13 +336,17 @@ function setupConfigCheckboxListeners() {
   });
 }
 
-/** Ticks or clears every catalogue checkbox at once (`month`/`year` lose to the combined expiry). */
+/**
+ * Ticks or clears every catalogue checkbox at once. `month`/`year` lose to the combined expiry and
+ * `first_name`/`last_name` lose to `full_name`.
+ */
 function setAllHostedCatalogueCheckboxes(checked) {
+  const skippedOnSelectAll = ['month', 'year', ...SPLIT_NAME_FIELD_TYPES];
   document.querySelectorAll('input[data-hosted-field]').forEach((checkbox) => {
-    const type = checkbox.dataset.hostedField;
-    checkbox.checked = checked && type !== 'month' && type !== 'year';
+    checkbox.checked = checked && !skippedOnSelectAll.includes(checkbox.dataset.hostedField);
   });
   enforceExpiryCheckboxExclusivity();
+  enforceNameCheckboxExclusivity();
   syncHostedCatalogueFromCheckboxes();
   updateHostedCatalogueSummary();
 }
@@ -358,6 +363,59 @@ function enforceExpiryCheckboxExclusivity() {
     checkbox.disabled = combinedChecked;
     if (combinedChecked) checkbox.checked = false;
   });
+}
+
+const SPLIT_NAME_FIELD_TYPES = Object.freeze(['first_name', 'last_name']);
+
+function enforceNameCheckboxExclusivity() {
+  const fullName = document.getElementById('hf-catalogue-full_name');
+  if (!fullName) return;
+  const splitNames = SPLIT_NAME_FIELD_TYPES.map((type) =>
+    document.getElementById(`hf-catalogue-${type}`)
+  ).filter(Boolean);
+
+  splitNames.forEach((checkbox) => {
+    checkbox.disabled = fullName.checked;
+    if (fullName.checked) checkbox.checked = false;
+  });
+  fullName.disabled = !fullName.checked && splitNames.some((checkbox) => checkbox.checked);
+}
+
+function createCardholderNameNote() {
+  const note = document.createElement('p');
+  note.className = 'config-option-desc';
+  note.style.margin = '0.25rem 0 0.5rem';
+
+  const link = document.createElement('a');
+  link.href = 'https://developer.spreedly.com/reference/create-payment-method';
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  link.textContent = 'Create payment method API';
+
+  const code = (text) => {
+    const el = document.createElement('code');
+    el.textContent = text;
+    return el;
+  };
+
+  note.append(
+    'There is no restriction on combining these fields — the ',
+    link,
+    ' accepts ',
+    code('full_name'),
+    ' together with ',
+    code('first_name'),
+    ' / ',
+    code('last_name'),
+    '. As a best practice, use either a single ',
+    code('full_name'),
+    ' field or separate ',
+    code('first_name'),
+    ' and ',
+    code('last_name'),
+    ' fields, so ticking one disables the other here.'
+  );
+  return note;
 }
 
 /**
@@ -461,6 +519,7 @@ function renderHostedCatalogueCheckboxes() {
       title.className = 'hf-catalogue-group-title';
       title.textContent = currentGroup;
       list.appendChild(title);
+      if (currentGroup === 'Cardholder') list.appendChild(createCardholderNameNote());
       currentRow = null;
     }
 
