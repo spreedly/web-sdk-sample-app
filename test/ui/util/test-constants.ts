@@ -143,6 +143,8 @@ export const SELECTORS = {
   PAY_BUTTON_PAYPAL_LATER: 'submit-button-initial',
   // Google Pay
   GOOGLE_PAY_BUTTON: '[data-flow="google-pay"]',
+  GOOGLE_PAY_BUTTON_CONTAINER: '#google-pay-button-container',
+  GOOGLE_PAY_RENDERED_BUTTON: '#google-pay-button-container button, #google-pay-button-container .gpay-button',
   GOOGLE_PAY_STUB_BUTTON: '#google-pay-button-container #gpay-stub-button',
   GOOGLE_PAY_EC_CONTAINER: '#gp-express-checkout-container',
   GOOGLE_PAY_EC_STUB_BUTTON: '#gp-express-checkout-container #gpay-stub-button',
@@ -162,6 +164,25 @@ export const SELECTORS = {
   GOOGLE_PAY_RESULT_TITLE: '#result-title',
   GOOGLE_PAY_3DS_MODE: (mode: 'gateway' | 'global' | 'none') => `input[name="gp-3ds-mode"][value="${mode}"]`,
   GOOGLE_PAY_3DS_SCENARIO: (scenario: string) => `input[name="gp-3ds-scenario"][value="${scenario}"]`,
+  GOOGLE_PAY_AUTH_PAN: '#gp-auth-pan',
+  GOOGLE_PAY_AUTH_CRYPTOGRAM: '#gp-auth-cryptogram',
+  GOOGLE_PAY_NETWORK: (network: string) => `.gp-network[value="${network}"]`,
+  GOOGLE_PAY_BILLING: '#gp-billing',
+  GOOGLE_PAY_SHIPPING: '#gp-shipping',
+  GOOGLE_PAY_EMAIL: '#gp-email',
+  GOOGLE_PAY_PROMO: '#gp-promo',
+  GOOGLE_PAY_NO_PREPAID: '#gp-no-prepaid',
+  GOOGLE_PAY_NO_CREDIT: '#gp-no-credit',
+  GOOGLE_PAY_ASSURANCE: '#gp-assurance',
+  GOOGLE_PAY_PAYMENT_SHEET_CHECKBOX: (label: string) =>
+    `label:has-text("${label}") input[type="checkbox"]`,
+  GOOGLE_PAY_CHECKOUT_OPTION: '#gp-checkout-option',
+  GOOGLE_PAY_TX_TYPE: '#gp-tx-type',
+  GOOGLE_PAY_BTN_COLOR: '#gp-btn-color',
+  GOOGLE_PAY_BTN_TYPE: '#gp-btn-type',
+  GOOGLE_PAY_BTN_SIZE: '#gp-btn-size',
+  GOOGLE_PAY_BTN_RADIUS: '#gp-btn-radius',
+  GOOGLE_PAY_LOADING: '#loading-state',
 } as const;
 
 export const THREE_DS_SELECTORS = {
@@ -252,6 +273,19 @@ export const LABELS = {
   VENMO_BUTTON: "Pay with Venmo",
   PAY_LATER_BUTTON: "Pay later",
   PAYPAL_CREDIT_BUTTON: "PayPal Credit",
+  GOOGLE_PAY_CRYPTOGRAM_3DS: "CRYPTOGRAM_3DS",
+  GOOGLE_PAY_NETWORK_AMEX: "AMEX",
+  GOOGLE_PAY_NETWORK_DISCOVER: "DISCOVER",
+  GOOGLE_PAY_NETWORK_JCB: "JCB",
+  GOOGLE_PAY_NETWORK_MASTERCARD: "MASTERCARD",
+  GOOGLE_PAY_NETWORK_VISA: "VISA",
+  GOOGLE_PAY_BILLING_ADDRESS: "Billing address",
+  GOOGLE_PAY_SHIPPING_ADDRESS: "Shipping address",
+  GOOGLE_PAY_EMAIL: "Email",
+  GOOGLE_PAY_PROMO_CODES: "Promo codes",
+  GOOGLE_PAY_REFUSE_PREPAID: "Refuse prepaid",
+  GOOGLE_PAY_REFUSE_CREDIT: "Refuse credit",
+  GOOGLE_PAY_ASSURANCE_DETAILS: "Assurance details",
 };
 
 export const TEST_DATA = {
@@ -341,6 +375,9 @@ export const TEST_DATA = {
   ORDER_STATUS_CANCELLED_PAYLATER: "paylater payment was cancelled",
   // Google Pay — SYNTHETIC envelope and Spreedly response. Nothing here decrypts; the Spreedly
   // call is fulfilled by page.route in the spec.
+  GOOGLE_PAY_BUTTON_COLORS: ['default', 'black', 'white'] as const,
+  GOOGLE_PAY_BUTTON_TYPES: ['buy', 'pay', 'checkout', 'order', 'plain'] as const,
+  GOOGLE_PAY_BUTTON_CORNER_RADIUS: 20,
   GOOGLE_PAY_SYNTHETIC_TOKEN: JSON.stringify({
     signature: "synthetic-google-signature",
     protocolVersion: "ECv2",
