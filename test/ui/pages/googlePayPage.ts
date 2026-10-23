@@ -10,7 +10,6 @@ type StubOptions = { ready?: boolean };
  * surface SpreedlyGooglePay calls, and "authorizes" a synthetic card when its button is clicked.
  */
 const installGooglePayStub = async (page: Page, { ready = true }: StubOptions = {}) => {
-  // Keep the real pay.js from loading and overwriting the stub.
   await page.route('https://pay.google.com/**', route => route.abort());
 
   await page.addInitScript(
@@ -46,7 +45,6 @@ const installGooglePayStub = async (page: Page, { ready = true }: StubOptions = 
                       if (result.transactionState === 'SUCCESS') {
                         resolve(paymentData);
                       } else {
-                        // A shopper who sees the in-sheet error and closes the sheet.
                         reject({ statusCode: 'CANCELED' });
                       }
                     }, 50);
@@ -62,111 +60,23 @@ const installGooglePayStub = async (page: Page, { ready = true }: StubOptions = 
   );
 };
 
-const CORS_HEADERS = {
-  'access-control-allow-origin': '*',
-  'access-control-allow-headers': '*',
-  'access-control-allow-methods': 'POST, OPTIONS',
-};
-
-/** Fulfils the SDK's Spreedly tokenize call with a SYNTHETIC response and records the body. */
-const mockSpreedlyTokenize = async (
-  page: Page,
-  { status = 201, body = TEST_DATA.GOOGLE_PAY_SYNTHETIC_CORE_RESPONSE }: { status?: number; body?: unknown } = {}
-) => {
-  const requests: any[] = [];
-  await page.route('https://core.spreedly.com/v1/payment_methods.json', async route => {
-    const request = route.request();
-    if (request.method() === 'OPTIONS') {
-      await route.fulfill({ status: 204, headers: CORS_HEADERS });
-      return;
-    }
-    requests.push(request.postDataJSON());
-    await route.fulfill({
-      status,
-      headers: { ...CORS_HEADERS, 'content-type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-  });
-  return requests;
-};
-
-/**
- * Fulfils one sample-app purchase route (e.g. `simple-purchase`) with a SYNTHETIC transaction and
- * records the request bodies. The page calls the Heroku API even when served locally, so the
- * pattern matches any host.
- */
-const mockPurchaseRoute = async (
-  page: Page,
-  path: string,
-  transaction: Record<string, unknown> = {
-    token: 'synthetic_purchase_token',
-    state: 'succeeded',
-    message: 'Succeeded!',
+const googlePayConfigFromSnippet = (text: string): Record<string, any> => {
+  const standalone = text.match(/SpreedlyGooglePay\((\{[\s\S]*\})\)\s*;/);
+  if (standalone?.[1]) {
+    return JSON.parse(standalone[1]);
   }
-) => {
-  const requests: any[] = [];
-  await page.route(`**/api/v1/${path}`, async route => {
-    const request = route.request();
-    if (request.method() === 'OPTIONS') {
-      await route.fulfill({ status: 204, headers: CORS_HEADERS });
-      return;
-    }
-    requests.push(request.postDataJSON());
-    const body = path === 'simple-purchase' ? { success: true, transaction } : { transaction };
-    await route.fulfill({
-      status: 200,
-      headers: { ...CORS_HEADERS, 'content-type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-  });
-  return requests;
+  const express = text.match(/expressCheckout\((\{[\s\S]*\})\)\s*;/);
+  if (express?.[1]) {
+    const options = JSON.parse(express[1]);
+    return options.googlePay || options;
+  }
+  throw new Error(`Could not parse Google Pay config from snippet: ${text.slice(0, 200)}`);
 };
 
 export const googlePayPage = {
   installGooglePayStub,
-  mockSpreedlyTokenize,
-  mockPurchaseRoute,
 
-  choose3DSMode: async (page: Page, mode: 'gateway' | 'global' | 'none') => {
-    await page.locator(SELECTORS.GOOGLE_PAY_3DS_MODE(mode)).check();
-  },
-
-  choose3DSScenario: async (page: Page, scenario: string) => {
-    await page.locator(SELECTORS.GOOGLE_PAY_3DS_SCENARIO(scenario)).check();
-  },
-
-  clickPurchase: async (page: Page) => {
-    const button = page.locator(SELECTORS.GOOGLE_PAY_PURCHASE_BUTTON);
-    await expect(button).toBeEnabled({ timeout: 15000 });
-    await button.click();
-  },
-
-  /** Taps the stub button and waits for the payment method result card. */
-  tokenize: async (page: Page) => {
-    await googlePayPage.waitForButton(page);
-    await googlePayPage.clickGooglePay(page);
-    await expect(page.locator(SELECTORS.GOOGLE_PAY_RESULT_TITLE)).toHaveText(
-      'Payment method created',
-      { timeout: 15000 }
-    );
-  },
-
-  /** false when the loaded Express Checkout build predates its `googlePay` option. */
-  hasExpressCheckoutGooglePay: async (page: Page) => {
-    if (!(await googlePayPage.hasSdkGlobal(page))) return false;
-    // The page reports a build without the option in its status line instead of mounting.
-    return page.evaluate(
-      () => !document.getElementById('status-message')?.textContent?.includes('no googlePay option')
-    );
-  },
-
-  waitForExpressCheckoutButton: async (page: Page) => {
-    await expect(page.locator(SELECTORS.GOOGLE_PAY_EC_STUB_BUTTON)).toBeVisible({ timeout: 15000 });
-  },
-
-  /** false when the loaded SDK build predates SpreedlyGooglePay (e.g. the rc CDN before merge). */
   hasSdkGlobal: async (page: Page) => {
-    // The page leaves its loading state once the SDK loaded (or failed to).
     await page.waitForFunction(
       () => document.getElementById('loading-state')?.classList.contains('hidden'),
       undefined,
@@ -176,14 +86,121 @@ export const googlePayPage = {
   },
 
   waitForButton: async (page: Page) => {
-    await expect(page.locator(SELECTORS.GOOGLE_PAY_STUB_BUTTON)).toBeVisible({ timeout: 15000 });
+    await expect(page.locator(SELECTORS.GOOGLE_PAY_RENDERED_BUTTON).first()).toBeVisible({ timeout: 20000 });
   },
 
-  clickGooglePay: async (page: Page) => {
-    const button = page.locator(SELECTORS.GOOGLE_PAY_STUB_BUTTON);
-    await expect(button).toBeVisible();
-    await button.click();
+  getRenderedButton: async (page: Page) => {
+    const button = page.locator(SELECTORS.GOOGLE_PAY_RENDERED_BUTTON).first();
+    await expect(button).toBeVisible({ timeout: 20000 });
+    return button;
   },
 
-  eventLog: (page: Page) => page.locator(SELECTORS.GOOGLE_PAY_EVENT_LOG),
+  getRenderedButtonClass: async (page: Page) => {
+    const button = await googlePayPage.getRenderedButton(page);
+    return (await button.getAttribute('class')) || '';
+  },
+
+  getRenderedButtonBorderRadius: async (page: Page) => {
+    const button = await googlePayPage.getRenderedButton(page);
+    return button.evaluate(el => getComputedStyle(el).borderRadius);
+  },
+
+  selectDropdownOption: async (page: Page, dropdownSelector: string, optionValue: string) => {
+    const dropdown = page.locator(dropdownSelector);
+    await expect(dropdown).toBeVisible();
+    await dropdown.selectOption(optionValue);
+    await expect(dropdown).toHaveValue(optionValue);
+  },
+
+  waitForConfigSnippet: async (page: Page) => {
+    const snippet = page.locator(SELECTORS.GOOGLE_PAY_CONFIG_SNIPPET);
+    await expect(snippet).toContainText('SpreedlyGooglePay', { timeout: 15000 });
+  },
+
+  getPassedConfig: async (page: Page) => {
+    await googlePayPage.waitForConfigSnippet(page);
+    const text = (await page.locator(SELECTORS.GOOGLE_PAY_CONFIG_SNIPPET).textContent()) || '';
+    return googlePayConfigFromSnippet(text);
+  },
+
+  waitForConfigMatching: async (
+    page: Page,
+    predicate: (config: Record<string, any>) => boolean,
+    timeout = 15000
+  ) => {
+    await expect
+      .poll(async () => {
+        try {
+          return predicate(await googlePayPage.getPassedConfig(page));
+        } catch {
+          return false;
+        }
+      }, { timeout })
+      .toBe(true);
+    return googlePayPage.getPassedConfig(page);
+  },
+
+  clickOnGooglePayButton: async (page: Page) => {
+    const googlePayButton = page.locator(SELECTORS.GOOGLE_PAY_BUTTON);
+    await expect(googlePayButton).toBeVisible();
+    await googlePayButton.click();
+  },
+
+  getCheckboxByName: async (page: Page, checkboxName: string) => {
+    return page.locator(SELECTORS.GOOGLE_PAY_PAYMENT_SHEET_CHECKBOX(checkboxName));
+  },
+
+  clickOnCheckbox: async (page: Page, checkboxName: string) => {
+    const checkbox = await googlePayPage.getCheckboxByName(page, checkboxName);
+    await expect(checkbox).toBeVisible();
+    await checkbox.click();
+  },
+
+  checkCheckbox: async (page: Page, checkboxName: string) => {
+    const checkbox = await googlePayPage.getCheckboxByName(page, checkboxName);
+    await expect(checkbox).toBeVisible();
+    await checkbox.check();
+    await expect(checkbox).toBeChecked();
+  },
+
+  uncheckCheckbox: async (page: Page, checkboxName: string) => {
+    const checkbox = await googlePayPage.getCheckboxByName(page, checkboxName);
+    await expect(checkbox).toBeVisible();
+    await checkbox.uncheck();
+    await expect(checkbox).not.toBeChecked();
+  },
+
+  setCheckbox: async (page: Page, selector: string, checked: boolean) => {
+    const box = page.locator(selector);
+    await expect(box).toBeVisible();
+    if (checked) {
+      await box.check();
+    } else {
+      await box.uncheck();
+    }
+  },
+
+  selectOption: async (page: Page, selector: string, value: string) => {
+    await googlePayPage.selectDropdownOption(page, selector, value);
+  },
+
+  setCornerRadius: async (page: Page, radius: number) => {
+    const input = page.locator(SELECTORS.GOOGLE_PAY_BTN_RADIUS);
+    await input.fill(String(radius));
+    await input.dispatchEvent('change');
+  },
+
+  enablePaymentSheetOptions: async (page: Page) => {
+    await googlePayPage.setCheckbox(page, SELECTORS.GOOGLE_PAY_AUTH_CRYPTOGRAM, true);
+    await googlePayPage.setCheckbox(page, SELECTORS.GOOGLE_PAY_BILLING, true);
+    await googlePayPage.setCheckbox(page, SELECTORS.GOOGLE_PAY_SHIPPING, true);
+    await googlePayPage.setCheckbox(page, SELECTORS.GOOGLE_PAY_EMAIL, true);
+    await googlePayPage.setCheckbox(page, SELECTORS.GOOGLE_PAY_PROMO, true);
+    await googlePayPage.setCheckbox(page, SELECTORS.GOOGLE_PAY_NO_PREPAID, true);
+    await googlePayPage.setCheckbox(page, SELECTORS.GOOGLE_PAY_NO_CREDIT, true);
+    await googlePayPage.setCheckbox(page, SELECTORS.GOOGLE_PAY_ASSURANCE, true);
+    for (const network of ['AMEX', 'DISCOVER', 'JCB', 'MASTERCARD', 'VISA']) {
+      await googlePayPage.setCheckbox(page, SELECTORS.GOOGLE_PAY_NETWORK(network), true);
+    }
+  },
 };
