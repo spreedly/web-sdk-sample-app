@@ -91,7 +91,7 @@ Current SDK version
 
 Closes and tears down the Express Checkout payment form, removing it from the DOM and cleaning up internal state. In dialog mode this removes the modal overlay; in embedded mode it removes the iframe (and the Google Pay wallet row, if any) from its parent container. A Google Pay button drawn by the `googlePay` option is destroyed too; close only after `googlePayTokenGenerated` if the shopper may still be in Google's sheet. This is the same function returned as `destroy()` from `expressCheckout()`, and the SDK also calls it internally when the hosted form asks to close (e.g. after the shopper dismisses the dialog).
 
-By default (`hardDestroy = false`) it performs a soft close: the form is removed but the global postMessage listener and your registered `on()` callbacks are preserved, so you can reopen the form by calling `expressCheckout()` again on the same instance. Pass `true` to fully destroy the instance — this additionally removes the window message listener and resets all callback queues, after which the instance should no longer be reused. If no form is currently open this is effectively a no-op (it logs a warning and returns without error).
+By default (`hardDestroy = false`) it performs a soft close: the form is removed but the global postMessage listener and your registered `on()` callbacks are preserved, so you can reopen the form by calling `expressCheckout()` again on the same instance. The reopened form keeps this instance's form config (text, added fields, CVV settings); create a new instance to start from the defaults. Pass `true` to fully destroy the instance — this additionally removes the window message listener and resets all callback queues, after which the instance should no longer be reused. If no form is currently open this is effectively a no-op (it logs a warning and returns without error).
 
 ##### Parameters
 
@@ -131,8 +131,9 @@ sdk.close(true);
 Builds the Spreedly hosted checkout iframe and mounts it, rendering the prebuilt
 credit-card form. Call this once your page is ready and you want to show the form:
 pass `parentContainerId` to embed it inside that element, or omit it to open the form
-as a full-screen modal dialog. Any `uiConfig` and `submitParams` you pass are merged
-over the SDK defaults and forwarded to the iframe once it signals `ready`; card data
+as a full-screen modal dialog. Any `uiConfig` you pass is merged over this instance's
+current form config (values you leave out keep their current value), `submitParams` over
+the SDK defaults, and both are forwarded to the iframe once it signals `ready`; card data
 (PAN/CVV) is entered and tokenized entirely inside the iframe and never passed here.
 This is a no-op that returns `void` if `environment_key` is missing, or if
 `parentContainerId` is given but no such element exists in the DOM.
@@ -156,7 +157,7 @@ Configuration for the checkout form. Optional; if omitted the previously configu
   - `className` {string} - CSS class added to the generated iframe element. Optional.
   - `parentContainerId` {string} - ID of an existing DOM element to embed the form into. Optional; when omitted the form opens as a modal dialog instead.
   - `submitParams` {SubmitParams} - Tokenization options sent with the payment; supported sub-fields: `metadata` (Record<string, string>, defaults to `{}`), `mandate` (opaque data owned by Spreedly Core, defaults to `{}`), `allow_expired_date`, `allow_blank_name`, `allow_blank_date`, and `retained` (all optional booleans, only forwarded when truthy). Optional.
-  - `uiConfig` {Partial<UIConfig>} - Overrides for the form UI (e.g. `styles`, `textConfig`, `cardPaymentFormFields`, `twoDigitExpiry`, `showSaveCardCheckbox`). Optional; merged over `DEFAULT_UI_CONFIG`.
+  - `uiConfig` {Partial<UIConfig>} - Overrides for the form UI (e.g. `styles`, `textConfig`, `cardPaymentFormFields`, `twoDigitExpiry`, `showSaveCardCheckbox`). Optional; merged over this instance's current form config, which starts as `DEFAULT_UI_CONFIG`: values you leave out keep their current value, including ones set by an earlier `expressCheckout()` call or by `updateTextElement`, `addField` and the other form-config methods.
   - `googlePay` {ExpressCheckoutGooglePayConfig} - Shows Google Pay above the form. The `SpreedlyGooglePay` config without `authDetails`, which come from this instance: `environment`, `merchantInfo` and `transactionInfo` are required. `button.buttonSizeMode` defaults to `'fill'`. Optional; when omitted no wallet row is drawn.
 
 ##### Returns
@@ -173,7 +174,7 @@ An object whose `destroy` method (an alias for `close`) tears the form down and 
 
 Closes and tears down the Express Checkout payment form, removing it from the DOM and cleaning up internal state. In dialog mode this removes the modal overlay; in embedded mode it removes the iframe (and the Google Pay wallet row, if any) from its parent container. A Google Pay button drawn by the `googlePay` option is destroyed too; close only after `googlePayTokenGenerated` if the shopper may still be in Google's sheet. This is the same function returned as `destroy()` from `expressCheckout()`, and the SDK also calls it internally when the hosted form asks to close (e.g. after the shopper dismisses the dialog).
 
-By default (`hardDestroy = false`) it performs a soft close: the form is removed but the global postMessage listener and your registered `on()` callbacks are preserved, so you can reopen the form by calling `expressCheckout()` again on the same instance. Pass `true` to fully destroy the instance — this additionally removes the window message listener and resets all callback queues, after which the instance should no longer be reused. If no form is currently open this is effectively a no-op (it logs a warning and returns without error).
+By default (`hardDestroy = false`) it performs a soft close: the form is removed but the global postMessage listener and your registered `on()` callbacks are preserved, so you can reopen the form by calling `expressCheckout()` again on the same instance. The reopened form keeps this instance's form config (text, added fields, CVV settings); create a new instance to start from the defaults. Pass `true` to fully destroy the instance — this additionally removes the window message listener and resets all callback queues, after which the instance should no longer be reused. If no form is currently open this is effectively a no-op (it logs a warning and returns without error).
 
 ###### Parameters
 
@@ -496,8 +497,9 @@ an empty cvv value. A typed CVV is still fully validated and sent for tokenizati
 Can also be set at init time using
 `uiConfig.cardPaymentFormFields.verification_value.isRequired: false` (required by default).
 The call is ignored (with a warning) if the form was initialized with
-`verification_value.isHidden: true`. Recache always requires a CVV. Re-initializing via
-`expressCheckout()` resets to the init-time config.
+`verification_value.isHidden: true`. Recache always requires a CVV. Passing
+`verification_value.isRequired` or `verification_value.isHidden` to `expressCheckout()` again
+resets that setting; otherwise the value set here is kept.
 
 ##### Parameters
 
@@ -3052,8 +3054,9 @@ Optional. Requests that Spreedly retain (permanently store) the payment method a
 Configuration for the prebuilt Express Checkout credit-card form: its visual styling,
 user-facing text, which card/billing/shipping fields to render (and how), and a few
 behavioral toggles. Pass this as `uiConfig` when initializing the SDK (e.g. via
-`SpreedlyInitConfig`/`SpreedlyCheckoutPluginOptions`). Any omitted or partial values
-fall back to the SDK's `DEFAULT_UI_CONFIG` (title "Spreedly Checkout", submit "Submit",
+`SpreedlyInitConfig`/`SpreedlyCheckoutPluginOptions`). Any omitted or partial values keep
+the instance's current value, which starts as the SDK's `DEFAULT_UI_CONFIG` (title
+"Spreedly Checkout", submit "Submit",
 footer "Powered by Spreedly", processing "Processing...", the six mandatory card fields,
 `twoDigitExpiry: false`, `showCardTypeIcon: true`).
 

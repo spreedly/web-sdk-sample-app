@@ -1,6 +1,6 @@
 # Express Checkout — Tokenization Integration Guide
 
-Use Spreedly Express Checkout (`SpreedlyExpressCheckout`) to drop a complete, pre-built payment form into your page with minimal code. The form can render as an embedded component or a modal dialog — you customize text, fields, and styling through the SDK API. A working example of extra fields and `addValidation` is at `/tokenize-catalogue` in this sample app.
+Use Spreedly Express Checkout (`SpreedlyExpressCheckout`) to drop a complete, pre-built payment form into your page with minimal code. The form can render as an embedded component or a modal dialog — you customize text, fields, and styling through the SDK API.
 
 ---
 
@@ -161,6 +161,10 @@ checkout.destroy();
 // Or fully clean up everything
 sdk.close(true);
 ```
+
+After a soft close, calling `expressCheckout()` again on the same instance reopens the form with
+its current config: text, added fields and CVV settings are kept, and any `uiConfig` you pass is
+merged over them. Create a new `SpreedlyExpressCheckout` to start from the defaults.
 
 ---
 
@@ -382,8 +386,10 @@ sdk.expressCheckout({
 sdk.setGooglePayTransactionInfo({ totalPrice: '52.00', currencyCode: 'USD', countryCode: 'US' });
 ```
 
-Card tokens still arrive on `tokenGenerated`. In embedded mode the container needs a fixed height;
-the row uses about 108 px of it. An invalid `googlePay` config never blocks the card form: it is
+Card tokens still arrive on `tokenGenerated`. The row is drawn on your page above the iframe, not
+inside it: use embedded mode, give the container a fixed height (the row uses about 108 px of it),
+and for a modal embed the form in your own dialog rather than using dialog mode. An invalid
+`googlePay` config never blocks the card form: it is
 reported through `googlePayError` and `googlePayUnavailable` (`DEVELOPER_ERROR`). See the
 [Google Pay integration guide](../../google-pay/INTEGRATION_GUIDE.md#google-pay-inside-express-checkout)
 for the full configuration, events, 3DS guidance and testing.
@@ -565,7 +571,6 @@ if (typeof SpreedlyExpressCheckout === 'undefined') {
 
 - [Styling Guide](../STYLING_GUIDE.md) — Brand Hosted Fields and Express Checkout
 - [Hosted Fields Integration Guide](../hosted-fields/INTEGRATION_GUIDE.md) — Custom form alternative
-- Sample app `/tokenize-catalogue` — Live extra-fields and custom-validator demo
 - [Recaching Integration Guide](../../recaching/INTEGRATION_GUIDE.md) — Update CVV for retained cards
 - [3DS Overview](../../three-ds/OVERVIEW.md) — Add 3D Secure authentication
 - [Security Guide](../../../SECURITY.md) — SRI, CSP, and security best practices
