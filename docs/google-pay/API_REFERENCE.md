@@ -234,7 +234,7 @@ Every other field maps 1:1 to the config above.
 
 | API | Description |
 |-----|-------------|
-| `expressCheckout({ googlePay })` | `ExpressCheckoutGooglePayConfig`: a [`GooglePayConfig`](#googlepayconfig) without `authDetails`, which come from the Express Checkout instance. `button.buttonSizeMode` defaults to `'fill'`. Draws a wallet row above the iframe (Google's button, then a divider), shown only after `googlePayReady`. Does not throw for an invalid config: the form mounts without the row, and `googlePayError` and `googlePayUnavailable` fire with `DEVELOPER_ERROR`. |
+| `expressCheckout({ googlePay })` | `ExpressCheckoutGooglePayConfig`: a [`GooglePayConfig`](#googlepayconfig) without `authDetails`, which come from the Express Checkout instance. `button.buttonSizeMode` defaults to `'fill'`. Embedded mode only (`parentContainerId`): draws a wallet row above the iframe (Google's button, then a divider), shown only after `googlePayReady`. Dialog mode opens the card form without the row. An invalid config and dialog mode do not throw: the form mounts without the row, and `googlePayError` and `googlePayUnavailable` fire with `DEVELOPER_ERROR`. |
 | `setGooglePayTransactionInfo(info)` | Same as [`setTransactionInfo()`](#settransactioninfoinfo-void), and keeps `info` for the next `expressCheckout()` call. Throws if `info` is invalid. Logs a warning and does nothing without a `googlePay` option. |
 | `on('googlePay…', cb)` | The [events](#events) below, with the same payloads, emitted by the Express Checkout instance. Card tokens still arrive on `tokenGenerated`. |
 | `submitParams`, `updateSubmitParams()` | Card tokens only. Google Pay payment methods get `googlePay.metadata`, read when `expressCheckout()` mounts the form; `submitParams.metadata` is not added to them. |
@@ -253,7 +253,7 @@ Register with `googlePay.on(name, cb)`.
 | Event | Payload | Fires when |
 |-------|---------|-----------|
 | `googlePayReady` | `{ paymentMethodPresent? }` | `mount()` drew Google's button. `paymentMethodPresent` only with `existingPaymentMethodRequired`. |
-| `googlePayUnavailable` | `{ reason: 'NOT_READY_TO_PAY' \| 'API_NOT_LOADED' \| 'PAYMENTS_CLIENT_ERROR' \| 'DEVELOPER_ERROR' }` | `mount()` drew nothing. Show your card form. `DEVELOPER_ERROR` only comes from Express Checkout, for an invalid `googlePay` config. |
+| `googlePayUnavailable` | `{ reason: 'NOT_READY_TO_PAY' \| 'API_NOT_LOADED' \| 'PAYMENTS_CLIENT_ERROR' \| 'DEVELOPER_ERROR' }` | `mount()` drew nothing. Show your card form. `DEVELOPER_ERROR` only comes from Express Checkout, for an invalid `googlePay` config or for dialog mode (no `parentContainerId`). |
 | `googlePayButtonClicked` | `undefined` | Shopper tapped the button; the sheet is opening. Use it for merchant UI — do not listen on the container. |
 | `googlePayPaymentAuthorized` | `GooglePayPaymentSummary` | Shopper approved in the sheet; tokenization is starting. Display only. |
 | `googlePayTokenGenerated` | `GooglePayTokenResult` | The sheet closed with a Spreedly payment method. Send `token` to your server. |
@@ -305,7 +305,7 @@ The `googlePayPaymentAuthorized` payload: the display fields of `GooglePayTokenR
 | `API_NOT_LOADED` | `pay.js` did not define `window.google.payments.api` within 10 s | Check the `<script>` tag and your CSP. `googlePayUnavailable` also fires. |
 | `NOT_READY_TO_PAY` | Only as a `googlePayUnavailable` reason: the shopper or browser can't pay | Normal — show the card form. |
 | `MOUNT_FAILED` | The container element is missing, or Google could not draw the button | Render the container before calling `mount()`; check the id. |
-| `DEVELOPER_ERROR` | Google rejected the request (e.g. merchant info), or the request could not be built. In Express Checkout, also an invalid `googlePay` config | Check the Wallet Console setup and config. |
+| `DEVELOPER_ERROR` | Google rejected the request (e.g. merchant info), or the request could not be built. In Express Checkout, also an invalid `googlePay` config or dialog mode (no `parentContainerId`) | Check the Wallet Console setup and config. Pass `parentContainerId` to embed the form. |
 | `TOKENIZATION_FAILED` | Spreedly could not create the payment method | See `details`. The sheet stays open so the shopper can pick another card. |
 | `TOKENIZATION_TIMEOUT` | Spreedly answered after Google's 30 s callback deadline; Google has already shown its own timeout error in the sheet, and no token is emitted | Let the shopper try again. Key your order on your own order id, not the token. |
 | `PAYMENT_DATA_CHANGE_FAILED` | Your `onPaymentDataChange` threw, timed out or returned an invalid total | Fix the callback; the shopper sees a generic error in the sheet. |

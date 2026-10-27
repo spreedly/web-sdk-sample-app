@@ -57,7 +57,7 @@ which also holds the architecture notes).
     - *Embedded* mounts it into the page right away.
     - *Merchant dialog* adds an **Open payment form** button that opens the page's own dialog and
       mounts the form there, so the wallet row and the card fields share one card. The SDK's dialog
-      mode isn't used: it would put the row above the form's title and close button. The page
+      mode isn't used: it opens the card form without the row and reports `DEVELOPER_ERROR`. The page
       closes its dialog (and the form, which destroys the Google Pay button) after a token, or on
       its close button, a backdrop click or Escape.
   - A card entered in the form arrives on `tokenGenerated`; the result card and **Purchase** use

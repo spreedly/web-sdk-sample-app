@@ -144,7 +144,9 @@ and only appears once Google's `isReadyToPay()` passes; otherwise it is never sh
 loads Google's `pay.js`. Google Pay results arrive on the `googlePay*` events of this instance
 (e.g. `googlePayTokenGenerated`); card tokens still arrive on `tokenGenerated`. An invalid
 `googlePay` config does not throw: the form mounts without the row, and `googlePayError` and
-`googlePayUnavailable` fire with `DEVELOPER_ERROR`.
+`googlePayUnavailable` fire with `DEVELOPER_ERROR`. `googlePay` needs embedded mode
+(`parentContainerId`): in dialog mode the form opens without the row, a warning is logged, and
+the same two events fire with `DEVELOPER_ERROR`. For a modal, embed the form in your own dialog.
 
 ##### Parameters
 
@@ -158,7 +160,7 @@ Configuration for the checkout form. Optional; if omitted the previously configu
   - `parentContainerId` {string} - ID of an existing DOM element to embed the form into. Optional; when omitted the form opens as a modal dialog instead.
   - `submitParams` {SubmitParams} - Tokenization options sent with the payment; supported sub-fields: `metadata` (Record<string, string>, defaults to `{}`), `mandate` (opaque data owned by Spreedly Core, defaults to `{}`), `allow_expired_date`, `allow_blank_name`, `allow_blank_date`, and `retained` (all optional booleans, only forwarded when truthy). Optional.
   - `uiConfig` {Partial<UIConfig>} - Overrides for the form UI (e.g. `styles`, `textConfig`, `cardPaymentFormFields`, `twoDigitExpiry`, `showSaveCardCheckbox`). Optional; merged over this instance's current form config, which starts as `DEFAULT_UI_CONFIG`: values you leave out keep their current value, including ones set by an earlier `expressCheckout()` call or by `updateTextElement`, `addField` and the other form-config methods.
-  - `googlePay` {ExpressCheckoutGooglePayConfig} - Shows Google Pay above the form. The `SpreedlyGooglePay` config without `authDetails`, which come from this instance: `environment`, `merchantInfo` and `transactionInfo` are required. `button.buttonSizeMode` defaults to `'fill'`. Optional; when omitted no wallet row is drawn.
+  - `googlePay` {ExpressCheckoutGooglePayConfig} - Shows Google Pay above the form. The `SpreedlyGooglePay` config without `authDetails`, which come from this instance: `environment`, `merchantInfo` and `transactionInfo` are required. `button.buttonSizeMode` defaults to `'fill'`. Embedded mode only: ignored (with `DEVELOPER_ERROR`) when `parentContainerId` is omitted. Optional; when omitted no wallet row is drawn.
 
 ##### Returns
 
@@ -1426,8 +1428,9 @@ The UTC timestamp that was included when generating the signature, used to bound
 
 The `googlePay` option of `expressCheckout()`: the `SpreedlyGooglePay` configuration without
 `authDetails`, which Express Checkout supplies from its own constructor. `button.buttonSizeMode`
-defaults to `'fill'` so Google's button spans the wallet row. See the Google Pay API reference
-for every field.
+defaults to `'fill'` so Google's button spans the wallet row. Embedded mode only: when
+`parentContainerId` is omitted, Express Checkout ignores this option and reports `DEVELOPER_ERROR`.
+See the Google Pay API reference for every field.
 
 ### FormField
 

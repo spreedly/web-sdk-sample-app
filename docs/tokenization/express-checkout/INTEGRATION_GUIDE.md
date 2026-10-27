@@ -387,10 +387,10 @@ sdk.setGooglePayTransactionInfo({ totalPrice: '52.00', currencyCode: 'USD', coun
 ```
 
 Card tokens still arrive on `tokenGenerated`. The row is drawn on your page above the iframe, not
-inside it: use embedded mode, give the container a fixed height (the row uses about 108 px of it),
-and for a modal embed the form in your own dialog rather than using dialog mode. An invalid
-`googlePay` config never blocks the card form: it is
-reported through `googlePayError` and `googlePayUnavailable` (`DEVELOPER_ERROR`). See the
+inside it, and only in embedded mode. Give the container a fixed height (the row uses about 108 px
+of it). Dialog mode (no `parentContainerId`) opens the card form without the row and reports
+`googlePayError` and `googlePayUnavailable` with `DEVELOPER_ERROR`; for a modal, embed the form in
+your own dialog. An invalid `googlePay` config fails the same way and never blocks the card form. See the
 [Google Pay integration guide](../../google-pay/INTEGRATION_GUIDE.md#google-pay-inside-express-checkout)
 for the full configuration, events, 3DS guidance and testing.
 
