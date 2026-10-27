@@ -302,6 +302,7 @@ This sample app demonstrates the following payment flows:
 | **Braintree APM**                        | PayPal and Venmo via Braintree                                                                              | [Braintree Guide](./docs/offsite-payments/braintree/INTEGRATION_GUIDE.md)                                                                                          |
 | **Stripe APM**                           | iDEAL, Bancontact, SEPA via Stripe                                                                          | [Stripe APM Guide](./docs/offsite-payments/stripe-apm/INTEGRATION_GUIDE.md)                                                                                        |
 | **Paze Digital Wallet**                  | Paze popup checkout and `securedPayload` payment method                                                     | [Paze Guide](./docs/paze/INTEGRATION_GUIDE.md), [Paze API Reference](./docs/paze/API_REFERENCE.md)                                                                 |
+| **Cash App Pay**                         | Pay Kit QR code / app redirect to a payment method token (mock until Core's Cash App API ships)              | [Cash App Pay Guide](./docs/cash-app-pay/INTEGRATION_GUIDE.md), [Demo Guide](./docs/cash-app-pay/DEMO_GUIDE.md)                                                    |
 
 ---
 
@@ -341,6 +342,9 @@ When integrating the SDK into your production application:
 | [Offsite Payments Overview](./docs/offsite-payments/OVERVIEW.md) | Compare General, Braintree APM, and Stripe APM                  |
 | [Paze Integration Guide](./docs/paze/INTEGRATION_GUIDE.md)       | Paze digital wallet demo and backend payment method create      |
 | [Paze API Reference](./docs/paze/API_REFERENCE.md)               | `SpreedlyPaze` methods/events and `/api/v1/paze-payment-method` |
+| [Cash App Pay Integration Guide](./docs/cash-app-pay/INTEGRATION_GUIDE.md) | `SpreedlyCashAppPay` setup, mobile redirect, CSP, errors |
+| [Cash App Pay API Reference](./docs/cash-app-pay/API_REFERENCE.md) | `SpreedlyCashAppPay` methods, events and options |
+| [Cash App Pay Demo Guide](./docs/cash-app-pay/DEMO_GUIDE.md)     | Running and testing the demo; mock routes                       |
 | [Testing Guide](./docs/testing/TESTING_GUIDE.md)                 | Test card numbers and how to verify each flow                   |
 
 

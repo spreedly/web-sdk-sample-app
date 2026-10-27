@@ -32,6 +32,9 @@ interface Config {
   pazeSigningPrivateKey: string;
   pazeTokenUrl: string;
   pazeDemoApiKey: string;
+  // Cash App Pay (Pay Kit). Browser-safe identifiers from Cash App partner onboarding.
+  cashAppClientId: string;
+  cashAppMerchantId: string;
 }
 
 const config: Config = {
@@ -70,6 +73,8 @@ const config: Config = {
     process.env.PAZE_TOKEN_URL ||
     'https://auth.wallet.cat.earlywarning.io/token',
   pazeDemoApiKey: process.env.PAZE_DEMO_API_KEY || '',
+  cashAppClientId: process.env.CASH_APP_CLIENT_ID_NEW || '',
+  cashAppMerchantId: process.env.CASH_APP_MERCHANT_ID_NEW || '',
 };
 
 export default config;
