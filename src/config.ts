@@ -32,6 +32,15 @@ interface Config {
   pazeSigningPrivateKey: string;
   pazeTokenUrl: string;
   pazeDemoApiKey: string;
+  // Apple Pay (web): merchant validation and domain verification. The routes answer
+  // 503 not_configured / 404 until these are set. PEMs may use \n escapes.
+  applePayMerchantId: string;
+  applePayDisplayName: string;
+  applePayDomain: string;
+  applePayEnvironment: 'sandbox' | 'production';
+  applePayMerchantIdentityCert: string;
+  applePayMerchantIdentityKey: string;
+  applePayDomainAssociation: string;
 }
 
 const config: Config = {
@@ -70,6 +79,21 @@ const config: Config = {
     process.env.PAZE_TOKEN_URL ||
     'https://auth.wallet.cat.earlywarning.io/token',
   pazeDemoApiKey: process.env.PAZE_DEMO_API_KEY || '',
+  applePayMerchantId: process.env.APPLE_PAY_MERCHANT_ID || '',
+  applePayDisplayName: process.env.APPLE_PAY_DISPLAY_NAME || '',
+  applePayDomain: process.env.APPLE_PAY_DOMAIN || '',
+  applePayEnvironment:
+    process.env.APPLE_PAY_ENVIRONMENT === 'production'
+      ? 'production'
+      : 'sandbox',
+  // PEMs are stored on one line with \n escapes, like PAZE_SIGNING_PRIVATE_KEY.
+  applePayMerchantIdentityCert: (
+    process.env.APPLE_PAY_MERCHANT_IDENTITY_CERT || ''
+  ).replace(/\\n/g, '\n'),
+  applePayMerchantIdentityKey: (
+    process.env.APPLE_PAY_MERCHANT_IDENTITY_KEY || ''
+  ).replace(/\\n/g, '\n'),
+  applePayDomainAssociation: process.env.APPLE_PAY_DOMAIN_ASSOCIATION || '',
 };
 
 export default config;

@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Apple Pay test</title>
+    <!-- Apple's JS SDK: loaded in <head>, 1.latest, as Apple requires for non-Safari browsers. -->
+    <script
+      crossorigin
+      src="https://applepay.cdn-apple.com/jsapi/1.latest/apple-pay-sdk.js"
+    ></script>
+    <style>
+      body {
+        font-family: -apple-system, system-ui, sans-serif;
+        max-width: 960px;
+        margin: 24px auto;
+        padding: 0 16px;
+        color: #1d1d1f;
+      }
+      h1 {
+        font-size: 22px;
+      }
+      h2 {
+        font-size: 16px;
+        margin-top: 28px;
+      }
+      fieldset {
+        border: 1px solid #d2d2d7;
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-bottom: 12px;
+      }
+      label {
+        display: block;
+        margin: 6px 0;
+      }
+      input[type='text'] {
+        width: 320px;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+      }
+      td,
+      th {
+        border: 1px solid #d2d2d7;
+        padding: 6px 8px;
+        text-align: left;
+        vertical-align: top;
+        font-size: 14px;
+      }
+      #log {
+        background: #f5f5f7;
+        border-radius: 8px;
+        padding: 12px;
+        font:
+          12px/1.5 ui-monospace,
+          monospace;
+        white-space: pre-wrap;
+        max-height: 480px;
+        overflow: auto;
+      }
+      #button-slot {
+        min-height: 48px;
+        margin: 16px 0;
+      }
+      apple-pay-button {
+        --apple-pay-button-width: 240px;
+        --apple-pay-button-height: 44px;
+      }
+      .note {
+        color: #6e6e73;
+        font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Apple Pay test</h1>
+    <p class="note">
+      Temporary test page for the Apple Pay setup (merchant validation, domain
+      and decryption). Plain Apple Pay JS, not the SDK. It makes the same
+      browser call to Spreedly that the SDK makes. Never shows
+      <code>paymentData</code>, only its size. Test data only.
+    </p>
+
+    <h2>1. Checks</h2>
+    <table id="checks"></table>
+
+    <h2>2. Options</h2>
+    <fieldset>
+      <label
+        >Apple Merchant ID (for <code>applePayCapabilities</code>)
+        <input type="text" id="merchant-id" placeholder="merchant.com.example"
+      /></label>
+      <label>Amount <input type="text" id="amount" value="1.00" /></label>
+      <label
+        >API version
+        <select id="api-version">
+          <option>14</option>
+          <option>3</option>
+        </select></label
+      >
+      <label
+        ><input type="checkbox" id="recurring" /> Recurring payment request
+        (needs 14)</label
+      >
+      <label
+        ><input type="checkbox" id="require-billing" checked /> Require billing
+        contact (postalAddress, name)</label
+      >
+      <label
+        ><input type="checkbox" id="require-shipping" checked /> Require
+        shipping contact (postalAddress, email, phone)</label
+      >
+      <label
+        >test_card_number (leave empty to send none)
+        <input
+          type="text"
+          id="test-card"
+          value=""
+          placeholder="4111111111111111"
+      /></label>
+      <label
+        ><input type="checkbox" id="send-billing" /> Also send billing address
+        fields to Spreedly</label
+      >
+      <label
+        >Fail the first approval with
+        <select id="fail-contact">
+          <option value="">(off)</option>
+          <option value="addressUnserviceable|postalAddress">
+            addressUnserviceable (shipping address)
+          </option>
+          <option value="shippingContactInvalid|postalAddress">
+            shippingContactInvalid (shipping address)
+          </option>
+          <option value="billingContactInvalid|postalAddress">
+            billingContactInvalid (billing address)
+          </option>
+        </select></label
+      >
+    </fieldset>
+
+    <div id="button-slot"></div>
+
+    <h2>3. Results</h2>
+    <table id="answers">
+      <tr>
+        <th>Question</th>
+        <th>Result</th>
+      </tr>
+      <tr>
+        <td>Did Spreedly decrypt and tokenize the payment?</td>
+        <td id="a-tokenized">—</td>
+      </tr>
+      <tr>
+        <td>Is <code>last_four_digits</code> the card's or the device's?</td>
+        <td id="a-last4">— (compare with the card in Wallet)</td>
+      </tr>
+      <tr>
+        <td>Which billing fields did Spreedly keep?</td>
+        <td id="a-billing">—</td>
+      </tr>
+      <tr>
+        <td>Could the shopper fix the flagged contact?</td>
+        <td id="a-contact-fix">—</td>
+      </tr>
+      <tr>
+        <td>
+          Keyboard: Tab to the button, press Enter and Space. Does the sheet
+          open?
+        </td>
+        <td>Check by hand.</td>
+      </tr>
+    </table>
+
+    <h2>4. Log</h2>
+    <div id="log"></div>
+
+    <script src="apple-pay-test.js"></script>
+  </body>
+</html>

@@ -23,6 +23,10 @@ import {
 } from './controllers/payments';
 import { getPazeAccessToken, pazeTokenRateLimit } from './controllers/paze-oauth';
 import {
+  applePayValidateRateLimit,
+  validateApplePayMerchant,
+} from './controllers/apple-pay';
+import {
   getPPCPConfig,
   createPPCPOrder,
   capturePPCPOrder,
@@ -1272,5 +1276,25 @@ router.post(
   urlencoded({ extended: false }),
   getPazeAccessToken
 );
+
+/**
+ * @swagger
+ * /api/v1/apple-pay/validate:
+ *   post:
+ *     description: Requests an Apple Pay merchant session from Apple over mutual TLS with the Merchant Identity Certificate. Always calls Apple's fixed host for APPLE_PAY_ENVIRONMENT; the browser's validationURL is never fetched.
+ *     tags: [Apple Pay]
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: Apple's merchant session object, unchanged (single use, expires after 5 minutes)
+ *       429:
+ *         description: More than 10 requests a minute from this caller ({"error":"rate_limited"})
+ *       502:
+ *         description: Apple rejected the request ({"error":"upstream_rejected"})
+ *       503:
+ *         description: Apple timed out or failed ({"error":"upstream_unavailable"}), or the Apple Pay settings are missing ({"error":"not_configured"})
+ */
+router.post('/apple-pay/validate', applePayValidateRateLimit, validateApplePayMerchant);
 
 export default router;
