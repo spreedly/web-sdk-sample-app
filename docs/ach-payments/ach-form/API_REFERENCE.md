@@ -77,12 +77,12 @@ Defaults are listed as label / placeholder / size.
 
 | Field                      | Shown   | Required | Defaults | Notes |
 | -------------------------- | ------- | -------- | -------- | ----- |
-| `full_name`                | always  | always   | "Account holder name" / "Joe Jones" / 12 | Max 350 characters. Letters (including accented letters, such as é or ñ), digits, spaces and `& . ' - ,`, so business names like "AT&T Inc." work. |
+| `full_name`                | always  | always   | "Account holder name" / "Joe Jones" / 12 | Max 350 characters. Letters (including accented letters, such as é or ñ), digits, spaces and `& . ' - , ( ) /`, so business names like "AT&T Inc." or "Acme Holdings (USA) LLC" work. |
 | `bank_routing_number`      | always  | always   | "Routing number" / "9 digits" / 6 | A valid US routing number, or a Canadian one (9 digits starting with `0`). |
 | `bank_account_number`      | always  | always   | "Account number" / "Account number" / 6 | 4–17 digits. Masked, with a show/hide toggle. |
 | `bank_account_type`        | yes     | no       | "Account type" / none / 6 | `checking` or `savings`. Nothing preselected. |
 | `bank_account_holder_type` | yes     | no       | "Account holder type" / none / 6 | `personal` or `business`. Nothing preselected. |
-| `bank_name`                | yes     | no       | "Bank name" / "Bank name" / 12 | Max 500 characters. Letters (including accented letters, such as é or ñ), digits, spaces and `& . ' - ,` only. Not sent when left empty. |
+| `bank_name`                | yes     | no       | "Bank name" / "Bank name" / 12 | Max 500 characters. Letters (including accented letters, such as é or ñ), digits, spaces and `& . ' - , ( ) /` only. Not sent when left empty. |
 | `email`                    | no      | no       | "Email" / "name@example.com" / 6 | Max 254 characters. Must look like an email address. |
 | `phone_number`             | no      | no       | "Phone number" / "Phone number" / 6 | Max 15 characters. Digits, spaces and `+ - ( ) .`. |
 | `address1`, `address2`     | no      | no       | "Address line 1" / "Street address" / 12; "Address line 2" / "Apartment, suite, etc." / 12 | Max 500 characters each. |
