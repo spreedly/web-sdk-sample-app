@@ -273,10 +273,10 @@ checkout.expressCheckout({ parentContainerId: 'payment-container', googlePay: { 
 
 ### In a modal: embed the form in your own dialog
 
-Express Checkout's dialog mode (no `parentContainerId`) fills its overlay with the form, so the
-wallet row lands above the form's title and close button, outside the form's header. With
-`googlePay`, open **your own dialog** and embed the form in it. Your dialog owns the header and the
-close control, and the wallet row sits under your header, as part of the form:
+Express Checkout's dialog mode (no `parentContainerId`) does not draw the wallet row. The card form
+still opens, and `googlePayError` and `googlePayUnavailable` fire with `DEVELOPER_ERROR`. For a
+modal, open **your own dialog** and embed the form in it with `parentContainerId`. Your dialog owns
+the header and the close control, and the wallet row sits under your header, as part of the form:
 
 ```html
 <div id="checkout-dialog" class="checkout-overlay" hidden>
@@ -685,9 +685,9 @@ attribute on your `pay.js` `<script>` tag. With that nonce you do not need `'uns
 
 ## Limitations
 
-- The button is always drawn on your page, never inside Express Checkout's iframe. With
-  Express Checkout, embed the form, or embed it in your own dialog rather than using the SDK's
-  dialog mode (see
+- The button is always drawn on your page, never inside Express Checkout's iframe. Express Checkout
+  draws it only in embedded mode (`parentContainerId`). Dialog mode opens the card form without the
+  row and reports `DEVELOPER_ERROR`. For a modal, embed the form in your own dialog (see
   [The button is on your page, not inside the form](#the-button-is-on-your-page-not-inside-the-form)).
 - The button container, and Express Checkout's `parentContainerId`, must be in the main document.
   Both are looked up by id with `document.getElementById`, which can't see inside a shadow root.
