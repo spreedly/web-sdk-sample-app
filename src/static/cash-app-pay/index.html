@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cash App Pay | Spreedly Web SDK Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="../shared/styles.css">
+  <style>
+    .section-title {
+      color: var(--color-gray-700);
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 1.25rem 0 0.75rem;
+    }
+
+    .settings-grid {
+      display: grid;
+      gap: 0.75rem 1rem;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .order-summary {
+      align-items: center;
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .order-summary .form-input {
+      max-width: 9rem;
+    }
+
+    .hint {
+      color: var(--color-gray-500);
+      font-size: 0.8125rem;
+      margin-top: 0.5rem;
+    }
+
+    .mock-banner {
+      background: #fffbeb;
+      border: 1px solid #f59e0b;
+      border-radius: 8px;
+      color: #92400e;
+      font-size: 0.875rem;
+      margin-bottom: 1.5rem;
+      padding: 0.75rem 1rem;
+    }
+
+    .cap-columns {
+      align-items: start;
+      display: grid;
+      gap: 1.5rem;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+
+    .cap-column {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      min-width: 0;
+    }
+
+    .cap-demo,
+    .cap-controls {
+      margin-bottom: 0;
+    }
+
+    .cap-button-wrap {
+      margin: 0.5rem 0 0.75rem;
+      min-height: 48px;
+      width: 100%;
+    }
+
+    .submit-btn {
+      background: var(--color-primary, #0a0a0a);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 600;
+      margin-top: 0.75rem;
+      padding: 0.875rem 1.5rem;
+      width: 100%;
+    }
+
+    .submit-btn:disabled {
+      background: var(--color-gray-300);
+      cursor: not-allowed;
+    }
+
+    .submit-btn.secondary {
+      background: white;
+      border: 1px solid var(--color-gray-300);
+      color: var(--color-gray-900);
+    }
+
+    .result-card {
+      background: var(--color-gray-50);
+      border: 1px solid var(--color-gray-200);
+      border-radius: 8px;
+      margin-top: 1.5rem;
+      padding: 1rem;
+    }
+
+    .result-card.success {
+      background: #f0fdf4;
+      border-color: var(--color-success);
+    }
+
+    .result-card.error {
+      background: #fef2f2;
+      border-color: var(--color-error);
+    }
+
+    .result-grid {
+      display: grid;
+      font-size: 0.875rem;
+      gap: 0.35rem 1rem;
+      grid-template-columns: max-content 1fr;
+      margin: 0.75rem 0;
+      word-break: break-all;
+    }
+
+    .result-grid dt {
+      color: var(--color-gray-500);
+    }
+
+    .result-grid dd {
+      font-family: var(--font-mono);
+      margin: 0;
+    }
+
+    .event-log-container { background: var(--color-gray-900); border-radius: var(--radius-md); padding: 1rem; }
+    .event-log-title { font-size: 0.75rem; font-weight: 600; color: var(--color-gray-400); text-transform: uppercase; letter-spacing: 0.05em; }
+    .event-log { height: 260px; overflow-y: auto; font-family: var(--font-mono); font-size: 0.75rem; margin-top: 0.5rem; }
+    .event-log-entry { padding: 0.2rem 0; color: var(--color-gray-300); border-bottom: 1px solid var(--color-gray-800); }
+    .event-log-entry.success { color: #4ade80; }
+    .event-log-entry.error { color: #f87171; }
+    .event-log-entry.info { color: #60a5fa; }
+    .event-log-entry .time { color: var(--color-gray-500); }
+
+    .cap-notes {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-top: 1.5rem;
+    }
+
+    .cap-notes .config-section {
+      margin-bottom: 0;
+    }
+
+    @media (max-width: 900px) {
+      .cap-columns { display: flex; flex-direction: column; }
+      .cap-column { display: contents; }
+      .cap-demo { order: 1; }
+      .cap-controls { order: 2; }
+      .cap-logs { order: 3; }
+      .cap-notes { grid-template-columns: minmax(0, 1fr); }
+    }
+
+    @media (max-width: 640px) {
+      .settings-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page-wrapper">
+    <header class="header">
+      <div class="container header-inner">
+        <a href="../index.html" class="logo">
+          <span class="logo-icon">S</span>
+          Spreedly Web SDK
+        </a>
+        <span class="nav-badge">Cash App Pay</span>
+      </div>
+    </header>
+
+    <main class="main">
+      <div class="container">
+        <a href="../index.html" class="back-link">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+            stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+          </svg>
+          Back to flows
+        </a>
+
+        <h1 class="mb-2">Cash App Pay</h1>
+        <p class="mb-6" style="color: var(--color-gray-500);">
+          The shopper approves in Cash App (QR code on desktop, the Cash App app on mobile) and the
+          standalone <code>SpreedlyCashAppPay</code> class turns the approval into a Spreedly payment
+          method token.
+        </p>
+
+        <div class="mock-banner" role="note">
+          <strong>Mock:</strong> Spreedly Core's Cash App API isn't available yet. The payment method
+          token (<code>mock_…</code>) and the purchase on this page are synthetic; nothing is charged.
+        </div>
+
+        <div id="loading-state" class="card" style="text-align: center; padding: 3rem;">
+          <div class="loading">
+            <span class="spinner"></span>
+            <span>Loading Cash App Pay...</span>
+          </div>
+        </div>
+
+        <div id="error-state" class="card hidden" style="border-top: 4px solid var(--color-error);">
+          <h3 style="color: var(--color-error); margin-bottom: 1rem;">Error</h3>
+          <p id="error-message" style="color: var(--color-gray-600);"></p>
+          <button onclick="window.location.reload()" class="btn btn-secondary" style="margin-top: 1rem;">
+            Try Again
+          </button>
+        </div>
+
+        <div id="cap-workspace" class="cap-columns hidden">
+          <div class="cap-column">
+            <section id="payment-section" class="card cap-controls" aria-labelledby="cap-controls-title">
+              <div class="config-section-title" id="cap-controls-title">Configuration</div>
+              <div class="order-summary">
+                <label class="form-label" for="cap-amount"><strong>Order total (USD)</strong></label>
+                <input type="text" id="cap-amount" class="form-input" value="12.34" inputmode="decimal">
+              </div>
+              <p class="hint">
+                Changing the total calls <code>beginCheckout()</code> again, which updates the request in
+                place until the shopper interacts.
+              </p>
+
+              <div class="form-group" style="margin-top: 1rem;">
+                <label class="form-label" for="cap-reference">Reference ID (optional)</label>
+                <input type="text" id="cap-reference" class="form-input" placeholder="order-1001"
+                  maxlength="1024">
+              </div>
+
+              <h3 class="section-title">Button</h3>
+              <div class="settings-grid">
+                <div class="form-group">
+                  <label class="form-label" for="cap-btn-label">Label</label>
+                  <select id="cap-btn-label" class="form-input cap-remount">
+                    <option value="cashAppPay" selected>cashAppPay</option>
+                    <option value="cashApp">cashApp</option>
+                    <option value="pay">pay</option>
+                    <option value="buy">buy</option>
+                    <option value="checkout">checkout</option>
+                    <option value="continue">continue</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="cap-btn-theme">Theme</label>
+                  <select id="cap-btn-theme" class="form-input cap-remount">
+                    <option value="dark" selected>dark</option>
+                    <option value="light">light</option>
+                    <option value="monochromeDark">monochromeDark</option>
+                    <option value="monochromeLight">monochromeLight</option>
+                    <option value="green">green</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="cap-btn-shape">Shape</label>
+                  <select id="cap-btn-shape" class="form-input cap-remount">
+                    <option value="round" selected>round</option>
+                    <option value="semiround">semiround</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="cap-btn-size">Size</label>
+                  <select id="cap-btn-size" class="form-input cap-remount">
+                    <option value="medium" selected>medium</option>
+                    <option value="small">small</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="cap-btn-width">Width</label>
+                  <select id="cap-btn-width" class="form-input cap-remount">
+                    <option value="full" selected>full</option>
+                    <option value="static">static</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Environment</label>
+                  <input type="text" class="form-input" value="sandbox" disabled>
+                </div>
+              </div>
+              <p class="hint">Changing a button option destroys and rebuilds the instance.</p>
+            </section>
+
+            <section class="event-log-container cap-logs" aria-label="Event log">
+              <div class="event-log-title">Event log</div>
+              <div id="event-log" class="event-log" aria-live="polite"></div>
+            </section>
+          </div>
+
+          <div class="cap-column">
+            <section class="card cap-demo" aria-labelledby="cap-demo-title">
+              <div class="config-section-title" id="cap-demo-title">Checkout</div>
+              <div id="cash-app-pay-container" class="cap-button-wrap"></div>
+
+              <div id="result-card" class="result-card hidden">
+                <strong id="result-title">Payment method created</strong>
+                <dl class="result-grid">
+                  <dt>Cashtag</dt>
+                  <dd id="result-cashtag">—</dd>
+                  <dt>Grant expires</dt>
+                  <dd id="result-expires">—</dd>
+                  <dt>Token</dt>
+                  <dd id="result-token">—</dd>
+                  <dt>Transaction</dt>
+                  <dd id="result-transaction">—</dd>
+                </dl>
+                <button type="button" id="cap-purchase-btn" class="submit-btn" disabled>
+                  <span class="btn-text">Complete purchase (mock)</span>
+                  <span class="btn-loading" style="display: none;"><span class="spinner"></span>
+                    <span class="loading-text">Processing...</span></span>
+                </button>
+              </div>
+
+              <button type="button" id="cap-new-checkout-btn" class="submit-btn secondary">New checkout</button>
+
+              <div id="status-message" class="status-message" role="status"></div>
+            </section>
+          </div>
+        </div>
+
+        <div class="cap-notes">
+          <div class="config-section">
+            <div class="config-section-title">About</div>
+            <p class="hint">
+              Your page loads Block's Pay Kit (<code>sandbox.kit.cash.app/v1/pay.js</code>). The SDK
+              initializes it, renders the Cash App Pay button and reports the shopper's decision.
+            </p>
+          </div>
+          <div class="config-section">
+            <div class="config-section-title">Flow steps</div>
+            <p class="hint">
+              <code>setup()</code> → <code>beginCheckout({ amount })</code> → shopper approves →
+              <code>cashAppApproved</code> → <code>cashAppTokenGenerated</code> → purchase on your server.
+            </p>
+          </div>
+          <div class="config-section">
+            <div class="config-section-title">Testing notes</div>
+            <p class="hint">
+              On mobile the shopper returns to this page (the <code>redirectURL</code>), and the approval
+              arrives right after <code>setup()</code>. Pay Kit needs an https <code>redirectURL</code> for
+              that, so test the redirect on Heroku or through a tunnel.
+            </p>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script async src="https://sandbox.kit.cash.app/v1/pay.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="../shared/utils.js"></script>
+  <script src="./cash-app-pay.js"></script>
+</body>
+
+</html>

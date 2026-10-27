@@ -38,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - An invalid `googlePay` config doesn't block the card form: it mounts without the row, and `googlePayError` / `googlePayUnavailable` fire with `DEVELOPER_ERROR`.
   - `close()` and recache mode remove the row. `iframe.loaded` telemetry carries `google_pay_enabled`.
 - **Google Pay demo** (`/google-pay`): sample-app flow for `SpreedlyGooglePay` on both bundles. The page loads Google's `pay.js`. Hosted Fields shows the standalone button; Express Checkout defaults to the `googlePay` option (wallet row above the card form, embedded or in the page's own dialog; `?placement=standalone` uses the standalone button). Purchase follows `googlePayType`: `TOKENIZED_CARD` uses `simple-purchase`; otherwise 3DS Global or gateway 3DS. See `docs/google-pay/DEMO_GUIDE.md`.
+- **Cash App Pay demo** (`/cash-app-pay/index.html`): `SpreedlyCashAppPay` with Block's sandbox Pay Kit — button options, amount updates, event log, and approval → payment method token → purchase. The token and the purchase are **mocks** until Spreedly Core's Cash App API is available. New routes `GET /api/v1/cash-app-pay/config` (needs `CASH_APP_CLIENT_ID_NEW` and `CASH_APP_MERCHANT_ID_NEW`) and `POST /api/v1/cash-app-pay-purchase` (mock, no Spreedly call). Playwright spec with a stubbed Pay Kit. See `docs/cash-app-pay/DEMO_GUIDE.md`.
 
 ### Changed
 

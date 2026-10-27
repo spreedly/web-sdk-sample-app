@@ -213,6 +213,9 @@ interface Config {
   applePayMerchantIdentityCert: string;
   applePayMerchantIdentityKey: string;
   applePayDomainAssociation: string;
+  // Cash App Pay (Pay Kit). Browser-safe identifiers from Cash App partner onboarding.
+  cashAppClientId: string;
+  cashAppMerchantId: string;
 }
 
 const corsAllowedOrigins = resolveCorsAllowedOrigins();
@@ -275,6 +278,8 @@ const config: Config = {
     process.env.APPLE_PAY_MERCHANT_IDENTITY_KEY || ''
   ).replace(/\\n/g, '\n'),
   applePayDomainAssociation: process.env.APPLE_PAY_DOMAIN_ASSOCIATION || '',
+  cashAppClientId: process.env.CASH_APP_CLIENT_ID_NEW || '',
+  cashAppMerchantId: process.env.CASH_APP_MERCHANT_ID_NEW || '',
 };
 
 export default config;
