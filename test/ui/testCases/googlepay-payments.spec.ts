@@ -79,7 +79,7 @@ test.describe('Google Pay payments — payment sheet', () => {
     expect(config.assuranceDetailsRequired).toBe(true);
   });
 
-  test.only('updates Google Pay button color, type and corner radius on the rendered button', async ({ page }) => {
+  test('updates Google Pay button color, type and corner radius on the rendered button', async ({ page }) => {
     await page.goto(MONOREPO_URLS.BASE);
     await landingPage.clickOnGooglePayButton(page);
     await waitForAuthParams(page);
