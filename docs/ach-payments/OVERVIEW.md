@@ -7,6 +7,8 @@ the numbers never reach your page or your servers. Your page receives a Spreedly
 token, and your backend runs the purchase against an ACH-capable gateway. This document helps
 you choose between them.
 
+> **Required for both options:** enable secure tokenization for your environment in the Spreedly app (**Environment settings → Enhanced Security → Enable secure tokenization**). See [Enable secure tokenization](../tokenization/hosted-fields/INTEGRATION_GUIDE.md#enable-secure-tokenization-required).
+
 ## Quick Comparison
 
 | Aspect | ACH Hosted Fields | ACH Form |

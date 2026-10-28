@@ -36,6 +36,9 @@ the migration is small. In order:
      → `formData` (typed [`HostedFieldsFormData`](#typed-formdata-surface)).
    - Flags (`metadata`, `allow_blank_name`, `allow_blank_date`, `allow_expired_date`)
      → `submitParams`.
+6. Make sure secure tokenization is enabled for your environment in the Spreedly app
+   (**Environment settings → Enhanced Security → Enable secure tokenization**) —
+   see [Enable secure tokenization](../tokenization/hosted-fields/INTEGRATION_GUIDE.md#enable-secure-tokenization-required).
 
 If you also used `setRecache` / `recache`, see [Recaching](#recaching).
 If you used 3DS, see [3DS — Global / Forter](#3ds--global--forter).

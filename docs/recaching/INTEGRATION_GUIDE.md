@@ -24,6 +24,7 @@ Both `SpreedlyHostedFields` and `SpreedlyExpressCheckout` support recaching.
 - A **retained** payment method — The `storage_state` must be `'retained'`.
 - The payment method's **token** and **card details** (card type, last four digits, expiry). You typically retrieve these from your backend.
 - **Server-generated auth details** — same as for tokenization. See the [Hosted Fields](../tokenization/hosted-fields/INTEGRATION_GUIDE.md#authentication) or [Express Checkout](../tokenization/express-checkout/INTEGRATION_GUIDE.md#authentication) guides.
+- **Secure tokenization enabled** for your environment — see [Enable secure tokenization](../tokenization/hosted-fields/INTEGRATION_GUIDE.md#enable-secure-tokenization-required)
 
 ---
 
