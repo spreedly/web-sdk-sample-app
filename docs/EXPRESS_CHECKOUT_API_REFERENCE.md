@@ -1280,6 +1280,45 @@ form.mount({
 });
 ```
 
+***
+
+#### updateAuthDetails()
+
+> **updateAuthDetails**(`authDetails`): `void`
+
+Replaces the auth details the form uses for later submits. Each set of auth details works
+for one request to Spreedly. When `error` carries the key
+`errors.replayed_tokenization_nonce` (already used) or `errors.invalid_tokenization_timestamp`
+(older than 30 minutes), get new ones from your backend, call this, then ask the customer to
+submit again. `environment_key` and `certificate_token` must be the same as the
+constructor's.
+
+##### Parameters
+
+###### authDetails
+
+`AuthDetails`
+
+New signed credentials. All five fields are required non-empty
+  strings, or this throws.
+
+##### Returns
+
+`void`
+
+##### Example
+
+```ts
+form.on('error', async error => {
+  const keys = (error?.errors || []).map(e => e.key);
+  if (keys.includes('errors.replayed_tokenization_nonce') ||
+      keys.includes('errors.invalid_tokenization_timestamp')) {
+    form.updateAuthDetails(await fetchAuthDetailsFromYourBackend());
+    showMessage('Please try again.');
+  }
+});
+```
+
 ### Events
 
 #### on()

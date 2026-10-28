@@ -68,6 +68,11 @@ customer-correctable input.
 | `errors.unknown_referrer`                 | Spreedly could not determine the referring URL of the submission (required to detect MITM attacks).           |
 | `errors.invalid_referrer`                 | The submission did not originate from a Spreedly payment frame and was rejected (MITM protection).            |
 | `errors.invalid_enhanced_authentication_params` | Required parameters for enhanced authentication are missing or invalid.                                 |
+| `errors.replayed_tokenization_nonce`      | The auth details were already used. Get new ones and submit again (ACH: `updateAuthDetails`).                |
+| `errors.invalid_tokenization_timestamp`   | The auth details are older than 30 minutes. Get new ones and submit again (ACH: `updateAuthDetails`).        |
+| `errors.invalid_tokenization_signature`   | The signature doesn't match the nonce, timestamp and certificate. Check how your backend signs them.          |
+| `errors.invalid_tokenization_certificate` | The certificate token isn't valid for this environment.                                                       |
+| `errors.missing_tokenization_parameters`  | A nonce, timestamp, signature or certificate token is missing. The message names it.                          |
 
 ---
 

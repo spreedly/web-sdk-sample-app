@@ -285,7 +285,8 @@ The form shows its own field errors, like a missing name or an invalid routing n
 to the field. Those don't fire `error`.
 
 Everything else fires `error`, and the form shows nothing for it, so show the message on your
-page. The form keeps what the customer typed, so they can fix it and submit again.
+page. The form keeps what the customer typed, so they can fix it and submit again. If the
+error is about the auth details, see [Refreshing the auth details](#refreshing-the-auth-details).
 
 ```javascript
 form.on('error', (error) => {
@@ -309,6 +310,26 @@ form.on('error', (error) => {
 | The request fails without a response (network) | The network error message, or `'ACH tokenization failed'` |
 
 For the keys in the API's error response body, see the [Error Keys Reference](../../errors/ERROR_KEYS_REFERENCE.md).
+
+### Refreshing the auth details
+
+Each set of auth details works for one request to Spreedly, and expires 30 minutes after it's
+generated. When `error` has the key `errors.replayed_tokenization_nonce` or
+`errors.invalid_tokenization_timestamp`, get new auth details from your backend, pass them to
+`updateAuthDetails`, and ask the customer to submit again:
+
+```javascript
+const NEW_AUTH_KEYS = ['errors.replayed_tokenization_nonce', 'errors.invalid_tokenization_timestamp'];
+
+form.on('error', async (error) => {
+  if (error?.errors?.some(e => NEW_AUTH_KEYS.includes(e.key))) {
+    form.updateAuthDetails(await fetchAuthDetailsFromYourBackend());
+    showMessage('Please try again.');
+    return;
+  }
+  showMessage(error);
+});
+```
 
 ---
 

@@ -94,6 +94,14 @@ ignored.
 | `metadata`           | `Record<string, string>` | Sent to the Spreedly tokenization API |
 | `mandate`            | `object`                 | Sent to the Spreedly tokenization API |
 
+### `updateAuthDetails(authDetails): void`
+
+Replaces the auth details used by later `submit()` calls. Call it with new auth details from your
+backend when `error` has the key `errors.replayed_tokenization_nonce` or
+`errors.invalid_tokenization_timestamp`. Takes the same five fields as the constructor;
+`environment_key` and `certificate_token` must not change. Throws if a field is missing or one of
+those two changed. See [Refreshing the auth details](./INTEGRATION_GUIDE.md#refreshing-the-auth-details).
+
 ### `validate(): void`
 
 Checks the routing and account numbers the customer has typed, without submitting. The

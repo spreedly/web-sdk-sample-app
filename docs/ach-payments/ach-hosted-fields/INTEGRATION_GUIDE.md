@@ -272,6 +272,30 @@ ach.on('error', (error) => {
 
 For the keys in the API's error response body, see the [Error Keys Reference](../../errors/ERROR_KEYS_REFERENCE.md).
 
+### Refreshing the auth details
+
+Each set of auth details works for one request to Spreedly, and expires 30 minutes after it's
+generated. When `error` has the key `errors.replayed_tokenization_nonce` or
+`errors.invalid_tokenization_timestamp`, get new auth details from your backend, pass them to
+`updateAuthDetails`, and submit again. Retry once; if it fails again, check how your backend
+generates the auth details.
+
+```javascript
+const NEW_AUTH_KEYS = ['errors.replayed_tokenization_nonce', 'errors.invalid_tokenization_timestamp'];
+let retried = false;
+
+ach.on('error', async (error) => {
+  const needsNewAuth = error?.errors?.some(e => NEW_AUTH_KEYS.includes(e.key));
+  if (needsNewAuth && !retried) {
+    retried = true;
+    ach.updateAuthDetails(await fetchAuthDetailsFromYourBackend());
+    ach.submit(formData); // the same form data as before
+    return;
+  }
+  showMessage(error);
+});
+```
+
 ---
 
 ## Your submit button

@@ -2252,6 +2252,44 @@ ach.submit(
 );
 ```
 
+***
+
+#### updateAuthDetails()
+
+> **updateAuthDetails**(`authDetails`): `void`
+
+Replaces the auth details used by later `submit()` calls. Each set of auth details works
+for one request to Spreedly. When `error` carries the key
+`errors.replayed_tokenization_nonce` (already used) or `errors.invalid_tokenization_timestamp`
+(older than 30 minutes), get new ones from your backend, call this, then submit again.
+`environment_key` and `certificate_token` must be the same as the constructor's.
+
+##### Parameters
+
+###### authDetails
+
+`AuthDetails`
+
+New signed credentials. All five fields are required
+  non-empty strings, or this throws.
+
+##### Returns
+
+`void`
+
+##### Example
+
+```javascript
+ach.on('error', async error => {
+  const keys = (error?.errors || []).map(e => e.key);
+  if (keys.includes('errors.replayed_tokenization_nonce') ||
+      keys.includes('errors.invalid_tokenization_timestamp')) {
+    ach.updateAuthDetails(await fetchAuthDetailsFromYourBackend());
+    ach.submit(formData); // retry once
+  }
+});
+```
+
 ### Events
 
 #### on()

@@ -47,6 +47,14 @@ same as `destroy()`.
 
 Removes the form, the message listener and all callbacks. The instance can't be reused.
 
+### `updateAuthDetails(authDetails): void`
+
+Replaces the auth details the form uses for later submits. Call it with new auth details from your
+backend when `error` has the key `errors.replayed_tokenization_nonce` or
+`errors.invalid_tokenization_timestamp`. Takes the same five fields as the constructor;
+`environment_key` and `certificate_token` must not change. Throws if a field is missing or one of
+those two changed. See [Refreshing the auth details](./INTEGRATION_GUIDE.md#refreshing-the-auth-details).
+
 ## `uiConfig`
 
 | Field                      | Type      | Default                                  | Notes |
