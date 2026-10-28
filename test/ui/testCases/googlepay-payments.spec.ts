@@ -1,7 +1,17 @@
+import { type Page } from '@playwright/test';
 import { test, expect } from '../util/fixtures';
 import { landingPage } from '../pages/landingPage';
 import { googlePayPage } from '../pages/googlePayPage';
-import { LABELS, SELECTORS, TEST_DATA, waitForAuthParams } from '../util/test-constants';
+import { purchasePage } from '../pages/3dsPage';
+import { helperFunctions } from '../util/utils';
+import {
+  getValidYearString,
+  LABELS,
+  SELECTORS,
+  TEST_DATA,
+  THREE_DS_SELECTORS,
+  waitForAuthParams,
+} from '../util/test-constants';
 import { MONOREPO_URLS } from '../util/urls';
 
 test.describe('Google Pay payments — payment sheet', () => {
@@ -115,4 +125,154 @@ test.describe('Google Pay payments — payment sheet', () => {
     const borderRadius = await googlePayPage.getRenderedButtonBorderRadius(page);
     expect(borderRadius).toBe(`${TEST_DATA.GOOGLE_PAY_BUTTON_CORNER_RADIUS}px`);
   });
+
+  test('pays with the Express Checkout form and completes the 3DS challenge', async ({ page }) => {
+    await openGooglePayExpressCheckout(page);
+    await page.locator(SELECTORS.GOOGLE_PAY_3DS_SCENARIO('challenge')).check();
+    const purchase = await fillExpressCheckoutAndPurchase(page);
+
+    await purchasePage.waitForChallengeForm(page);
+    const challengeFrame = page.frameLocator(THREE_DS_SELECTORS.CHALLENGE_IFRAME);
+    await challengeFrame.getByRole('button', { name: 'Allow' }).click();
+
+    await expect(page.locator(SELECTORS.GOOGLE_PAY_RESULT_TITLE)).toHaveText('Purchase succeeded', {
+      timeout: 30000,
+    });
+    expect(purchase.status).toBe(200);
+    expect(purchase.request).toEqual(
+      expect.objectContaining({
+        amount: 4200,
+        currency_code: 'USD',
+        sca_provider_type: 'test',
+        test_scenario: 'challenge',
+      })
+    );
+    expect(purchase.request.payment_method_token).toBeTruthy();
+  });
+
+  test('pays with the Express Checkout form on 3DS frictionless success', async ({ page }) => {
+    await openGooglePayExpressCheckout(page);
+    await page.locator(SELECTORS.GOOGLE_PAY_3DS_SCENARIO('authenticated')).check();
+    const purchase = await fillExpressCheckoutAndPurchase(page);
+
+    await expect(page.locator(SELECTORS.GOOGLE_PAY_RESULT_TITLE)).toHaveText('Purchase succeeded', {
+      timeout: 30000,
+    });
+    expect(purchase.status).toBe(200);
+    expect(purchase.request).toEqual(
+      expect.objectContaining({
+        amount: 4200,
+        currency_code: 'USD',
+        sca_provider_type: 'test',
+        test_scenario: 'authenticated',
+      })
+    );
+    expect(purchase.request.payment_method_token).toBeTruthy();
+  });
+
+  test('pays with the Express Checkout form on 3DS frictionless failure', async ({ page }) => {
+    await openGooglePayExpressCheckout(page);
+    await page.locator(SELECTORS.GOOGLE_PAY_3DS_SCENARIO('not_authenticated')).check();
+    const purchase = await fillExpressCheckoutAndPurchase(page);
+
+    await expect(page.locator(SELECTORS.GOOGLE_PAY_RESULT_TITLE)).toHaveText('Purchase failed', {
+      timeout: 30000,
+    });
+    expect(purchase.request).toEqual(
+      expect.objectContaining({
+        amount: 4200,
+        currency_code: 'USD',
+        sca_provider_type: 'test',
+        test_scenario: 'not_authenticated',
+      })
+    );
+    expect(purchase.request.payment_method_token).toBeTruthy();
+  });
+
+  test('purchases with Gateway 3DS and triggers the gateway 3DS API', async ({ page }) => {
+    await openGooglePayExpressCheckout(page);
+    await page.locator(SELECTORS.GOOGLE_PAY_3DS_MODE('gateway')).check();
+
+    await helperFunctions.fillExpressCheckoutForm(page, TEST_DATA.THREE_DS2_CHALLENGE_FLOW_CARD_NUMBER, {
+      firstName: TEST_DATA.FIRST_NAME,
+      lastName: TEST_DATA.LAST_NAME,
+      cvv: TEST_DATA.CVV,
+      expiryMonth: TEST_DATA.EXPIRY_MONTH,
+      expiryYear: getValidYearString(),
+    });
+
+    const gatewayPurchase = page.waitForRequest(
+      request =>
+        request.url().includes('/v1/create-purchase-with-3ds-gateway-specific') && request.method() === 'POST',
+      { timeout: 30000 }
+    );
+
+    await helperFunctions.clickOnExpressCheckoutSubmitButton(page);
+    await expect(page.locator(SELECTORS.GOOGLE_PAY_RESULT_TITLE)).toHaveText('Payment method created', {
+      timeout: 20000,
+    });
+    await page.locator(SELECTORS.GOOGLE_PAY_PURCHASE_BUTTON).click();
+
+    const request = await gatewayPurchase;
+    const body = request.postDataJSON();
+    expect(request.url()).toContain('/v1/create-purchase-with-3ds-gateway-specific');
+    expect(body).toEqual(
+      expect.objectContaining({
+        amount: 4200,
+        currency_code: 'USD',
+      })
+    );
+    expect(body.payment_method_token).toBeTruthy();
+    expect(body.browser_info).toBeTruthy();
+  });
 });
+
+async function openGooglePayExpressCheckout(page: Page) {
+  await page.goto(MONOREPO_URLS.BASE);
+  await landingPage.clickOnExpressCheckoutButton(page);
+  await landingPage.clickOnGooglePayButton(page);
+  await waitForAuthParams(page);
+  await page.locator(SELECTORS.GOOGLE_PAY_3DS_MODE('global')).check();
+
+  const expressForm = page.locator(`${SELECTORS.GOOGLE_PAY_EC_CONTAINER} ${SELECTORS.EXPRESS_IFRAME}`);
+  await expect(expressForm).toBeVisible({ timeout: 20000 });
+}
+
+async function fillExpressCheckoutAndPurchase(page: Page) {
+
+  await helperFunctions.fillExpressCheckoutForm(page, TEST_DATA.THREE_DS2_CHALLENGE_FLOW_CARD_NUMBER, {
+    firstName: TEST_DATA.FIRST_NAME,
+    lastName: TEST_DATA.LAST_NAME,
+    cvv: TEST_DATA.CVV,
+    expiryMonth: TEST_DATA.EXPIRY_MONTH,
+    expiryYear: getValidYearString(),
+  });
+
+  let purchaseRequest: any = null;
+  let purchaseStatus: number | null = null;
+  page.on('request', request => {
+    if (request.url().includes('/v1/create-purchase-with-3ds') && request.method() === 'POST') {
+      purchaseRequest = request.postDataJSON();
+    }
+  });
+  page.on('response', response => {
+    if (response.url().includes('/v1/create-purchase-with-3ds') && response.request().method() === 'POST') {
+      purchaseStatus = response.status();
+    }
+  });
+
+  await helperFunctions.clickOnExpressCheckoutSubmitButton(page);
+  await expect(page.locator(SELECTORS.GOOGLE_PAY_RESULT_TITLE)).toHaveText('Payment method created', {
+    timeout: 20000,
+  });
+  await page.locator(SELECTORS.GOOGLE_PAY_PURCHASE_BUTTON).click();
+
+  return {
+    get request() {
+      return purchaseRequest;
+    },
+    get status() {
+      return purchaseStatus;
+    },
+  };
+}
