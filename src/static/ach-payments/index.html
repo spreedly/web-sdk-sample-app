@@ -44,7 +44,7 @@
 
     .ach-form input,
     .ach-form select {
-      padding: 0.6rem 0.75rem;
+      padding: 8px 12px;
       font-size: 0.95rem;
       border: 1.5px solid var(--color-gray-200);
       border-radius: 8px;
@@ -63,16 +63,134 @@
       position: relative;
     }
 
+    .ach-panel-pre {
+      background: var(--color-gray-100);
+      border-radius: 6px;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.75rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 12rem;
+      overflow: auto;
+      margin-top: 0.5rem;
+    }
+
+    /* Placeholder inputs: 75% of the width and height of a normal .form-input. */
+    .ach-panel-input {
+      display: block;
+      margin-top: 0.375rem;
+      width: 75%;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.875rem;
+      height: 2.25rem; /* selects otherwise render 2px taller than the text inputs */
+    }
+
+    .ach-panel-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      align-items: start;
+    }
+
+    .ach-panel-row-3 {
+      grid-template-columns: 1fr 1fr 1fr;
+    }
+
+    /* Three to a row leaves too little room for 75%: fill the column. */
+    .ach-panel-row-3 .ach-panel-input {
+      width: 100%;
+    }
+
+    /* Space between the placeholder row and the checkbox row below it. */
+    .ach-panel-row + .ach-panel-row {
+      margin-top: 1.25rem;
+    }
+
+    /* Validate (secondary) next to the submit button, like the card hosted fields form. */
+    .ach-form .ach-submit-row {
+      display: grid;
+      grid-template-columns: auto 1fr; /* Validate sized to its text; submit takes the rest */
+      gap: 1rem;
+      margin-top: 0.5rem;
+    }
+
+    .ach-form .ach-submit-row button[type="submit"] {
+      margin-top: 0;
+    }
+
+    .ach-form .btn-validate {
+      padding: 1rem 1.5rem;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1.5px solid var(--color-gray-200);
+      background: white;
+      color: var(--color-black, #0a0a0a);
+    }
+
+    .ach-form .btn-validate:hover { border-color: var(--color-gray-400); }
+
+    .ach-panel-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .ach-panel-actions .btn {
+      padding: 0.4rem 0.75rem;
+      font-size: 0.8125rem;
+    }
+
+    .ach-form .hosted-field-wrap {
+      position: relative;
+    }
+
     .ach-form .toggle-account-visibility {
       position: absolute;
       right: 0.6rem;
-      top: 2rem;
+      top: 50%;
+      transform: translateY(-50%);
       background: none;
       border: none;
       color: var(--color-gray-500);
       font-size: 0.85rem;
       cursor: pointer;
       padding: 0.25rem 0.4rem;
+      z-index: 1;
+    }
+
+    /* Secure hosted-field iframe containers — styled to match the plain inputs (same height,
+       border and radius). The input inside the iframe gets the page's font via setStyles(). */
+    .ach-form .hosted-field {
+      height: 38px;
+      border: 1.5px solid var(--color-gray-200);
+      border-radius: 8px;
+      background: white;
+      display: flex;
+      align-items: center;
+      transition: border-color 0.15s ease;
+      /* Clip the square iframe to the rounded corners so it doesn't paint over the border. */
+      overflow: hidden;
+    }
+
+    /* The plain inputs' :focus border, driven by fieldStateChange (the iframe has the focus,
+       so the page can't use :focus on the container). */
+    .ach-form .hosted-field.focused {
+      border-color: var(--color-primary);
+    }
+
+    .ach-form .hosted-field.invalid,
+    .ach-form input.invalid {
+      border-color: var(--color-error);
+    }
+
+    .ach-form .hosted-field iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
     }
 
     .ach-form button[type="submit"] {
@@ -115,6 +233,12 @@
       color: var(--color-gray-700);
       margin-bottom: 1rem;
     }
+
+    /* Express Checkout mode: the box sits on the page background, not in a white card. */
+    .ec-only .info-box {
+      background: var(--color-gray-100);
+      border: 1px solid var(--color-black);
+    }
   </style>
 </head>
 <body>
@@ -142,9 +266,15 @@
             </a>
 
             <h1 class="mb-2">ACH Bank Account Payment</h1>
-            <p class="mb-6" style="color: var(--color-gray-500);">
-              Tokenize a US/Canadian bank account using the SDK's <code>setupACHPayment</code> /
-              <code>submitACHPayment</code> methods, then run a purchase against the Spreedly Test gateway.
+            <p class="mb-6 hf-only" style="color: var(--color-gray-500);">
+              Collect a US/Canadian bank account with <code>SpreedlyACHFields</code> secure hosted fields.
+              The routing and account numbers are typed into Spreedly-hosted iframes and never touch
+              this page. After the SDK emits tokenGenerated, run a purchase against the Spreedly Test gateway.
+            </p>
+            <p class="mb-6 ec-only hidden" style="color: var(--color-gray-500);">
+              Collect a US/Canadian bank account with the <code>SpreedlyACHForm</code> prebuilt form.
+              The whole form runs in one Spreedly-hosted iframe, so the routing and account numbers
+              never touch this page. After the SDK emits tokenGenerated, run a purchase against the Spreedly Test gateway.
             </p>
 
             <!-- Loading State -->
@@ -157,12 +287,34 @@
 
             <!-- Main Payment Section -->
             <div id="payment-section" class="hidden">
-              <div class="card">
+              <!-- Express Checkout mode (?sdk=express-checkout): only the prebuilt SpreedlyACHForm
+                   inside the bordered box, like the card demo. The form fills its element, so it
+                   needs a height; ach-form.js sets it to fit (500px, or 560px with the save box). -->
+              <div class="ec-only hidden">
+                <div class="info-box">
+                  <strong>Test data:</strong> Routing <code>021000021</code>, Account <code>9876543210</code>
+                </div>
+
+                <div id="ach-embedded-box" class="express-checkout-container">
+                  <div id="ach-form-container" style="height: 500px;"></div>
+                </div>
+
+                <!-- Dialog mode: the form opens full-page from this button -->
+                <div id="ach-dialog-box" class="card hidden" style="text-align: center; padding: 2.5rem;">
+                  <p style="color: var(--color-gray-600); margin-bottom: 1.5rem;">
+                    Dialog mode: <code>mount()</code> with no <code>parentContainerId</code> opens the form as a dialog: a centered card over a dimmed page.
+                  </p>
+                  <button type="button" id="open-ach-dialog-btn" class="btn btn-primary btn-lg">Open bank account form</button>
+                </div>
+
+                <div id="ec-status-message" class="status-message"></div>
+              </div>
+
+              <div class="card hf-only">
                 <div class="section-title">Bank Account Details</div>
 
                 <div class="info-box">
-                  <strong>Test data:</strong> Routing <code>021000021</code>, Account <code>9876543210</code>,
-                  Name <code>Bob Smith</code>. The Spreedly Test gateway always succeeds.
+                  <strong>Test data:</strong> Routing <code>021000021</code>, Account <code>9876543210</code>
                 </div>
 
                 <form id="ach-form" class="ach-form" autocomplete="off">
@@ -184,32 +336,16 @@
                     </div>
 
                     <div class="field">
-                      <label for="ach-routing">Routing number</label>
-                      <input
-                        type="text"
-                        id="ach-routing"
-                        name="bankRoutingNumber"
-                        placeholder="021000021"
-                        inputmode="numeric"
-                        autocomplete="off"
-                        maxlength="9"
-                        required
-                      >
-                      <span class="field-hint">9-digit US ABA number or Canadian electronic routing number.</span>
+                      <label for="ach-routing-field">Routing number</label>
+                      <div id="ach-routing-field" class="hosted-field"></div>
                     </div>
 
                     <div class="field account-row">
-                      <label for="ach-account">Account number</label>
-                      <input
-                        type="password"
-                        id="ach-account"
-                        name="bankAccountNumber"
-                        placeholder="••••••••••"
-                        inputmode="numeric"
-                        autocomplete="off"
-                        required
-                      >
-                      <button type="button" class="toggle-account-visibility" id="toggle-account-visibility">Show</button>
+                      <label for="ach-account-field">Account number</label>
+                      <div class="hosted-field-wrap">
+                        <div id="ach-account-field" class="hosted-field"></div>
+                        <button type="button" class="toggle-account-visibility" id="toggle-account-visibility">Show</button>
+                      </div>
                     </div>
 
                     <div class="form-row">
@@ -229,7 +365,10 @@
                       </div>
                     </div>
 
-                    <button type="submit" id="submit-btn" disabled>Create payment method &amp; run purchase</button>
+                    <div class="ach-submit-row">
+                      <button type="button" id="hf-validate" class="btn-validate">Validate</button>
+                      <button type="submit" id="submit-btn" disabled>Create payment method &amp; run purchase</button>
+                    </div>
                   </fieldset>
                 </form>
 
@@ -261,19 +400,264 @@
 
           <!-- Right Column - Information -->
           <div class="config-panel" id="config-panel">
-            <div class="config-section">
+            <!-- SDK Configuration (Express Checkout mode for now; Hosted Fields options come later) -->
+            <div class="config-section ec-only hidden">
               <div class="config-section-title">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
                 </svg>
-                About ACH Payments
+                SDK Configuration
               </div>
-              <p style="font-size: 0.875rem; color: var(--color-gray-600); line-height: 1.6;">
-                ACH payments tokenize a US or Canadian bank account. The SDK posts the bank
-                details directly to Spreedly Core; the merchant page never sees the raw account
-                number outside this form. After the SDK emits <code>achTokenGenerated</code>,
-                the merchant backend runs a purchase on a gateway that supports ACH.
+
+              <p class="config-option-desc" style="margin-bottom: 1rem;">
+                All options are <code>mount()</code> settings: changing one remounts the form (in Dialog mode, it
+                applies the next time the form is opened).
               </p>
+
+              <div style="margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--color-gray-100);">
+                <div style="font-size: 0.875rem; font-weight: 500; color: var(--color-gray-700); margin-bottom: 0.75rem;">
+                  Display Mode</div>
+                <div class="display-mode-options">
+                  <label class="display-mode-option">
+                    <input type="radio" name="ach-display-mode" value="embedded" class="ach-config" checked>
+                    <span class="display-mode-label">Embedded</span>
+                  </label>
+                  <label class="display-mode-option">
+                    <input type="radio" name="ach-display-mode" value="dialog" class="ach-config">
+                    <span class="display-mode-label">Dialog</span>
+                  </label>
+                </div>
+              </div>
+
+              <div style="font-size: 0.875rem; font-weight: 500; color: var(--color-gray-700); margin-bottom: 0.25rem;">Fields</div>
+              <p class="config-option-desc" style="margin-bottom: 0.5rem;">
+                <code>uiConfig.achFormFields.&lt;field&gt;.isHidden</code> / <code>isRequired</code>. Account holder name,
+                routing number and account number are always shown and required. Bank name, account type and
+                account holder type are optional by default. The contact and billing address fields are hidden
+                by default.</p>
+
+              <div class="ach-panel-row ach-panel-row-3">
+                <div class="config-option" style="display:block;">
+                  <label for="config-field-bank_name" class="config-option-label">Bank name</label>
+                  <select id="config-field-bank_name" class="form-input ach-panel-input ach-config">
+                    <option value="hidden">Hidden</option>
+                    <option value="optional" selected>Optional</option>
+                    <option value="required">Required</option>
+                  </select>
+                </div>
+                <div class="config-option" style="display:block;">
+                  <label for="config-field-bank_account_type" class="config-option-label">Account type</label>
+                  <select id="config-field-bank_account_type" class="form-input ach-panel-input ach-config">
+                    <option value="hidden">Hidden</option>
+                    <option value="optional" selected>Optional</option>
+                    <option value="required">Required</option>
+                  </select>
+                </div>
+                <div class="config-option" style="display:block;">
+                  <label for="config-field-bank_account_holder_type" class="config-option-label">Account holder type</label>
+                  <select id="config-field-bank_account_holder_type" class="form-input ach-panel-input ach-config">
+                    <option value="hidden">Hidden</option>
+                    <option value="optional" selected>Optional</option>
+                    <option value="required">Required</option>
+                  </select>
+                </div>
+              </div>
+
+              <details id="ach-contact-fields-section"
+                style="border:1px solid var(--color-gray-200); border-radius:6px; padding:.5rem .75rem; margin-top:1rem;">
+                <summary style="cursor:pointer; font-weight:600; font-size:0.875rem;">
+                  Contact &amp; billing address <span id="ach-contact-fields-count" style="font-weight:400; color: var(--color-gray-500);">(none shown)</span>
+                </summary>
+                <div class="ach-panel-row ach-panel-row-3" style="margin-top:0.75rem;">
+                  <div class="config-option" style="display:block;">
+                    <label for="config-field-email" class="config-option-label">Email</label>
+                    <select id="config-field-email" class="form-input ach-panel-input ach-config">
+                      <option value="hidden" selected>Hidden</option>
+                      <option value="optional">Optional</option>
+                      <option value="required">Required</option>
+                    </select>
+                  </div>
+                  <div class="config-option" style="display:block;">
+                    <label for="config-field-phone_number" class="config-option-label">Phone number</label>
+                    <select id="config-field-phone_number" class="form-input ach-panel-input ach-config">
+                      <option value="hidden" selected>Hidden</option>
+                      <option value="optional">Optional</option>
+                      <option value="required">Required</option>
+                    </select>
+                  </div>
+                  <div class="config-option" style="display:block;">
+                    <label for="config-field-address1" class="config-option-label">Address line 1</label>
+                    <select id="config-field-address1" class="form-input ach-panel-input ach-config">
+                      <option value="hidden" selected>Hidden</option>
+                      <option value="optional">Optional</option>
+                      <option value="required">Required</option>
+                    </select>
+                  </div>
+                  <div class="config-option" style="display:block;">
+                    <label for="config-field-address2" class="config-option-label">Address line 2</label>
+                    <select id="config-field-address2" class="form-input ach-panel-input ach-config">
+                      <option value="hidden" selected>Hidden</option>
+                      <option value="optional">Optional</option>
+                      <option value="required">Required</option>
+                    </select>
+                  </div>
+                  <div class="config-option" style="display:block;">
+                    <label for="config-field-city" class="config-option-label">City</label>
+                    <select id="config-field-city" class="form-input ach-panel-input ach-config">
+                      <option value="hidden" selected>Hidden</option>
+                      <option value="optional">Optional</option>
+                      <option value="required">Required</option>
+                    </select>
+                  </div>
+                  <div class="config-option" style="display:block;">
+                    <label for="config-field-state" class="config-option-label">State / province</label>
+                    <select id="config-field-state" class="form-input ach-panel-input ach-config">
+                      <option value="hidden" selected>Hidden</option>
+                      <option value="optional">Optional</option>
+                      <option value="required">Required</option>
+                    </select>
+                  </div>
+                  <div class="config-option" style="display:block;">
+                    <label for="config-field-zip" class="config-option-label">ZIP / postal code</label>
+                    <select id="config-field-zip" class="form-input ach-panel-input ach-config">
+                      <option value="hidden" selected>Hidden</option>
+                      <option value="optional">Optional</option>
+                      <option value="required">Required</option>
+                    </select>
+                  </div>
+                  <div class="config-option" style="display:block;">
+                    <label for="config-field-country" class="config-option-label">Country</label>
+                    <select id="config-field-country" class="form-input ach-panel-input ach-config">
+                      <option value="hidden" selected>Hidden</option>
+                      <option value="optional">Optional</option>
+                      <option value="required">Required</option>
+                    </select>
+                  </div>
+                </div>
+              </details>
+
+              <div style="margin: 1rem 0 0.5rem; padding-top: 1rem; border-top: 1px solid var(--color-gray-100); font-size: 0.875rem; font-weight: 500; color: var(--color-gray-700);">Retaining</div>
+              <div class="config-option">
+                <input type="checkbox" id="config-allow-retain" class="config-checkbox ach-config">
+                <div class="config-option-content">
+                  <label for="config-allow-retain" class="config-option-label">Allow retaining</label>
+                  <span class="config-option-desc">Shows the form's "Save this account" checkbox. If the buyer ticks it, <code>tokenGenerated</code> has <code>shouldRetain: true</code> as an indication for a merchant to retain the payment method from its backend before the purchase.</span>
+                </div>
+              </div>
+
+              <div class="config-option" style="display:block; margin-top: 0.75rem;">
+                <label for="config-text-save-label" class="config-option-label">Save checkbox label</label>
+                <input type="text" id="config-text-save-label" class="form-input ach-panel-input ach-config" value="Save this account for future payments">
+              </div>
+
+              <div style="margin: 1rem 0 0.5rem; padding-top: 1rem; border-top: 1px solid var(--color-gray-100); font-size: 0.875rem; font-weight: 500; color: var(--color-gray-700);">Text &amp; style</div>
+              <div class="ach-panel-row">
+                <div class="config-option" style="display:block;">
+                  <label for="config-text-title" class="config-option-label">Form title</label>
+                  <input type="text" id="config-text-title" class="form-input ach-panel-input ach-config" value="Bank account">
+                </div>
+                <div class="config-option" style="display:block;">
+                  <label for="config-text-submit" class="config-option-label">Submit button text</label>
+                  <input type="text" id="config-text-submit" class="form-input ach-panel-input ach-config" value="Create payment method &amp; run purchase">
+                </div>
+              </div>
+              <div class="ach-panel-row">
+                <div class="config-option" style="display:block;">
+                  <label for="config-text-footer" class="config-option-label">Footer text</label>
+                  <input type="text" id="config-text-footer" class="form-input ach-panel-input ach-config" value="Powered by Spreedly">
+                </div>
+                <div class="config-option" style="display:block;">
+                  <label for="config-text-processing" class="config-option-label">Processing text</label>
+                  <input type="text" id="config-text-processing" class="form-input ach-panel-input ach-config" value="Processing...">
+                </div>
+              </div>
+              <div class="ach-panel-row">
+                <div class="config-option" style="display:block;">
+                  <label for="config-button-case" class="config-option-label">Button text case</label>
+                  <select id="config-button-case" class="form-input ach-panel-input ach-config">
+                    <option value="uppercase">Uppercase (SDK default)</option>
+                    <option value="none" selected>As typed</option>
+                    <option value="capitalize">Capitalize</option>
+                  </select>
+                </div>
+              </div>
+              <div class="ach-panel-row">
+                <div class="config-option">
+                  <input type="checkbox" id="config-custom-labels" class="config-checkbox ach-config">
+                  <div class="config-option-content">
+                    <label for="config-custom-labels" class="config-option-label">Custom labels &amp; placeholders</label>
+                  </div>
+                </div>
+                <div class="config-option">
+                  <input type="checkbox" id="config-custom-theme" class="config-checkbox ach-config">
+                  <div class="config-option-content">
+                    <label for="config-custom-theme" class="config-option-label">Custom theme</label>
+                  </div>
+                </div>
+              </div>
+
+              <div style="margin: 1rem 0 0.5rem; padding-top: 1rem; border-top: 1px solid var(--color-gray-100); font-size: 0.875rem; font-weight: 500; color: var(--color-gray-700);">Event log</div>
+              <span class="config-option-desc">Events from the form. Latest first.</span>
+              <pre id="ec-event-log" class="ach-panel-pre">—</pre>
+            </div>
+
+            <!-- SDK Configuration — Hosted Fields mode (SpreedlyACHFields). Runtime methods: changes
+                 apply live, no remount. -->
+            <div class="config-section hf-only">
+              <div class="config-section-title">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
+                </svg>
+                SDK Configuration
+              </div>
+              <div class="ach-panel-row">
+                <div class="config-option" style="display:block;">
+                  <label for="hf-routing-placeholder" class="config-option-label">Routing placeholder</label>
+                  <input type="text" id="hf-routing-placeholder" class="form-input ach-panel-input" value="021000021">
+                </div>
+                <div class="config-option" style="display:block;">
+                  <label for="hf-account-placeholder" class="config-option-label">Account placeholder</label>
+                  <input type="text" id="hf-account-placeholder" class="form-input ach-panel-input" value="Account number">
+                </div>
+              </div>
+              <div class="ach-panel-row">
+                <div class="config-option">
+                  <input type="checkbox" id="hf-custom-styles" class="config-checkbox">
+                  <div class="config-option-content">
+                    <label for="hf-custom-styles" class="config-option-label">Custom field styles</label>
+                  </div>
+                </div>
+                <div class="config-option">
+                  <input type="checkbox" id="hf-masked" class="config-checkbox" checked>
+                  <div class="config-option-content">
+                    <label for="hf-masked" class="config-option-label">Mask account number</label>
+                  </div>
+                </div>
+              </div>
+
+              <div style="margin: 1rem 0 0.5rem; padding-top: 1rem; border-top: 1px solid var(--color-gray-100); font-size: 0.875rem; font-weight: 500; color: var(--color-gray-700);">Validation</div>
+              <div class="config-option" style="display:block;">
+                <span class="config-option-desc">The form's Validate button calls the SDK's <code>validate()</code> method. Required fields that aren't ready get a red outline, set by the page from the <code>validation</code> event.</span>
+                <pre id="hf-last-validation" class="ach-panel-pre">—</pre>
+              </div>
+
+              <div style="margin: 1rem 0 0.5rem; padding-top: 1rem; border-top: 1px solid var(--color-gray-100); font-size: 0.875rem; font-weight: 500; color: var(--color-gray-700);">Actions</div>
+              <div class="ach-panel-actions">
+                <button type="button" id="hf-focus-routing" class="btn btn-secondary">Focus routing</button>
+                <button type="button" id="hf-focus-account" class="btn btn-secondary">Focus account</button>
+                <button type="button" id="hf-reset" class="btn btn-secondary">Reset fields</button>
+                <button type="button" id="hf-reload" class="btn btn-secondary">Reload</button>
+                <button type="button" id="hf-remount" class="btn btn-secondary">Destroy &amp; remount</button>
+                <button type="button" id="hf-remove-handlers" class="btn btn-secondary">Remove event handlers</button>
+              </div>
+              <p class="config-option-desc" style="margin-top: 0.5rem;"><code>isLoaded()</code>: <code id="hf-is-loaded">—</code></p>
+              <p id="hf-handlers-removed" class="config-option-desc hidden" style="margin-top: 0.25rem;">
+                <code>removeHandlers()</code> cleared every <code>on()</code> callback, so this page no longer
+                reacts to the fields. Use Destroy &amp; remount to continue.</p>
+
+              <div style="margin: 1rem 0 0.5rem; padding-top: 1rem; border-top: 1px solid var(--color-gray-100); font-size: 0.875rem; font-weight: 500; color: var(--color-gray-700);">Event log</div>
+              <span class="config-option-desc"><code>fieldStateChange</code> as the buyer types. Latest first.</span>
+              <pre id="hf-event-log" class="ach-panel-pre">—</pre>
             </div>
 
             <div class="config-section">
@@ -283,12 +667,20 @@
                 </svg>
                 Flow Steps
               </div>
-              <ol id="flow-steps-list">
-                <li>Load SDK and initialize with auth params</li>
-                <li>Collect bank-account details in your own form</li>
-                <li>Call <code>setupACHPayment(config)</code></li>
-                <li>Call <code>submitACHPayment()</code></li>
-                <li>Listen for <code>achTokenGenerated</code> → token + last4</li>
+              <ol class="ec-only hidden">
+                <li>Load the Express Checkout SDK and create <code>new SpreedlyACHForm(auth)</code></li>
+                <li>Call <code>mount({ parentContainerId, uiConfig })</code> to show the form</li>
+                <li>Buyer fills in the form and presses its submit button</li>
+                <li>The form tokenizes inside the iframe → <code>tokenGenerated</code> with Spreedly's transaction (<code>tokenResponse</code>)</li>
+                <li>If <code>shouldRetain</code> is true (Allow retaining on, box ticked) → backend retains the token</li>
+                <li>Send token to backend → run gateway purchase</li>
+              </ol>
+              <ol id="flow-steps-list" class="hf-only">
+                <li>Load the hosted-fields SDK and create <code>new SpreedlyACHFields(auth)</code></li>
+                <li>Call <code>inAppElements({ routing, account })</code> to mount the secure fields</li>
+                <li>Buyer types the numbers into the iframes; name/type stay plain merchant inputs</li>
+                <li>Call <code>submit(formData)</code> with only the non-sensitive fields</li>
+                <li>Listen for <code>tokenGenerated</code> → Spreedly's transaction (<code>tokenResponse</code>)</li>
                 <li>Send token to backend → run gateway purchase</li>
               </ol>
             </div>
@@ -308,6 +700,8 @@
   </div>
 
   <script src="../shared/utils.js"></script>
+  <script src="./ach-form.js"></script>
+  <script src="./ach-fields-panel.js"></script>
   <script src="./ach-payments.js"></script>
 </body>
 </html>

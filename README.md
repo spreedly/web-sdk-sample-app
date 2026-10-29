@@ -69,7 +69,7 @@ Previous production releases of the SDK:
 ## Before integrating the SDK, you need a merchant account and then secure credentials
 to load the SDKs:
 [More details on Merchant Account](https://developer.spreedly.com/docs/merchant-onboarding-guide)
-[More details on Securing the SDK](https://developer.spreedly.com/docs/using-certificates-iframe-security)
+[More details on Securing the SDK](https://developer.spreedly.com/docs/tokenization#generating-authentication-credentials)
 
 
 
@@ -157,6 +157,18 @@ const authDetails = await authResponse.json();
 
 // authDetails now contains: environment_key, certificate_token, nonce, timestamp, signature
 ```
+
+### Enable secure tokenization (required)
+
+Generating auth details is not enough on its own. You must also turn on secure tokenization for your environment in the Spreedly app — until you do, Spreedly does not enforce the `nonce` / `timestamp` / `signature` check, and tokenization requests from your payment page are not authenticated.
+
+1. Sign in to [app.spreedly.com](https://app.spreedly.com) and open the **Environment settings** page for the environment you are integrating.
+2. Under **Security → Enhanced Security**, check **Enable secure tokenization**, then click **Save changes**.
+3. Under **Payment method submission**, we recommend selecting **iFrame or Spreedly Express** so payment methods cannot be created through the direct API.
+
+> **Important:** This setting is per environment — enable it in every environment you use (for example, staging and production). Once enabled, **every** Create payment method call in that environment requires authentication: SDK requests must carry valid auth details, and any direct API calls must use HTTP basic auth. Confirm your integration sends valid auth details before you save the setting.
+
+Non-secure tokenization will be deprecated on October 31, 2026 (end of life December 31, 2028). See [Securing iFrame or Checkout SDK](https://developer.spreedly.com/docs/securing-iframe) for details.
 
 ---
 
@@ -315,6 +327,7 @@ When integrating the SDK into your production application:
 - **Configure CSP (Content Security Policy)** — Allow `frame-src`, `script-src`, and `connect-src` for `https://core.spreedly.com`.
 - **Serve over HTTPS** — The SDK requires a secure context.
 - **Never expose your private key** — Auth credentials (`nonce`, `timestamp`, `signature`) must be generated on your backend.
+- **Enable secure tokenization** — Turn on **Enhanced Security → Enable secure tokenization** in your environment settings so Spreedly enforces those auth credentials. See [Enable secure tokenization](#enable-secure-tokenization-required).
 
 ```html
 <script
