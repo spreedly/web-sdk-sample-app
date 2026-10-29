@@ -69,9 +69,7 @@ Previous production releases of the SDK:
 ## Before integrating the SDK, you need a merchant account and then secure credentials
 to load the SDKs:
 [More details on Merchant Account](https://developer.spreedly.com/docs/merchant-onboarding-guide)
-[More details on Securing the SDK](https://developer.spreedly.com/docs/using-certificates-iframe-security)
-
-You must also **enable secure tokenization** for your environment in the Spreedly app — see [Enable secure tokenization](#enable-secure-tokenization-required).
+[More details on Securing the SDK](https://developer.spreedly.com/docs/tokenization#generating-authentication-credentials)
 
 
 

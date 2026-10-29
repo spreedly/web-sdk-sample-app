@@ -32,7 +32,7 @@ Use Spreedly Hosted Fields (`SpreedlyHostedFields`) to build a fully custom paym
 
 Both the constructor and every tokenization request require `AuthDetails`. Generate these server-side — never expose your secret key to the browser.
 
-Follow [this guide](https://developer.spreedly.com/docs/using-certificates-iframe-security) to generate credentials.
+Follow [this guide](https://developer.spreedly.com/docs/tokenization#generating-authentication-credentials) to generate credentials.
 
 | Property | Type | Description |
 |----------|------|-------------|
@@ -44,7 +44,7 @@ Follow [this guide](https://developer.spreedly.com/docs/using-certificates-ifram
 
 ### Enable secure tokenization (required)
 
-Generating auth details is not enough on its own. You must also turn on secure tokenization for your environment in the Spreedly app — until you do, Spreedly does not enforce the `nonce` / `timestamp` / `signature` check, and tokenization requests from your payment page are not authenticated.
+Generating auth details is not enough on its own. It is mandatory to also turn on secure tokenization for your environment in the Spreedly app — until you do, Spreedly does not enforce the `nonce` / `timestamp` / `signature` check, and tokenization requests from your payment page are not authenticated. See [Securing iFrame or Checkout SDK](https://developer.spreedly.com/docs/securing-iframe) for details or follow the below steps.
 
 1. Sign in to [app.spreedly.com](https://app.spreedly.com) and open the **Environment settings** page for the environment you are integrating.
 2. Under **Security → Enhanced Security**, check **Enable secure tokenization**, then click **Save changes**.
@@ -52,7 +52,7 @@ Generating auth details is not enough on its own. You must also turn on secure t
 
 > **Important:** This setting is per environment — enable it in every environment you use (for example, staging and production). Once enabled, **every** Create payment method call in that environment requires authentication: SDK requests must carry valid auth details, and any direct API calls must use HTTP basic auth. Confirm your integration sends valid auth details before you save the setting.
 
-Non-secure tokenization will be deprecated on October 31, 2026 (end of life December 31, 2028). See [Securing iFrame or Checkout SDK](https://developer.spreedly.com/docs/securing-iframe) for details.
+Non-secure tokenization will be deprecated on October 31, 2026 (end of life December 31, 2028).
 
 ---
 
