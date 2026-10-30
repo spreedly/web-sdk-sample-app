@@ -19,8 +19,12 @@ app.use(useragent());
 app.use('/api/v1/docs', swaggerUiExpress.serve, swaggerUiExpress.setup(swaggerSpec));
 
 // Apple Pay domain verification. A route, so dotfiles stay off for the static mount below.
+// Apple's portal fetches the .txt path; older Apple docs use the path without it.
 app.get(
-  '/.well-known/apple-developer-merchantid-domain-association',
+  [
+    '/.well-known/apple-developer-merchantid-domain-association',
+    '/.well-known/apple-developer-merchantid-domain-association.txt',
+  ],
   serveApplePayDomainAssociation
 );
 
