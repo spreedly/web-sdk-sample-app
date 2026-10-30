@@ -72,7 +72,10 @@ backend, plain browser JS frontend (no bundler).
   Optional overrides, defaulting to the Heroku app in `src/config.ts`: `APPLE_PAY_MERCHANT_ID`,
   `APPLE_PAY_DISPLAY_NAME`, `APPLE_PAY_DOMAIN` (sent as `initiativeContext`, must be registered with
   Apple), `APPLE_PAY_ENVIRONMENT` (`sandbox` switches Apple's validation host; default `production`). The test
-  page is `src/static/apple-pay-test/` (plain Apple Pay JS, no SDK).
+  pages: `apple-pay-test/` (plain Apple Pay JS, no SDK) and `apple-pay-local-sdk/` (loads the SDK
+  from `localhost:5000` / `:5173`, so an unreleased SDK build can run on the registered Heroku
+  domain; use Chrome on the machine running `npm run dev` in checkout-web-sdk). Neither is on the
+  landing page.
 
 ## Flows (landing page `src/static/index.html`; `?sdk=hosted-fields|express-checkout` threads through URLs)
 
@@ -85,6 +88,7 @@ backend, plain browser JS frontend (no bundler).
 | `purchase-with-3ds/` | 3DS **Global** (`sca_provider_key` server-side), `SpreedlyThreeDSLifecycle` + `serializeBrowserInfo` | HF + EC | `create-purchase-with-3ds` |
 | `purchase-with-3ds-gateway-specific/` | 3DS **gateway-specific** with full callback set incl. `onTriggerCompletion` → `transactions/:t/complete` → `event.finalize()` | HF + EC | `create-purchase-with-3ds-gateway-specific`, `complete` |
 | `ach-payments/` | ACH bank-account tokenize + $10 purchase (no iframes; base-class API) | `setupACHPayment`/`submitACHPayment` | `ach-purchase` (localhost-only!) |
+| `apple-pay-test/`, `apple-pay-local-sdk/` | Apple Pay on the web: plain Apple Pay JS, and the SDK (`SpreedlyApplePay` / `expressCheckout({ applePay })`) loaded from localhost. Same-origin API calls; `?debug=1` failure switches on the SDK page | none / HF + EC (local) | `apple-pay/validate`, `apple-pay/config`, `auth/params`, `simple-purchase` |
 | `offsite-payments/` | Hub: paypal/sprel via `setupOffsitePayment`; subpages `braintree/` (`SpreedlyBraintree`), `stripe-apm/` (`SpreedlyStripeAPM`), `ebanx/` (LATAM methods) | offsite APIs | `offsite-purchase`, `braintree-purchase`, `stripe-apm-purchase`, `create-purchase`, `transactions/:t`, `confirm` |
 
 Backend routes with no frontend caller: `POST /purchase` (the only one exercising the

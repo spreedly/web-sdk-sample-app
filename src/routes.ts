@@ -24,6 +24,7 @@ import {
 import { getPazeAccessToken, pazeTokenRateLimit } from './controllers/paze-oauth';
 import {
   applePayValidateRateLimit,
+  getApplePayConfig,
   validateApplePayMerchant,
 } from './controllers/apple-pay';
 import {
@@ -1296,5 +1297,19 @@ router.post(
  *         description: Apple timed out or failed ({"error":"upstream_unavailable"}), or the Apple Pay settings are missing ({"error":"not_configured"})
  */
 router.post('/apple-pay/validate', applePayValidateRateLimit, validateApplePayMerchant);
+
+/**
+ * @swagger
+ * /api/v1/apple-pay/config:
+ *   get:
+ *     description: Apple Pay settings the demo page needs. The merchant ID isn't secret.
+ *     tags: [Apple Pay]
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: '{"merchantIdentifier": string | null, "configured": boolean}'
+ */
+router.get('/apple-pay/config', getApplePayConfig);
 
 export default router;

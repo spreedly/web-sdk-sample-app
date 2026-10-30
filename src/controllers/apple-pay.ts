@@ -118,6 +118,16 @@ export const validateApplePayMerchant = async (
   res.json(session);
 };
 
+// GET /api/v1/apple-pay/config
+// What the demo page needs from the server config. The merchant ID isn't secret: Apple's own
+// script sends it from the browser for applePayCapabilities.
+export const getApplePayConfig = (_req: Request, res: Response): void => {
+  res.set('Cache-Control', 'no-store').json({
+    merchantIdentifier: config.applePayMerchantId || null,
+    configured: isConfigured(),
+  });
+};
+
 // GET /.well-known/apple-developer-merchantid-domain-association
 // Apple's domain verification file, served from an env var so dotfiles stay off for the
 // static mount. Public by design: Apple fetches it from the domain.
