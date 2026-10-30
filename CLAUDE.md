@@ -77,7 +77,7 @@ backend, plain browser JS frontend (no bundler).
 | `purchase-with-3ds/` | 3DS **Global** (`sca_provider_key` server-side), `SpreedlyThreeDSLifecycle` + `serializeBrowserInfo` | HF + EC | `create-purchase-with-3ds` |
 | `purchase-with-3ds-gateway-specific/` | 3DS **gateway-specific** with full callback set incl. `onTriggerCompletion` → `transactions/:t/complete` → `event.finalize()` | HF + EC | `create-purchase-with-3ds-gateway-specific`, `complete` |
 | `ach-payments/` | ACH bank-account tokenize + $10 purchase (no iframes; base-class API) | `setupACHPayment`/`submitACHPayment` | `ach-purchase` (localhost-only!) |
-| `cash-app-pay/` | Cash App Pay with merchant-loaded Pay Kit; approval → token → purchase. Token and purchase are **mocks** pending Core (`TODO: Implementation pending`) | `SpreedlyCashAppPay` | `auth/params`, `cash-app-pay/config`, `cash-app-pay-purchase` (mock) |
+| `cash-app-pay/` | Cash App Pay with merchant-loaded Pay Kit; approval → token → purchase. Token and purchase are **mocks** pending Core (`TODO: Implementation pending`) | `SpreedlyCashAppPay` | `auth/params`, `cash-app-pay-purchase` (mock) |
 | `offsite-payments/` | Hub: paypal/sprel via `setupOffsitePayment`; subpages `braintree/` (`SpreedlyBraintree`), `stripe-apm/` (`SpreedlyStripeAPM`), `ebanx/` (LATAM methods) | offsite APIs | `offsite-purchase`, `braintree-purchase`, `stripe-apm-purchase`, `create-purchase`, `transactions/:t`, `confirm` |
 
 Backend routes with no frontend caller: `POST /purchase` (the only one exercising the

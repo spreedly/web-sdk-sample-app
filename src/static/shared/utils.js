@@ -10,12 +10,12 @@ function getSDKType() {
 function getSDKScriptUrl() {
   const sdkType = getSDKType();
   //uncomment this to use local sdk
-  // if (window.location.hostname === 'localhost') {
-  //   if (sdkType === 'express-checkout') {
-  //     return 'http://localhost:5173/express-checkout.js';
-  //   }
-  //   return 'http://localhost:5000/index.js';
-  // }
+  if (window.location.hostname === 'localhost') {
+    if (sdkType === 'express-checkout') {
+      return 'http://localhost:5173/express-checkout.js';
+    }
+    return 'http://localhost:5000/index.js';
+  }
 
   if (sdkType === 'express-checkout') {
     return 'https://core-test.spreedly.com/checkout/elements/rc/express-checkout.js';
@@ -123,12 +123,6 @@ async function createPazePaymentMethod({
     console.error('Error creating Paze payment method:', error.response?.data || error);
     throw error.response?.data || error;
   }
-}
-
-// Cash App Pay
-async function fetchCashAppPayConfig() {
-  const response = await axios.get(`${API_BASE_URL}/cash-app-pay/config`);
-  return response.data;
 }
 
 // Mock until Spreedly Core's cash_app gateway exists; the server returns a synthetic transaction.
@@ -342,7 +336,6 @@ window.SpreedlyUtils = {
   createPazePaymentMethod,
 
   // Cash App Pay
-  fetchCashAppPayConfig,
   createCashAppPayPurchase,
 
   // Stripe Radar

@@ -1,10 +1,10 @@
 import { Page, Route } from '@playwright/test';
 import { SELECTORS } from '../util/test-constants';
 
-// Synthetic values — not real Cash App identifiers.
-export const CASH_APP_SYNTHETIC_CONFIG = {
-  clientId: 'CAS-CI_SYNTHETIC_CLIENT',
-  merchantId: 'MMI_SYNTHETIC_MERCHANT',
+// Sandbox identifiers inlined in src/static/cash-app-pay/cash-app-pay.js.
+export const CASH_APP_SANDBOX = {
+  brandId: 'BRAND_e44pamx63nr4b7ch15v1io5b5',
+  clientId: 'CAS-CI_AFTERPAY',
 };
 
 export const CASH_APP_SYNTHETIC_APPROVAL = {
@@ -89,11 +89,8 @@ export const cashAppPayPage = {
     });
   },
 
-  /** Serves the config route and the mock purchase route without the sample-app server */
+  /** Serves the mock purchase route without the sample-app server */
   mockServerRoutes: async (page: Page) => {
-    await page.route('**/api/v1/cash-app-pay/config', route =>
-      json(route, 200, CASH_APP_SYNTHETIC_CONFIG)
-    );
     await page.route('**/api/v1/cash-app-pay-purchase', route => {
       if (route.request().method() === 'OPTIONS') {
         return route.fulfill({

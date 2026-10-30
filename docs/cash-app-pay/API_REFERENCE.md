@@ -58,12 +58,15 @@ Removes Pay Kit listeners and UI and drops all callbacks. Later calls return an 
 |-------|------|----------|-------------|
 | `authDetails` | `AuthDetails` | Yes | `{ environment_key, certificate_token, nonce, signature, timestamp }`, signed server-side. Copied and frozen; a new checkout needs a new instance. |
 | `clientId` | `string` | Yes | Cash App Client ID. A prefix that doesn't match `environment` logs a warning. |
-| `merchantId` | `string` | Yes | Cash App Network API merchant ID (Pay Kit's payment `scopeId`). |
+| `merchantId` | `string` | One of | Cash App Network API merchant ID. Pay Kit payment `scopeId` when set. |
+| `brandId` | `string` | One of | Cash App brand ID (`BRAND_…`). Pay Kit payment `scopeId` when `merchantId` is omitted. |
 | `redirectURL` | `string` | Yes | Absolute `https` URL where mobile shoppers return. `http` only on localhost. |
 | `renderTarget` | `string \| HTMLElement` | Yes | CSS selector or element for the button. |
 | `environment` | `'sandbox' \| 'production'` | No | Default `'sandbox'`. Must match the Pay Kit script you load. |
 | `referenceId` | `string` | No | Default reference for customer requests. |
 | `button` | `CashAppPayButtonOptions` | No | Button presentation, below. |
+
+Supply `merchantId` or `brandId`. The constructor throws if neither is set. When both are set, `merchantId` is sent as Pay Kit's payment `scopeId`.
 
 ### `CashAppPayButtonOptions`
 

@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Cash App Pay demo** (`/cash-app-pay/index.html`): `SpreedlyCashAppPay` with Block's sandbox Pay Kit — button options, amount updates, event log, and approval → payment method token → purchase. The token and the purchase are **mocks** until Spreedly Core's Cash App API is available. New routes `GET /api/v1/cash-app-pay/config` (needs `CASH_APP_CLIENT_ID_NEW` and `CASH_APP_MERCHANT_ID_NEW`) and `POST /api/v1/cash-app-pay-purchase` (mock, no Spreedly call). Playwright spec with a stubbed Pay Kit. See `docs/cash-app-pay/DEMO_GUIDE.md`.
+- **Cash App Pay demo** (`/cash-app-pay/index.html`): `SpreedlyCashAppPay` with Block's sandbox Pay Kit — button options, amount updates, event log, and approval → payment method token → purchase. The token and the purchase are **mocks** until Spreedly Core's Cash App API is available. The sandbox Client ID and Brand ID are inlined in the page. New route `POST /api/v1/cash-app-pay-purchase` (mock, no Spreedly call). Playwright spec with a stubbed Pay Kit. See `docs/cash-app-pay/DEMO_GUIDE.md`.
 
 ## [1.8.0] - 2026-09-28
 

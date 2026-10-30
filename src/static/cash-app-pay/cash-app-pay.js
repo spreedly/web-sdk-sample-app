@@ -11,8 +11,11 @@
 
 const CONTAINER_ID = 'cash-app-pay-container';
 
+// Sandbox Cash App Pay identifiers. Pay Kit accepts a merchantId or a brandId as the payment scope.
+const CASH_APP_CLIENT_ID = 'CAS-CI_AFTERPAY';
+const CASH_APP_BRAND_ID = 'BRAND_e44pamx63nr4b7ch15v1io5b5';
+
 let cashAppInstance = null;
-let cashAppConfig = null;
 let lastToken = null;
 
 const elements = {};
@@ -172,10 +175,10 @@ async function mountCashAppPay() {
   try {
     instance = new window.SpreedlyCashAppPay({
       authDetails,
+      brandId: CASH_APP_BRAND_ID,
       button: getButtonOptions(),
-      clientId: cashAppConfig.clientId,
+      clientId: CASH_APP_CLIENT_ID,
       environment: 'sandbox',
-      merchantId: cashAppConfig.merchantId,
       redirectURL: getRedirectURL(),
       referenceId: getReferenceId(),
       renderTarget: `#${CONTAINER_ID}`,
@@ -271,18 +274,6 @@ function init() {
     if (typeof window.SpreedlyCashAppPay !== 'function') {
       showFatalError(
         'This SDK build has no SpreedlyCashAppPay. Run the SDK locally (see the local-SDK toggle in shared/utils.js).'
-      );
-      return;
-    }
-
-    try {
-      cashAppConfig = await SpreedlyUtils.fetchCashAppPayConfig();
-    } catch (error) {
-      const notConfigured = error?.response?.data?.error === 'not_configured';
-      showFatalError(
-        notConfigured
-          ? 'Cash App Pay is not configured on the server. Set CASH_APP_CLIENT_ID_NEW and CASH_APP_MERCHANT_ID_NEW.'
-          : 'Could not load the Cash App Pay config from the server.'
       );
       return;
     }

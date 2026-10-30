@@ -22,7 +22,7 @@ import {
   createPazePaymentMethod,
 } from './controllers/payments';
 import { getPazeAccessToken, pazeTokenRateLimit } from './controllers/paze-oauth';
-import { createCashAppPayPurchase, getCashAppPayConfig } from './controllers/cash-app-pay';
+import { createCashAppPayPurchase } from './controllers/cash-app-pay';
 import {
   getPPCPConfig,
   createPPCPOrder,
@@ -1261,22 +1261,6 @@ router.post('/paze-payment-method', createPazePaymentMethod);
  *         description: Paze timed out or failed ({"error":"upstream_unavailable"}), or the Paze settings are missing ({"error":"not_configured"})
  */
 router.post('/paze/oauth/token', pazeTokenRateLimit, getPazeAccessToken);
-
-/**
- * @swagger
- * /api/v1/cash-app-pay/config:
- *   get:
- *     description: Public Cash App Client ID and Merchant ID for SpreedlyCashAppPay. Browser-safe — a real merchant would inline them; this exists because the demo keeps them in .env.
- *     tags: [Cash App Pay]
- *     produces:
- *       - application/json
- *     responses:
- *       200:
- *         description: "{ clientId, merchantId }"
- *       503:
- *         description: CASH_APP_CLIENT_ID_NEW or CASH_APP_MERCHANT_ID_NEW not set ({"error":"not_configured"})
- */
-router.get('/cash-app-pay/config', getCashAppPayConfig);
 
 /**
  * @swagger
