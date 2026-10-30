@@ -1,23 +1,5 @@
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
-import config from '../config';
-
-// GET /api/v1/cash-app-pay/config
-// The Cash App Client ID and Merchant ID are browser-safe; a real merchant would inline them.
-// This exists because the demo keeps them in .env.
-export const getCashAppPayConfig = (_req: Request, res: Response): void => {
-  if (!config.cashAppClientId || !config.cashAppMerchantId) {
-    res.status(503).json({
-      error: 'not_configured',
-      message: 'CASH_APP_CLIENT_ID_NEW and CASH_APP_MERCHANT_ID_NEW must be set',
-    });
-    return;
-  }
-  res.json({
-    clientId: config.cashAppClientId,
-    merchantId: config.cashAppMerchantId,
-  });
-};
 
 // TODO: Implementation pending
 // Spreedly Core's cash_app gateway isn't available yet. Replace this mock with a purchase on the

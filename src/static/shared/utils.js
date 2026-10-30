@@ -208,12 +208,6 @@ async function createPazePaymentMethod({
   }
 }
 
-// Cash App Pay
-async function fetchCashAppPayConfig() {
-  const response = await axios.get(`${API_BASE_URL}/cash-app-pay/config`);
-  return response.data;
-}
-
 // Mock until Spreedly Core's cash_app gateway exists; the server returns a synthetic transaction.
 async function createCashAppPayPurchase({ paymentMethodToken, amount, currencyCode = 'USD' }) {
   try {
@@ -444,7 +438,6 @@ window.SpreedlyUtils = {
   createPazePaymentMethod,
 
   // Cash App Pay
-  fetchCashAppPayConfig,
   createCashAppPayPurchase,
 
   // Stripe Radar

@@ -1,8 +1,8 @@
 import { test, expect } from '../util/fixtures';
 import { landingPage } from '../pages/landingPage';
 import {
+  CASH_APP_SANDBOX,
   CASH_APP_SYNTHETIC_APPROVAL,
-  CASH_APP_SYNTHETIC_CONFIG,
   cashAppPayPage,
 } from '../pages/cashAppPayPage';
 import { MONOREPO_URLS } from '../util/urls';
@@ -23,13 +23,13 @@ test.describe('Cash App Pay', () => {
   test('initializes Pay Kit and sends the customer request in cents', async ({ page }) => {
     const calls = await cashAppPayPage.getStubCalls(page);
 
-    expect(calls.pay).toEqual([{ clientId: CASH_APP_SYNTHETIC_CONFIG.clientId }]);
+    expect(calls.pay).toEqual([{ clientId: CASH_APP_SANDBOX.clientId }]);
     expect(calls.customerRequest).toHaveLength(1);
     expect(calls.customerRequest[0]).toEqual({
       actions: {
         payment: {
           amount: { currency: 'USD', value: 1234 },
-          scopeId: CASH_APP_SYNTHETIC_CONFIG.merchantId,
+          scopeId: CASH_APP_SANDBOX.brandId,
         },
       },
       redirectURL: expect.stringContaining(MONOREPO_URLS.CASH_APP_PAY),
@@ -97,7 +97,7 @@ test.describe('Cash App Pay', () => {
           actions: {
             payment: {
               amount: { currency: 'USD', value: 2000 },
-              scopeId: CASH_APP_SYNTHETIC_CONFIG.merchantId,
+              scopeId: CASH_APP_SANDBOX.brandId,
             },
           },
         },

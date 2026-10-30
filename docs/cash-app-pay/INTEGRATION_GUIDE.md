@@ -14,7 +14,8 @@ charges like any other token.
 ## What you'll need
 
 - **Cash App Pay partner onboarding** — a Client ID (`CAS-CI_…` sandbox, `CA-CI_…` production)
-  and a Merchant ID created through Cash App's Network API.
+  and either a Merchant ID or a Brand ID (`BRAND_…`). Pay Kit uses one of them as the payment
+  scope. When both are set, the Merchant ID is used.
 - **Spreedly auth details** (`environment_key`, `certificate_token`, `nonce`, `signature`,
   `timestamp`), signed on your server, the same as for Hosted Fields or Express Checkout.
 - A **server endpoint** that charges the payment method token (see
@@ -56,7 +57,7 @@ self-hosted.
 const cashApp = new SpreedlyCashAppPay({
   authDetails,                       // from your server
   clientId: 'CAS-CI_YOUR_CLIENT_ID',
-  merchantId: 'YOUR_CASH_APP_MERCHANT_ID',
+  merchantId: 'YOUR_CASH_APP_MERCHANT_ID', // or brandId: 'BRAND_…'
   redirectURL: 'https://shop.example/checkout', // where mobile shoppers return
   renderTarget: '#cash-app-pay',
   environment: 'sandbox',
