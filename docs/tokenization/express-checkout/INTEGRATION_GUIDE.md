@@ -1,6 +1,6 @@
 # Express Checkout — Tokenization Integration Guide
 
-Use Spreedly Express Checkout (`SpreedlyExpressCheckout`) to drop a complete, pre-built payment form into your page with minimal code. The form can render as an embedded component or a modal dialog — you customize text, fields, and styling through the SDK API. A working example of extra fields and `addValidation` is at `/tokenize-catalogue` in this sample app.
+Use Spreedly Express Checkout (`SpreedlyExpressCheckout`) to drop a complete, pre-built payment form into your page with minimal code. The form can render as an embedded component or a modal dialog — you customize text, fields, and styling through the SDK API.
 
 ---
 
@@ -12,11 +12,12 @@ Use Spreedly Express Checkout (`SpreedlyExpressCheckout`) to drop a complete, pr
 4. [Complete Usage Example](#complete-usage-example)
 5. [Display Modes](#display-modes)
 6. [Customizing the Form](#customizing-the-form)
-7. [Custom field validation](#custom-field-validation)
-8. [Error Handling](#error-handling)
-9. [Testing](#testing)
-10. [API Reference](#api-reference)
-11. [Troubleshooting](#troubleshooting)
+7. [Google Pay above the form](#google-pay-above-the-form)
+8. [Custom field validation](#custom-field-validation)
+9. [Error Handling](#error-handling)
+10. [Testing](#testing)
+11. [API Reference](#api-reference)
+12. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -161,6 +162,10 @@ checkout.destroy();
 sdk.close(true);
 ```
 
+After a soft close, calling `expressCheckout()` again on the same instance reopens the form with
+its current config: text, added fields and CVV settings are kept, and any `uiConfig` you pass is
+merged over them. Create a new `SpreedlyExpressCheckout` to start from the defaults.
+
 ---
 
 ## Complete Usage Example
@@ -299,6 +304,7 @@ sdk.updateTextElement('title', 'Complete Your Purchase');
 sdk.updateTextElement('submitBtnText', 'Pay $99.00');
 sdk.updateTextElement('footerText', 'Secured by Spreedly');
 sdk.updateTextElement('processingText', 'Processing payment...');
+sdk.updateTextElement('walletDividerText', 'or pay by card'); // with the googlePay option
 ```
 
 > Hosted Fields has an optional mountable submit button (`inAppElements({ submit })`) with default copy `'Submit'`. Clicks emit `submitClick` (required — a missing listener is an `error`); merchants control disable/text via `setDisable` / `setText`. Express Checkout's button stays inside the checkout iframe — there is no `submitClick` event here. See the [Hosted Fields integration guide](../hosted-fields/INTEGRATION_GUIDE.md#optional-hosted-submit-button).
@@ -349,6 +355,47 @@ sdk.updateSubmitParams({
   metadata: { order_id: 'ORDER-456', customer_id: 'CUST-789' },
 });
 ```
+
+---
+
+## Google Pay above the form
+
+Pass a `googlePay` option to `expressCheckout()` and the SDK draws Google's button in a wallet row
+above the card fields, with an "or pay with card" divider. Your page loads Google's `pay.js`; the
+row only appears when Google's `isReadyToPay()` passes, and stays out of the card-form iframe.
+
+```html
+<script async src="https://pay.google.com/gp/p/js/pay.js"></script>
+```
+
+```javascript
+sdk.on('googlePayTokenGenerated', ({ token, googlePayType }) => {
+  // Send token and googlePayType to your server
+});
+
+sdk.expressCheckout({
+  parentContainerId: 'payment-container',
+  googlePay: {
+    environment: 'TEST',
+    merchantInfo: { merchantName: 'Example Merchant' },
+    transactionInfo: { totalPrice: '42.00', currencyCode: 'USD', countryCode: 'US' },
+  },
+});
+
+// Keep the price current before the shopper taps
+sdk.setGooglePayTransactionInfo({ totalPrice: '52.00', currencyCode: 'USD', countryCode: 'US' });
+```
+
+The button uses the same auth details as the card form, and `updateAuthDetails()` replaces both
+([Refreshing the auth details](#refreshing-the-auth-details)).
+
+Card tokens still arrive on `tokenGenerated`. The row is drawn on your page above the iframe, not
+inside it, and only in embedded mode. Give the container a fixed height (the row uses about 108 px
+of it). Dialog mode (no `parentContainerId`) opens the card form without the row and reports
+`googlePayError` and `googlePayUnavailable` with `DEVELOPER_ERROR`; for a modal, embed the form in
+your own dialog. An invalid `googlePay` config fails the same way and never blocks the card form. See the
+[Google Pay integration guide](../../google-pay/INTEGRATION_GUIDE.md#google-pay-inside-express-checkout)
+for the full configuration, events, 3DS guidance and testing.
 
 ---
 
@@ -465,6 +512,27 @@ sdk.on('error', (error) => {
 }
 ```
 
+### Refreshing the auth details
+
+Each set of auth details works for one request to Spreedly, and expires after 30 minutes. Once a
+tokenization has reached Spreedly, even one that failed, its `nonce` is used: another attempt with
+the same details fails with `errors.replayed_tokenization_nonce`. After a failed tokenization, get
+new auth details from your backend and pass them to `updateAuthDetails()` before the customer
+submits again. The open form, the Google Pay button and the next `expressCheckout()` call use them.
+`environment_key` and `certificate_token` must stay the same.
+
+```javascript
+const refreshAuth = async () =>
+  sdk.updateAuthDetails(await fetchAuthDetailsFromYourBackend());
+
+sdk.on('error', refreshAuth);
+sdk.on('googlePayError', ({ code }) => {
+  if (code === 'TOKENIZATION_FAILED' || code === 'TOKENIZATION_TIMEOUT') refreshAuth();
+});
+```
+
+Don't turn off secure tokenization to avoid this: it is Spreedly's protection against card testing.
+
 ---
 
 ## Testing
@@ -527,7 +595,6 @@ if (typeof SpreedlyExpressCheckout === 'undefined') {
 
 - [Styling Guide](../STYLING_GUIDE.md) — Brand Hosted Fields and Express Checkout
 - [Hosted Fields Integration Guide](../hosted-fields/INTEGRATION_GUIDE.md) — Custom form alternative
-- Sample app `/tokenize-catalogue` — Live extra-fields and custom-validator demo
 - [Recaching Integration Guide](../../recaching/INTEGRATION_GUIDE.md) — Update CVV for retained cards
 - [3DS Overview](../../three-ds/OVERVIEW.md) — Add 3D Secure authentication
 - [Security Guide](../../../SECURITY.md) — SRI, CSP, and security best practices

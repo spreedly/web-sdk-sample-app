@@ -5,7 +5,46 @@ All notable changes to the Spreedly Web SDK will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.8.0] - 2026-09-28
+## [Unreleased]
+
+### Added
+
+- **Google Pay**: new standalone `SpreedlyGooglePay` class, exposed as `window.SpreedlyGooglePay` by both the Hosted Fields and Express Checkout bundles, which also re-export its types. You load Google's `pay.js`. The SDK then handles the rest:
+  - It checks `isReadyToPay()` and draws Google's own button only when the shopper can pay; otherwise `googlePayUnavailable` fires so you can keep your card form.
+  - It builds the `PaymentDataRequest` with Spreedly's `tokenizationSpecification` (`gateway: "spreedly"`, `gatewayMerchantId` derived from your environment key).
+  - It tokenizes inside the sheet: POST `payment_methods.json` with certificate auth. The sheet stays open on failure so the shopper can pick another card.
+  - It emits `googlePayTokenGenerated` with the Spreedly token and `googlePayType` (`TOKENIZED_CARD` / `NON_TOKENIZED_CARD`) for your server-side 3DS decision.
+  - It supports billing and shipping address, shipping options and price updates (`onPaymentDataChange`), email and `metadata`. Payment methods are created cached; retain them from merchant server.
+  - `testCardNumber` (`test_card_number`) works in both Google environments, for Spreedly's real-card testing step; the SDK logs a warning while it is set in `PRODUCTION`.
+  - `authDetails` are per instance, as for the card form: create a new instance for each checkout.
+  - It covers Google's full `PaymentDataRequest`:
+    - enrollments via `recurringTransactionInfo`, `deferredTransactionInfo` and `automaticReloadTransactionInfo` (exactly one of these or `transactionInfo`; no `onPaymentDataChange` or `offerInfo` with them, as Google doesn't support dynamic pricing there);
+    - promo codes via the `OFFER` intent and `offerInfo`;
+    - explicit `callbackIntents`;
+    - `transactionInfo.transactionId` and `checkoutOption`;
+    - the card filters `allowPrepaidCards`, `allowCreditCards` and `allowed`/`blockedIssuerCountryCodes`;
+    - `assuranceDetailsRequired`, with `assuranceDetails` and `cardFundingSource` returned on the token;
+    - the `FULL-ISO3166` address format;
+    - `existingPaymentMethodRequired`;
+    - a CSP nonce (`cspNonce`).
+  - Config is validated against Google's documented rules when the object is constructed. `apiVersion`, `tokenizationSpecification` and the `PAYMENT_AUTHORIZATION` intent stay SDK-owned.
+
+  New telemetry events `google_pay.*`. See `docs/google-pay/`.
+- **Express Checkout: Google Pay above the card form.** New `googlePay` option on `expressCheckout()` (`ExpressCheckoutGooglePayConfig`: the `SpreedlyGooglePay` config without `authDetails`, which Express Checkout supplies).
+  - Google's button is drawn on your page in a wallet row above the form iframe (never inside it), with an "or pay with card" divider (new text element `walletDividerText`). The row appears only once `isReadyToPay()` passes. Without `googlePay`, the form mounts exactly as before.
+  - Results arrive on the `googlePay*` events of the Express Checkout instance; card tokens still arrive on `tokenGenerated`. New `setGooglePayTransactionInfo(info)` keeps the price current.
+  - An invalid `googlePay` config doesn't block the card form: it mounts without the row, and `googlePayError` / `googlePayUnavailable` fire with `DEVELOPER_ERROR`.
+  - `close()` and recache mode remove the row. `iframe.loaded` telemetry carries `google_pay_enabled`.
+
+### Changed
+
+- **Express Checkout:** calling `expressCheckout()` again on the same instance (after `close()` / `destroy()`) now merges the `uiConfig` you pass over that instance's current form config, so text, added fields and CVV settings are kept unless you pass them again. Before, values left out sometimes reset to the defaults and sometimes didn't, depending on whether that part of `uiConfig` had been passed before. Create a new instance to start from the defaults.
+
+### Fixed
+
+- **Express Checkout:** `updateTextElement`, `addField`, `removeField`, `setFieldConfig`, `setCVVOptional` and `setCVVHidden` no longer change the SDK's default constant form config. Before, a customization made on one instance (for example a title, an added field, or an optional CVV) also appeared on every Express Checkout instance created after it on the page. Text and fields set before `expressCheckout()` still apply when the form renders.
+
+## [1.8.0] - 2026-09-22
 
 ### Added
 
@@ -33,21 +72,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Hosted Fields: non-digit characters no longer flash in the card number and CVV inputs.** No public API, event, or payload change.
 
-## [1.7.0] - 2026-09-17
+## [1.7.0] - 2026-09-15
 
 ### Added
 
-- **Composable Hosted Fields catalogue** (HC-1680): mount optional non-PCI fields as individual Spreedly-hosted iframes via `inAppElements()` — `expiry` (combined `MM/YY`) or separate `month`/`year`, `first_name`, `last_name`, `full_name`, billing address keys (`address1`…`country`, plus `email` / `company` / `phone_number`), canonical address/phone keys (`house_number_or_name`, `street`, `street_line2`, `phone_number_country_code`, `phone_number_area_code`) and their `shipping_*` twins. Values are collected inside the iframes at `submit()`; `fieldStateChange` / `validation.formFields` cover the same surface as number/CVV. Catalogue `fieldStateChange` omits the raw `value` unless the merchant opts in with `setFieldStateReporting({ includeValue: true })`. The per-field required flag is `isRequired` — the same name Express Checkout uses in its field config — and `full_name` is required only when mounted with `isRequired: true` (only `first_name` / `last_name` and the date fields are required by default, relaxed by `allow_blank_name` / `allow_blank_date`). See `docs/tokenization/hosted-fields/INTEGRATION_GUIDE.md`.
+- **Composable Hosted Fields catalogue** (HC-1680): mount optional non-PCI fields as individual Spreedly-hosted iframes via `inAppElements()` — `expiry` (combined `MM/YY`) or separate `month`/`year`, `first_name`, `last_name`, `full_name`, billing address keys (`address1`…`country`, plus `email` / `company` / `phone_number`), and shipping keys (`shipping_address1`…`shipping_phone_number`). Values are collected inside the iframes at `submit()`; `fieldStateChange` / `validation.formFields` cover the same surface as number/CVV. Catalogue `fieldStateChange` omits the raw `value` unless the merchant opts in with `setFieldStateReporting({ includeValue: true })`. Shared field keys live in core as `AdditionalCardPaymentFormFields` / `AllCardPaymentFormFields` (Express Checkout aligned). The per-field required flag is `isRequired` — the same name Express Checkout uses in its field config — and, as in Express Checkout, `full_name` is required only when mounted with `isRequired: true` (only `first_name` / `last_name` and the date fields are required by default, relaxed by `allow_blank_name` / `allow_blank_date`). See `docs/tokenization/hosted-fields/INTEGRATION_GUIDE.md`.
+- **Canonical address fields** (HC-1688): opt-in Spreedly Core params `house_number_or_name`, `street`, and `street_line2` (plus `shipping_*` twins) on Hosted Fields `inAppElements()` and Express Checkout `uiConfig.cardPaymentFormFields`. Existing `address1` / `address2` remain supported and are forwarded unchanged; when the canonical keys are also present, Spreedly Core composes/overrides `address1` / `address2` server-side — the SDK does not rewrite them.
+- **Phone country and area code fields** (HC-1689): opt-in `phone_number_country_code` and `phone_number_area_code` (plus `shipping_*` twins) on the same Hosted Fields / Express Checkout surfaces. Existing `phone_number` is unchanged.
 - **Optional hosted submit button** (HC-1680): `inAppElements({ submit: { containerId, text? } })` mounts a customizable button iframe. Clicks emit `submitClick` with a read-only snapshot of the mounted catalogue values (never PAN/CVV); merchants must call `submit()` from that handler, passing only the fields they did **not** mount as hosted fields (`{}` when the catalogue covers everything) — mounted values are re-read from their iframes, and hosted-owned keys on `formData` are stripped with a warning. Control appearance with `setStyles('submit', …)`, `setText` / `setLabel`, and `setDisable`.
-- **Styling Guide** (HC-1680): standalone `docs/tokenization/STYLING_GUIDE.md` covering Hosted Fields runtime styling APIs and Express Checkout `uiConfig` themes.
-- **Custom field validators** (HC-1717): `addValidation(fieldName, validator)` and `removeValidation(fieldName)` on both `SpreedlyHostedFields` and `SpreedlyExpressCheckout`, for attaching merchant-owned rules to non-sensitive fields. Validators are layered on top of the SDK's own validation rather than replacing it — the API-safety floor and the `isRequired` / `allow_blank_name` gates run first. They run on the merchant page (never injected into a payment iframe), receive `(value, fields)` where PAN, CVV, month, year, and expiry are always absent, and return `{ isValid: boolean, errorMessage?: string }`. Date fields and PCI fields are rejected with a warning. A validator that throws or returns something unusable fails open. See the tokenization integration guides for both products.
-- **Tokenize-catalogue demo** (`/tokenize-catalogue`): sample-app flow that mounts catalogue iframes, the optional hosted submit button, HC-1688 canonical address/phone fields, and `addValidation` / `removeValidation` on both Hosted Fields and Express Checkout.
+- **`submit()` API documentation**: the Hosted Fields `submit()` method now carries full JSDoc — what belongs in `formData` (only fields not mounted as hosted fields), which keys are stripped and why, and worked examples for both the merchant-owned and hosted submit button flows. It previously appeared in the generated API reference with no description at all.
+- **Styling Guide** (HC-1680): standalone `docs/tokenization/STYLING_GUIDE.md` covering Hosted Fields runtime styling APIs and Express Checkout `uiConfig` themes (SOW documentation deliverable).
+- **Custom field validators** (HC-1717): `addValidation(fieldName, validator)` and `removeValidation(fieldName)` on both `SpreedlyHostedFields` and `SpreedlyExpressCheckout`, for attaching merchant-owned rules to non-sensitive fields. Validators are layered on top of the SDK's own validation rather than replacing it — the API-safety floor (UTF-16, character limits, name charset) and the `isRequired` / `allow_blank_name` gates run first, and a validator only runs for values that already passed them. They run on the merchant page (never injected into a payment iframe), receive `(value, fields)` where `fields` is the form's other non-sensitive values with PAN, CVV, month, year, and expiry always absent, and run on empty non-required values so a conditional requirement can be expressed. Accepted fields are every additional field plus `first_name` / `last_name`; `number`, `verification_value`, `month`, `year`, and the Hosted Fields combined `expiry` are rejected with a warning. Return `{ isValid: boolean, errorMessage?: string }` — `{ isValid: true }` to pass, `{ isValid: false, errorMessage }` to fail with a message, `{ isValid: false }` to fail with a generic message; validators must be synchronous. Failures block tokenization client-side and surface on Hosted Fields' `validation` event under `formFields[field].error` and inline on the Express Checkout form. A validator that throws or returns something unusable fails open with `error` + `consoleError` instead of blocking checkout, and registering none leaves every existing code path and message unchanged. See the tokenization integration guides for both products.
 
 ### Changed
 
-- **Bundle size**: Hosted Fields production bundles are 23–34% smaller, with no change to features, public API, event names, or payload shapes (axios → fetch client, TypeScript `importHelpers` / `tslib`, extra Terser pass).
+- **Bundle size**: the Hosted Fields production bundles are 23–34% smaller, with no change to features, public API, event names, or payload shapes. `index.js` 295,646 → 226,967 bytes, `numberFrame.js` 174,913 → 124,322, `cvvFrame.js` 144,423 → 95,775. Three changes, in order of impact:
+  - Replaced `axios` with a small `fetch`-based JSON client (`packages/core/src/api/http.ts`), removing 45,784 bytes from every bundle. The client preserves the contract callers depend on: it rejects on any non-2xx status, resolves `{ data, status }`, attaches `{ data, status }` to `error.response` on failure, and passes a non-JSON body through as a raw string. `core` no longer depends on `axios`.
+  - Enabled TypeScript's `importHelpers` for Hosted Fields so the ES5 downlevel helpers (`__extends`, `__assign`, `__awaiter`, `__generator`) come from `tslib` instead of being inlined into all 213 modules — `index.js` alone carried 12 copies of the `__generator` state machine. The compile `target` is unchanged.
+  - Added a second Terser compress pass and top-level name mangling. Property names are deliberately still not mangled: they carry postMessage payload and Spreedly wire field names.
+- CI now enforces byte-budgets and artifact presence for the new Hosted Fields iframes: `formFieldFrame.js` (5–180 KB) and `submitButtonFrame.js` (2–80 KB), plus `fields/formField.html` and `fields/submitButton.html`.
 
-## [1.6.2] - 2026-09-10
+## [1.6.2] - 2026-09-09
 
 ### Added
 - **PayPal Complete Payments (PPCP)**: new standalone `SpreedlyPPCP` entry point (exposed from both the Hosted Fields and Express Checkout bundles as `window.SpreedlyPPCP`) for checkout with PayPal's JS SDK v6. The merchant loads PayPal's `web-sdk/v6/core`; the SDK runs the paypal instance, renders the eligible branded buttons as PayPal's web components (`paypal`, `venmo`, `payLater`, `payPalCredit`) → drives the payment session on click. The merchant's backend creates the order, and captures it after approval. Supports vaulting with and without purchase. See `docs/ppcp/` ( integration guide, API reference). Also supports Pay Later messaging.
