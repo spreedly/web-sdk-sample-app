@@ -501,7 +501,7 @@ until the shopper authorizes; the full address and the selected `shippingOptionI
 ```
 
 When requested, the billing name and address are sent to Spreedly on the `google_pay` payment
-method (`first_name`, `last_name`, `address_1`, `address_2`, `city`, `state`, `zip`, `country`)
+method (`first_name`, `last_name`, `address1`, `address2`, `city`, `state`, `zip`, `country`)
 and the email on the payment method. Both are also returned to you in `googlePayTokenGenerated`.
 
 ## Promo codes (offers)
