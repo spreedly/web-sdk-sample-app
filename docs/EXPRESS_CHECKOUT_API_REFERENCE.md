@@ -327,6 +327,45 @@ Does not remove the window `message` listener — use `destroy()` on hosted fiel
 
 `void`
 
+#### updateAuthDetails()
+
+> **updateAuthDetails**(`authDetails`): `void`
+
+Replaces the auth details used by the next card or Google Pay tokenization, and by recache
+and offsite payments. Each set works for one request to Spreedly, and the card form and the
+Google Pay button share it. After a failed tokenization on either one (an `error` event, or
+a `googlePayError` with `TOKENIZATION_FAILED` or `TOKENIZATION_TIMEOUT`), get new auth
+details from your backend and call this before the shopper tries again. The open form and the
+Google Pay button switch to them, and the next `expressCheckout()` call uses them.
+
+##### Parameters
+
+###### authDetails
+
+[`AuthDetails`](#authdetails)
+
+New signed credentials. All five fields are required, and
+  `environment_key` and `certificate_token` must be the same as the constructor's.
+
+##### Returns
+
+`void`
+
+##### Throws
+
+When a field is missing, or `environment_key` / `certificate_token` changed.
+
+##### Example
+
+```javascript
+const refreshAuth = async () =>
+  sdk.updateAuthDetails(await fetchAuthDetailsFromYourBackend());
+sdk.on('error', refreshAuth);
+sdk.on('googlePayError', ({ code }) => {
+  if (code === 'TOKENIZATION_FAILED' || code === 'TOKENIZATION_TIMEOUT') refreshAuth();
+});
+```
+
 ### Form Configuration
 
 #### addField()

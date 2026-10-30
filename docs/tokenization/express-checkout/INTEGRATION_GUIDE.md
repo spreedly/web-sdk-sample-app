@@ -386,6 +386,9 @@ sdk.expressCheckout({
 sdk.setGooglePayTransactionInfo({ totalPrice: '52.00', currencyCode: 'USD', countryCode: 'US' });
 ```
 
+The button uses the same auth details as the card form, and `updateAuthDetails()` replaces both
+([Refreshing the auth details](#refreshing-the-auth-details)).
+
 Card tokens still arrive on `tokenGenerated`. The row is drawn on your page above the iframe, not
 inside it, and only in embedded mode. Give the container a fixed height (the row uses about 108 px
 of it). Dialog mode (no `parentContainerId`) opens the card form without the row and reports
@@ -508,6 +511,27 @@ sdk.on('error', (error) => {
   ]
 }
 ```
+
+### Refreshing the auth details
+
+Each set of auth details works for one request to Spreedly, and expires after 30 minutes. Once a
+tokenization has reached Spreedly, even one that failed, its `nonce` is used: another attempt with
+the same details fails with `errors.replayed_tokenization_nonce`. After a failed tokenization, get
+new auth details from your backend and pass them to `updateAuthDetails()` before the customer
+submits again. The open form, the Google Pay button and the next `expressCheckout()` call use them.
+`environment_key` and `certificate_token` must stay the same.
+
+```javascript
+const refreshAuth = async () =>
+  sdk.updateAuthDetails(await fetchAuthDetailsFromYourBackend());
+
+sdk.on('error', refreshAuth);
+sdk.on('googlePayError', ({ code }) => {
+  if (code === 'TOKENIZATION_FAILED' || code === 'TOKENIZATION_TIMEOUT') refreshAuth();
+});
+```
+
+Don't turn off secure tokenization to avoid this: it is Spreedly's protection against card testing.
 
 ---
 
