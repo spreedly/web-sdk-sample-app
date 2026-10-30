@@ -65,12 +65,13 @@ backend, plain browser JS frontend (no bundler).
   not the web client id), `PAZE_SIGNING_KID`, `PAZE_SIGNING_PRIVATE_KEY` (PKCS#8 PEM, line
   breaks may be `\n`), `PAZE_DEMO_API_KEY` (callers send it as `X-Demo-Api-Key`), optional
   `PAZE_TOKEN_URL`. Without them that endpoint answers `503 not_configured`; nothing else breaks.
-- **The Apple Pay vars are unsuffixed too.** `APPLE_PAY_MERCHANT_ID`, `APPLE_PAY_DISPLAY_NAME`,
-  `APPLE_PAY_DOMAIN` (the registered domain, sent as `initiativeContext`), `APPLE_PAY_ENVIRONMENT`
-  (`production` or `sandbox`, picks Apple's validation host), `APPLE_PAY_MERCHANT_IDENTITY_CERT` /
-  `_KEY` (PEM, line breaks may be `\n`), `APPLE_PAY_DOMAIN_ASSOCIATION` (Apple's verification file,
-  served at `/.well-known/apple-developer-merchantid-domain-association`). Without them
-  `POST /api/v1/apple-pay/validate` answers `503 not_configured` and the file route 404s. The test
+- **The Apple Pay vars are unsuffixed too.** Required: `APPLE_PAY_MERCHANT_IDENTITY_CERT` /
+  `_KEY` (PEM, line breaks may be `\n`) and `APPLE_PAY_DOMAIN_ASSOCIATION` (Apple's verification
+  file, served at `/.well-known/apple-developer-merchantid-domain-association`). Without them
+  `POST /api/v1/apple-pay/validate` answers `503 not_configured` and the file route 404s.
+  Optional overrides, defaulting to the Heroku app in `src/config.ts`: `APPLE_PAY_MERCHANT_ID`,
+  `APPLE_PAY_DISPLAY_NAME`, `APPLE_PAY_DOMAIN` (sent as `initiativeContext`, must be registered with
+  Apple), `APPLE_PAY_ENVIRONMENT` (`sandbox` switches Apple's validation host; default `production`). The test
   page is `src/static/apple-pay-test/` (plain Apple Pay JS, no SDK).
 
 ## Flows (landing page `src/static/index.html`; `?sdk=hosted-fields|express-checkout` threads through URLs)
