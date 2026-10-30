@@ -76,6 +76,24 @@ Throws if `info` is incomplete or invalid, or if the instance was configured wit
 (`recurringTransactionInfo`, `deferredTransactionInfo` or `automaticReloadTransactionInfo`), which
 is fixed at construction.
 
+#### `updateAuthDetails(authDetails): void`
+
+Replaces the auth details used by the **next** tokenization. Each set works for one request to
+Spreedly, so after `TOKENIZATION_FAILED` or `TOKENIZATION_TIMEOUT` get new ones from your backend
+and call this before the shopper tries again. A tokenization already in flight keeps the details
+it started with.
+
+```js
+googlePay.on('googlePayError', async ({ code }) => {
+  if (code === 'TOKENIZATION_FAILED' || code === 'TOKENIZATION_TIMEOUT') {
+    googlePay.updateAuthDetails(await fetchAuthDetailsFromYourBackend());
+  }
+});
+```
+
+Throws if a field is missing, or if `environment_key` or `certificate_token` differs from the
+constructor's. Ignored after `destroy()`.
+
 #### `destroy(): void`
 
 **Terminal** teardown: removes the button, drops all callbacks, and ignores any later taps or
@@ -89,7 +107,7 @@ start again — for example for a new checkout, with freshly signed `authDetails
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `environment` | `'TEST' \| 'PRODUCTION'` | Yes | Google Pay environment. |
-| `authDetails` | `{ environment_key, certificate_token, nonce, signature, timestamp }` | Yes | Signed by your server. `environment_key` becomes `gatewayMerchantId`. Fixed for the life of the instance, as with `SpreedlyHostedFields`; create a new instance for each checkout. |
+| `authDetails` | `{ environment_key, certificate_token, nonce, signature, timestamp }` | Yes | Signed by your server. `environment_key` becomes `gatewayMerchantId`. Each set works for one request to Spreedly: replace it with [`updateAuthDetails()`](#updateauthdetailsauthdetails-void) after a failed or timed-out tokenization, and create a new instance for each checkout. |
 | `merchantInfo.merchantName` | `string` | Yes | Shown in the sheet. |
 | `merchantInfo.merchantId` | `string` | `PRODUCTION` only | Google Merchant ID. Omitted from the request in `TEST`. |
 | `transactionInfo` | `GooglePayTransactionInfo` | One of four | A one-time payment. See [below](#googlepaytransactioninfo). Update later with `setTransactionInfo()`. |
@@ -234,8 +252,9 @@ Every other field maps 1:1 to the config above.
 
 | API | Description |
 |-----|-------------|
-| `expressCheckout({ googlePay })` | `ExpressCheckoutGooglePayConfig`: a [`GooglePayConfig`](#googlepayconfig) without `authDetails`, which come from the Express Checkout instance. `button.buttonSizeMode` defaults to `'fill'`. Embedded mode only (`parentContainerId`): draws a wallet row above the iframe (Google's button, then a divider), shown only after `googlePayReady`. Dialog mode opens the card form without the row. An invalid config and dialog mode do not throw: the form mounts without the row, and `googlePayError` and `googlePayUnavailable` fire with `DEVELOPER_ERROR`. |
+| `expressCheckout({ googlePay })` | `ExpressCheckoutGooglePayConfig`: a [`GooglePayConfig`](#googlepayconfig) without `authDetails`, which come from the Express Checkout instance and are shared with the card form. `button.buttonSizeMode` defaults to `'fill'`. Embedded mode only (`parentContainerId`): draws a wallet row above the iframe (Google's button, then a divider), shown only after `googlePayReady`. Dialog mode opens the card form without the row. An invalid config and dialog mode do not throw: the form mounts without the row, and `googlePayError` and `googlePayUnavailable` fire with `DEVELOPER_ERROR`. |
 | `setGooglePayTransactionInfo(info)` | Same as [`setTransactionInfo()`](#settransactioninfoinfo-void), and keeps `info` for the next `expressCheckout()` call. Throws if `info` is invalid. Logs a warning and does nothing without a `googlePay` option. |
+| `updateAuthDetails(authDetails)` | Replaces the auth details of the card form and the Google Pay button together, and those used by the next `expressCheckout()` call. Call it after a failed tokenization on either one (`error`, or `googlePayError` with `TOKENIZATION_FAILED` or `TOKENIZATION_TIMEOUT`). Throws if a field is missing or `environment_key` / `certificate_token` changed. |
 | `on('googlePay…', cb)` | The [events](#events) below, with the same payloads, emitted by the Express Checkout instance. Card tokens still arrive on `tokenGenerated`. |
 | `submitParams`, `updateSubmitParams()` | Card tokens only. Google Pay payment methods get `googlePay.metadata`, read when `expressCheckout()` mounts the form; `submitParams.metadata` is not added to them. |
 | `updateTextElement('walletDividerText', text)` | Changes the divider copy. Default: "or pay with card". Also settable as `uiConfig.textConfig.walletDividerText`. |
@@ -306,7 +325,7 @@ The `googlePayPaymentAuthorized` payload: the display fields of `GooglePayTokenR
 | `NOT_READY_TO_PAY` | Only as a `googlePayUnavailable` reason: the shopper or browser can't pay | Normal — show the card form. |
 | `MOUNT_FAILED` | The container element is missing, or Google could not draw the button | Render the container before calling `mount()`; check the id. |
 | `DEVELOPER_ERROR` | Google rejected the request (e.g. merchant info), or the request could not be built. In Express Checkout, also an invalid `googlePay` config or dialog mode (no `parentContainerId`) | Check the Wallet Console setup and config. Pass `parentContainerId` to embed the form. |
-| `TOKENIZATION_FAILED` | Spreedly could not create the payment method | See `details`. The sheet stays open so the shopper can pick another card. |
-| `TOKENIZATION_TIMEOUT` | Spreedly answered after Google's 30 s callback deadline; Google has already shown its own timeout error in the sheet, and no token is emitted | Let the shopper try again. Key your order on your own order id, not the token. |
+| `TOKENIZATION_FAILED` | Spreedly could not create the payment method | See `details`. The sheet stays open so the shopper can pick another card; pass new auth details to `updateAuthDetails()` first, as this request may have used the `nonce`. |
+| `TOKENIZATION_TIMEOUT` | Spreedly answered after Google's 30 s callback deadline; Google has already shown its own timeout error in the sheet, and no token is emitted | Pass new auth details to `updateAuthDetails()` (the request still used the `nonce`), then let the shopper try again. Key your order on your own order id, not the token. |
 | `PAYMENT_DATA_CHANGE_FAILED` | Your `onPaymentDataChange` threw, timed out or returned an invalid total | Fix the callback; the shopper sees a generic error in the sheet. |
 | `PAYMENTS_CLIENT_ERROR` | Any other Google failure (raw `statusCode` in `details`) | Retry or fall back to the card form. |

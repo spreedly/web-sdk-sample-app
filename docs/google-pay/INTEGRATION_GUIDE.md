@@ -37,13 +37,15 @@ domain association file** to host.
 |-------|------|
 | **Google `pay.js`** | Google's client. **You load it**; the SDK waits up to 10 s for it to define `window.google.payments.api` |
 | **Google Pay button** | Drawn by Google's `createButton()`, so it follows Google's brand guidelines. **The SDK creates it** — you provide an empty container |
-| **`SpreedlyGooglePay`** | The class you call: `on()`, `mount()`, `setTransactionInfo()`, `destroy()` |
+| **`SpreedlyGooglePay`** | The class you call: `on()`, `mount()`, `setTransactionInfo()`, `updateAuthDetails()`, `destroy()` |
 | **Spreedly Core** | Decrypts the token and creates the payment method (the SDK calls it while the sheet is open) |
 | **Your server** | Signs auth params, then runs the purchase/authorize with the returned token |
 
 You interact almost entirely with `SpreedlyGooglePay`; the SDK handles Google. The payment method
 is created **in the browser**, while the sheet is still open, so a Spreedly failure is shown to the
 shopper inside the sheet and they can pick another card. Your server only runs the transaction.
+Each set of auth params works for one request to Spreedly, so that retry needs new ones — see
+[Refreshing the auth details](#refreshing-the-auth-details).
 
 > **Nothing can run between the tap and the sheet.** Google requires `loadPaymentData()` to be
 > called while the browser is still handling the tap, so the SDK builds the request from what it
@@ -148,11 +150,11 @@ The tap produces `googlePayTokenGenerated` with a Spreedly payment method token 
 
 ### 7. Start a new checkout
 
-`authDetails` work as they do for the Hosted Fields card form: they are signed for one checkout
-and fixed for the life of the instance. Spreedly expects a fresh `nonce` for each checkout, and
-the `nonce` and `timestamp` expire after
-[30 minutes](https://developer.spreedly.com/docs/iframe-api-lifecycle#security-requirements). When
-the shopper starts another checkout on the same page (or the page has been open a long time),
+Spreedly expects a fresh `nonce` for each tokenization request, and the `nonce` and `timestamp`
+expire after
+[30 minutes](https://developer.spreedly.com/docs/iframe-api-lifecycle#security-requirements). Within
+a checkout, refresh them with `updateAuthDetails()`
+([below](#refreshing-the-auth-details)). When the shopper starts another checkout on the same page,
 replace the instance:
 
 ```js
@@ -162,6 +164,28 @@ googlePay = new window.SpreedlyGooglePay({ ...config, authDetails });
 // register your on(...) handlers again, then:
 await googlePay.mount('google-pay-button-container');
 ```
+
+### Refreshing the auth details
+
+Each set of `authDetails` works for one request to Spreedly. Once a tokenization has reached
+Spreedly, even one that failed, its `nonce` is used, and a later attempt with the same details fails
+with `errors.replayed_tokenization_nonce`. The same goes after `TOKENIZATION_TIMEOUT`: the request
+still completes and uses the `nonce`. So after `TOKENIZATION_FAILED` or `TOKENIZATION_TIMEOUT`, get
+new auth details from your backend and pass them to `updateAuthDetails()` before the shopper tries
+again. `environment_key` and `certificate_token` must stay the same.
+
+```js
+googlePay.on('googlePayError', async ({ code }) => {
+  if (code === 'TOKENIZATION_FAILED' || code === 'TOKENIZATION_TIMEOUT') {
+    googlePay.updateAuthDetails(await fetch('/checkout/auth-params').then(r => r.json()));
+  }
+});
+```
+
+The sheet stays open after `TOKENIZATION_FAILED`, so the shopper can pick another card as soon as
+the new details are in. If they try again before then, that attempt fails too and they can try once
+more. Don't turn off secure tokenization to avoid this: it is Spreedly's protection against card
+testing.
 
 ---
 
@@ -197,6 +221,11 @@ checkout.setGooglePayTransactionInfo({ totalPrice: '52.00', currencyCode: 'USD',
 ```
 
 - **Your page still loads `pay.js`** ([step 1](#1-load-the-scripts)).
+- **The card form and Google Pay share the auth details** passed to the constructor. Each set works
+  for one request to Spreedly, so after a failed tokenization on either one (`error`, or
+  `googlePayError` with `TOKENIZATION_FAILED` or `TOKENIZATION_TIMEOUT`), get new ones from your
+  backend and call `checkout.updateAuthDetails()`. It updates the open form and the button
+  together ([Refreshing the auth details](#refreshing-the-auth-details)).
 - **The row only appears when the shopper can pay.** It stays hidden until Google's
   `isReadyToPay()` passes. If Google Pay is unavailable, the row is removed and the card form is
   the only option.
@@ -347,8 +376,9 @@ document.getElementById('checkout-close').addEventListener('click', closeCheckou
 The `googlePay` option always puts the button directly above the card fields. To put it somewhere
 else, for example an express-pay section at the top of the page, leave `googlePay` out and mount
 the standalone button ([steps 2–4](#2-add-a-container-for-the-button)) next to the embedded form.
-Pass it the same `authDetails` as the Express Checkout instance; the `googlePay` option does the
-same internally. In that setup:
+Pass it the same `authDetails` as the Express Checkout instance. After a failed tokenization on
+either one, pass the new auth details to both `checkout.updateAuthDetails()` and
+`googlePay.updateAuthDetails()`. In that setup:
 
 - Google Pay events arrive on the `SpreedlyGooglePay` instance, not on Express Checkout.
 - You draw any "or pay with card" divider yourself, and hide it on `googlePayUnavailable`.
@@ -634,7 +664,9 @@ request data or the token. The most common cases:
   or account can't pay with Google Pay. Show your card form.
 - **`TOKENIZATION_FAILED`**: the sheet stays open so the shopper can pick another card.
   **`TOKENIZATION_TIMEOUT`**: Spreedly answered after Google's 30 s deadline, so Google has already
-  shown its own timeout error and no token is emitted. Either way, key your order on your own
+  shown its own timeout error and no token is emitted. Either way, the request may have used the
+  `nonce`: pass new auth details to `updateAuthDetails()` before the next attempt
+  ([Refreshing the auth details](#refreshing-the-auth-details)), and key your order on your own
   order id, not the token.
 - **`DEVELOPER_ERROR`**: Google rejected the request — check your Wallet Console setup and config.
 
