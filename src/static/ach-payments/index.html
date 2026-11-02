@@ -76,14 +76,13 @@
       margin-top: 0.5rem;
     }
 
-    /* Placeholder inputs: 75% of the width and height of a normal .form-input. */
     .ach-panel-input {
       display: block;
       margin-top: 0.375rem;
       width: 75%;
       padding: 0.5rem 0.75rem;
       font-size: 0.875rem;
-      height: 2.25rem; /* selects otherwise render 2px taller than the text inputs */
+      height: 2.25rem;
     }
 
     .ach-panel-row {
@@ -97,20 +96,17 @@
       grid-template-columns: 1fr 1fr 1fr;
     }
 
-    /* Three to a row leaves too little room for 75%: fill the column. */
     .ach-panel-row-3 .ach-panel-input {
       width: 100%;
     }
 
-    /* Space between the placeholder row and the checkbox row below it. */
     .ach-panel-row + .ach-panel-row {
       margin-top: 1.25rem;
     }
 
-    /* Validate (secondary) next to the submit button, like the card hosted fields form. */
     .ach-form .ach-submit-row {
       display: grid;
-      grid-template-columns: auto 1fr; /* Validate sized to its text; submit takes the rest */
+      grid-template-columns: auto 1fr;
       gap: 1rem;
       margin-top: 0.5rem;
     }
@@ -162,8 +158,7 @@
       z-index: 1;
     }
 
-    /* Secure hosted-field iframe containers — styled to match the plain inputs (same height,
-       border and radius). The input inside the iframe gets the page's font via setStyles(). */
+    /* The secure field containers, styled like the page's inputs. */
     .ach-form .hosted-field {
       height: 38px;
       border: 1.5px solid var(--color-gray-200);
@@ -172,12 +167,11 @@
       display: flex;
       align-items: center;
       transition: border-color 0.15s ease;
-      /* Clip the square iframe to the rounded corners so it doesn't paint over the border. */
+      /* Keeps the iframe inside the rounded corners. */
       overflow: hidden;
     }
 
-    /* The plain inputs' :focus border, driven by fieldStateChange (the iframe has the focus,
-       so the page can't use :focus on the container). */
+    /* Set from fieldStateChange: the iframe has the focus, not the container. */
     .ach-form .hosted-field.focused {
       border-color: var(--color-primary);
     }
@@ -234,7 +228,6 @@
       margin-bottom: 1rem;
     }
 
-    /* Express Checkout mode: the box sits on the page background, not in a white card. */
     .ec-only .info-box {
       background: var(--color-gray-100);
       border: 1px solid var(--color-black);
@@ -256,7 +249,6 @@
     <main class="main">
       <div class="container">
         <div class="tokenize-layout">
-          <!-- Left Column - Payment Form -->
           <div class="tokenize-form">
             <a href="../index.html" class="back-link">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
@@ -277,7 +269,6 @@
               never touch this page. After the SDK emits tokenGenerated, run a purchase against the Spreedly Test gateway.
             </p>
 
-            <!-- Loading State -->
             <div id="loading-state" class="card" style="text-align: center; padding: 3rem;">
               <div class="loading">
                 <span class="spinner"></span>
@@ -285,11 +276,8 @@
               </div>
             </div>
 
-            <!-- Main Payment Section -->
             <div id="payment-section" class="hidden">
-              <!-- Express Checkout mode (?sdk=express-checkout): only the prebuilt SpreedlyACHForm
-                   inside the bordered box, like the card demo. The form fills its element, so it
-                   needs a height; ach-form.js sets it to fit (500px, or 560px with the save box). -->
+              <!-- SpreedlyACHForm fills its container, so the container needs a height. -->
               <div class="ec-only hidden">
                 <div class="info-box">
                   <strong>Test data:</strong> Routing <code>021000021</code>, Account <code>9876543210</code>
@@ -299,7 +287,6 @@
                   <div id="ach-form-container" style="height: 500px;"></div>
                 </div>
 
-                <!-- Dialog mode: the form opens full-page from this button -->
                 <div id="ach-dialog-box" class="card hidden" style="text-align: center; padding: 2.5rem;">
                   <p style="color: var(--color-gray-600); margin-bottom: 1.5rem;">
                     Dialog mode: <code>mount()</code> with no <code>parentContainerId</code> opens the form as a dialog: a centered card over a dimmed page.
@@ -376,7 +363,6 @@
               </div>
             </div>
 
-            <!-- Result Display -->
             <div id="result-section" class="hidden">
               <div id="result-card" class="result-card">
                 <div class="result-header">
@@ -398,9 +384,7 @@
             </div>
           </div>
 
-          <!-- Right Column - Information -->
           <div class="config-panel" id="config-panel">
-            <!-- SDK Configuration (Express Checkout mode for now; Hosted Fields options come later) -->
             <div class="config-section ec-only hidden">
               <div class="config-section-title">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -601,8 +585,6 @@
               <pre id="ec-event-log" class="ach-panel-pre">—</pre>
             </div>
 
-            <!-- SDK Configuration — Hosted Fields mode (SpreedlyACHFields). Runtime methods: changes
-                 apply live, no remount. -->
             <div class="config-section hf-only">
               <div class="config-section-title">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">

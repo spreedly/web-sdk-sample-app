@@ -1,21 +1,11 @@
 /**
- * ACH Payments Flow — Express Checkout mode (`?sdk=express-checkout`)
+ * ACH with SpreedlyACHForm (Express Checkout): the whole bank account form, with its own
+ * submit button, runs in one Spreedly-hosted iframe.
  *
- * Uses SpreedlyACHForm, the prebuilt bank account form. The whole form — name,
- * routing and account numbers, account type — lives in one Spreedly-hosted
- * iframe with its own submit button, so this page collects nothing itself.
- *
- * 1. Load the Express Checkout SDK bundle and fetch auth params from the backend
- * 2. new SpreedlyACHForm(auth) → mount({ parentContainerId, uiConfig })
- * 3. The buyer fills in the form and clicks its submit button
- * 4. Listen for `tokenGenerated` ({ tokenResponse, shouldRetain }). If shouldRetain is true,
- *    retain the payment method from the backend (PUT /api/v1/payment_methods/:token/retain),
- *    then POST to /api/v1/ach-purchase (runPurchase, shared with ach-payments.js)
- *
- * The SDK Configuration panel (display mode, optional fields, retaining, text, button case,
- * custom labels and placeholders, custom theme) builds the mount() options, and its event log
- * lists the form's events; any change remounts the form, or applies the next time
- * the dialog opens. The SDK never retains anything itself — this page does, from its backend.
+ * 1. Fetch auth params from your backend and create the form: new SpreedlyACHForm(authDetails)
+ * 2. mount({ parentContainerId, uiConfig }). Without parentContainerId, it opens as a dialog.
+ * 3. On `tokenGenerated`, retain the payment method from your backend if shouldRetain is true,
+ *    then run the purchase from your backend.
  */
 
 let achForm = null;
@@ -35,8 +25,6 @@ function loadExpressCheckoutSDK() {
 }
 
 async function initACHForm() {
-  // Swap the page to the prebuilt form: hide the Hosted Fields card and copy, show the
-  // bordered form container and the Express Checkout copy.
   document.querySelectorAll('.hf-only').forEach(el => el.classList.add('hidden'));
   document.querySelectorAll('.ec-only').forEach(el => el.classList.remove('hidden'));
 
@@ -71,7 +59,6 @@ async function initACHForm() {
   achForm.on('tokenGenerated', async ({ tokenResponse, shouldRetain }) => {
     const { token, account_number_display_digits: last4 } = tokenResponse.payment_method;
     console.log('ACH payment method created:', { token, last4, shouldRetain });
-    // The log shows a summary: tokenResponse is the whole Spreedly transaction.
     logECEvent('tokenGenerated', {
       'tokenResponse.payment_method.token': token,
       storage_state: tokenResponse.payment_method.storage_state,
@@ -99,8 +86,6 @@ async function initACHForm() {
 
   achForm.on('close', payload => logECEvent('close', payload));
 
-  // Every config control is a mount() setting: any change remounts the form (embedded), or
-  // applies the next time the dialog opens. Text inputs apply on `change` (blur / Enter).
   document.querySelectorAll('.ach-config').forEach(control => {
     control.addEventListener('change', applyACHFormConfig);
   });
@@ -129,7 +114,7 @@ const ACH_OPTIONAL_FIELDS = [
   ...ACH_CONTACT_FIELDS,
 ];
 
-/** "Custom labels & placeholders": sample text for every field (the dropdowns take no placeholder). */
+// Custom labels and placeholders. The dropdowns take no placeholder.
 const ACH_CUSTOM_FIELD_TEXT = {
   full_name: { label: 'Name on the account', placeholder: 'Jane Doe' },
   bank_name: { label: 'Bank', placeholder: 'e.g. Chase' },
@@ -147,7 +132,7 @@ const ACH_CUSTOM_FIELD_TEXT = {
   country: { label: 'Country', placeholder: 'US' },
 };
 
-/** "Custom theme": a sample blue theme. Same uiConfig.styles shape as the card form. */
+// A sample theme. uiConfig.styles has the same shape as the card form's.
 const ACH_CUSTOM_THEME = {
   textfield: {
     borderColor: '#93c5fd',
@@ -169,7 +154,6 @@ function logECEvent(event, payload) {
   document.getElementById('ec-event-log').textContent = ecEvents.join('\n');
 }
 
-/** Reads the config panel into SpreedlyACHForm mount() options. */
 function buildMountOptions() {
   const value = id => document.getElementById(id).value;
   const checked = id => document.getElementById(id).checked;
@@ -179,7 +163,7 @@ function buildMountOptions() {
     full_name: { placeholder: 'Bob Smith' },
   };
   ACH_OPTIONAL_FIELDS.forEach(field => {
-    const mode = value(`config-field-${field}`); // hidden | optional | required
+    const mode = value(`config-field-${field}`);
     achFormFields[field] = { isHidden: mode === 'hidden', isRequired: mode === 'required' };
   });
   if (checked('config-custom-labels')) {
@@ -198,8 +182,6 @@ function buildMountOptions() {
         footerText: value('config-text-footer'),
         processingText: value('config-text-processing'),
       },
-      // Same button styling as the Express Checkout card demo (tokenize.js), unless the
-      // custom theme replaces it.
       styles: {
         ...theme,
         button: {
@@ -223,7 +205,7 @@ function displayMode() {
   return document.querySelector('input[name="ach-display-mode"]:checked').value;
 }
 
-/** The form's field order and default widths (out of 12), as in the SDK's ACH form config. */
+// The form's field order and default widths, on a 12-column grid.
 const ACH_FORM_LAYOUT = [
   ['full_name', 12],
   ['bank_name', 12],
@@ -241,11 +223,7 @@ const ACH_FORM_LAYOUT = [
   ['country', 6],
 ];
 
-/**
- * The form fills its container and doesn't size itself, so size the container to fit the
- * fields that are shown (measured in Chromium): a fixed part for the title, button and footer,
- * one row per line of fields, and the save checkbox.
- */
+// The form fills its container, so size the container to fit the fields that are shown.
 const ACH_FORM_FIXED_HEIGHT = 212;
 const ACH_FORM_ROW_HEIGHT = 72;
 const ACH_FORM_SAVE_CHECKBOX_HEIGHT = 58;
@@ -255,7 +233,6 @@ function fittedFormHeight() {
     const select = document.getElementById(`config-field-${field}`);
     return !select || select.value !== 'hidden';
   };
-  // Fields fill a 12-column grid in order, wrapping when the next one doesn't fit.
   let rows = 0;
   let used = 12;
   ACH_FORM_LAYOUT.filter(([field]) => shown(field)).forEach(([, size]) => {
@@ -293,7 +270,6 @@ function applyACHFormConfig() {
     document.getElementById('ach-form-container').style.height = `${fittedFormHeight()}px`;
     achForm.mount(buildMountOptions());
   } else {
-    // Dialog mode has nothing to wait for on the page.
     hideLoading();
     elements.paymentSection().classList.remove('hidden');
   }

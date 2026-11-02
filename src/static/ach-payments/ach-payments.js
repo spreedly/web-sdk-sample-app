@@ -1,21 +1,11 @@
 /**
- * ACH Payments Flow — Spreedly Web SDK Demo (hosted secure fields)
+ * ACH with SpreedlyACHFields (Hosted Fields): the routing and account numbers are typed into
+ * two Spreedly-hosted iframes and never reach this page.
  *
- * 1. Load the hosted-fields SDK bundle and fetch auth params from the backend
- * 2. Create a SpreedlyACHFields instance and mount the two secure iframes
- *    (routing + account) into container divs
- * 3. On `ready`, the buyer types the numbers straight into the iframes —
- *    they never touch this page. Name / account type / holder type are plain
- *    merchant inputs.
- * 4. Call ach.submit(formData) with only the non-sensitive fields (Spreedly's names, like
- *    the card submit())
- * 5. Listen for `tokenGenerated` → POST to /api/v1/ach-purchase
- * 6. Render success/failure
- *
- * The routing and account numbers stay inside Spreedly-hosted iframes — the
- * secure-field model, same as card number/CVV. This is the modern replacement
- * for the deprecated setupACHPayment/submitACHPayment API, where the merchant
- * collected the numbers in its own inputs.
+ * 1. Fetch auth params from your backend and create the fields: new SpreedlyACHFields(authDetails)
+ * 2. Mount the iframes: inAppElements({ routing, account })
+ * 3. Call submit() with the other fields: name, account type and holder type
+ * 4. On `tokenGenerated`, run the purchase from your backend
  */
 
 let ach = null;
@@ -37,7 +27,6 @@ document.addEventListener('DOMContentLoaded', init);
 
 async function init() {
   try {
-    // ?sdk=express-checkout → the prebuilt SpreedlyACHForm (ach-form.js).
     if (SpreedlyUtils.getSDKType() === 'express-checkout') {
       await initACHForm();
       return;
@@ -59,7 +48,7 @@ async function init() {
     await createAchInstanceAndMountFields();
     setupToggleMaskButton();
     setupSubmitHandler();
-    setupFieldsPanel(); // ach-fields-panel.js
+    setupFieldsPanel();
   } catch (error) {
     console.error('Failed to initialize ACH demo:', error);
     hideLoading();
@@ -68,10 +57,7 @@ async function init() {
   }
 }
 
-/**
- * SpreedlyACHFields lives in the hosted-fields bundle only. The `?sdk=express-checkout`
- * mode uses SpreedlyACHForm from the Express Checkout bundle instead (ach-form.js).
- */
+// SpreedlyACHFields is in the Hosted Fields bundle. SpreedlyACHForm is in the Express Checkout one.
 function loadHostedFieldsSDK() {
   return new Promise((resolve, reject) => {
     const src =
@@ -100,21 +86,17 @@ async function createAchInstanceAndMountFields() {
   ach.on('ready', () => {
     hideLoading();
     elements.paymentSection().classList.remove('hidden');
-    // Placeholders and styles (matching the page's own inputs: same font family, size and
-    // color — web fonts like DM Sans can't load inside the iframe, so the next font in the
-    // list is used), mask state and submit gating, all from the config panel.
-    onHfReady(); // ach-fields-panel.js
+    onHfReady();
   });
 
-  // Focus ring: the iframe holds the focus, so mirror it onto the container the way the
-  // page's inputs get their :focus border.
+  // The iframe has the focus, so show the focus border on its container.
   ach.on('fieldStateChange', ({ field, focused }) => {
     const container = document.getElementById(
       field === 'routing' ? 'ach-routing-field' : 'ach-account-field'
     );
     container?.classList.toggle('focused', focused);
   });
-  ach.on('fieldStateChange', onHfFieldState); // config panel: gating + event log
+  ach.on('fieldStateChange', onHfFieldState);
 
   ach.on('tokenGenerated', async ({ tokenResponse }) => {
     const { token, account_number_display_digits: last4 } = tokenResponse.payment_method;
@@ -129,9 +111,9 @@ async function createAchInstanceAndMountFields() {
   });
 
   ach.on('validation', snapshot => {
-    // Lengths + validity only — never the values.
+    // Lengths and validity only, never the values.
     console.log('ACH validation:', snapshot);
-    onHfValidation(snapshot); // config panel
+    onHfValidation(snapshot);
   });
 
   ach.inAppElements({
@@ -143,7 +125,6 @@ async function createAchInstanceAndMountFields() {
 function setupToggleMaskButton() {
   const button = elements.toggleAccountVisibility();
   if (!button) return;
-  // Shares its state with the config panel's "Mask account number" checkbox.
   button.addEventListener('click', () => setHfMasked(!hfPanel.masked));
 }
 
@@ -165,8 +146,7 @@ function handleSubmit() {
 
   setSubmitting(true);
 
-  // Only the non-sensitive fields. The routing and account numbers are read
-  // inside the account iframe — they are never collected on this page.
+  // The routing and account numbers come from the iframes, so send only the other fields.
   ach.submit({
     first_name: (formData.firstName || '').trim(),
     last_name: (formData.lastName || '').trim(),
@@ -217,7 +197,7 @@ function setSubmitting(submitting) {
     return;
   }
   hfPanel.submitting = submitting;
-  updateHfSubmitEnabled(); // names filled + both secure fields valid
+  updateHfSubmitEnabled();
 }
 
 function renderSuccess({ paymentMethodToken, last4, storageState, transactionToken, amount, currency }) {
@@ -256,7 +236,6 @@ window.resetAchFlow = function () {
   window.location.href = window.location.pathname + window.location.search;
 };
 
-/** The Hosted Fields card holds `status-message`; the Express Checkout mode has its own. */
 function statusMessageId() {
   return SpreedlyUtils.getSDKType() === 'express-checkout' ? 'ec-status-message' : 'status-message';
 }
