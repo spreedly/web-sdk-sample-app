@@ -51,7 +51,7 @@ Generating auth details is not enough on its own. It is mandatory to also turn o
 
 > **Important:** This setting is per environment — enable it in every environment you use (for example, staging and production). Once enabled, **every** Create payment method call in that environment requires authentication: SDK requests must carry valid auth details, and any direct API calls must use HTTP basic auth. Confirm your integration sends valid auth details before you save the setting.
 
-Non-secure tokenization will be deprecated on October 31, 2026 (end of life December 31, 2028).
+Non-secure tokenization was deprecated on October 31, 2026 (end of life December 31, 2028).
 
 ---
 
