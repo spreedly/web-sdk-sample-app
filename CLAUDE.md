@@ -136,8 +136,7 @@ Backend routes with no frontend caller: `POST /purchase` (the only one exercisin
   capturing SDK message listeners into `window.__capturedMessageListeners`).
 - Hardcoded Stripe test publishable key in `stripe-apm.js`; fake Venmo nonce fallback
   in `braintree.js`.
-- README: no `.env` section, flow table omits ACH, and its testing-guide link 404s —
-  the real folder is `docs/ testing and troubleshooting/` (leading space in the name).
+- README: no `.env` section.
 - 3DS pages depend on the SDK-provided `serializeBrowserInfo` global; `browserSize`
   `'04'` and the accept header are hardcoded in each flow's CONFIG.
 - `docs/` mirrors the SDK repo's docs structure (tokenization/three-ds/offsite/

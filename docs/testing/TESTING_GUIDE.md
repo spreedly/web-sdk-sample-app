@@ -275,4 +275,4 @@ If your page uses a Content Security Policy, allow the Spreedly CDN domain:
 
 ## Troubleshooting
 
-For issues during testing or in your integration, see the [Troubleshooting Guide](../TROUBLESHOOTING_GUIDE.md). It covers SDK loading failures, authentication errors, CSP configuration, tokenization and recache errors, 3DS issues, network problems, and browser DevTools tips.
+For issues during testing or in your integration, see the [Troubleshooting Guide](./TROUBLESHOOTING_GUIDE.md). It covers SDK loading failures, authentication errors, CSP configuration, tokenization and recache errors, 3DS issues, network problems, and browser DevTools tips.
