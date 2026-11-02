@@ -234,7 +234,10 @@ test.describe('offsite payments flow', () => {
     await expect(page.locator('h2:has-text("Código Pix gerado!"),h2:has-text("Pix code generated!")')).toBeVisible();
   })
 
-  test('offsite payments flow for hosted fields ebanx nupay authorize case yes case', async ({ page }) => {
+  // Since 2026-10-07 the EBANX sandbox rejects NuPay purchases ("Transaction not found",
+  // code NOK), so the page never reaches the NuPay simulator. Nothing changed on our side.
+  // Change test.fixme back to test once EBANX NuPay purchases work again.
+  test.fixme('offsite payments flow for hosted fields ebanx nupay authorize case yes case', async ({ page }) => {
     await page.goto(MONOREPO_URLS.BASE);
     await landingPage.clickOnOffsitePaymentsButton(page);
     await waitForAuthParams(page);
@@ -248,7 +251,7 @@ test.describe('offsite payments flow', () => {
     await redirectResultPage.verifyTransactionDetails(page, 'NuPay (EBANX)', 'ebanx', 'succeeded');
   })
 
-  test('offsite payments flow for hosted fields ebanx nupay authorize case no case', async ({ page }) => {
+  test.fixme('offsite payments flow for hosted fields ebanx nupay authorize case no case', async ({ page }) => {
     await page.goto(MONOREPO_URLS.BASE);
     await landingPage.clickOnOffsitePaymentsButton(page);
     await waitForAuthParams(page);
@@ -262,7 +265,7 @@ test.describe('offsite payments flow', () => {
     await redirectResultPage.verifyTransactionDetails(page, 'NuPay (EBANX)', 'ebanx', 'gateway_processing_failed');
   })
 
-  test('offsite payments flow for hosted fields ebanx nupay authorize case pending case', async ({ page }) => {
+  test.fixme('offsite payments flow for hosted fields ebanx nupay authorize case pending case', async ({ page }) => {
     await page.goto(MONOREPO_URLS.BASE);
     await landingPage.clickOnOffsitePaymentsButton(page);
     await waitForAuthParams(page);

@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, urlencoded } from 'express';
 import { getAuthParams } from './controllers/auth';
 import { 
   createPaymentMethod, 
@@ -21,6 +21,12 @@ import {
   createAchPurchase,
   createPazePaymentMethod,
 } from './controllers/payments';
+import { getPazeAccessToken, pazeTokenRateLimit } from './controllers/paze-oauth';
+import {
+  applePayValidateRateLimit,
+  getApplePayConfig,
+  validateApplePayMerchant,
+} from './controllers/apple-pay';
 import {
   getPPCPConfig,
   createPPCPOrder,
@@ -1222,5 +1228,88 @@ router.post('/ppcp/vault/purchase-order/:orderId/capture', capturePPCPVaultPurch
  *         description: Error creating payment method
  */
 router.post('/paze-payment-method', createPazePaymentMethod);
+
+/**
+ * @swagger
+ * /api/v1/paze/oauth/token:
+ *   post:
+ *     description: Mint a single-use Paze access token for the Spreedly mobile SDK (Paze CAT), bound to the app's Paze session. Send session_id as JSON or form data. Every response has Cache-Control no-store.
+ *     tags: [Paze Payments]
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - in: header
+ *         name: X-Demo-Api-Key
+ *         required: true
+ *         type: string
+ *         description: Shared demo key (PAZE_DEMO_API_KEY)
+ *       - in: formData
+ *         name: session_id
+ *         required: true
+ *         type: string
+ *         description: The Paze checkout session id (letters, digits, . _ : -; up to 128 characters)
+ *     responses:
+ *       200:
+ *         description: Token minted
+ *         schema:
+ *           type: object
+ *           properties:
+ *             access_token:
+ *               type: string
+ *             token_type:
+ *               type: string
+ *             expires_in:
+ *               type: string
+ *       400:
+ *         description: session_id missing or malformed ({"error":"invalid_session_id"})
+ *       401:
+ *         description: Missing or wrong X-Demo-Api-Key ({"error":"unauthorized"})
+ *       429:
+ *         description: More than 10 requests a minute from this caller, with or without a valid key ({"error":"rate_limited"}, with Retry-After)
+ *       502:
+ *         description: Paze rejected the request ({"error":"upstream_rejected"}) or returned no usable token ({"error":"upstream_invalid"})
+ *       503:
+ *         description: Paze timed out or failed ({"error":"upstream_unavailable"}), or the Paze settings are missing ({"error":"not_configured"})
+ */
+router.post(
+  '/paze/oauth/token',
+  pazeTokenRateLimit,
+  urlencoded({ extended: false }),
+  getPazeAccessToken
+);
+
+/**
+ * @swagger
+ * /api/v1/apple-pay/validate:
+ *   post:
+ *     description: Requests an Apple Pay merchant session from Apple over mutual TLS with the Merchant Identity Certificate. Always calls Apple's fixed host for APPLE_PAY_ENVIRONMENT; the browser's validationURL is never fetched.
+ *     tags: [Apple Pay]
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: Apple's merchant session object, unchanged (single use, expires after 5 minutes)
+ *       429:
+ *         description: More than 10 requests a minute from this caller ({"error":"rate_limited"})
+ *       502:
+ *         description: Apple rejected the request ({"error":"upstream_rejected"})
+ *       503:
+ *         description: Apple timed out or failed ({"error":"upstream_unavailable"}), or the Apple Pay settings are missing ({"error":"not_configured"})
+ */
+router.post('/apple-pay/validate', applePayValidateRateLimit, validateApplePayMerchant);
+
+/**
+ * @swagger
+ * /api/v1/apple-pay/config:
+ *   get:
+ *     description: Apple Pay settings the demo page needs. The merchant ID isn't secret.
+ *     tags: [Apple Pay]
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: '{"merchantIdentifier": string | null, "configured": boolean}'
+ */
+router.get('/apple-pay/config', getApplePayConfig);
 
 export default router;

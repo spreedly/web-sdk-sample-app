@@ -59,6 +59,23 @@ backend, plain browser JS frontend (no bundler).
   `{STRIPE,PAYPAL,EBANX,BRAINTREE}_GATEWAY_TOKEN_NEW`, plus `PORT`/`SPREEDLY_URL`).
   Unsuffixed legacy vars in `.env` are dead. README's setup section doesn't mention
   `.env` at all — the server won't work without it.
+- **Exception: the Paze vars are unsuffixed.** Web checkout: `PAZE_CERTIFICATE_TOKEN`,
+  `PAZE_CLIENT_ID` (the web client id), `PAZE_CLIENT_NAME`, `PAZE_PROFILE_ID`. Mobile token
+  endpoint (`POST /api/v1/paze/oauth/token`, CAT): `PAZE_MOBILE_LOGIN_ID` (the mobile login id,
+  not the web client id), `PAZE_SIGNING_KID`, `PAZE_SIGNING_PRIVATE_KEY` (PKCS#8 PEM, line
+  breaks may be `\n`), `PAZE_DEMO_API_KEY` (callers send it as `X-Demo-Api-Key`), optional
+  `PAZE_TOKEN_URL`. Without them that endpoint answers `503 not_configured`; nothing else breaks.
+- **The Apple Pay vars are unsuffixed too.** Required: `APPLE_PAY_MERCHANT_IDENTITY_CERT` /
+  `_KEY` (PEM, line breaks may be `\n`) and `APPLE_PAY_DOMAIN_ASSOCIATION` (Apple's verification
+  file, served at `/.well-known/apple-developer-merchantid-domain-association`). Without them
+  `POST /api/v1/apple-pay/validate` answers `503 not_configured` and the file route 404s.
+  Optional overrides, defaulting to the Heroku app in `src/config.ts`: `APPLE_PAY_MERCHANT_ID`,
+  `APPLE_PAY_DISPLAY_NAME`, `APPLE_PAY_DOMAIN` (sent as `initiativeContext`, must be registered with
+  Apple), `APPLE_PAY_ENVIRONMENT` (`sandbox` switches Apple's validation host; default `production`). The test
+  pages: `apple-pay-test/` (plain Apple Pay JS, no SDK) and `apple-pay-local-sdk/` (loads the SDK
+  from `localhost:5000` / `:5173`, so an unreleased SDK build can run on the registered Heroku
+  domain; use Chrome on the machine running `npm run dev` in checkout-web-sdk). Neither is on the
+  landing page.
 
 ## Flows (landing page `src/static/index.html`; `?sdk=hosted-fields|express-checkout` threads through URLs)
 
@@ -71,6 +88,7 @@ backend, plain browser JS frontend (no bundler).
 | `purchase-with-3ds/` | 3DS **Global** (`sca_provider_key` server-side), `SpreedlyThreeDSLifecycle` + `serializeBrowserInfo` | HF + EC | `create-purchase-with-3ds` |
 | `purchase-with-3ds-gateway-specific/` | 3DS **gateway-specific** with full callback set incl. `onTriggerCompletion` → `transactions/:t/complete` → `event.finalize()` | HF + EC | `create-purchase-with-3ds-gateway-specific`, `complete` |
 | `ach-payments/` | ACH bank-account tokenize + $10 purchase. HF: two secure fields + merchant name/type inputs (`ach-payments.js`); EC: the prebuilt form in one iframe (`ach-form.js`) | HF `SpreedlyACHFields`; EC `SpreedlyACHForm` | `ach-purchase` |
+| `apple-pay-test/`, `apple-pay-local-sdk/` | Apple Pay on the web: plain Apple Pay JS, and the SDK (`SpreedlyApplePay` / `expressCheckout({ applePay })`) loaded from localhost. Same-origin API calls; `?debug=1` failure switches on the SDK page | none / HF + EC (local) | `apple-pay/validate`, `apple-pay/config`, `auth/params`, `simple-purchase` |
 | `offsite-payments/` | Hub: paypal/sprel via `setupOffsitePayment`; subpages `braintree/` (`SpreedlyBraintree`), `stripe-apm/` (`SpreedlyStripeAPM`), `ebanx/` (LATAM methods) | offsite APIs | `offsite-purchase`, `braintree-purchase`, `stripe-apm-purchase`, `create-purchase`, `transactions/:t`, `confirm` |
 
 Backend routes with no frontend caller: `POST /purchase` (the only one exercising the

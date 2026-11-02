@@ -27,6 +27,21 @@ interface Config {
   pazeClientId: string;
   pazeClientName: string;
   pazeProfileId: string;
+  pazeMobileLoginId: string;
+  pazeSigningKid: string;
+  pazeSigningPrivateKey: string;
+  pazeTokenUrl: string;
+  pazeDemoApiKey: string;
+  // Apple Pay (web): merchant validation and domain verification. Merchant ID, display name,
+  // domain and environment default to the Heroku sample app; the routes answer
+  // 503 not_configured / 404 until the certificate, key and verification file are set.
+  applePayMerchantId: string;
+  applePayDisplayName: string;
+  applePayDomain: string;
+  applePayEnvironment: 'sandbox' | 'production';
+  applePayMerchantIdentityCert: string;
+  applePayMerchantIdentityKey: string;
+  applePayDomainAssociation: string;
 }
 
 const config: Config = {
@@ -55,6 +70,33 @@ const config: Config = {
   pazeClientId: process.env.PAZE_CLIENT_ID || '',
   pazeClientName: process.env.PAZE_CLIENT_NAME || '',
   pazeProfileId: process.env.PAZE_PROFILE_ID || '',
+  pazeMobileLoginId: process.env.PAZE_MOBILE_LOGIN_ID || '',
+  pazeSigningKid: process.env.PAZE_SIGNING_KID || '',
+  pazeSigningPrivateKey: (process.env.PAZE_SIGNING_PRIVATE_KEY || '').replace(
+    /\\n/g,
+    '\n'
+  ),
+  pazeTokenUrl:
+    process.env.PAZE_TOKEN_URL ||
+    'https://auth.wallet.cat.earlywarning.io/token',
+  pazeDemoApiKey: process.env.PAZE_DEMO_API_KEY || '',
+  applePayMerchantId:
+    process.env.APPLE_PAY_MERCHANT_ID || 'merchant.com.spreedly.example',
+  applePayDisplayName:
+    process.env.APPLE_PAY_DISPLAY_NAME || 'Spreedly Sample App',
+  applePayDomain:
+    process.env.APPLE_PAY_DOMAIN ||
+    'checkout-web-sample-app-049a3c617015.herokuapp.com',
+  applePayEnvironment:
+    process.env.APPLE_PAY_ENVIRONMENT === 'sandbox' ? 'sandbox' : 'production',
+  // PEMs are stored on one line with \n escapes, like PAZE_SIGNING_PRIVATE_KEY.
+  applePayMerchantIdentityCert: (
+    process.env.APPLE_PAY_MERCHANT_IDENTITY_CERT || ''
+  ).replace(/\\n/g, '\n'),
+  applePayMerchantIdentityKey: (
+    process.env.APPLE_PAY_MERCHANT_IDENTITY_KEY || ''
+  ).replace(/\\n/g, '\n'),
+  applePayDomainAssociation: process.env.APPLE_PAY_DOMAIN_ASSOCIATION || '',
 };
 
 export default config;
