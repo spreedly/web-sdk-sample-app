@@ -1,6 +1,6 @@
 # Spreedly Web SDK — Getting Started
 
-## This sample application demonstrates how to integrate the Spreedly Web SDK into your payment flow. Use it as a reference implementation for collecting card data, recaching CVVs, processing 3D Secure authentication, handling offsite payments etc.
+## This sample application demonstrates how to integrate the Spreedly Web SDK into your payment flow. Use it as a reference implementation for collecting card data, recaching CVVs, processing 3D Secure authentication, collecting bank accounts (ACH), PayPal Complete Payments, handling offsite payments etc.
 `[Live Sample app](https://checkout-web-sample-app-049a3c617015.herokuapp.com/)`
 
 ## Table of Contents
@@ -314,6 +314,8 @@ This sample app demonstrates the following payment flows:
 | **Braintree APM**                        | PayPal and Venmo via Braintree                                                                              | [Braintree Guide](./docs/offsite-payments/braintree/INTEGRATION_GUIDE.md)                                                                                          |
 | **Stripe APM**                           | iDEAL, Bancontact, SEPA via Stripe                                                                          | [Stripe APM Guide](./docs/offsite-payments/stripe-apm/INTEGRATION_GUIDE.md)                                                                                        |
 | **Paze Digital Wallet**                  | Paze popup checkout and `securedPayload` payment method                                                     | [Paze Guide](./docs/paze/INTEGRATION_GUIDE.md), [Paze API Reference](./docs/paze/API_REFERENCE.md)                                                                 |
+| **ACH Bank Account**                     | Tokenize a bank account and run a purchase: `SpreedlyACHFields` (Hosted Fields) or the prebuilt `SpreedlyACHForm` (Express Checkout) | [ACH Overview](./docs/ach-payments/OVERVIEW.md), [ACH Hosted Fields Guide](./docs/ach-payments/ach-hosted-fields/INTEGRATION_GUIDE.md), [ACH Form Guide](./docs/ach-payments/ach-form/INTEGRATION_GUIDE.md) |
+| **PayPal Complete Payments (PPCP)**      | PayPal, Venmo and Pay Later buttons with `SpreedlyPPCP` and PayPal's JS SDK v6                              | [PPCP Guide](./docs/ppcp/INTEGRATION_GUIDE.md), [PPCP API Reference](./docs/ppcp/API_REFERENCE.md)                                                                 |
 
 ---
 
@@ -354,6 +356,9 @@ When integrating the SDK into your production application:
 | [Offsite Payments Overview](./docs/offsite-payments/OVERVIEW.md) | Compare General, Braintree APM, and Stripe APM                  |
 | [Paze Integration Guide](./docs/paze/INTEGRATION_GUIDE.md)       | Paze digital wallet demo and backend payment method create      |
 | [Paze API Reference](./docs/paze/API_REFERENCE.md)               | `SpreedlyPaze` methods/events and `/api/v1/paze-payment-method` |
+| [ACH Overview](./docs/ach-payments/OVERVIEW.md)                  | Compare `SpreedlyACHFields` and `SpreedlyACHForm`               |
+| [PPCP Integration Guide](./docs/ppcp/INTEGRATION_GUIDE.md)       | PayPal Complete Payments with `SpreedlyPPCP`                    |
+| [PPCP API Reference](./docs/ppcp/API_REFERENCE.md)               | `SpreedlyPPCP` options, methods and events                      |
 | [Testing Guide](./docs/testing/TESTING_GUIDE.md)                 | Test card numbers and how to verify each flow                   |
 
 
@@ -394,7 +399,7 @@ npm run start
 ### How the Sample App Works
 
 - The landing page lets you choose between **Hosted Fields** and **Express Checkout**.
-- Select a payment flow (tokenize, recache, purchase, 3DS, offsite)
+- Select a payment flow (tokenize, recache, purchase, 3DS, ACH, PPCP, offsite)
 - The app loads the appropriate SDK and renders the chosen flow
 - Auth credentials are fetched from the sample app's backend (`/api/v1/auth/params`)
 - Results (tokens, errors, transaction details) are displayed in the UI

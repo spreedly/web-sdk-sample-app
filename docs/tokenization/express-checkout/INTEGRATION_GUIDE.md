@@ -41,7 +41,7 @@ Follow [this guide](https://developer.spreedly.com/docs/tokenization#generating-
 | `timestamp` | `string` | UTC timestamp |
 | `signature` | `string` | SHA-256 digital signature of `nonce + timestamp + certificate_token`, signed with your certificate private key |
 
-### Enable secure tokenization
+### Enable secure tokenization (required)
 
 Generating auth details is not enough on its own. It is mandatory to also turn on secure tokenization for your environment in the Spreedly app — until you do, Spreedly does not enforce the `nonce` / `timestamp` / `signature` check, and tokenization requests from your payment page are not authenticated. See [Securing iFrame or Checkout SDK](https://developer.spreedly.com/docs/securing-iframe) for details or follow the below steps.
 
