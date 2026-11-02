@@ -37,11 +37,7 @@ async function init() {
     if (typeof window.SpreedlyACHFields !== 'function') {
       hideLoading();
       elements.paymentSection().classList.remove('hidden');
-      showError(
-        'SpreedlyACHFields is not available in the loaded SDK bundle. The rc channel only ' +
-          'carries it once the ACH hosted-fields branch is merged to the SDK’s main. ' +
-          'Point shared/utils.js at a local SDK build to try it now.'
-      );
+      showError("SpreedlyACHFields isn't available in the loaded SDK bundle.");
       return;
     }
 

@@ -33,11 +33,7 @@ async function initACHForm() {
   if (typeof window.SpreedlyACHForm !== 'function') {
     hideLoading();
     elements.paymentSection().classList.remove('hidden');
-    showError(
-      'SpreedlyACHForm is not available in the loaded SDK bundle. The rc channel only ' +
-        'carries it once the Express Checkout ACH form is merged to the SDK’s main. ' +
-        'Run the SDK locally (npm run dev) to try it now.'
-    );
+    showError("SpreedlyACHForm isn't available in the loaded SDK bundle.");
     return;
   }
 
