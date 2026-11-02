@@ -95,7 +95,6 @@ test.describe('ACH Payments', () => {
     await landingPage.clickOnExpressCheckoutButton(page);
     await landingPage.clickOnACHPaymentsButton(page);
     await waitForAuthParams(page);
-    await page.pause();
     await achPage.waitForExpressCheckoutForm(page);
     await helperFunctions.fillExpressCheckoutACHForm(page, {
       fullName: TEST_DATA.ACH_FULL_NAME,

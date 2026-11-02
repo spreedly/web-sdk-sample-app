@@ -117,7 +117,7 @@ export const SELECTORS = {
   ACH_PAYMENTS_BUTTON: '[data-flow="ach-payments"]',
   ACH_ACCOUNT_NUMBER_INPUT: '#ach-account',
   ACH_ROUTING_NUMBER_INPUT: '#ach-routing',
-  ACH_ERROR_MESSAGE: '.status-message',
+  ACH_ERROR_MESSAGE: '#status-message',
   ACH_ROUTING_PLACEHOLDER_INPUT: '#hf-routing-placeholder',
   ACH_ACCOUNT_PLACEHOLDER_INPUT: '#hf-account-placeholder',
   ACH_CUSTOM_FIELD_STYLES: '#hf-custom-styles',
