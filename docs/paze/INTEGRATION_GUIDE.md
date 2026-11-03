@@ -35,10 +35,9 @@ transactions.
 You interact almost entirely with `SpreedlyPaze`; the SDK handles Paze. Payment method creation
 is **your backend**, not a browser tokenization call.
 
-> **Custom CTAs are not supported.** The Paze flow must start from the button `mount()` creates,
-> so Spreedly can report how often the Paze option was presented to shoppers (Paze TPV Exposure).
-> Creating your own `<paze-button>` and calling `checkout()` to start a flow is rejected with
-> `pazeError` / `UNSUPPORTED_ACTION`.
+> **Custom CTAs are not supported.** The Paze flow must start from the button created by
+> `mount()`. Creating a custom `<paze-button>` and calling `checkout()` to start a flow is not
+> supported and will result in a `pazeError` / `UNSUPPORTED_ACTION`.
 
 ---
 
