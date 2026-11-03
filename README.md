@@ -1,6 +1,6 @@
 # Spreedly Web SDK — Getting Started
 
-## This sample application demonstrates how to integrate the Spreedly Web SDK into your payment flow. Use it as a reference implementation for collecting card data, recaching CVVs, processing 3D Secure authentication, handling offsite payments etc.
+## This sample application demonstrates how to integrate the Spreedly Web SDK into your payment flow. Use it as a reference implementation for collecting card data, recaching CVVs, processing 3D Secure authentication, collecting bank accounts (ACH), PayPal Complete Payments, Click to Pay, handling offsite payments etc.
 `[Live Sample app](https://checkout-web-sample-app-049a3c617015.herokuapp.com/)`
 
 ## Table of Contents
@@ -69,7 +69,7 @@ Previous production releases of the SDK:
 ## Before integrating the SDK, you need a merchant account and then secure credentials
 to load the SDKs:
 [More details on Merchant Account](https://developer.spreedly.com/docs/merchant-onboarding-guide)
-[More details on Securing the SDK](https://developer.spreedly.com/docs/using-certificates-iframe-security)
+[More details on Securing the SDK](https://developer.spreedly.com/docs/tokenization#secure-tokenization)
 
 
 
@@ -117,46 +117,19 @@ The SDK uses certificate-based authentication. Each SDK initialization requires 
 | `timestamp`         | Current UTC timestamp (seconds since epoch)                                             |
 | `signature`         | SHA-256 digital signature of `nonce + timestamp + certificate_token`, signed with your certificate private key (base64) |
 
+Follow [this guide](https://developer.spreedly.com/docs/tokenization#secure-tokenization) to generate the authentication parameters.
 
+### Enable secure tokenization (required)
 
+Generating auth details is not enough on its own. You must also turn on secure tokenization for your environment in the Spreedly app — until you do, Spreedly does not enforce the `nonce` / `timestamp` / `signature` check, and tokenization requests from your payment page are not authenticated.
 
-### Example: Your Backend endpoint (Node.js)
+1. Sign in to [app.spreedly.com](https://app.spreedly.com) and open the **Environment settings** page for the environment you are integrating.
+2. Under **Security → Enhanced Security**, check **Enable secure tokenization**, then click **Save changes**.
+3. Under **Payment method submission**, we recommend selecting **iFrame or Spreedly Express** so payment methods cannot be created through the direct API.
 
-```javascript
-const crypto = require('crypto');
+> **Important:** This setting is per environment — enable it in every environment you use (for example, staging and production). Once enabled, **every** Create payment method call in that environment requires authentication: SDK requests must carry valid auth details, and any direct API calls must use HTTP basic auth. Confirm your integration sends valid auth details before you save the setting.
 
-app.get('/api/auth', (req, res) => {
-  const certificateToken = process.env.CERTIFICATE_TOKEN;
-  const privateKey = process.env.PRIVATE_KEY;
-  const environmentKey = process.env.ENVIRONMENT_KEY;
-
-  const nonce = crypto.randomUUID();
-  const timestamp = Math.floor(Date.now() / 1000);
-
-  const sign = crypto.createSign('SHA256');
-  sign.write(`${nonce}${timestamp}${certificateToken}`);
-  const signature = sign.sign(privateKey, 'base64');
-
-  res.json({
-    environment_key: environmentKey,
-    certificate_token: certificateToken,
-    nonce,
-    timestamp: String(timestamp),
-    signature,
-  });
-});
-```
-
-
-
-### Example: Your Frontend fetching auth
-
-```javascript
-const authResponse = await fetch('/api/auth');
-const authDetails = await authResponse.json();
-
-// authDetails now contains: environment_key, certificate_token, nonce, timestamp, signature
-```
+Non-secure tokenization was deprecated on October 31, 2026 (end of life December 31, 2028). See [Securing iFrame or Checkout SDK](https://developer.spreedly.com/docs/securing-iframe) for details.
 
 ---
 
@@ -302,6 +275,9 @@ This sample app demonstrates the following payment flows:
 | **Braintree APM**                        | PayPal and Venmo via Braintree                                                                              | [Braintree Guide](./docs/offsite-payments/braintree/INTEGRATION_GUIDE.md)                                                                                          |
 | **Stripe APM**                           | iDEAL, Bancontact, SEPA via Stripe                                                                          | [Stripe APM Guide](./docs/offsite-payments/stripe-apm/INTEGRATION_GUIDE.md)                                                                                        |
 | **Paze Digital Wallet**                  | Paze popup checkout and `securedPayload` payment method                                                     | [Paze Guide](./docs/paze/INTEGRATION_GUIDE.md), [Paze API Reference](./docs/paze/API_REFERENCE.md)                                                                 |
+| **ACH Bank Account**                     | Tokenize a bank account and run a purchase: `SpreedlyACHFields` (Hosted Fields) or the prebuilt `SpreedlyACHForm` (Express Checkout) | [ACH Overview](./docs/ach-payments/OVERVIEW.md), [ACH Hosted Fields Guide](./docs/ach-payments/ach-hosted-fields/INTEGRATION_GUIDE.md), [ACH Form Guide](./docs/ach-payments/ach-form/INTEGRATION_GUIDE.md) |
+| **PayPal Complete Payments (PPCP)**      | PayPal, Venmo and Pay Later buttons with `SpreedlyPPCP` and PayPal's JS SDK v6                              | [PPCP Guide](./docs/ppcp/INTEGRATION_GUIDE.md), [PPCP API Reference](./docs/ppcp/API_REFERENCE.md)                                                                 |
+| **Click to Pay**                         | Mastercard Click to Pay with Hosted Fields: returning-shopper lookup, new-card enrollment and OTP           | [Click to Pay Guide](./docs/click-to-pay/integration-guide/README.md), [Click to Pay API Reference](./docs/click-to-pay/integration-guide/api-reference.md)         |
 
 ---
 
@@ -315,6 +291,7 @@ When integrating the SDK into your production application:
 - **Configure CSP (Content Security Policy)** — Allow `frame-src`, `script-src`, and `connect-src` for `https://core.spreedly.com`.
 - **Serve over HTTPS** — The SDK requires a secure context.
 - **Never expose your private key** — Auth credentials (`nonce`, `timestamp`, `signature`) must be generated on your backend.
+- **Enable secure tokenization** — Turn on **Enhanced Security → Enable secure tokenization** in your environment settings so Spreedly enforces those auth credentials. See [Enable secure tokenization](#enable-secure-tokenization-required).
 
 ```html
 <script
@@ -341,7 +318,12 @@ When integrating the SDK into your production application:
 | [Offsite Payments Overview](./docs/offsite-payments/OVERVIEW.md) | Compare General, Braintree APM, and Stripe APM                  |
 | [Paze Integration Guide](./docs/paze/INTEGRATION_GUIDE.md)       | Paze digital wallet demo and backend payment method create      |
 | [Paze API Reference](./docs/paze/API_REFERENCE.md)               | `SpreedlyPaze` methods/events and `/api/v1/paze-payment-method` |
+| [ACH Overview](./docs/ach-payments/OVERVIEW.md)                  | Compare `SpreedlyACHFields` and `SpreedlyACHForm`               |
+| [PPCP Integration Guide](./docs/ppcp/INTEGRATION_GUIDE.md)       | PayPal Complete Payments with `SpreedlyPPCP`                    |
+| [PPCP API Reference](./docs/ppcp/API_REFERENCE.md)               | `SpreedlyPPCP` options, methods and events                      |
+| [Click to Pay Integration Guide](./docs/click-to-pay/integration-guide/README.md) | Mastercard Click to Pay with Hosted Fields   |
 | [Testing Guide](./docs/testing/TESTING_GUIDE.md)                 | Test card numbers and how to verify each flow                   |
+| [Troubleshooting Guide](./docs/testing/TROUBLESHOOTING_GUIDE.md) | SDK loading, auth, CSP, tokenization and 3DS issues             |
 
 
 ---
@@ -381,7 +363,7 @@ npm run start
 ### How the Sample App Works
 
 - The landing page lets you choose between **Hosted Fields** and **Express Checkout**.
-- Select a payment flow (tokenize, recache, purchase, 3DS, offsite)
+- Select a payment flow (tokenize, recache, purchase, 3DS, ACH, PPCP, Click to Pay, offsite)
 - The app loads the appropriate SDK and renders the chosen flow
 - Auth credentials are fetched from the sample app's backend (`/api/v1/auth/params`)
 - Results (tokens, errors, transaction details) are displayed in the UI

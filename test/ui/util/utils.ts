@@ -261,10 +261,10 @@ export const PLACEHOLDERS = {
     },
 
     getACHAccountNumberField: async (page: Page) => {
-        return page.locator(SELECTORS.ACH_ACCOUNT_NUMBER_INPUT);
+        return page.frameLocator(SELECTORS.ACH_ACCOUNT_IFRAME).locator(SELECTORS.ACH_ACCOUNT_HOSTED_INPUT);
     },
     getACHRoutingNumberField: async (page: Page) => {
-        return page.locator(SELECTORS.ACH_ROUTING_NUMBER_INPUT);
+        return page.frameLocator(SELECTORS.ACH_ROUTING_IFRAME).locator(SELECTORS.ACH_ROUTING_HOSTED_INPUT);
     },
     
     getACHFirstNameField: async (page: Page) => {
@@ -275,6 +275,12 @@ export const PLACEHOLDERS = {
     },
     getACHBankNameField: async (page: Page) => {
         return page.getByPlaceholder(PLACEHOLDERS.ACH_BANK_NAME);
+    },
+    getExpressCheckoutACHField: async (page: Page, field: string) => {
+        return page.frameLocator(SELECTORS.ACH_FORM_IFRAME).getByTestId(field).locator('input');
+    },
+    getExpressCheckoutACHSelect: async (page: Page, field: string) => {
+        return page.frameLocator(SELECTORS.ACH_FORM_IFRAME).getByTestId(field);
     },
     getHostedFieldsTwoDigitExpiryField: async (page: Page) => {
         return page.locator(SELECTORS.TWO_DIGIT_EXPIRY);
@@ -613,6 +619,122 @@ export const PLACEHOLDERS = {
       }
       if (options?.bankName) {
         await bankNameField.fill(options.bankName);
+      }
+    },
+
+    fillExpressCheckoutACHForm: async (page: Page, options?: {
+      fullName?: string;
+      bankName?: string;
+      routingNumber?: string;
+      accountNumber?: string;
+      accountType?: string;
+      accountHolderType?: string;
+      email?: string;
+      phoneNumber?: string;
+      address1?: string;
+      address2?: string;
+      city?: string;
+      state?: string;
+      zip?: string;
+      country?: string;
+    }) => {
+      const contactFields = [
+        options?.email && 'email',
+        options?.phoneNumber && 'phone_number',
+        options?.address1 && 'address1',
+        options?.address2 && 'address2',
+        options?.city && 'city',
+        options?.state && 'state',
+        options?.zip && 'zip',
+        options?.country && 'country',
+      ].filter((field): field is string => Boolean(field));
+
+      const lastContactField = contactFields[contactFields.length - 1];
+      if (lastContactField) {
+        await page.evaluate(fields => {
+          fields.forEach(field => {
+            const select = document.getElementById(`config-field-${field}`) as HTMLSelectElement | null;
+            if (select) select.value = 'optional';
+          });
+          document
+            .getElementById(`config-field-${fields[fields.length - 1]}`)
+            ?.dispatchEvent(new Event('change', { bubbles: true }));
+        }, contactFields);
+        await expect(
+          page.frameLocator(SELECTORS.ACH_FORM_IFRAME).getByTestId(lastContactField)
+        ).toBeVisible({ timeout: 20000 });
+      }
+
+      const fullNameField = await helperFunctions.getExpressCheckoutACHField(page, 'full_name');
+      const bankNameField = await helperFunctions.getExpressCheckoutACHField(page, 'bank_name');
+      const routingNumberField = await helperFunctions.getExpressCheckoutACHField(page, 'bank_routing_number');
+      const accountNumberField = await helperFunctions.getExpressCheckoutACHField(page, 'bank_account_number');
+      const emailField = await helperFunctions.getExpressCheckoutACHField(page, 'email');
+      const phoneNumberField = await helperFunctions.getExpressCheckoutACHField(page, 'phone_number');
+      const address1Field = await helperFunctions.getExpressCheckoutACHField(page, 'address1');
+      const address2Field = await helperFunctions.getExpressCheckoutACHField(page, 'address2');
+      const cityField = await helperFunctions.getExpressCheckoutACHField(page, 'city');
+      const stateField = await helperFunctions.getExpressCheckoutACHField(page, 'state');
+      const zipField = await helperFunctions.getExpressCheckoutACHField(page, 'zip');
+      const countryField = await helperFunctions.getExpressCheckoutACHField(page, 'country');
+      const accountTypeField = await helperFunctions.getExpressCheckoutACHSelect(page, 'bank_account_type');
+      const accountHolderTypeField = await helperFunctions.getExpressCheckoutACHSelect(page, 'bank_account_holder_type');
+      const selectLabels: Record<string, string> = {
+        checking: 'Checking',
+        savings: 'Savings',
+        personal: 'Personal',
+        business: 'Business',
+      };
+      const choose = async (field: Awaited<ReturnType<typeof helperFunctions.getExpressCheckoutACHSelect>>, value: string) => {
+        const label = selectLabels[value] || value;
+        await field.click();
+        await page
+          .frameLocator(SELECTORS.ACH_FORM_IFRAME)
+          .getByRole('option', { name: label, exact: true })
+          .evaluate((element: HTMLElement) => element.click());
+      };
+
+      if (options?.fullName) {
+        await fullNameField.fill(options.fullName);
+      }
+      if (options?.bankName) {
+        await bankNameField.fill(options.bankName);
+      }
+      if (options?.routingNumber) {
+        await routingNumberField.fill(options.routingNumber);
+      }
+      if (options?.accountNumber) {
+        await accountNumberField.fill(options.accountNumber);
+      }
+      if (options?.accountType) {
+        await choose(accountTypeField, options.accountType);
+      }
+      if (options?.accountHolderType) {
+        await choose(accountHolderTypeField, options.accountHolderType);
+      }
+      if (options?.email) {
+        await emailField.fill(options.email);
+      }
+      if (options?.phoneNumber) {
+        await phoneNumberField.fill(options.phoneNumber);
+      }
+      if (options?.address1) {
+        await address1Field.fill(options.address1);
+      }
+      if (options?.address2) {
+        await address2Field.fill(options.address2);
+      }
+      if (options?.city) {
+        await cityField.fill(options.city);
+      }
+      if (options?.state) {
+        await stateField.fill(options.state);
+      }
+      if (options?.zip) {
+        await zipField.fill(options.zip);
+      }
+      if (options?.country) {
+        await countryField.fill(options.country);
       }
     },
 

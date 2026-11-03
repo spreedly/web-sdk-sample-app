@@ -2,6 +2,8 @@
 
 Spreedly offers two SDK options for securely collecting and tokenizing card data. Both reduce your PCI scope by ensuring sensitive card details (number and CVV) never touch your servers. This document helps you choose the right one.
 
+> **Required for both options:** enable secure tokenization for your environment in the Spreedly app (**Environment settings → Enhanced Security → Enable secure tokenization**). See [Enable secure tokenization](./hosted-fields/INTEGRATION_GUIDE.md#enable-secure-tokenization-required).
+
 ## Quick Comparison
 
 | Aspect | Hosted Fields | Express Checkout |
