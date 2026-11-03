@@ -1,0 +1,272 @@
+/**
+ * ACH with SpreedlyACHForm (Express Checkout): the whole bank account form, with its own
+ * submit button, runs in one Spreedly-hosted iframe.
+ *
+ * 1. Fetch auth params from your backend and create the form: new SpreedlyACHForm(authDetails)
+ * 2. mount({ parentContainerId, uiConfig }). Without parentContainerId, it opens as a dialog.
+ * 3. On `tokenGenerated`, retain the payment method from your backend if shouldRetain is true,
+ *    then run the purchase from your backend.
+ */
+
+let achForm = null;
+
+function loadExpressCheckoutSDK() {
+  return new Promise((resolve, reject) => {
+    const src =
+      window.location.hostname === 'localhost'
+        ? 'http://localhost:5173/express-checkout.js'
+        : 'https://core-test.spreedly.com/checkout/elements/rc/express-checkout.js';
+    const script = document.createElement('script');
+    script.src = src;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error(`Failed to load SDK from ${src}`));
+    document.body.appendChild(script);
+  });
+}
+
+async function initACHForm() {
+  document.querySelectorAll('.hf-only').forEach(el => el.classList.add('hidden'));
+  document.querySelectorAll('.ec-only').forEach(el => el.classList.remove('hidden'));
+
+  await loadExpressCheckoutSDK();
+
+  if (typeof window.SpreedlyACHForm !== 'function') {
+    hideLoading();
+    elements.paymentSection().classList.remove('hidden');
+    showError("SpreedlyACHForm isn't available in the loaded SDK bundle.");
+    return;
+  }
+
+  const authParams = await SpreedlyUtils.fetchAuthParams();
+  achForm = new window.SpreedlyACHForm({
+    environment_key: authParams.environmentKey,
+    nonce: authParams.nonce,
+    timestamp: authParams.timestamp,
+    certificate_token: authParams.certificateToken,
+    signature: authParams.signature,
+  });
+
+  achForm.on('ready', payload => {
+    logECEvent('ready', payload);
+    hideLoading();
+    elements.paymentSection().classList.remove('hidden');
+  });
+
+  achForm.on('tokenGenerated', async ({ tokenResponse, shouldRetain }) => {
+    const { token, account_number_display_digits: last4 } = tokenResponse.payment_method;
+    console.log('ACH payment method created:', { token, last4, shouldRetain });
+    logECEvent('tokenGenerated', {
+      'tokenResponse.payment_method.token': token,
+      storage_state: tokenResponse.payment_method.storage_state,
+      shouldRetain,
+    });
+    let storageState = tokenResponse.payment_method.storage_state;
+    if (shouldRetain) {
+      try {
+        const retained = await SpreedlyUtils.retainPaymentMethod(token);
+        storageState = retained?.transaction?.payment_method?.storage_state || storageState;
+      } catch (error) {
+        console.error('Retain failed:', error);
+        storageState = `${storageState} (retain failed)`;
+      }
+    }
+    await runPurchase(token, last4, storageState);
+    achForm.close();
+  });
+
+  achForm.on('error', error => {
+    logECEvent('error', error);
+    console.error('ACH form error:', error);
+    renderError(error?.errors?.[0]?.message || error?.message || String(error) || 'ACH failed.');
+  });
+
+  achForm.on('close', payload => logECEvent('close', payload));
+
+  document.querySelectorAll('.ach-config').forEach(control => {
+    control.addEventListener('change', applyACHFormConfig);
+  });
+  document.getElementById('open-ach-dialog-btn').addEventListener('click', () => {
+    achForm.close();
+    achForm.mount(buildMountOptions());
+  });
+
+  applyACHFormConfig();
+}
+
+const ACH_CONTACT_FIELDS = [
+  'email',
+  'phone_number',
+  'address1',
+  'address2',
+  'city',
+  'state',
+  'zip',
+  'country',
+];
+const ACH_OPTIONAL_FIELDS = [
+  'bank_name',
+  'bank_account_type',
+  'bank_account_holder_type',
+  ...ACH_CONTACT_FIELDS,
+];
+
+// Custom labels and placeholders. The dropdowns take no placeholder.
+const ACH_CUSTOM_FIELD_TEXT = {
+  full_name: { label: 'Name on the account', placeholder: 'Jane Doe' },
+  bank_name: { label: 'Bank', placeholder: 'e.g. Chase' },
+  bank_routing_number: { label: 'ABA routing number', placeholder: '9 digits' },
+  bank_account_number: { label: 'Account no.', placeholder: '4–17 digits' },
+  bank_account_type: { label: 'Checking or savings' },
+  bank_account_holder_type: { label: 'Personal or business' },
+  email: { label: 'Email address', placeholder: 'jane@example.com' },
+  phone_number: { label: 'Phone', placeholder: '+1 555 010 0000' },
+  address1: { label: 'Street address', placeholder: '123 Main St' },
+  address2: { label: 'Apt, suite, etc.', placeholder: 'Suite 400' },
+  city: { label: 'Town or city', placeholder: 'Durham' },
+  state: { label: 'State', placeholder: 'NC' },
+  zip: { label: 'Postal code', placeholder: '27701' },
+  country: { label: 'Country', placeholder: 'US' },
+};
+
+// A sample theme. uiConfig.styles has the same shape as the card form's.
+const ACH_CUSTOM_THEME = {
+  textfield: {
+    borderColor: '#93c5fd',
+    hover: { borderColor: '#3b82f6' },
+    active: { borderColor: '#1d4ed8' },
+    placeholder: { color: '#60a5fa' },
+  },
+  button: { backgroundColor: '#1d4ed8', hover: { backgroundColor: '#1e40af' } },
+  checkbox: { color: '#1d4ed8' },
+  paper: { backgroundColor: '#f8fafc' },
+};
+
+const EC_EVENT_LOG_SIZE = 6;
+const ecEvents = [];
+
+function logECEvent(event, payload) {
+  ecEvents.unshift(`${event} ${JSON.stringify(payload ?? null)}`);
+  ecEvents.length = Math.min(ecEvents.length, EC_EVENT_LOG_SIZE);
+  document.getElementById('ec-event-log').textContent = ecEvents.join('\n');
+}
+
+function buildMountOptions() {
+  const value = id => document.getElementById(id).value;
+  const checked = id => document.getElementById(id).checked;
+  const achFormFields = {
+    bank_routing_number: { placeholder: '021000021' },
+    bank_account_number: { placeholder: '9876543210' },
+    full_name: { placeholder: 'Bob Smith' },
+  };
+  ACH_OPTIONAL_FIELDS.forEach(field => {
+    const mode = value(`config-field-${field}`);
+    achFormFields[field] = { isHidden: mode === 'hidden', isRequired: mode === 'required' };
+  });
+  if (checked('config-custom-labels')) {
+    Object.entries(ACH_CUSTOM_FIELD_TEXT).forEach(([field, text]) => {
+      achFormFields[field] = { ...achFormFields[field], ...text };
+    });
+  }
+  const theme = checked('config-custom-theme') ? ACH_CUSTOM_THEME : {};
+
+  return {
+    ...(displayMode() === 'embedded' && { parentContainerId: 'ach-form-container' }),
+    uiConfig: {
+      textConfig: {
+        title: value('config-text-title'),
+        submitBtnText: value('config-text-submit'),
+        footerText: value('config-text-footer'),
+        processingText: value('config-text-processing'),
+      },
+      styles: {
+        ...theme,
+        button: {
+          backgroundColor: '#0a0a0a',
+          borderRadius: '8px',
+          hover: {
+            backgroundColor: '#262626',
+          },
+          ...theme.button,
+          textTransform: value('config-button-case'),
+        },
+      },
+      achFormFields,
+      showSaveAccountCheckbox: checked('config-allow-retain'),
+      saveAccountCheckboxLabel: value('config-text-save-label'),
+    },
+  };
+}
+
+function displayMode() {
+  return document.querySelector('input[name="ach-display-mode"]:checked').value;
+}
+
+// The form's field order and default widths, on a 12-column grid.
+const ACH_FORM_LAYOUT = [
+  ['full_name', 12],
+  ['bank_name', 12],
+  ['bank_routing_number', 6],
+  ['bank_account_number', 6],
+  ['bank_account_type', 6],
+  ['bank_account_holder_type', 6],
+  ['email', 6],
+  ['phone_number', 6],
+  ['address1', 12],
+  ['address2', 12],
+  ['city', 6],
+  ['state', 6],
+  ['zip', 6],
+  ['country', 6],
+];
+
+// The form fills its container, so size the container to fit the fields that are shown.
+const ACH_FORM_FIXED_HEIGHT = 212;
+const ACH_FORM_ROW_HEIGHT = 72;
+const ACH_FORM_SAVE_CHECKBOX_HEIGHT = 58;
+
+function fittedFormHeight() {
+  const shown = field => {
+    const select = document.getElementById(`config-field-${field}`);
+    return !select || select.value !== 'hidden';
+  };
+  let rows = 0;
+  let used = 12;
+  ACH_FORM_LAYOUT.filter(([field]) => shown(field)).forEach(([, size]) => {
+    if (used + size > 12) {
+      rows += 1;
+      used = 0;
+    }
+    used += size;
+  });
+  const checkbox = document.getElementById('config-allow-retain').checked;
+  return (
+    ACH_FORM_FIXED_HEIGHT +
+    rows * ACH_FORM_ROW_HEIGHT +
+    (checkbox ? ACH_FORM_SAVE_CHECKBOX_HEIGHT : 0) +
+    5 // a little room so nothing scrolls
+  );
+}
+
+function updateContactFieldsCount() {
+  const shown = ACH_CONTACT_FIELDS.filter(
+    field => document.getElementById(`config-field-${field}`).value !== 'hidden'
+  ).length;
+  document.getElementById('ach-contact-fields-count').textContent = shown
+    ? `(${shown} shown)`
+    : '(none shown)';
+}
+
+function applyACHFormConfig() {
+  updateContactFieldsCount();
+  achForm.close();
+  const embedded = displayMode() === 'embedded';
+  document.getElementById('ach-embedded-box').classList.toggle('hidden', !embedded);
+  document.getElementById('ach-dialog-box').classList.toggle('hidden', embedded);
+  if (embedded) {
+    document.getElementById('ach-form-container').style.height = `${fittedFormHeight()}px`;
+    achForm.mount(buildMountOptions());
+  } else {
+    hideLoading();
+    elements.paymentSection().classList.remove('hidden');
+  }
+}
