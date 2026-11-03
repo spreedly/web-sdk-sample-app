@@ -183,6 +183,68 @@ test.describe('ACH Payments', () => {
     expect(paymentMethod.routing_number).toBe(`${expectedRoutingFirst3}*`);
   });
 
+  test('should show an error for an Express Checkout ACH payment with an invalid account number', async ({
+    page,
+  }) => {
+    await page.goto(MONOREPO_URLS.BASE);
+    await landingPage.clickOnExpressCheckoutButton(page);
+    await landingPage.clickOnACHPaymentsButton(page);
+    await waitForAuthParams(page);
+    await achPage.waitForExpressCheckoutForm(page);
+    await helperFunctions.fillExpressCheckoutACHForm(page, {
+      fullName: TEST_DATA.ACH_FULL_NAME,
+      bankName: TEST_DATA.ACH_BANK_NAME,
+      routingNumber: TEST_DATA.ACH_ROUTING_NUMBER,
+      accountNumber: TEST_DATA.ACH_ACCOUNT_NUMBER_INVALID,
+      accountType: TEST_DATA.ACH_ACCOUNT_TYPE,
+      accountHolderType: TEST_DATA.ACH_HOLDER_TYPE,
+      email: TEST_DATA.ACH_EMAIL,
+      phoneNumber: TEST_DATA.ACH_PHONE,
+      address1: TEST_DATA.ACH_ADDRESS1,
+      address2: TEST_DATA.ACH_ADDRESS2,
+      city: TEST_DATA.ACH_CITY,
+      state: TEST_DATA.ACH_STATE,
+      zip: TEST_DATA.ACH_ZIP,
+      country: TEST_DATA.ACH_COUNTRY,
+    });
+  
+    await achPage.clickExpressCheckoutSubmit(page);
+    const errorMessage = await achPage.getErrorMessage(page);
+    await expect(errorMessage).toBeVisible();
+    await expect(errorMessage).toHaveText(ERROR_MESSAGES.ACH_INVALID_ACCOUNT_NUMBER);
+  });
+
+  test('should show an error for an Express Checkout ACH payment with an invalid routing number', async ({
+    page,
+  }) => {
+    await page.goto(MONOREPO_URLS.BASE);
+    await landingPage.clickOnExpressCheckoutButton(page);
+    await landingPage.clickOnACHPaymentsButton(page);
+    await waitForAuthParams(page);
+    await achPage.waitForExpressCheckoutForm(page);
+    await helperFunctions.fillExpressCheckoutACHForm(page, {
+      fullName: TEST_DATA.ACH_FULL_NAME,
+      bankName: TEST_DATA.ACH_BANK_NAME,
+      routingNumber: TEST_DATA.ACH_ROUTING_NUMBER_INVALID,
+      accountNumber: TEST_DATA.ACH_ACCOUNT_NUMBER,
+      accountType: TEST_DATA.ACH_ACCOUNT_TYPE,
+      accountHolderType: TEST_DATA.ACH_HOLDER_TYPE,
+      email: TEST_DATA.ACH_EMAIL,
+      phoneNumber: TEST_DATA.ACH_PHONE,
+      address1: TEST_DATA.ACH_ADDRESS1,
+      address2: TEST_DATA.ACH_ADDRESS2,
+      city: TEST_DATA.ACH_CITY,
+      state: TEST_DATA.ACH_STATE,
+      zip: TEST_DATA.ACH_ZIP,
+      country: TEST_DATA.ACH_COUNTRY,
+    });
+   
+    await achPage.clickExpressCheckoutSubmit(page);
+    const errorMessage = await achPage.getErrorMessage(page);
+    await expect(errorMessage).toBeVisible();
+    await expect(errorMessage).toHaveText(ERROR_MESSAGES.ACH_INVALID_ROUTING_NUMBER);
+  });
+
   test('sets routing and account placeholders, custom placeholder color, and masks the account number', async ({
     page,
   }) => {
