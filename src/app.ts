@@ -7,6 +7,7 @@ import cors from 'cors';
 import { express as useragent } from 'express-useragent';
 import routes from './routes';
 import { swaggerSpec, swaggerUiExpress } from './swagger';
+import { getAppleAppSiteAssociation, getAssetLinks } from './controllers/well-known';
 
 const app = express();
 
@@ -16,6 +17,11 @@ app.use(cors());
 // app.use(cspMiddleware);
 app.use(useragent());
 app.use('/api/v1/docs', swaggerUiExpress.serve, swaggerUiExpress.setup(swaggerSpec));
+
+// Mobile app-link verification files. Routed explicitly: express.static skips dotfile dirs,
+// and the AASA file has no extension, so static would not send application/json.
+app.get('/.well-known/apple-app-site-association', getAppleAppSiteAssociation);
+app.get('/.well-known/assetlinks.json', getAssetLinks);
 
 app.use('/', express.static(path.join(__dirname, 'static')));
 
