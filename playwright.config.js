@@ -12,7 +12,7 @@ const config = {
   expect: {
     timeout: 5000,
   },
-  workers: 4,
+  workers: 2, // more workers send enough tokenizations at once for Spreedly to return 429
   reporter: [
     ['line'],
     ['junit', { outputFile: 'playwright-report/junit.xml' }],
