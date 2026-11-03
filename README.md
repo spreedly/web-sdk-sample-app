@@ -37,7 +37,7 @@ Both options provide the same security guarantees — card data never touches yo
 
 ### Latest version
 
-The latest released version is `1.9.0`, available at:
+The latest released version is `1.9.0`, released on 3rd Nov'26, available at:
 
 - Hosted Fields: [`https://core.spreedly.com/checkout/sdk/1.9.0/index.js`](https://core.spreedly.com/checkout/sdk/1.9.0/index.js)
 - Express Checkout: [`https://core.spreedly.com/checkout/elements/1.9.0/express-checkout.js`](https://core.spreedly.com/checkout/elements/1.9.0/express-checkout.js)
