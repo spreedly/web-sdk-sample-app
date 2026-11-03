@@ -52,7 +52,7 @@ To compare the two, see the [ACH overview](../OVERVIEW.md).
 
 The constructor needs these five auth details. Generate them on your backend, never in the
 browser, because the signature uses your certificate's private key. Follow
-[this guide](https://developer.spreedly.com/docs/tokenization#generating-authentication-credentials)
+[this guide](https://developer.spreedly.com/docs/tokenization#secure-tokenization)
 to generate them.
 
 | Property | Type | Description |

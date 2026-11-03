@@ -32,7 +32,7 @@ Use Spreedly Hosted Fields (`SpreedlyHostedFields`) to build a fully custom paym
 
 Both the constructor and every tokenization request require `AuthDetails`. Generate these server-side — never expose your secret key to the browser.
 
-Follow [this guide](https://developer.spreedly.com/docs/tokenization#generating-authentication-credentials) to generate credentials.
+Follow [this guide](https://developer.spreedly.com/docs/tokenization#secure-tokenization) to generate credentials.
 
 | Property | Type | Description |
 |----------|------|-------------|

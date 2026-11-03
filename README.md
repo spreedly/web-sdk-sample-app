@@ -69,7 +69,7 @@ Previous production releases of the SDK:
 ## Before integrating the SDK, you need a merchant account and then secure credentials
 to load the SDKs:
 [More details on Merchant Account](https://developer.spreedly.com/docs/merchant-onboarding-guide)
-[More details on Securing the SDK](https://developer.spreedly.com/docs/tokenization#generating-authentication-credentials)
+[More details on Securing the SDK](https://developer.spreedly.com/docs/tokenization#secure-tokenization)
 
 
 
@@ -117,46 +117,7 @@ The SDK uses certificate-based authentication. Each SDK initialization requires 
 | `timestamp`         | Current UTC timestamp (seconds since epoch)                                             |
 | `signature`         | SHA-256 digital signature of `nonce + timestamp + certificate_token`, signed with your certificate private key (base64) |
 
-
-
-
-### Example: Your Backend endpoint (Node.js)
-
-```javascript
-const crypto = require('crypto');
-
-app.get('/api/auth', (req, res) => {
-  const certificateToken = process.env.CERTIFICATE_TOKEN;
-  const privateKey = process.env.PRIVATE_KEY;
-  const environmentKey = process.env.ENVIRONMENT_KEY;
-
-  const nonce = crypto.randomUUID();
-  const timestamp = Math.floor(Date.now() / 1000);
-
-  const sign = crypto.createSign('SHA256');
-  sign.write(`${nonce}${timestamp}${certificateToken}`);
-  const signature = sign.sign(privateKey, 'base64');
-
-  res.json({
-    environment_key: environmentKey,
-    certificate_token: certificateToken,
-    nonce,
-    timestamp: String(timestamp),
-    signature,
-  });
-});
-```
-
-
-
-### Example: Your Frontend fetching auth
-
-```javascript
-const authResponse = await fetch('/api/auth');
-const authDetails = await authResponse.json();
-
-// authDetails now contains: environment_key, certificate_token, nonce, timestamp, signature
-```
+Follow [this guide](https://developer.spreedly.com/docs/tokenization#secure-tokenization) to generate the authentication parameters.
 
 ### Enable secure tokenization (required)
 
