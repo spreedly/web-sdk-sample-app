@@ -192,8 +192,41 @@
               </div>
               <label class="checkbox-row"><input type="checkbox" id="require-contacts" checked> Ask for billing
                 (name, address) and shipping (email, phone)</label>
-              <label class="checkbox-row"><input type="checkbox" id="recurring"> Recurring payment request
-                (monthly)</label>
+              <div class="form-group" style="margin-top: 0.75rem;">
+                <label class="form-label" for="payment-request">Payment request</label>
+                <select id="payment-request" class="form-input">
+                  <option value="none" selected>One-off payment</option>
+                  <option value="recurring">Recurring (monthly)</option>
+                  <option value="automaticReload">Top-up (when the balance falls below 5.00)</option>
+                  <option value="deferred">Pay later (in 30 days)</option>
+                </select>
+              </div>
+
+              <h3 class="section-title">In the sheet</h3>
+              <label class="checkbox-row"><input type="checkbox" id="delivery-options"> Delivery options
+                (Standard free, Express 9.00), with callbacks for the delivery option, address and card</label>
+              <div class="settings-grid">
+                <div class="form-group">
+                  <label class="form-label" for="shipping-type">Shipping type</label>
+                  <select id="shipping-type" class="form-input">
+                    <option value="shipping" selected>shipping</option>
+                    <option value="delivery">delivery</option>
+                    <option value="storePickup">storePickup</option>
+                    <option value="servicePickup">servicePickup</option>
+                  </select>
+                </div>
+              </div>
+              <label class="checkbox-row"><input type="checkbox" id="coupons"> Coupon field
+                (<code>SAVE10</code> takes 10% off, <code>EXPIRED</code> is expired, anything else is invalid)</label>
+              <div class="settings-grid">
+                <div class="form-group">
+                  <label class="form-label" for="coupon-code">Coupon applied when the sheet opens</label>
+                  <input type="text" id="coupon-code" class="form-input" value="" placeholder="optional">
+                </div>
+              </div>
+              <label class="checkbox-row"><input type="checkbox" id="order-details"> Wallet order tracking:
+                return order details from <code>processPayment</code> (this server has no Wallet Orders web
+                service, so Wallet can't show the order)</label>
               <button type="button" id="apply-settings" class="btn btn-secondary" style="margin-top: 0.5rem;">
                 Apply and redraw the button
               </button>
@@ -227,6 +260,8 @@
                 shipping address as unserviceable once (<code>processPayment</code> mode)</label>
               <label class="checkbox-row"><input type="checkbox" data-debug="slowPurchase"> M26: the purchase takes 20 s
                 (<code>processPayment</code> mode)</label>
+              <label class="checkbox-row"><input type="checkbox" data-debug="failSheetCallback"> M31: the next sheet
+                callback throws (the sheet closes)</label>
               <button type="button" id="destroy-button" class="btn btn-secondary" style="margin-top: 0.5rem;">
                 M16: destroy now
               </button>
@@ -247,8 +282,10 @@
                 <li>The page loads Apple's <code>apple-pay-sdk.js</code> and the Spreedly SDK.</li>
                 <li><code>onValidateMerchant</code> calls this server's <code>/api/v1/apple-pay/validate</code>.</li>
                 <li><code>getAuthDetails</code> calls <code>/api/v1/auth/params</code> for every attempt.</li>
+                <li>With delivery options or coupons on, the sheet callbacks work out the new total in this page.</li>
                 <li>The SDK turns Apple's token into a Spreedly payment method.</li>
-                <li>The page charges it with <code>/api/v1/simple-purchase</code> on the test gateway.</li>
+                <li>The page charges it with <code>/api/v1/simple-purchase</code> on the test gateway, for the total
+                  the sheet last showed.</li>
               </ol>
             </div>
           </div>
