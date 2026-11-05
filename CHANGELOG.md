@@ -5,6 +5,45 @@ All notable changes to the Spreedly Web SDK will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Google Pay**: new standalone `SpreedlyGooglePay` class, exposed as `window.SpreedlyGooglePay` by both the Hosted Fields and Express Checkout bundles, which also re-export its types. You load Google's `pay.js`. The SDK then handles the rest:
+  - It checks `isReadyToPay()` and draws Google's own button only when the shopper can pay; otherwise `googlePayUnavailable` fires so you can keep your card form.
+  - It builds the `PaymentDataRequest` with Spreedly's `tokenizationSpecification` (`gateway: "spreedly"`, `gatewayMerchantId` derived from your environment key).
+  - It tokenizes inside the sheet: POST `payment_methods.json` with certificate auth. The sheet stays open on failure so the shopper can pick another card.
+  - It emits `googlePayTokenGenerated` with the Spreedly token and `googlePayType` (`TOKENIZED_CARD` / `NON_TOKENIZED_CARD`) for your server-side 3DS decision.
+  - It supports billing and shipping address, shipping options and price updates (`onPaymentDataChange`), email and `metadata`. Payment methods are created cached; retain them from merchant server.
+  - `testCardNumber` (`test_card_number`) works in both Google environments, for Spreedly's real-card testing step; the SDK logs a warning while it is set in `PRODUCTION`.
+  - `authDetails` are per instance, as for the card form: create a new instance for each checkout.
+  - It covers Google's full `PaymentDataRequest`:
+    - enrollments via `recurringTransactionInfo`, `deferredTransactionInfo` and `automaticReloadTransactionInfo` (exactly one of these or `transactionInfo`; no `onPaymentDataChange` or `offerInfo` with them, as Google doesn't support dynamic pricing there);
+    - promo codes via the `OFFER` intent and `offerInfo`;
+    - explicit `callbackIntents`;
+    - `transactionInfo.transactionId` and `checkoutOption`;
+    - the card filters `allowPrepaidCards`, `allowCreditCards` and `allowed`/`blockedIssuerCountryCodes`;
+    - `assuranceDetailsRequired`, with `assuranceDetails` and `cardFundingSource` returned on the token;
+    - the `FULL-ISO3166` address format;
+    - `existingPaymentMethodRequired`;
+    - a CSP nonce (`cspNonce`).
+  - Config is validated against Google's documented rules when the object is constructed. `apiVersion`, `tokenizationSpecification` and the `PAYMENT_AUTHORIZATION` intent stay SDK-owned.
+
+  New telemetry events `google_pay.*`. See `docs/google-pay/`.
+- **Express Checkout: Google Pay above the card form.** New `googlePay` option on `expressCheckout()` (`ExpressCheckoutGooglePayConfig`: the `SpreedlyGooglePay` config without `authDetails`, which Express Checkout supplies).
+  - Google's button is drawn on your page in a wallet row above the form iframe (never inside it), with an "or pay with card" divider (new text element `walletDividerText`). The row appears only once `isReadyToPay()` passes. Without `googlePay`, the form mounts exactly as before.
+  - Results arrive on the `googlePay*` events of the Express Checkout instance; card tokens still arrive on `tokenGenerated`. New `setGooglePayTransactionInfo(info)` keeps the price current.
+  - An invalid `googlePay` config doesn't block the card form: it mounts without the row, and `googlePayError` / `googlePayUnavailable` fire with `DEVELOPER_ERROR`.
+  - `close()` and recache mode remove the row. `iframe.loaded` telemetry carries `google_pay_enabled`.
+
+### Changed
+
+- **Express Checkout:** calling `expressCheckout()` again on the same instance (after `close()` / `destroy()`) now merges the `uiConfig` you pass over that instance's current form config, so text, added fields and CVV settings are kept unless you pass them again. Before, values left out sometimes reset to the defaults and sometimes didn't, depending on whether that part of `uiConfig` had been passed before. Create a new instance to start from the defaults.
+
+### Fixed
+
+- **Express Checkout:** `updateTextElement`, `addField`, `removeField`, `setFieldConfig`, `setCVVOptional` and `setCVVHidden` no longer change the SDK's default constant form config. Before, a customization made on one instance (for example a title, an added field, or an optional CVV) also appeared on every Express Checkout instance created after it on the page. Text and fields set before `expressCheckout()` still apply when the form renders.
+
 ## [1.9.0] - 2026-11-03
 
 ### Added
