@@ -1247,7 +1247,7 @@ router.post('/paze-payment-method', createPazePaymentMethod);
  *         name: session_id
  *         required: true
  *         type: string
- *         description: The Paze checkout session id (letters, digits, . _ : -; up to 128 characters)
+ *         description: "The Paze checkout session id (letters, digits, . _ : -; up to 128 characters)"
  *     responses:
  *       200:
  *         description: Token minted
