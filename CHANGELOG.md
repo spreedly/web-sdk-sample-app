@@ -5,6 +5,48 @@ All notable changes to the Spreedly Web SDK will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Google Pay**: new standalone `SpreedlyGooglePay` class, exposed as `window.SpreedlyGooglePay` by both the Hosted Fields and Express Checkout bundles, which also re-export its types. You load Google's `pay.js`. The SDK then handles the rest:
+  - It checks `isReadyToPay()` and draws Google's own button only when the shopper can pay; otherwise `googlePayUnavailable` fires so you can keep your card form.
+  - It builds the `PaymentDataRequest` with Spreedly's `tokenizationSpecification` (`gateway: "spreedly"`, `gatewayMerchantId` derived from your environment key).
+  - It tokenizes inside the sheet: POST `payment_methods.json` with certificate auth. The sheet stays open on failure so the shopper can pick another card.
+  - It emits `googlePayTokenGenerated` with the Spreedly token and `googlePayType` (`TOKENIZED_CARD` / `NON_TOKENIZED_CARD`) for your server-side 3DS decision.
+  - It supports billing and shipping address, shipping options and price updates (`onPaymentDataChange`), email and `metadata`. Payment methods are created cached; retain them from merchant server.
+  - `testCardNumber` (`test_card_number`) works in both Google environments, for Spreedly's real-card testing step; the SDK logs a warning while it is set in `PRODUCTION`.
+  - Each set of `authDetails` works for one request to Spreedly. New `updateAuthDetails(authDetails)` replaces them for the next tokenization (same `environment_key` and `certificate_token`), so the in-sheet retry after `TOKENIZATION_FAILED` or `TOKENIZATION_TIMEOUT` doesn't fail with `errors.replayed_tokenization_nonce`. Create a new instance for each checkout.
+  - It covers Google's full `PaymentDataRequest`:
+    - enrollments via `recurringTransactionInfo`, `deferredTransactionInfo` and `automaticReloadTransactionInfo` (exactly one of these or `transactionInfo`; no `onPaymentDataChange` or `offerInfo` with them, as Google doesn't support dynamic pricing there);
+    - promo codes via the `OFFER` intent and `offerInfo`;
+    - explicit `callbackIntents`;
+    - `transactionInfo.transactionId` and `checkoutOption`;
+    - the card filters `allowPrepaidCards`, `allowCreditCards` and `allowed`/`blockedIssuerCountryCodes`;
+    - `assuranceDetailsRequired`, with `assuranceDetails` and `cardFundingSource` returned on the token;
+    - the `FULL-ISO3166` address format;
+    - `existingPaymentMethodRequired`;
+    - a CSP nonce (`cspNonce`).
+  - Config is validated against Google's documented rules when the object is constructed. `apiVersion`, `tokenizationSpecification` and the `PAYMENT_AUTHORIZATION` intent stay SDK-owned.
+
+  New telemetry events `google_pay.*`. See `docs/google-pay/`.
+- **Express Checkout: `updateAuthDetails(authDetails)`.** Each set of auth details works for one request to Spreedly. After a failed tokenization (`errors.replayed_tokenization_nonce`, `errors.invalid_tokenization_timestamp` or any other), get new auth details from your backend and call it: the open card form (new `updateAuthDetails` iframe message), the Google Pay button and the next `expressCheckout()` call use them. `environment_key` and `certificate_token` can't change.
+- **Hosted Fields: `updateAuthDetails(authDetails)`.** The same for the card form: after a failed tokenization or recache, call it with new auth details and the next `submit()`, `recache()`, `tokenizeClickToPay()` and offsite payment use them. The card number and CVV stay in the iframes. `environment_key` and `certificate_token` can't change, as the number and CVV iframes lock them when they are created.
+- **Express Checkout: Google Pay above the card form.** New `googlePay` option on `expressCheckout()` (`ExpressCheckoutGooglePayConfig`: the `SpreedlyGooglePay` config without `authDetails`, which Express Checkout supplies).
+  - Google's button is drawn on your page in a wallet row above the form iframe (never inside it), with an "or pay with card" divider (new text element `walletDividerText`). The row appears only once `isReadyToPay()` passes. Without `googlePay`, the form mounts exactly as before.
+  - Results arrive on the `googlePay*` events of the Express Checkout instance; card tokens still arrive on `tokenGenerated`. New `setGooglePayTransactionInfo(info)` keeps the price current. The button shares the card form's auth details.
+  - An invalid `googlePay` config doesn't block the card form: it mounts without the row, and `googlePayError` / `googlePayUnavailable` fire with `DEVELOPER_ERROR`.
+  - `close()` and recache mode remove the row. `iframe.loaded` telemetry carries `google_pay_enabled`.
+- **Google Pay demo** (`/google-pay`): sample-app flow for `SpreedlyGooglePay` on both bundles. The page loads Google's `pay.js`. Hosted Fields shows the standalone button; Express Checkout defaults to the `googlePay` option (wallet row above the card form, embedded or in the page's own dialog; `?placement=standalone` uses the standalone button). Purchase follows `googlePayType`: `TOKENIZED_CARD` uses `simple-purchase`; otherwise 3DS Global or gateway 3DS. See `docs/google-pay/DEMO_GUIDE.md`.
+
+### Changed
+
+- **Express Checkout:** calling `expressCheckout()` again on the same instance (after `close()` / `destroy()`) now merges the `uiConfig` you pass over that instance's current form config, so text, added fields and CVV settings are kept unless you pass them again. Before, values left out sometimes reset to the defaults and sometimes didn't, depending on whether that part of `uiConfig` had been passed before. Create a new instance to start from the defaults.
+
+### Fixed
+
+- **Express Checkout:** `updateTextElement`, `addField`, `removeField`, `setFieldConfig`, `setCVVOptional` and `setCVVHidden` no longer change the SDK's default constant form config. Before, a customization made on one instance (for example a title, an added field, or an optional CVV) also appeared on every Express Checkout instance created after it on the page. Text and fields set before `expressCheckout()` still apply when the form renders.
+
 ## [1.9.0] - 2026-11-03
 
 ### Added

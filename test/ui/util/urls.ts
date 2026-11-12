@@ -7,6 +7,7 @@ export const MONOREPO_URLS = {
     Payment_Methods: "/v1/payment_methods",
     PPCP: "/ppcp/index.html",
     APPLE_PAY_LOCAL_SDK: "/apple-pay-local-sdk/index.html",
+    GOOGLE_PAY: "/google-pay/index.html",
   } as const;
 
    

@@ -498,7 +498,10 @@ If your page has a Content Security Policy, allow Spreedly's domains for scripts
   the bank numbers are already masked (`routing_number: "021*"`, `account_number: "*3210"`,
   plus the `…_display_digits` fields). You never get the full numbers.
 - The iframe only accepts messages from the page that first talks to it, and accepts the
-  auth params only once.
+  auth params only once. It is pinned to your `environment_key` and `certificate_token` when
+  the SDK creates it (in its URL fragment), so a script on your page can't send its own
+  first config to choose another environment. Only the nonce, signature and timestamp
+  change with `updateAuthDetails()`.
 
 ---
 
