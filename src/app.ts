@@ -8,6 +8,7 @@ import { express as useragent } from 'express-useragent';
 import routes from './routes';
 import { swaggerSpec, swaggerUiExpress } from './swagger';
 import { serveApplePayDomainAssociation } from './controllers/apple-pay';
+import { getAppleAppSiteAssociation, getAssetLinks } from './controllers/well-known';
 
 const app = express();
 
@@ -27,6 +28,11 @@ app.get(
   ],
   serveApplePayDomainAssociation
 );
+
+// Mobile app-link verification files. Routed for the same reason, and the AASA file has
+// no extension, so static would not send application/json.
+app.get('/.well-known/apple-app-site-association', getAppleAppSiteAssociation);
+app.get('/.well-known/assetlinks.json', getAssetLinks);
 
 app.use('/', express.static(path.join(__dirname, 'static')));
 
