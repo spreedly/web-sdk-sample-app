@@ -17,6 +17,7 @@ interface Config {
   paypalGatewayToken: string;
   ebanxGatewayToken: string;
   braintreeGatewayToken: string;
+  afterpayGatewayToken: string;
   // PPCP (PayPal Complete Payments) — interim direct-to-PayPal spike (sandbox).
   paypalPpcpClientId: string;
   paypalPpcpClientSecret: string;
@@ -59,6 +60,7 @@ const config: Config = {
   paypalGatewayToken: process.env.PAYPAL_GATEWAY_TOKEN_NEW || '',
   ebanxGatewayToken: process.env.EBANX_GATEWAY_TOKEN_NEW || '',
   braintreeGatewayToken: process.env.BRAINTREE_GATEWAY_TOKEN_NEW || '',
+  afterpayGatewayToken: process.env.AFTERPAY_GATEWAY_TOKEN_NEW || '',
   // PPCP interim spike — see ppcp/integration-plan/07-interim-direct-order-spike.md
   paypalPpcpClientId: process.env.PAYPAL_PPCP_CLIENT_ID_NEW || '',
   paypalPpcpClientSecret: process.env.PAYPAL_PPCP_CLIENT_SECRET_NEW || '',
