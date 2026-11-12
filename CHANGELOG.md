@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - It emits `googlePayTokenGenerated` with the Spreedly token and `googlePayType` (`TOKENIZED_CARD` / `NON_TOKENIZED_CARD`) for your server-side 3DS decision.
   - It supports billing and shipping address, shipping options and price updates (`onPaymentDataChange`), email and `metadata`. Payment methods are created cached; retain them from merchant server.
   - `testCardNumber` (`test_card_number`) works in both Google environments, for Spreedly's real-card testing step; the SDK logs a warning while it is set in `PRODUCTION`.
-  - `authDetails` are per instance, as for the card form: create a new instance for each checkout.
+  - Each set of `authDetails` works for one request to Spreedly. New `updateAuthDetails(authDetails)` replaces them for the next tokenization (same `environment_key` and `certificate_token`), so the in-sheet retry after `TOKENIZATION_FAILED` or `TOKENIZATION_TIMEOUT` doesn't fail with `errors.replayed_tokenization_nonce`. Create a new instance for each checkout.
   - It covers Google's full `PaymentDataRequest`:
     - enrollments via `recurringTransactionInfo`, `deferredTransactionInfo` and `automaticReloadTransactionInfo` (exactly one of these or `transactionInfo`; no `onPaymentDataChange` or `offerInfo` with them, as Google doesn't support dynamic pricing there);
     - promo codes via the `OFFER` intent and `offerInfo`;
@@ -30,11 +30,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Config is validated against Google's documented rules when the object is constructed. `apiVersion`, `tokenizationSpecification` and the `PAYMENT_AUTHORIZATION` intent stay SDK-owned.
 
   New telemetry events `google_pay.*`. See `docs/google-pay/`.
+- **Express Checkout: `updateAuthDetails(authDetails)`.** Each set of auth details works for one request to Spreedly. After a failed tokenization (`errors.replayed_tokenization_nonce`, `errors.invalid_tokenization_timestamp` or any other), get new auth details from your backend and call it: the open card form (new `updateAuthDetails` iframe message), the Google Pay button and the next `expressCheckout()` call use them. `environment_key` and `certificate_token` can't change.
+- **Hosted Fields: `updateAuthDetails(authDetails)`.** The same for the card form: after a failed tokenization or recache, call it with new auth details and the next `submit()`, `recache()`, `tokenizeClickToPay()` and offsite payment use them. The card number and CVV stay in the iframes. `environment_key` and `certificate_token` can't change, as the number and CVV iframes lock them when they are created.
 - **Express Checkout: Google Pay above the card form.** New `googlePay` option on `expressCheckout()` (`ExpressCheckoutGooglePayConfig`: the `SpreedlyGooglePay` config without `authDetails`, which Express Checkout supplies).
   - Google's button is drawn on your page in a wallet row above the form iframe (never inside it), with an "or pay with card" divider (new text element `walletDividerText`). The row appears only once `isReadyToPay()` passes. Without `googlePay`, the form mounts exactly as before.
-  - Results arrive on the `googlePay*` events of the Express Checkout instance; card tokens still arrive on `tokenGenerated`. New `setGooglePayTransactionInfo(info)` keeps the price current.
+  - Results arrive on the `googlePay*` events of the Express Checkout instance; card tokens still arrive on `tokenGenerated`. New `setGooglePayTransactionInfo(info)` keeps the price current. The button shares the card form's auth details.
   - An invalid `googlePay` config doesn't block the card form: it mounts without the row, and `googlePayError` / `googlePayUnavailable` fire with `DEVELOPER_ERROR`.
   - `close()` and recache mode remove the row. `iframe.loaded` telemetry carries `google_pay_enabled`.
+- **Google Pay demo** (`/google-pay`): sample-app flow for `SpreedlyGooglePay` on both bundles. The page loads Google's `pay.js`. Hosted Fields shows the standalone button; Express Checkout defaults to the `googlePay` option (wallet row above the card form, embedded or in the page's own dialog; `?placement=standalone` uses the standalone button). Purchase follows `googlePayType`: `TOKENIZED_CARD` uses `simple-purchase`; otherwise 3DS Global or gateway 3DS. See `docs/google-pay/DEMO_GUIDE.md`.
 
 ### Changed
 
