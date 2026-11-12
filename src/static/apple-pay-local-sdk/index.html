@@ -330,14 +330,23 @@
               </div>
 
               <div class="cfg-group">
-                <div class="cfg-group-label">Button size <code>button.width</code> <code>button.height</code> <code>button.borderRadius</code></div>
-                <p class="cfg-hint">CSS lengths. Blank leaves each out: the SDK uses width 100% and height 44px, and
-                  Apple's default corner radius. The SDK raises a px size below Apple's minimum (30px high; 100px wide
+                <div class="cfg-group-label">Button size <code>button.width</code> <code>button.height</code> <code>button.borderRadius</code> <code>button.padding</code> <code>button.boxSizing</code></div>
+                <p class="cfg-hint">CSS values. Blank leaves each out: the SDK uses width 100% and height 44px, and
+                  Apple's defaults are a 4px corner radius and no padding. The SDK raises a px size below Apple's minimum (30px high; 100px wide
                   for plain, 140px with words) and logs a warning.</p>
                 <div class="cfg-options">
                   <label class="cfg-opt"><span>width</span><input type="text" name="button-width" placeholder="100%" autocomplete="off"></label>
                   <label class="cfg-opt"><span>height</span><input type="text" name="button-height" placeholder="44px" autocomplete="off"></label>
                   <label class="cfg-opt"><span>borderRadius</span><input type="text" name="button-radius" placeholder="e.g. 8px" autocomplete="off"></label>
+                  <label class="cfg-opt"><span>padding</span><input type="text" name="button-padding" placeholder="e.g. 4px 0px" autocomplete="off"></label>
+                  <label class="cfg-opt">
+                    <span>boxSizing</span>
+                    <select name="button-box-sizing">
+                      <option value="" selected>Not sent</option>
+                      <option value="border-box">border-box</option>
+                      <option value="content-box">content-box</option>
+                    </select>
+                  </label>
                 </div>
               </div>
 
@@ -434,6 +443,18 @@
                   <label class="cfg-opt"><input type="checkbox" name="shipping-fields" value="name"><span>name</span></label>
                   <label class="cfg-opt"><input type="checkbox" name="shipping-fields" value="postalAddress"><span>postalAddress</span></label>
                   <label class="cfg-opt"><input type="checkbox" name="shipping-fields" value="phoneticName"><span>phoneticName</span></label>
+                </div>
+              </div>
+
+              <div class="cfg-group">
+                <div class="cfg-group-label">Prefilled contacts <code>billingContact</code> <code>shippingContact</code></div>
+                <p class="cfg-hint">A synthetic address on file, shown as the default in the sheet. The shopper can pick
+                  another. Apple needs <code>postalAddress</code> in the billing fields for a prefilled billing address,
+                  and at least one shipping field for a prefilled shipping contact. The SDK rejects the config
+                  otherwise.</p>
+                <div class="cfg-options">
+                  <label class="cfg-opt"><input type="checkbox" name="prefill" value="billingContact"><span>Billing</span></label>
+                  <label class="cfg-opt"><input type="checkbox" name="prefill" value="shippingContact"><span>Shipping</span></label>
                 </div>
               </div>
 

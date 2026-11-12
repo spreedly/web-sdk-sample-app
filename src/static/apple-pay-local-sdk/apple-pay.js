@@ -31,6 +31,19 @@ const EXPIRED_COUPON = 'EXPIRED';
 const CREDIT_SURCHARGE = 0.5;
 const TAX_RATE = 0.08;
 const PENDING_TIP = { label: 'Tip (added later)', amount: '2.00', type: 'pending' };
+// Synthetic contact for the prefilled billing and shipping contacts.
+const PREFILLED_CONTACT = {
+  givenName: 'Ada',
+  familyName: 'Example',
+  emailAddress: 'ada@example.com',
+  phoneNumber: '+1 555 0100',
+  addressLines: ['100 Example Street'],
+  locality: 'Springfield',
+  administrativeArea: 'IL',
+  postalCode: '62701',
+  country: 'United States',
+  countryCode: 'US',
+};
 
 // Local SDK dev servers (checkout-web-sdk `npm run dev`). Fixed localhost URLs only: never take a
 // script URL from the page address.
@@ -497,6 +510,8 @@ function buttonOptions() {
   set('width', text('button-width'));
   set('height', text('button-height'));
   set('borderRadius', text('button-radius'));
+  set('padding', text('button-padding'));
+  set('boxSizing', field('button-box-sizing').value);
   return Object.keys(button).length ? button : undefined;
 }
 
@@ -536,6 +551,9 @@ function buildApplePayConfig() {
   if (shippingFields.length) {
     config.requiredShippingContactFields = shippingFields;
   }
+  ticked('prefill').forEach(name => {
+    config[name] = { ...PREFILLED_CONTACT };
+  });
 
   const paymentRequest = choice('payment-request');
   if (paymentRequest === 'recurring') {
