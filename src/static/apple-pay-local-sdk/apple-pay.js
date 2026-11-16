@@ -849,8 +849,18 @@ function loadSDK() {
   });
 }
 
+/** The cart total from the Apple Pay start page (?amount=), when it's a valid amount. */
+function applyAmountFromStartPage() {
+  const amount = params.get('amount');
+  if (amount && /^\d+(\.\d{2})?$/.test(amount)) {
+    elements.amount.value = amount;
+  }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   initElements();
+  applyAmountFromStartPage();
+  document.getElementById('back-link').href = `../apple-pay/index.html?sdk=${encodeURIComponent(sdkType)}`;
   const surface = sdkType === 'express-checkout' ? 'Express Checkout' : 'Hosted Fields';
   elements['sdk-badge'].textContent = `Apple Pay · ${surface}`;
   elements['sdk-surface'].textContent =

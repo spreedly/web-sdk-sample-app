@@ -72,10 +72,11 @@ backend, plain browser JS frontend (no bundler).
   Optional overrides, defaulting to the Heroku app in `src/config.ts`: `APPLE_PAY_MERCHANT_ID`,
   `APPLE_PAY_DISPLAY_NAME`, `APPLE_PAY_DOMAIN` (sent as `initiativeContext`, must be registered with
   Apple), `APPLE_PAY_ENVIRONMENT` (`sandbox` switches Apple's validation host; default `production`). The test
-  pages: `apple-pay-test/` (plain Apple Pay JS, no SDK) and `apple-pay-local-sdk/` (loads the SDK
-  from `localhost:5000` / `:5173`, so an unreleased SDK build can run on the registered Heroku
-  domain; use Chrome on the machine running `npm run dev` in checkout-web-sdk). Neither is on the
-  landing page.
+  pages: `apple-pay-test/` (plain Apple Pay JS, no SDK; not on the landing page) and, behind the
+  landing page's Apple Pay card (`apple-pay/`), `apple-pay-local-sdk/` (end to end) and
+  `apple-pay-headless/` (headless). Both load the SDK from `localhost:5000` / `:5173`, so an
+  unreleased SDK build can run on the registered Heroku domain; use Chrome on the machine running
+  `npm run dev` in checkout-web-sdk. Without a local SDK they show "Could not load".
 
 ## Flows (landing page `src/static/index.html`; `?sdk=hosted-fields|express-checkout` threads through URLs)
 
@@ -88,7 +89,7 @@ backend, plain browser JS frontend (no bundler).
 | `purchase-with-3ds/` | 3DS **Global** (`sca_provider_key` server-side), `SpreedlyThreeDSLifecycle` + `serializeBrowserInfo` | HF + EC | `create-purchase-with-3ds` |
 | `purchase-with-3ds-gateway-specific/` | 3DS **gateway-specific** with full callback set incl. `onTriggerCompletion` → `transactions/:t/complete` → `event.finalize()` | HF + EC | `create-purchase-with-3ds-gateway-specific`, `complete` |
 | `ach-payments/` | ACH bank-account tokenize + $10 purchase. HF: two secure fields + merchant name/type inputs (`ach-payments.js`); EC: the prebuilt form in one iframe (`ach-form.js`) | HF `SpreedlyACHFields`; EC `SpreedlyACHForm` | `ach-purchase` |
-| `apple-pay-test/`, `apple-pay-local-sdk/` | Apple Pay on the web: plain Apple Pay JS, and the SDK (`SpreedlyApplePay` / `expressCheckout({ applePay })`) loaded from localhost. Same-origin API calls; `?debug=1` failure switches on the SDK page | none / HF + EC (local) | `apple-pay/validate`, `apple-pay/config`, `auth/params`, `simple-purchase` |
+| `apple-pay/` → `apple-pay-local-sdk/` or `apple-pay-headless/`; `apple-pay-test/` | Apple Pay on the web. The landing card opens `apple-pay/`: pick **End to end** (the SDK draws the button and runs the sheet: `SpreedlyApplePay` / `expressCheckout({ applePay })`) or **Headless** (the page runs its own `ApplePaySession`; the SDK only calls `SpreedlyApplePay.tokenize()`), plus products; Proceed passes `?amount=` (the cart total). Both pages load the SDK from localhost. `?debug=1` failure switches on both. `apple-pay-test/` is plain Apple Pay JS for setup checks, not linked | HF + EC (local) / none | `apple-pay/validate`, `apple-pay/config`, `auth/params`, `simple-purchase` |
 | `offsite-payments/` | Hub: paypal/sprel via `setupOffsitePayment`; subpages `braintree/` (`SpreedlyBraintree`), `stripe-apm/` (`SpreedlyStripeAPM`), `ebanx/` (LATAM methods) | offsite APIs | `offsite-purchase`, `braintree-purchase`, `stripe-apm-purchase`, `create-purchase`, `transactions/:t`, `confirm` |
 | `google-pay/` | `SpreedlyGooglePay`: page loads `pay.js`, SDK draws Google's button + tokenizes in-sheet (merchant-page `payment_methods.json`); needs a local SDK build until the global reaches the rc CDN. With `?sdk=express-checkout`, the Placement radio defaults to EC's `googlePay` option (`?placement=standalone` opts out): wallet row above the EC iframe, embedded in the page or in the page's own dialog (never EC's dialog mode), card tokens via `tokenGenerated`. Purchase branches on `googlePayType`: `TOKENIZED_CARD` → no 3DS; otherwise 3DS Global (default) or gateway 3DS + `SpreedlyThreeDSLifecycle` | HF + EC | `auth/params`, `simple-purchase`, `create-purchase-with-3ds-gateway-specific`, `transactions/:t/complete`, `create-purchase-with-3ds` |
 
