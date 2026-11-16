@@ -222,7 +222,8 @@
                 declines once (<code>processPayment</code> mode)</label>
               <label class="checkbox-row"><input type="checkbox" data-debug="addressUnserviceable"> M25: flag the
                 shipping address as unserviceable once (<code>processPayment</code> mode)</label>
-              <label class="checkbox-row"><input type="checkbox" data-debug="slowPurchase"> M26: the purchase takes 20 s
+              <label class="checkbox-row"><input type="checkbox" data-debug="slowPurchase"> M26: the purchase takes 40 s, so
+                Apple closes the sheet at 30 s and <code>applePaySheetClosedEarly</code> fires
                 (<code>processPayment</code> mode)</label>
               <label class="checkbox-row"><input type="checkbox" data-debug="failSheetCallback"> M31: the next sheet
                 callback throws (the sheet closes)</label>

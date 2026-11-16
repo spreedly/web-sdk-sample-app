@@ -325,7 +325,8 @@ async function purchase(token) {
 async function processPayment(result) {
   log('processPayment', { token: result.token, cardType: result.cardType });
   if (isDebug('slowPurchase')) {
-    await wait(20000);
+    // Longer than Apple's 30 s limit, so Apple closes the sheet first (M26).
+    await wait(40000);
   }
   if (debugFiresOnce('declinePurchase')) {
     return { success: false };
@@ -599,6 +600,7 @@ const EVENTS = [
   'applePayPaymentAuthorized',
   'applePayTokenGenerated',
   'applePayCancelled',
+  'applePaySheetClosedEarly',
   'applePayError',
 ];
 
@@ -622,6 +624,9 @@ async function handleEvent(event, payload) {
     elements['result-card'].classList.add('hidden');
   } else if (event === 'applePayCancelled') {
     setStatus('The shopper closed the sheet.', 'info');
+  } else if (event === 'applePaySheetClosedEarly') {
+    // processPayment is still running: the charge may go through, so ask the shopper to wait.
+    setStatus('Apple closed the sheet. Still confirming the payment; please don’t pay again.', 'info');
   } else if (event === 'applePayError') {
     setStatus(`${payload.code}: ${payload.message}`, 'error');
   } else if (event === 'applePayTokenGenerated') {
@@ -629,10 +634,22 @@ async function handleEvent(event, payload) {
   }
 }
 
+/** Whether Apple issued a merchant token (usable for later charges) or a device token. */
+function describeTokenType(result) {
+  return result.isMerchantToken
+    ? `Merchant token ${result.merchantTokenIdentifier}.`
+    : 'Device token (not a merchant token).';
+}
+
 async function onTokenGenerated(result) {
   const closedEarly = result.sheetClosedEarly ? ' (the sheet closed before the result)' : '';
+  const tokenType = describeTokenType(result);
   if (chargeMode() === 'process-payment') {
-    showResult('Paid', `Charged inside the sheet${closedEarly}. Token ${result.token}.`, 'success');
+    showResult(
+      'Paid',
+      `Charged inside the sheet${closedEarly}. Token ${result.token}. ${tokenType}`,
+      'success'
+    );
     return;
   }
   // Charge after the token: the sheet has already shown success.
@@ -641,7 +658,7 @@ async function onTokenGenerated(result) {
     log('purchase (after the token)', { success: data.success, state: data.transaction?.state });
     showResult(
       data.success ? 'Paid' : 'Declined',
-      `${data.transaction?.message || ''} Token ${result.token}.`,
+      `${data.transaction?.message || ''} Token ${result.token}. ${tokenType}`,
       data.success ? 'success' : 'error'
     );
   } catch (error) {
