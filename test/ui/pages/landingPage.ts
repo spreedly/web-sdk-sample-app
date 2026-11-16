@@ -46,6 +46,11 @@ export const landingPage = {
         await expect(tokenizeWithSDKButton).toBeVisible();
         await tokenizeWithSDKButton.click();
     },
+    clickOnGooglePayButton: async (page: Page) => {
+        const googlePayButton = page.locator(SELECTORS.GOOGLE_PAY_BUTTON);
+        await expect(googlePayButton).toBeVisible();
+        await googlePayButton.click();
+    },
     clickOnPPCPDirectButton: async (page: Page) => {
         const ppcpDirectButton = page.locator(SELECTORS.PPCP_DIRECT_BUTTON);
         await expect(ppcpDirectButton).toBeVisible();

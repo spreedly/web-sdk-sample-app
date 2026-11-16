@@ -266,7 +266,7 @@ ach.on('error', (error) => {
 | ----- | --------------- |
 | Invalid routing or account number | `'Routing number is invalid'` or `'Account number is invalid'`. `validation` fires first with the field state. |
 | Submit within 2 seconds of the last one | `'Please wait before submitting again'` |
-| Different auth details than the first submit | `'Auth credentials cannot be changed after initial use'` |
+| `environment_key` or `certificate_token` that differ from the ones `SpreedlyACHFields` was created with (the account iframe is pinned to them when it is created) | `'Auth credentials cannot be changed after initial use'` |
 | The Spreedly tokenization API rejects the request | The API's error response body (for example, for a missing name) |
 | The Spreedly tokenization API responds without a token | `'No payment method token received from ACH API'` |
 | The request fails without a response (network) | The network error message, or `'ACH tokenization failed'` |
@@ -658,8 +658,11 @@ If your page has a Content Security Policy, allow Spreedly's domains for scripts
 - `tokenGenerated` carries the transaction returned by the Spreedly tokenization API, where
   the bank numbers are already masked (`routing_number: "021*"`, `account_number: "*3210"`,
   plus the `…_display_digits` fields). You never get the full numbers.
-- The iframes only accept messages from the page that first talks to them, and the auth
-  details can't be changed after the first submit.
+- The iframes only accept messages from the page that first talks to them. The account
+  iframe is pinned to your `environment_key` and `certificate_token` when the SDK creates it
+  (in its URL fragment), so a script on your page can't send its own first submit to choose
+  another environment. Only the nonce, signature and timestamp change with
+  `updateAuthDetails()`.
 
 ---
 

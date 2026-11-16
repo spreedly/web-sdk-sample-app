@@ -32,6 +32,7 @@ dropped.
    - [`uiConfig.textConfig` and `uiConfig.styles`](#uiconfigtextconfig-and-uiconfigstyles)
    - [Per-field styles via `setFieldConfig`](#per-field-styles-via-setfieldconfig)
    - [Updating copy after launch](#updating-copy-after-launch)
+   - [Google Pay wallet row](#google-pay-wallet-row)
 3. [See Also](#see-also)
 
 ---
@@ -402,6 +403,27 @@ sdk.updateTextElement('processingText', 'Processing payment…');
 
 There is no Hosted Fields–style `submitClick` on Express Checkout — the submit control
 lives inside the checkout iframe and triggers tokenization directly.
+
+### Google Pay wallet row
+
+With the `googlePay` option of `expressCheckout()`, the SDK draws a wallet row on your page above
+the iframe: Google's button, then an "or pay with card" divider. The row follows the form's theme:
+
+| Row element | Taken from |
+|---|---|
+| Background | `uiConfig.styles.paper.backgroundColor` (default white) |
+| Font | `uiConfig.styles.typography.fontFamily` |
+| Divider text colour | `uiConfig.styles.typography.elements.body2.color` |
+| Divider copy | `uiConfig.textConfig.walletDividerText` (default "or pay with card") |
+| Button | `googlePay.button` (Google's `buttonColor`, `buttonType`, `buttonRadius`, …; `buttonSizeMode` defaults to `'fill'`) |
+
+```javascript
+sdk.updateTextElement('walletDividerText', 'or pay by card');
+```
+
+Google draws the button itself, following its brand guidelines, so it can't be restyled beyond
+Google's button options. See the
+[Google Pay integration guide](../google-pay/INTEGRATION_GUIDE.md#google-pay-inside-express-checkout).
 
 ---
 

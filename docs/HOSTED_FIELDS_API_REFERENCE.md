@@ -85,7 +85,7 @@ use [SpreedlyHostedFields.HostedCvvField](#hostedcvvfield) (`cvv`) rather than
 
 ### SpreedlySDKCallbacks
 
-> `static` **SpreedlySDKCallbacks**: `Readonly`\<\{ `ACHPaymentError`: `"achPaymentError"`; `ACHTokenGenerated`: `"achTokenGenerated"`; `C2PAddNewCard`: `"add-new-card"`; `C2PCheckoutCancelled`: `"checkout-cancelled"`; `C2PCheckoutDifferentPm`: `"checkout-different-pm"`; `C2PCheckoutError`: `"checkout-error"`; `C2PCheckoutWindowClose`: `"checkout-window-close"`; `C2PCheckoutWindowOpen`: `"checkout-window-open"`; `C2PDisplayCardsReady`: `"display-cards-ready"`; `C2PExistingUser`: `"c2p-existing-user"`; `C2PInitialized`: `"c2p-initialized"`; `C2PNewUser`: `"c2p-new-user"`; `C2POtpInitiated`: `"otp-initiated"`; `C2POtpNotYou`: `"otp-not-you"`; `C2POtpResend`: `"otp-resend"`; `C2POtpResponse`: `"otp-response"`; `C2PSessionDeleted`: `"c2p-session-deleted"`; `C2PVerifiedUser`: `"c2p-verified-user"`; `Close`: `"close"`; `ConsoleError`: `"consoleError"`; `Error`: `"error"`; `FieldStateChange`: `"fieldStateChange"`; `OffsitePaymentError`: `"offsitePaymentError"`; `OffsiteTokenGenerated`: `"offsiteTokenGenerated"`; `PazeButtonClicked`: `"pazeButtonClicked"`; `PazeCheckoutComplete`: `"pazeCheckoutComplete"`; `PazeEligibilityChecked`: `"pazeEligibilityChecked"`; `PazeError`: `"pazeError"`; `PazeReady`: `"pazeReady"`; `PazeTokenGenerated`: `"pazeTokenGenerated"`; `Ready`: `"ready"`; `RecacheReady`: `"recacheReady"`; `RecacheSuccess`: `"recacheSuccess"`; `SubmitClick`: `"submitClick"`; `TokenGenerated`: `"tokenGenerated"`; `Validation`: `"validation"`; \}\>
+> `static` **SpreedlySDKCallbacks**: `Readonly`\<\{ `ACHPaymentError`: `"achPaymentError"`; `ACHTokenGenerated`: `"achTokenGenerated"`; `C2PAddNewCard`: `"add-new-card"`; `C2PCheckoutCancelled`: `"checkout-cancelled"`; `C2PCheckoutDifferentPm`: `"checkout-different-pm"`; `C2PCheckoutError`: `"checkout-error"`; `C2PCheckoutWindowClose`: `"checkout-window-close"`; `C2PCheckoutWindowOpen`: `"checkout-window-open"`; `C2PDisplayCardsReady`: `"display-cards-ready"`; `C2PExistingUser`: `"c2p-existing-user"`; `C2PInitialized`: `"c2p-initialized"`; `C2PNewUser`: `"c2p-new-user"`; `C2POtpInitiated`: `"otp-initiated"`; `C2POtpNotYou`: `"otp-not-you"`; `C2POtpResend`: `"otp-resend"`; `C2POtpResponse`: `"otp-response"`; `C2PSessionDeleted`: `"c2p-session-deleted"`; `C2PVerifiedUser`: `"c2p-verified-user"`; `Close`: `"close"`; `ConsoleError`: `"consoleError"`; `Error`: `"error"`; `FieldStateChange`: `"fieldStateChange"`; `GooglePayButtonClicked`: `"googlePayButtonClicked"`; `GooglePayCancelled`: `"googlePayCancelled"`; `GooglePayError`: `"googlePayError"`; `GooglePayPaymentAuthorized`: `"googlePayPaymentAuthorized"`; `GooglePayReady`: `"googlePayReady"`; `GooglePayTokenGenerated`: `"googlePayTokenGenerated"`; `GooglePayUnavailable`: `"googlePayUnavailable"`; `OffsitePaymentError`: `"offsitePaymentError"`; `OffsiteTokenGenerated`: `"offsiteTokenGenerated"`; `PazeButtonClicked`: `"pazeButtonClicked"`; `PazeCheckoutComplete`: `"pazeCheckoutComplete"`; `PazeEligibilityChecked`: `"pazeEligibilityChecked"`; `PazeError`: `"pazeError"`; `PazeReady`: `"pazeReady"`; `PazeTokenGenerated`: `"pazeTokenGenerated"`; `Ready`: `"ready"`; `RecacheReady`: `"recacheReady"`; `RecacheSuccess`: `"recacheSuccess"`; `SubmitClick`: `"submitClick"`; `TokenGenerated`: `"tokenGenerated"`; `Validation`: `"validation"`; \}\>
 
 Available SDK callback events that merchants can listen to
 
@@ -1336,6 +1336,50 @@ sdk.on('submitClick', (formFields) => {
   // `formFields` is informational — inspect it, but do not pass it back.
   console.log('hosted fields filled:', Object.keys(formFields));
   sdk.submit({}, { metadata: { order_id: 'ORDER-123' } });
+});
+```
+
+***
+
+#### updateAuthDetails()
+
+> **updateAuthDetails**(`authDetails`): `void`
+
+Replaces the auth details used by later `submit()`, `recache()` and `tokenizeClickToPay()`
+calls, and by offsite payments. Each set of auth details works for one request to Spreedly.
+When `error` carries the key `errors.replayed_tokenization_nonce` (already used) or
+`errors.invalid_tokenization_timestamp` (older than 30 minutes), get new ones from your
+backend, call this, then submit again. A failed tokenization keeps the card number and CVV in
+the iframes, so the shopper does not re-enter them. `environment_key` and `certificate_token`
+must be the same as the constructor's: the number and CVV iframes lock them when the SDK
+creates them. A no-op after `destroy()`.
+
+##### Parameters
+
+###### authDetails
+
+[`AuthDetails`](#authdetails)
+
+New signed credentials. All five fields are required.
+
+##### Returns
+
+`void`
+
+##### Throws
+
+When a field is missing, or `environment_key` / `certificate_token` changed.
+
+##### Example
+
+```javascript
+sdk.on('error', async error => {
+  const keys = (error?.errors || []).map(e => e.key);
+  if (keys.includes('errors.replayed_tokenization_nonce') ||
+      keys.includes('errors.invalid_tokenization_timestamp')) {
+    sdk.updateAuthDetails(await fetchAuthDetailsFromYourBackend());
+    sdk.submit(formData); // retry once
+  }
 });
 ```
 
@@ -2770,6 +2814,914 @@ The signature produced server-side over the request (using the certificate's pri
 > **timestamp**: `string`
 
 The UTC timestamp that was included when generating the signature, used to bound the request's validity window. Required.
+
+### GooglePayAddress
+
+> **GooglePayAddress** = `object`
+
+Shopper-visible address from the Google Pay sheet.
+
+## Properties
+
+### address1?
+
+> `optional` **address1?**: `string`
+
+***
+
+### address2?
+
+> `optional` **address2?**: `string`
+
+***
+
+### address3?
+
+> `optional` **address3?**: `string`
+
+***
+
+### administrativeArea?
+
+> `optional` **administrativeArea?**: `string`
+
+***
+
+### countryCode?
+
+> `optional` **countryCode?**: `string`
+
+***
+
+### iso3166AdministrativeArea?
+
+> `optional` **iso3166AdministrativeArea?**: `string`
+
+ISO 3166-2 code for `administrativeArea`; only with `format: 'FULL-ISO3166'`.
+
+***
+
+### locality?
+
+> `optional` **locality?**: `string`
+
+***
+
+### name?
+
+> `optional` **name?**: `string`
+
+***
+
+### phoneNumber?
+
+> `optional` **phoneNumber?**: `string`
+
+***
+
+### postalCode?
+
+> `optional` **postalCode?**: `string`
+
+***
+
+### sortingCode?
+
+> `optional` **sortingCode?**: `string`
+
+### GooglePayAssuranceDetails
+
+> **GooglePayAssuranceDetails** = `object`
+
+Google's validation of the returned credential (`assuranceDetailsRequired`). When both are
+`true` Google says no step-up is needed; otherwise run your usual risk checks and 3DS.
+
+## Properties
+
+### accountVerified?
+
+> `optional` **accountVerified?**: `boolean`
+
+***
+
+### cardHolderAuthenticated?
+
+> `optional` **cardHolderAuthenticated?**: `boolean`
+
+### GooglePayAuthMethod
+
+> **GooglePayAuthMethod** = *typeof* `GooglePayAuthMethods`\[keyof *typeof* `GooglePayAuthMethods`\]
+
+### GooglePayAutomaticReloadTransactionInfo
+
+> **GooglePayAutomaticReloadTransactionInfo** = `GooglePayEnrollmentInfo` & `object`
+
+Enrollment for automatic reload of a stored balance.
+
+## Type Declaration
+
+### label
+
+> **label**: `string`
+
+e.g. `'Gift Card Reload'`, at most 100 characters. Required.
+
+### minimumBalanceAmount
+
+> **minimumBalanceAmount**: `string`
+
+Balance at which a reload triggers; non-negative, may be `'0.00'`. Required.
+
+### reloadAmount
+
+> **reloadAmount**: `string`
+
+Amount charged per reload; non-zero. Required.
+
+### GooglePayButtonOptions
+
+> **GooglePayButtonOptions** = `object`
+
+Options forwarded to Google's `createButton()`. Brand compliance stays with Google.
+
+## Properties
+
+### buttonBorderType?
+
+> `optional` **buttonBorderType?**: `"default_border"` \| `"no_border"`
+
+***
+
+### buttonColor?
+
+> `optional` **buttonColor?**: `"default"` \| `"black"` \| `"white"`
+
+***
+
+### buttonLocale?
+
+> `optional` **buttonLocale?**: `string`
+
+ISO 639-1. Defaults to the browser language.
+
+***
+
+### buttonRadius?
+
+> `optional` **buttonRadius?**: `number`
+
+Corner radius in px, 0 to half the button height.
+
+***
+
+### buttonSizeMode?
+
+> `optional` **buttonSizeMode?**: `"static"` \| `"fill"`
+
+***
+
+### buttonType?
+
+> `optional` **buttonType?**: `"book"` \| `"buy"` \| `"checkout"` \| `"donate"` \| `"order"` \| `"pay"` \| `"plain"` \| `"subscribe"`
+
+### GooglePayCallbackIntent
+
+> **GooglePayCallbackIntent** = *typeof* `GooglePayCallbackIntents`\[keyof *typeof* `GooglePayCallbackIntents`\]
+
+### GooglePayCardNetwork
+
+> **GooglePayCardNetwork** = *typeof* `GooglePayCardNetworks`\[keyof *typeof* `GooglePayCardNetworks`\]
+
+### GooglePayCheckoutOption
+
+> **GooglePayCheckoutOption** = *typeof* `GooglePayCheckoutOptions`\[keyof *typeof* `GooglePayCheckoutOptions`\]
+
+### GooglePayConfig
+
+> **GooglePayConfig** = `object`
+
+## Properties
+
+### allowCreditCards?
+
+> `optional` **allowCreditCards?**: `boolean`
+
+Set `false` to refuse credit cards (required for UK gambling merchants).
+
+***
+
+### allowedAuthMethods?
+
+> `optional` **allowedAuthMethods?**: [`GooglePayAuthMethod`](#googlepayauthmethod)[]
+
+Defaults to `['PAN_ONLY', 'CRYPTOGRAM_3DS']`. Narrow to `['CRYPTOGRAM_3DS']` to avoid 3DS.
+
+***
+
+### allowedCardNetworks?
+
+> `optional` **allowedCardNetworks?**: [`GooglePayCardNetwork`](#googlepaycardnetwork)[]
+
+Any subset of Google's networks: `AMEX`, `DISCOVER`, `INTERAC`, `JCB`, `MASTERCARD`, `VISA`,
+plus the Brazilian combo-card networks `ELECTRON`, `MAESTRO`, `ELO`, `ELO_DEBIT` (those need
+`transactionInfo.countryCode: 'BR'` and both networks of each credit/debit pair listed).
+Defaults to `['AMEX', 'DISCOVER', 'JCB', 'MASTERCARD', 'VISA']`. List only networks your
+Spreedly gateway can process.
+
+***
+
+### allowedIssuerCountryCodes?
+
+> `optional` **allowedIssuerCountryCodes?**: `string`[]
+
+Only cards issued in these ISO 3166-1 alpha-2 countries. Exclusive with `blockedIssuerCountryCodes`.
+
+***
+
+### allowPrepaidCards?
+
+> `optional` **allowPrepaidCards?**: `boolean`
+
+Set `false` to refuse prepaid cards. Google's default allows them.
+
+***
+
+### assuranceDetailsRequired?
+
+> `optional` **assuranceDetailsRequired?**: `boolean`
+
+Ask Google for `assuranceDetails` (account verified / cardholder authenticated).
+
+***
+
+### authDetails
+
+> **authDetails**: [`AuthDetails`](#authdetails)
+
+Certificate-based auth from the merchant's backend. `environment_key` doubles as the
+`gatewayMerchantId` Google seals the token for, so the merchant cannot misconfigure it.
+Fixed for the life of the instance, as with `SpreedlyHostedFields`: sign fresh params and
+create a new instance for each checkout.
+
+***
+
+### automaticReloadTransactionInfo?
+
+> `optional` **automaticReloadTransactionInfo?**: [`GooglePayAutomaticReloadTransactionInfo`](#googlepayautomaticreloadtransactioninfo)
+
+Enroll the card for automatic reload of a stored balance.
+
+***
+
+### billingAddressParameters?
+
+> `optional` **billingAddressParameters?**: `GooglePayBillingAddressParameters`
+
+***
+
+### billingAddressRequired?
+
+> `optional` **billingAddressRequired?**: `boolean`
+
+***
+
+### blockedIssuerCountryCodes?
+
+> `optional` **blockedIssuerCountryCodes?**: `string`[]
+
+No cards issued in these countries. Exclusive with `allowedIssuerCountryCodes`.
+
+***
+
+### button?
+
+> `optional` **button?**: [`GooglePayButtonOptions`](#googlepaybuttonoptions)
+
+***
+
+### callbackIntents?
+
+> `optional` **callbackIntents?**: [`GooglePayCallbackIntent`](#googlepaycallbackintent)[]
+
+`callbackIntents` to declare besides `PAYMENT_AUTHORIZATION`, which the SDK always adds.
+`OFFER`, `SHIPPING_ADDRESS` and `SHIPPING_OPTION` need `onPaymentDataChange`. When omitted
+they are derived: `SHIPPING_ADDRESS` / `SHIPPING_OPTION` from the shipping flags and `OFFER`
+from `offerInfo`, whenever `onPaymentDataChange` is set.
+
+***
+
+### cspNonce?
+
+> `optional` **cspNonce?**: `string`
+
+CSP nonce Google applies to the `<style>` / `<script>` it injects (Google's `nonce`
+option). Put the same nonce on your pay.js `<script>` tag.
+
+***
+
+### deferredTransactionInfo?
+
+> `optional` **deferredTransactionInfo?**: [`GooglePayDeferredTransactionInfo`](#googlepaydeferredtransactioninfo)
+
+Enroll the card for a charge at a later date.
+
+***
+
+### emailRequired?
+
+> `optional` **emailRequired?**: `boolean`
+
+***
+
+### environment
+
+> **environment**: [`GooglePayEnvironment`](#googlepayenvironment)
+
+***
+
+### existingPaymentMethodRequired?
+
+> `optional` **existingPaymentMethodRequired?**: `boolean`
+
+Also ask whether the shopper already has a matching card; reported as `paymentMethodPresent`
+on `googlePayReady`. Always `true` in `TEST`.
+
+***
+
+### merchantInfo
+
+> **merchantInfo**: [`GooglePayMerchantInfo`](#googlepaymerchantinfo)
+
+***
+
+### metadata?
+
+> `optional` **metadata?**: `Record`\<`string`, `string`\>
+
+***
+
+### offerInfo?
+
+> `optional` **offerInfo?**: [`GooglePayOfferInfo`](#googlepayofferinfo)
+
+Offers applied when the sheet first opens. Enables the `OFFER` intent by default.
+
+***
+
+### onPaymentDataChange?
+
+> `optional` **onPaymentDataChange?**: (`change`) => [`GooglePayDataUpdate`](#googlepaydataupdate) \| `Promise`\<[`GooglePayDataUpdate`](#googlepaydataupdate)\>
+
+Called while the sheet is open when the shopper changes shipping address or option, or
+enters a promo code. Return the recalculated totals. Must settle within 20 seconds.
+
+#### Parameters
+
+##### change
+
+[`GooglePayPaymentDataChange`](#googlepaypaymentdatachange)
+
+#### Returns
+
+[`GooglePayDataUpdate`](#googlepaydataupdate) \| `Promise`\<[`GooglePayDataUpdate`](#googlepaydataupdate)\>
+
+***
+
+### recurringTransactionInfo?
+
+> `optional` **recurringTransactionInfo?**: [`GooglePayRecurringTransactionInfo`](#googlepayrecurringtransactioninfo)
+
+Enroll the card for a recurring charge (subscription).
+
+***
+
+### shippingAddressParameters?
+
+> `optional` **shippingAddressParameters?**: `GooglePayShippingAddressParameters`
+
+***
+
+### shippingAddressRequired?
+
+> `optional` **shippingAddressRequired?**: `boolean`
+
+***
+
+### shippingOptionParameters?
+
+> `optional` **shippingOptionParameters?**: `GooglePayShippingOptionParameters`
+
+***
+
+### shippingOptionRequired?
+
+> `optional` **shippingOptionRequired?**: `boolean`
+
+Requires `shippingAddressRequired`, `shippingOptionParameters` and `onPaymentDataChange`.
+
+***
+
+### testCardNumber?
+
+> `optional` **testCardNumber?**: `string`
+
+Spreedly decrypts the Google Pay payload but stores this test PAN instead, so the payment
+method can only be used on a test gateway. Use it with a real card and `PRODUCTION` to check
+real-payload decryption (Spreedly's second testing step); leave it out with Google's test card
+suite. The SDK logs a warning when it is set in `PRODUCTION`. Remove it before going live.
+
+***
+
+### transactionInfo?
+
+> `optional` **transactionInfo?**: [`GooglePayTransactionInfo`](#googlepaytransactioninfo)
+
+A one-time payment. Update it later with `setTransactionInfo()`.
+
+### GooglePayDataUpdate
+
+> **GooglePayDataUpdate** = `object`
+
+What `onPaymentDataChange` returns. The merchant returns data; the SDK builds Google's
+`PaymentDataRequestUpdate` from it.
+
+## Properties
+
+### error?
+
+> `optional` **error?**: `object`
+
+Shown to the shopper in the sheet, next to the field it concerns.
+
+#### message
+
+> **message**: `string`
+
+#### reason
+
+> **reason**: `GooglePayDataChangeErrorReason`
+
+***
+
+### offerInfo?
+
+> `optional` **offerInfo?**: [`GooglePayOfferInfo`](#googlepayofferinfo)
+
+The offers now applied. Does not change prices — return `transactionInfo` as well.
+
+***
+
+### shippingOptionParameters?
+
+> `optional` **shippingOptionParameters?**: `GooglePayShippingOptionParameters`
+
+***
+
+### transactionInfo?
+
+> `optional` **transactionInfo?**: [`GooglePayTransactionInfo`](#googlepaytransactioninfo)
+
+The full, recalculated transaction info (Google replaces, it does not merge).
+
+### GooglePayDeferredTransactionInfo
+
+> **GooglePayDeferredTransactionInfo** = `GooglePayEnrollmentInfo` & `object`
+
+Enrollment for a transaction charged later (e.g. a reservation).
+
+## Type Declaration
+
+### billingDateTime
+
+> **billingDateTime**: `string`
+
+When the transaction is processed, RFC 3339, in the future. Required.
+
+### displayItems?
+
+> `optional` **displayItems?**: [`GooglePayDisplayItem`](#googlepaydisplayitem)[]
+
+### label
+
+> **label**: `string`
+
+e.g. `'Hotel Room Reservation'`, at most 100 characters. Required.
+
+### price?
+
+> `optional` **price?**: `string`
+
+Required and non-zero for `FINAL` / `ESTIMATED`; must be omitted for `NOT_CURRENTLY_KNOWN`.
+
+### priceStatus
+
+> **priceStatus**: `GooglePayPriceStatus`
+
+### GooglePayDisplayItem
+
+> **GooglePayDisplayItem** = `object`
+
+## Properties
+
+### label
+
+> **label**: `string`
+
+***
+
+### price
+
+> **price**: `string`
+
+***
+
+### status?
+
+> `optional` **status?**: `"FINAL"` \| `"PENDING"`
+
+Defaults to `'FINAL'`.
+
+***
+
+### type
+
+> **type**: `GooglePayDisplayItemType`
+
+### GooglePayEnvironment
+
+> **GooglePayEnvironment** = *typeof* `GooglePayEnvironments`\[keyof *typeof* `GooglePayEnvironments`\]
+
+### GooglePayError
+
+> **GooglePayError** = `object`
+
+## Properties
+
+### code
+
+> **code**: [`GooglePayErrorCode`](#googlepayerrorcode)
+
+***
+
+### details?
+
+> `optional` **details?**: [`SanitizedPaymentError`](#sanitizedpaymenterror) \| \{ `statusCode?`: `string`; `statusMessage?`: `string`; \} \| `unknown`
+
+Sanitized Spreedly Core error, or the raw Google `statusCode` — never request data.
+
+***
+
+### message
+
+> **message**: `string`
+
+### GooglePayErrorCode
+
+> **GooglePayErrorCode** = *typeof* `GooglePayErrorCodes`\[keyof *typeof* `GooglePayErrorCodes`\]
+
+### GooglePayMerchantInfo
+
+> **GooglePayMerchantInfo** = `object`
+
+Identifies the merchant to Google. Each Spreedly customer owns their own Google Pay & Wallet
+Console profile.
+
+## Properties
+
+### merchantId?
+
+> `optional` **merchantId?**: `string`
+
+***
+
+### merchantName
+
+> **merchantName**: `string`
+
+### GooglePayMountResult
+
+> **GooglePayMountResult** = `object`
+
+## Properties
+
+### error?
+
+> `optional` **error?**: `string`
+
+### GooglePayOfferDetail
+
+> **GooglePayOfferDetail** = `object`
+
+## Properties
+
+### description
+
+> **description**: `string`
+
+What the code does, shown to the shopper.
+
+***
+
+### redemptionCode
+
+> **redemptionCode**: `string`
+
+The promo code, as entered in the sheet.
+
+### GooglePayOfferInfo
+
+> **GooglePayOfferInfo** = `object`
+
+## Properties
+
+### offers
+
+> **offers**: [`GooglePayOfferDetail`](#googlepayofferdetail)[]
+
+### GooglePayPaymentDataChange
+
+> **GooglePayPaymentDataChange** = `object`
+
+What the merchant's `onPaymentDataChange` receives. Google redacts the shipping address to the
+fields needed for tax and shipping calculation until the shopper authorizes.
+
+## Properties
+
+### redemptionCodes?
+
+> `optional` **redemptionCodes?**: `string`[]
+
+Every promo code entered in the sheet, including already-approved ones (`OFFER` intent).
+
+***
+
+### shippingAddress?
+
+> `optional` **shippingAddress?**: `object`
+
+#### administrativeArea?
+
+> `optional` **administrativeArea?**: `string`
+
+#### countryCode?
+
+> `optional` **countryCode?**: `string`
+
+#### iso3166AdministrativeArea?
+
+> `optional` **iso3166AdministrativeArea?**: `string`
+
+Only with shipping `format: 'FULL-ISO3166'`.
+
+#### locality?
+
+> `optional` **locality?**: `string`
+
+#### postalCode?
+
+> `optional` **postalCode?**: `string`
+
+***
+
+### shippingOptionId?
+
+> `optional` **shippingOptionId?**: `string`
+
+Id of the selected shipping option, when the shopper picked one.
+
+***
+
+### trigger
+
+> **trigger**: `GooglePayDataChangeTrigger`
+
+### GooglePayPaymentSummary
+
+> **GooglePayPaymentSummary** = `object`
+
+Display-only card and contact details, safe to render. Never the sealed token.
+
+## Properties
+
+### assuranceDetails?
+
+> `optional` **assuranceDetails?**: [`GooglePayAssuranceDetails`](#googlepayassurancedetails)
+
+Present when `assuranceDetailsRequired` is set.
+
+***
+
+### billingAddress?
+
+> `optional` **billingAddress?**: [`GooglePayAddress`](#googlepayaddress)
+
+***
+
+### cardFundingSource?
+
+> `optional` **cardFundingSource?**: `string`
+
+`'CREDIT'`, `'DEBIT'`, `'PREPAID'` or `'UNKNOWN'`.
+
+***
+
+### cardNetwork?
+
+> `optional` **cardNetwork?**: `string`
+
+***
+
+### email?
+
+> `optional` **email?**: `string`
+
+***
+
+### last4?
+
+> `optional` **last4?**: `string`
+
+***
+
+### shippingAddress?
+
+> `optional` **shippingAddress?**: [`GooglePayAddress`](#googlepayaddress)
+
+***
+
+### shippingOptionId?
+
+> `optional` **shippingOptionId?**: `string`
+
+### GooglePayReady
+
+> **GooglePayReady** = `object`
+
+Payload of `googlePayReady`.
+
+## Properties
+
+### paymentMethodPresent?
+
+> `optional` **paymentMethodPresent?**: `boolean`
+
+Only with `existingPaymentMethodRequired`: the shopper already has a matching card.
+
+### GooglePayRecurringTransactionInfo
+
+> **GooglePayRecurringTransactionInfo** = `GooglePayEnrollmentInfo` & `object`
+
+Enrollment for a recurring transaction (subscription).
+
+## Type Declaration
+
+### introductoryPeriodInfo?
+
+> `optional` **introductoryPeriodInfo?**: `GooglePayIntroductoryPeriodInfo`
+
+### recurrenceItems
+
+> **recurrenceItems**: `GooglePayRecurrencePeriodItem`[]
+
+At least one. Required.
+
+### GooglePayShippingOption
+
+> **GooglePayShippingOption** = `object`
+
+## Properties
+
+### description?
+
+> `optional` **description?**: `string`
+
+***
+
+### id
+
+> **id**: `string`
+
+***
+
+### label
+
+> **label**: `string`
+
+### GooglePayTokenResult
+
+> **GooglePayTokenResult** = [`GooglePayPaymentSummary`](#googlepaypaymentsummary) & `object`
+
+Payload of `googlePayTokenGenerated`.
+
+## Type Declaration
+
+### googlePayType?
+
+> `optional` **googlePayType?**: [`GooglePayType`](#googlepaytype)
+
+### paymentMethod
+
+> **paymentMethod**: `CardPaymentMethodResponse`\[`"transaction"`\]\[`"payment_method"`\]
+
+The Spreedly payment method as returned by Core (masked card fields only).
+
+### token
+
+> **token**: `string`
+
+Spreedly payment method token — run the transaction server-side with it.
+
+### GooglePayTransactionInfo
+
+> **GooglePayTransactionInfo** = `object`
+
+A one-time payment. Exactly one of the four transaction info shapes must be configured.
+
+## Properties
+
+### checkoutOption?
+
+> `optional` **checkoutOption?**: [`GooglePayCheckoutOption`](#googlepaycheckoutoption)
+
+The sheet's submit button: `'DEFAULT'` (Google decides "Continue" or "Pay"),
+`'COMPLETE_IMMEDIATE_PURCHASE'` ("Pay now", `totalPriceStatus: 'FINAL'` only) or
+`'CONTINUE_TO_REVIEW'` ("Review Order").
+
+***
+
+### countryCode?
+
+> `optional` **countryCode?**: `string`
+
+ISO 3166-1 alpha-2 country of the acquiring bank, e.g. `'US'`. Optional, but required for
+EEA and other SCA countries, and must be `'BR'` when `allowedCardNetworks` includes the
+Brazilian combo-card networks.
+
+***
+
+### currencyCode
+
+> **currencyCode**: `string`
+
+ISO 4217 alphabetic code, e.g. `'USD'`. Must match the currency you charge. Required.
+
+***
+
+### displayItems?
+
+> `optional` **displayItems?**: [`GooglePayDisplayItem`](#googlepaydisplayitem)[]
+
+***
+
+### totalPrice
+
+> **totalPrice**: `string`
+
+Decimal string matching `^[0-9]+(\.[0-9][0-9])?$`, e.g. `'42.00'`. Google rejects numbers. Required.
+
+***
+
+### totalPriceLabel?
+
+> `optional` **totalPriceLabel?**: `string`
+
+Required when `displayItems` are set.
+
+***
+
+### totalPriceStatus?
+
+> `optional` **totalPriceStatus?**: `GooglePayTotalPriceStatus`
+
+Defaults to `'FINAL'`.
+
+***
+
+### transactionId?
+
+> `optional` **transactionId?**: `string`
+
+A unique id for this attempt — optional, but Google encourages it for troubleshooting.
+
+### GooglePayType
+
+> **GooglePayType** = `"TOKENIZED_CARD"` \| `"NON_TOKENIZED_CARD"`
+
+`TOKENIZED_CARD` (from `CRYPTOGRAM_3DS`) already carries authentication — run it without 3DS.
+`NON_TOKENIZED_CARD` (from `PAN_ONLY`) may need a 3DS step-up, through 3DS Global
+(`sca_provider_key`): Spreedly refuses `attempt_3dsecure` for Google Pay payment methods.
+
+### GooglePayUnavailable
+
+> **GooglePayUnavailable** = `object`
+
+Payload of `googlePayUnavailable`.
+
+## Properties
+
+### reason
+
+> **reason**: [`GooglePayErrorCode`](#googlepayerrorcode)
 
 ### HostedFieldInput
 
