@@ -61,6 +61,7 @@ let applePay = null; // SpreedlyApplePay (Hosted Fields mode)
 let expressCheckout = null; // SpreedlyExpressCheckout (Express Checkout mode)
 let authAttempts = 0;
 let merchantIdentifier = null; // from GET /api/v1/apple-pay/config
+let environmentKey = null; // from GET /api/v1/auth/params; SpreedlyApplePay requires it
 let mounting = Promise.resolve(); // redraws run one after another
 const debugOnce = {}; // debug switches that fire on the first attempt only
 
@@ -687,7 +688,7 @@ async function mountHostedFieldsMode() {
     return;
   }
   try {
-    const config = buildApplePayConfig();
+    const config = { environmentKey, ...buildApplePayConfig() };
     log('config', describeConfig(config));
     applePay = new window.SpreedlyApplePay(config);
   } catch (error) {
@@ -752,6 +753,9 @@ async function loadServerConfig() {
   const data = await res.json();
   merchantIdentifier = data.merchantIdentifier;
   log('server Apple Pay config', data);
+  // The environment key only (not a secret). Express Checkout supplies its own.
+  const auth = await fetch(`${API}/auth/params`).then(r => r.json()).catch(() => ({}));
+  environmentKey = auth.environmentKey || null;
   if (!data.configured) {
     setStatus(
       'This server has no Apple Pay settings (APPLE_PAY_* env vars), so merchant validation will fail. See the README.',
