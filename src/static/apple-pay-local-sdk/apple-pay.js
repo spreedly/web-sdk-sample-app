@@ -329,7 +329,8 @@ async function processPayment(result) {
     await wait(40000);
   }
   if (debugFiresOnce('declinePurchase')) {
-    return { success: false };
+    // The message becomes the applePayError message, and the sheet shows it when it can.
+    return { success: false, message: 'Declined by the bank (demo). Try another card.' };
   }
   if (debugFiresOnce('addressUnserviceable')) {
     return {
