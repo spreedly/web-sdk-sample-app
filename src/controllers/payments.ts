@@ -36,33 +36,6 @@ const getGatewayKey = (gateway: string = 'spreedly') => {
   }
 };
 
-export const createPaymentMethod = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const response = await axios.post(
-      `${config.spreedlyUrl}/v1/payment_methods/restricted.json`,
-      req.body,
-      {
-        headers: {
-          'spreedly-environment-key': req.headers['spreedly-environment-key'],
-        },
-      }
-    );
-
-    res.json(response.data);
-  } catch (error) {
-    // Forward Spreedly's real status + body (e.g. a 422 with validation errors)
-    // instead of collapsing everything into a generic 500 — otherwise the actual
-    // tokenization failure reason is lost to the caller.
-    if (axios.isAxiosError(error) && error.response) {
-      res.status(error.response.status).json(error.response.data);
-    } else if (error instanceof Error) {
-      res.status(500).json({ error: error.message });
-    } else {
-      res.status(500).json({ error: 'An unknown error occurred' });
-    }
-  }
-};
-
 export const getPaymentMethods = async (req: Request, res: Response): Promise<void> => {
   try {
     const response = await axios.get(

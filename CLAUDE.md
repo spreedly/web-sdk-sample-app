@@ -1,28 +1,24 @@
 # web-sdk-sample-app
 
-Sample e-commerce app demoing every flow of Spreedly's checkout-web-sdk — **and,
-critically, production-load-bearing infrastructure**: its Heroku deployment
-(`checkout-web-sample-app-049a3c617015.herokuapp.com`) is the tokenization **proxy**
-the SDK's core package uses for ALL local and staging development (Spreedly's
-`restricted.json` endpoint rejects non-`*.spreedly.com` origins). Breaking the proxy
-contract here breaks SDK development everywhere. Node 22.x, Express 5 + TypeScript
-backend, plain browser JS frontend (no bundler).
+Sample e-commerce app demoing every flow of Spreedly's checkout-web-sdk.
+Node 22.x, Express 5 + TypeScript backend, plain browser JS frontend (no bundler).
 
-## The proxy contract — never break these
+Card data does not pass through this app. The SDK posts it to Spreedly Core.
+Do not reintroduce `POST /api/v1/payment_methods` as a forwarder to
+`restricted.json`.
 
-- `POST /api/v1/payment_methods` (`src/controllers/payments.ts`) → forwards the body
-  verbatim to `{SPREEDLY_URL}/v1/payment_methods/restricted.json` with ONLY the
-  `spreedly-environment-key` header (no Basic auth). The SDK POSTs here directly.
-- `POST /api/v1/payment_methods/:token/recache` — same forwarding pattern.
+## Backend contract
+
+- `POST /api/v1/payment_methods/:token/recache` forwards the body verbatim to
+  `{SPREEDLY_URL}/v1/payment_methods/:token/recache.json` with ONLY the
+  `spreedly-environment-key` header (no Basic auth). The current SDK recaches
+  directly against Core, so the pages do not call this route.
 - `GET /api/v1/auth/params` (`src/controllers/auth.ts`) → `{nonce (UUID), timestamp
   (unix s), signature, certificateToken, environmentKey}`. Signature = RSA-SHA256,
   base64, over the concatenation `nonce + timestamp + certificateToken` — the order
   and algorithm are fixed by what Spreedly verifies; don't touch.
-- The unrestricted `app.use(cors())` in `src/app.ts` is load-bearing — local SDK
-  builds and localhost pages call this API cross-origin. No origin allowlist may be
-  added casually.
-- Changing the route paths, injecting Basic auth into the proxy routes, or removing
-  CORS breaks every SDK developer's local/staging tokenization.
+- The unrestricted `app.use(cors())` in `src/app.ts` is load-bearing — localhost
+  pages call this API cross-origin. No origin allowlist may be added casually.
 
 ## Architecture
 
@@ -94,8 +90,8 @@ backend, plain browser JS frontend (no bundler).
 | `google-pay/` | `SpreedlyGooglePay`: page loads `pay.js`, SDK draws Google's button + tokenizes in-sheet (merchant-page `payment_methods.json`); needs a local SDK build until the global reaches the rc CDN. With `?sdk=express-checkout`, the Placement radio defaults to EC's `googlePay` option (`?placement=standalone` opts out): wallet row above the EC iframe, embedded in the page or in the page's own dialog (never EC's dialog mode), card tokens via `tokenGenerated`. Purchase branches on `googlePayType`: `TOKENIZED_CARD` → no 3DS; otherwise 3DS Global (default) or gateway 3DS + `SpreedlyThreeDSLifecycle` | HF + EC | `auth/params`, `simple-purchase`, `create-purchase-with-3ds-gateway-specific`, `transactions/:t/complete`, `create-purchase-with-3ds` |
 
 Backend routes with no frontend caller: `POST /purchase` (the only one exercising the
-`sca_provider_key` vs `attempt_3dsecure` toggle), `POST /payment_methods` and
-`/recache` proxies (called by the SDK itself, not by pages), `offsite-callback` (stub).
+`sca_provider_key` vs `attempt_3dsecure` toggle), the `/recache` proxy (unused by
+the current SDK and by pages), `offsite-callback` (stub).
 
 ## Testing (this repo IS the SDK's e2e coverage — the SDK repo has none)
 

@@ -1,7 +1,6 @@
 import { Router, urlencoded } from 'express';
 import { getAuthParams } from './controllers/auth';
 import { 
-  createPaymentMethod, 
   getPaymentMethods, 
   retainPaymentMethod, 
   recachePaymentMethod, 
@@ -83,33 +82,6 @@ const router = Router();
  *         description: Error generating authentication parameters
  */
 router.get('/auth/params', getAuthParams);
-/**
- * @swagger
- * /api/v1/payment_methods:
- *   post:
- *     description: Create a restricted payment method token using Spreedly
- *     tags: [Payment Methods]
- *     produces:
- *       - application/json
- *     parameters:
- *       - name: spreedly-environment-key
- *         description: Spreedly environment key for authentication
- *         in: header
- *         required: true
- *         type: string
- *       - name: body
- *         description: Payment method details including card information
- *         in: body
- *         required: true
- *         schema:
- *           type: object
- *     responses:
- *       200:
- *         description: Payment method created successfully
- *       500:
- *         description: Error creating payment method
- */
-router.post('/payment_methods', createPaymentMethod);
 /**
  * @swagger
  * /api/v1/payment_methods:
