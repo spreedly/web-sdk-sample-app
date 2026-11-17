@@ -231,8 +231,6 @@
               <label class="checkbox-row"><input type="checkbox" data-debug="slowPurchase"> M26: the purchase takes 40 s, so
                 Apple closes the sheet at 30 s and <code>applePaySheetClosedEarly</code> fires
                 (<code>processPayment</code> mode)</label>
-              <label class="checkbox-row"><input type="checkbox" data-debug="failSheetCallback"> M31: the next sheet
-                callback throws (the sheet closes)</label>
               <label class="checkbox-row"><input type="checkbox" data-debug="failProcessPayment"> M40:
                 <code>processPayment</code> throws once, before charging (the sheet closes and
                 <code>PAYMENT_PROCESSING_FAILED</code> fires; <code>processPayment</code> mode)</label>
@@ -274,23 +272,6 @@
                     <input type="radio" name="charge-mode" value="process-payment">
                     <span>Inside the sheet</span>
                     <span class="why">processPayment</span>
-                  </label>
-                </div>
-              </div>
-
-              <div class="cfg-group">
-                <div class="cfg-group-label">Wallet order tracking <code>orderDetails</code></div>
-                <p class="cfg-hint">Returned from <code>processPayment</code> with <code>success: true</code>. This server
-                  has no Wallet Orders web service, so Wallet can't show the order.</p>
-                <div class="cfg-options">
-                  <label class="cfg-opt">
-                    <input type="radio" name="order-details" value="" checked>
-                    <span>Off</span>
-                  </label>
-                  <label class="cfg-opt" id="order-details-on">
-                    <input type="radio" name="order-details" value="on">
-                    <span>Return order details</span>
-                    <span class="why">needs Inside the sheet</span>
                   </label>
                 </div>
               </div>
@@ -487,18 +468,8 @@
                 </div>
               </div>
 
-              <!-- Amounts in the sheet -->
-              <div class="cfg-heading">Amounts in the sheet</div>
-              <div class="cfg-group">
-                <div class="cfg-group-label">Line items <code>lineItems</code></div>
-                <p class="cfg-hint">Shown above the total. For a <code>pending</code> line the sheet shows "pending" instead of
-                  the amount, and the page leaves it out of the total.</p>
-                <div class="cfg-options">
-                  <label class="cfg-opt"><input type="checkbox" name="line-items" value="tax"><span>Tax</span><span class="why">8%, final</span></label>
-                  <label class="cfg-opt"><input type="checkbox" name="line-items" value="pending"><span>Tip</span><span class="why">pending</span></label>
-                </div>
-              </div>
-
+              <!-- Total -->
+              <div class="cfg-heading">Total</div>
               <div class="cfg-group">
                 <div class="cfg-group-label">Total type <code>total.type</code></div>
                 <div class="cfg-options">
@@ -511,14 +482,12 @@
               <!-- Payment type -->
               <div class="cfg-heading">Payment type</div>
               <div class="cfg-group">
-                <div class="cfg-group-label">Payment request <code>recurringPaymentRequest</code> <code>automaticReloadPaymentRequest</code> <code>deferredPaymentRequest</code></div>
-                <p class="cfg-hint">Only one at a time. The SDK asks for Apple Pay version 14 for each. The billing amount is
-                  the subtotal, and <code>managementURL</code> is this site.</p>
+                <div class="cfg-group-label">Payment request <code>recurringPaymentRequest</code></div>
+                <p class="cfg-hint">The SDK asks for Apple Pay version 14. The billing amount is the subtotal, and
+                  <code>managementURL</code> is this site.</p>
                 <div class="cfg-options">
                   <label class="cfg-opt"><input type="radio" name="payment-request" value="" checked><span>One-off</span></label>
                   <label class="cfg-opt"><input type="radio" name="payment-request" value="recurring"><span>Recurring</span><span class="why">subscription</span></label>
-                  <label class="cfg-opt"><input type="radio" name="payment-request" value="automaticReload"><span>Top-up</span><span class="why">automatic reload</span></label>
-                  <label class="cfg-opt"><input type="radio" name="payment-request" value="deferred"><span>Pay later</span><span class="why">deferred</span></label>
                 </div>
 
                 <div class="cfg-sub" data-request="recurring" hidden>
@@ -541,21 +510,6 @@
                   </div>
                 </div>
 
-                <div class="cfg-sub" data-request="automaticReload" hidden>
-                  <div class="cfg-options">
-                    <label class="cfg-opt"><span>Top up when the balance falls below</span><input type="text" name="reload-threshold" value="5.00" style="width: 4rem;" autocomplete="off"><span class="why">automaticReloadPaymentThresholdAmount</span></label>
-                  </div>
-                </div>
-
-                <div class="cfg-sub" data-request="deferred" hidden>
-                  <div class="cfg-options">
-                    <label class="cfg-opt"><span>Charge in</span><input type="text" name="deferred-days" value="30" style="width: 3rem;" autocomplete="off"><span>days</span><span class="why">deferredPaymentDate</span></label>
-                  </div>
-                  <div class="cfg-options">
-                    <label class="cfg-opt"><input type="checkbox" name="free-cancellation"><span>Free cancellation until the day before</span><span class="why">freeCancellationDate + TimeZone</span></label>
-                  </div>
-                </div>
-
                 <div class="cfg-sub" data-request="any" hidden>
                   <div class="cfg-options">
                     <label class="cfg-opt"><input type="checkbox" name="billing-agreement"><span>Billing agreement</span><span class="why">billingAgreement</span></label>
@@ -566,52 +520,18 @@
                 </div>
               </div>
 
-              <!-- Choices in the sheet -->
-              <div class="cfg-heading">Choices in the sheet</div>
-              <div class="cfg-group">
-                <div class="cfg-group-label">Delivery options <code>shippingMethods</code></div>
-                <p class="cfg-hint">Standard (free) and Express (9.00). The page prices the order as if the sheet opens on
-                  Standard: Apple doesn't say which option it opens on, so device test M27 checks.
-                  <code>dateComponentsRange</code> adds delivery dates, and the SDK then asks for Apple Pay version 12.</p>
-                <div class="cfg-options">
-                  <label class="cfg-opt"><input type="radio" name="delivery" value="" checked><span>Off</span></label>
-                  <label class="cfg-opt"><input type="radio" name="delivery" value="on"><span>On</span></label>
-                  <label class="cfg-opt"><input type="radio" name="delivery" value="dates"><span>On, with dates</span><span class="why">dateComponentsRange</span></label>
-                </div>
-              </div>
-
+              <!-- Shipping -->
+              <div class="cfg-heading">Shipping</div>
               <div class="cfg-group">
                 <div class="cfg-group-label">Shipping type <code>shippingType</code></div>
-                <p class="cfg-hint">How the sheet words delivery.</p>
+                <p class="cfg-hint">How the sheet labels the shipping information. Shows with a shipping address
+                  (<code>postalAddress</code> under Shipping contact).</p>
                 <div class="cfg-options">
                   <label class="cfg-opt"><input type="radio" name="shipping-type" value="" checked><span>Not sent</span><span class="why">Apple uses shipping</span></label>
                   <label class="cfg-opt"><input type="radio" name="shipping-type" value="shipping"><span>shipping</span></label>
                   <label class="cfg-opt"><input type="radio" name="shipping-type" value="delivery"><span>delivery</span></label>
                   <label class="cfg-opt"><input type="radio" name="shipping-type" value="storePickup"><span>storePickup</span></label>
                   <label class="cfg-opt"><input type="radio" name="shipping-type" value="servicePickup"><span>servicePickup</span></label>
-                </div>
-              </div>
-
-              <div class="cfg-group">
-                <div class="cfg-group-label">Coupon field <code>supportsCouponCode</code> <code>couponCode</code></div>
-                <p class="cfg-hint"><code>SAVE10</code> takes 10% off the subtotal. <code>EXPIRED</code> is expired.
-                  Anything else is invalid. The SDK asks for Apple Pay version 12.</p>
-                <div class="cfg-options">
-                  <label class="cfg-opt"><input type="radio" name="coupons" value="" checked><span>Off</span></label>
-                  <label class="cfg-opt"><input type="radio" name="coupons" value="on"><span>On</span></label>
-                  <label class="cfg-opt"><span>Starting code</span><input type="text" name="coupon-code" placeholder="optional" autocomplete="off"></label>
-                </div>
-              </div>
-
-              <div class="cfg-group">
-                <div class="cfg-group-label">Sheet callbacks</div>
-                <p class="cfg-hint">Each one returns the new total to the sheet. Untick one to see what Apple does
-                  without it.</p>
-                <div class="cfg-options" style="flex-direction: column; align-items: flex-start;">
-                  <label class="cfg-opt"><input type="checkbox" name="callbacks" value="onShippingMethodSelected" checked><span>onShippingMethodSelected</span><span class="why">adds the delivery price</span></label>
-                  <label class="cfg-opt"><input type="checkbox" name="callbacks" value="onShippingContactSelected" checked><span>onShippingContactSelected</span><span class="why">with delivery on, rejects addresses outside the US</span></label>
-                  <label class="cfg-opt"><input type="checkbox" name="callbacks" value="onPaymentMethodSelected"><span>onPaymentMethodSelected</span><span class="why">adds 0.50 for credit cards</span></label>
-                  <label class="cfg-opt"><input type="checkbox" name="callbacks" value="onCouponCodeChanged" checked><span>onCouponCodeChanged</span><span class="why">checks the code</span></label>
                 </div>
               </div>
 

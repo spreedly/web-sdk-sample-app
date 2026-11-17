@@ -20,18 +20,6 @@ const BUTTON_CONTAINER_ID = 'apple-pay-button-container';
 const EC_CONTAINER_ID = 'ec-container';
 const STORE_LABEL = 'Spreedly Demo Store';
 
-// Synthetic delivery options, coupon codes, surcharge and line items for the SDK config panel.
-const SHIPPING_METHODS = [
-  { label: 'Standard', detail: 'Arrives in 5-7 days', amount: '0.00', identifier: 'standard' },
-  { label: 'Express', detail: 'Arrives tomorrow', amount: '9.00', identifier: 'express' },
-];
-// Days from today for each option's delivery dates (dateComponentsRange).
-const DELIVERY_DAYS = { standard: [5, 7], express: [1, 1] };
-const VALID_COUPON = 'SAVE10';
-const EXPIRED_COUPON = 'EXPIRED';
-const CREDIT_SURCHARGE = 0.5;
-const TAX_RATE = 0.08;
-const PENDING_TIP = { label: 'Tip (added later)', amount: '2.00', type: 'pending' };
 // Synthetic contact for the prefilled billing and shipping contacts.
 const PREFILLED_CONTACT = {
   givenName: 'Ada',
@@ -80,7 +68,6 @@ function initElements() {
     'divider-group',
     'placement-group',
     'open-checkout',
-    'order-details-on',
     'ec-container',
     'status-message',
     'result-card',
@@ -158,8 +145,6 @@ const list = value =>
     .filter(Boolean);
 
 const currency = () => choice('currency-code');
-const deliveryOn = () => choice('delivery') !== '';
-const couponsOn = () => choice('coupons') === 'on';
 
 /** 'a=1, b=2' → { a: '1', b: '2' } */
 function parseMetadata(value) {
@@ -180,87 +165,20 @@ const daysFromNow = days => {
   return date;
 };
 
-// Apple's ApplePayDateComponents members are years, months (1-based) and days.
-const dateComponents = date => ({
-  years: date.getFullYear(),
-  months: date.getMonth() + 1,
-  days: date.getDate(),
-});
+// ── The amount the sheet shows ────────────────────────────────────────
 
-function shippingMethods() {
-  if (choice('delivery') !== 'dates') {
-    return SHIPPING_METHODS;
-  }
-  return SHIPPING_METHODS.map(method => {
-    const [start, end] = DELIVERY_DAYS[method.identifier];
-    return {
-      ...method,
-      dateComponentsRange: {
-        startDateComponents: dateComponents(daysFromNow(start)),
-        endDateComponents: dateComponents(daysFromNow(end)),
-      },
-    };
-  });
-}
-
-// ── The order the sheet shows (this page's "server") ──────────────────
-
-/** What the shopper picked in the sheet during the current tap. Reset on every tap. */
-const sheet = { shipping: null, creditSurcharge: false, coupon: '' };
-
-const normalizeCoupon = code => (code || '').trim().toUpperCase();
-
-/**
- * Back to the state the sheet opens with. This page assumes Apple opens the sheet on the first
- * delivery option; Apple's docs don't say, so device test M27 records which one it is.
- */
-function resetSheet() {
-  sheet.shipping = deliveryOn() ? SHIPPING_METHODS[0] : null;
-  sheet.creditSurcharge = false;
-  const startCoupon = couponsOn() ? normalizeCoupon(text('coupon-code')) : '';
-  sheet.coupon = startCoupon === VALID_COUPON ? startCoupon : '';
-}
-
-/** The total and line items for the current sheet state and line item settings. */
-function computeOrder() {
+/** The total for the next tap: the subtotal field, with the panel's total type. */
+function computeTotal() {
   const subtotal = Number(elements.amount.value.trim()) || 0;
-  const extraLines = ticked('line-items');
-  const lineItems = [];
-  let total = subtotal;
-  if (sheet.shipping || sheet.creditSurcharge || sheet.coupon || extraLines.length) {
-    lineItems.push({ label: 'Subtotal', amount: toAmount(subtotal) });
-  }
-  if (extraLines.includes('tax')) {
-    const tax = subtotal * TAX_RATE;
-    lineItems.push({ label: 'Tax', amount: toAmount(tax), type: 'final' });
-    total += tax;
-  }
-  if (extraLines.includes('pending')) {
-    // Pending: the sheet shows "pending", and the page doesn't charge it.
-    lineItems.push({ ...PENDING_TIP });
-  }
-  if (sheet.shipping) {
-    lineItems.push({ label: sheet.shipping.label, amount: sheet.shipping.amount });
-    total += Number(sheet.shipping.amount);
-  }
-  if (sheet.creditSurcharge) {
-    lineItems.push({ label: 'Credit card surcharge', amount: toAmount(CREDIT_SURCHARGE) });
-    total += CREDIT_SURCHARGE;
-  }
-  if (sheet.coupon === VALID_COUPON) {
-    const discount = -subtotal * 0.1;
-    lineItems.push({ label: `Coupon ${VALID_COUPON}`, amount: toAmount(discount) });
-    total += discount;
-  }
-  const totalItem = { label: STORE_LABEL, amount: toAmount(Math.max(total, 0)) };
+  const total = { label: STORE_LABEL, amount: toAmount(Math.max(subtotal, 0)) };
   if (choice('total-type')) {
-    totalItem.type = choice('total-type');
+    total.type = choice('total-type');
   }
-  return { total: totalItem, lineItems };
+  return total;
 }
 
 /** The amount the page charges: what the sheet last showed. */
-const chargeAmount = () => computeOrder().total.amount;
+const chargeAmount = () => computeTotal().amount;
 
 const chargeMode = () => choice('charge-mode') || 'after-token';
 
@@ -360,84 +278,14 @@ async function processPayment(result) {
   }
   const data = await purchase(result.token);
   log('purchase (inside the sheet)', { success: data.success, state: data.transaction?.state });
-  if (data.success === true && choice('order-details') === 'on') {
-    // Synthetic order details. With no Wallet Orders web service here, Wallet can't fetch the order.
-    const orderDetails = {
-      orderTypeIdentifier: 'order.com.spreedly.example',
-      orderIdentifier: `demo-${Date.now()}`,
-      webServiceURL: `${window.location.origin}/wallet-orders`,
-      authenticationToken: crypto.randomUUID(),
-    };
-    log('processPayment returns orderDetails', { orderIdentifier: orderDetails.orderIdentifier });
-    return { success: true, orderDetails };
-  }
   return { success: data.success === true };
 }
 
-// ── Sheet callbacks ───────────────────────────────────────────────────
-
-/** Applies one change from the sheet and returns the new amounts, plus any sheet errors. */
-async function answerSheet(name, input, change) {
-  log(name, input);
-  if (debugFiresOnce('failSheetCallback')) {
-    throw new Error(`Debug: ${name} failed`);
-  }
-  const errors = change();
-  const update = computeOrder();
-  if (errors) {
-    update.errors = errors;
-  }
-  log(`${name}: new total`, { total: update.total.amount, errors: errors?.map(error => error.code) });
-  return update;
-}
-
-const sheetCallbacks = {
-  onShippingMethodSelected: method =>
-    answerSheet('onShippingMethodSelected', { identifier: method.identifier }, () => {
-      sheet.shipping = method;
-    }),
-
-  // Apple sends a redacted contact before approval: enough to price delivery.
-  onShippingContactSelected: contact =>
-    answerSheet('onShippingContactSelected', contact, () =>
-      deliveryOn() && contact.countryCode && contact.countryCode.toLowerCase() !== 'us'
-        ? [
-            {
-              code: 'addressUnserviceable',
-              contactField: 'postalAddress',
-              message: 'This demo store only delivers in the US.',
-            },
-          ]
-        : undefined
-    ),
-
-  onPaymentMethodSelected: paymentMethod =>
-    answerSheet('onPaymentMethodSelected', paymentMethod, () => {
-      sheet.creditSurcharge = paymentMethod.paymentMethodType === 'credit';
-    }),
-
-  onCouponCodeChanged: couponCode =>
-    answerSheet('onCouponCodeChanged', { couponCode }, () => {
-      const code = normalizeCoupon(couponCode);
-      sheet.coupon = code === VALID_COUPON ? code : '';
-      if (!code || code === VALID_COUPON) {
-        return undefined;
-      }
-      return [
-        code === EXPIRED_COUPON
-          ? { code: 'couponCodeExpired', message: 'This code has expired.' }
-          : { code: 'couponCodeInvalid', message: `Try ${VALID_COUPON}.` },
-      ];
-    }),
-};
-
 // ── Apple Pay config and events ───────────────────────────────────────
 
-/** The total and line items the next tap opens with. */
+/** The total the next tap opens with. */
 function openingAmounts() {
-  resetSheet();
-  const { total, lineItems } = computeOrder();
-  return lineItems.length ? { total, lineItems } : { total };
+  return { total: computeTotal() };
 }
 
 const BILLING_AGREEMENT = 'You agree to the Spreedly Demo Store terms for this payment.';
@@ -483,32 +331,6 @@ function recurringPaymentRequest(amount) {
     const end = new Date(start);
     end.setFullYear(end.getFullYear() + 1);
     regularBilling.recurringPaymentEndDate = end;
-  }
-  return request;
-}
-
-function automaticReloadPaymentRequest(amount) {
-  return {
-    ...paymentRequestBase('Spreedly Demo Store card top-up'),
-    automaticReloadBilling: {
-      label: 'Top-up',
-      amount,
-      paymentTiming: 'automaticReload',
-      automaticReloadPaymentThresholdAmount: text('reload-threshold'),
-    },
-  };
-}
-
-function deferredPaymentRequest(amount) {
-  const days = Number.parseInt(text('deferred-days'), 10) || 30;
-  const deferredPaymentDate = daysFromNow(days);
-  const request = {
-    ...paymentRequestBase('Spreedly Demo Store booking'),
-    deferredBilling: { label: 'Booking', amount, paymentTiming: 'deferred', deferredPaymentDate },
-  };
-  if (isTicked('free-cancellation')) {
-    request.freeCancellationDate = daysFromNow(days - 1);
-    request.freeCancellationDateTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   }
   return request;
 }
@@ -574,27 +396,10 @@ function buildApplePayConfig() {
   const paymentRequest = choice('payment-request');
   if (paymentRequest === 'recurring') {
     config.recurringPaymentRequest = recurringPaymentRequest(amount);
-  } else if (paymentRequest === 'automaticReload') {
-    config.automaticReloadPaymentRequest = automaticReloadPaymentRequest(amount);
-  } else if (paymentRequest === 'deferred') {
-    config.deferredPaymentRequest = deferredPaymentRequest(amount);
-  }
-
-  if (deliveryOn()) {
-    config.shippingMethods = shippingMethods();
   }
   if (choice('shipping-type')) {
     config.shippingType = choice('shipping-type');
   }
-  if (couponsOn()) {
-    config.supportsCouponCode = true;
-    if (text('coupon-code')) {
-      config.couponCode = text('coupon-code');
-    }
-  }
-  ticked('callbacks').forEach(name => {
-    config[name] = sheetCallbacks[name];
-  });
 
   if (chargeMode() === 'process-payment') {
     config.processPayment = processPayment;
@@ -635,7 +440,6 @@ async function handleEvent(event, payload) {
     setStatus(`Apple Pay is unavailable here (${payload.reason}).${seeLog}`, 'error');
   } else if (event === 'applePayButtonClicked') {
     authAttempts = 0;
-    resetSheet();
     elements['result-card'].classList.add('hidden');
   } else if (event === 'applePayCancelled') {
     setStatus('The shopper closed the sheet.', 'info');
@@ -873,17 +677,6 @@ function remount() {
   return mounting;
 }
 
-/** Order details come back from processPayment, so they need that charge mode. */
-function syncOrderDetails() {
-  const allowed = chargeMode() === 'process-payment';
-  const input = elements['order-details-on'].querySelector('input');
-  input.disabled = !allowed;
-  elements['order-details-on'].classList.toggle('disabled', !allowed);
-  if (!allowed && input.checked) {
-    field('order-details').checked = true;
-  }
-}
-
 /** Shows the settings for the chosen payment request. */
 function syncPaymentRequest() {
   const request = choice('payment-request');
@@ -898,9 +691,6 @@ function onConfigChange(event) {
   if (name === 'divider-text') {
     applyDividerText();
     return;
-  }
-  if (name === 'charge-mode') {
-    syncOrderDetails();
   }
   if (name === 'payment-request') {
     syncPaymentRequest();
@@ -966,7 +756,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (debugEnabled) {
     elements['debug-panel'].classList.remove('hidden');
   }
-  syncOrderDetails();
   syncPaymentRequest();
 
   elements['update-total'].addEventListener('click', updateTotal);
