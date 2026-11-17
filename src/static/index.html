@@ -71,288 +71,328 @@
           <div class="flow-options">
             <div class="section-title">Select a Flow</div>
             
-            <div class="flow-cards">
-              <!-- Tokenize Card (merchant-hosted form) -->
-              <a href="#" class="flow-card" data-flow="tokenize">
-                <div class="flow-card-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" />
-                  </svg>
-                </div>
-                <div class="flow-card-content">
-                  <h3>Tokenize a Card</h3>
-                  <p>Merchant-hosted form — only card number and CVV are Spreedly iframes</p>
-                </div>
-                <div class="flow-card-arrow">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                  </svg>
-                </div>
-              </a>
+            <div class="flow-groups">
+              <details class="flow-group" data-group="cards">
+                <summary class="flow-group-summary">
+                  <span class="flow-group-title">Card tokenization</span>
+                  <span class="flow-group-count"></span>
+                  <svg class="flow-group-chevron" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+                </summary>
+                <div class="flow-cards">
+                  <!-- Tokenize Card (merchant-hosted form) -->
+                  <a href="#" class="flow-card" data-flow="tokenize">
+                    <div class="flow-card-icon">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" />
+                      </svg>
+                    </div>
+                    <div class="flow-card-content">
+                      <h3>Tokenize a Card</h3>
+                      <p>Merchant-hosted form — only card number and CVV are Spreedly iframes</p>
+                    </div>
+                    <div class="flow-card-arrow">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                      </svg>
+                    </div>
+                  </a>
 
-              <!-- Tokenize Card (SDK hosted catalogue fields) -->
-              <a href="#" class="flow-card" data-flow="tokenize-catalogue">
-                <div class="flow-card-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                  </svg>
-                </div>
-                <div class="flow-card-content">
-                  <h3>Tokenize with SDK Hosted Fields</h3>
-                  <p>Mount catalogue fields as Spreedly-hosted iframes, plus custom validators</p>
-                </div>
-                <div class="flow-card-arrow">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                  </svg>
-                </div>
-              </a>
+                  <!-- Tokenize Card (SDK hosted catalogue fields) -->
+                  <a href="#" class="flow-card" data-flow="tokenize-catalogue">
+                    <div class="flow-card-icon">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                      </svg>
+                    </div>
+                    <div class="flow-card-content">
+                      <h3>Tokenize with SDK Hosted Fields</h3>
+                      <p>Mount catalogue fields as Spreedly-hosted iframes, plus custom validators</p>
+                    </div>
+                    <div class="flow-card-arrow">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                      </svg>
+                    </div>
+                  </a>
 
-              <!-- Recache CVV -->
-              <a href="#" class="flow-card" data-flow="recache">
-                <div class="flow-card-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
-                  </svg>
+                  <!-- Recache CVV -->
+                  <a href="#" class="flow-card" data-flow="recache">
+                    <div class="flow-card-icon">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+                      </svg>
+                    </div>
+                    <div class="flow-card-content">
+                      <h3>Recache CVV</h3>
+                      <p>Update CVV for a saved payment method</p>
+                    </div>
+                    <div class="flow-card-arrow">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                      </svg>
+                    </div>
+                  </a>
                 </div>
-                <div class="flow-card-content">
-                  <h3>Recache CVV</h3>
-                  <p>Update CVV for a saved payment method</p>
-                </div>
-                <div class="flow-card-arrow">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                  </svg>
-                </div>
-              </a>
+              </details>
+              <details class="flow-group" data-group="purchases">
+                <summary class="flow-group-summary">
+                  <span class="flow-group-title">Purchases and fraud checks</span>
+                  <span class="flow-group-count"></span>
+                  <svg class="flow-group-chevron" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+                </summary>
+                <div class="flow-cards">
+                  <!-- Purchase -->
+                  <a href="#" class="flow-card" data-flow="purchase">
+                    <div class="flow-card-icon">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
+                      </svg>
+                    </div>
+                    <div class="flow-card-content">
+                      <h3>Create a Purchase</h3>
+                      <p>Complete checkout with product selection</p>
+                    </div>
+                    <div class="flow-card-arrow">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                      </svg>
+                    </div>
+                  </a>
 
-              <!-- Purchase -->
-              <a href="#" class="flow-card" data-flow="purchase">
-                <div class="flow-card-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
-                  </svg>
-                </div>
-                <div class="flow-card-content">
-                  <h3>Create a Purchase</h3>
-                  <p>Complete checkout with product selection</p>
-                </div>
-                <div class="flow-card-arrow">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                  </svg>
-                </div>
-              </a>
+                  <!-- Purchase with 3DS -->
+                  <a href="#" class="flow-card" data-flow="purchase-with-3ds">
+                    <div class="flow-card-icon">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
+                      </svg>
+                    </div>
+                    <div class="flow-card-content">
+                      <h3>Purchase with 3DS</h3>
+                      <p>Checkout with 3D Secure authentication</p>
+                      <span class="flow-badge">3DS Global</span>
+                    </div>
+                    <div class="flow-card-arrow">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                      </svg>
+                    </div>
+                  </a>
 
-              <!-- Purchase with 3DS -->
-              <a href="#" class="flow-card" data-flow="purchase-with-3ds">
-                <div class="flow-card-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
-                  </svg>
-                </div>
-                <div class="flow-card-content">
-                  <h3>Purchase with 3DS</h3>
-                  <p>Checkout with 3D Secure authentication</p>
-                  <span class="flow-badge">3DS Global</span>
-                </div>
-                <div class="flow-card-arrow">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                  </svg>
-                </div>
-              </a>
+                  <!-- Purchase with 3DS Gateway Specific -->
+                  <a href="#" class="flow-card" data-flow="purchase-with-3ds-gateway-specific">
+                    <div class="flow-card-icon">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 14.25h13.5m-13.5 0a3 3 0 01-3-3m3 3a3 3 0 100 6h13.5a3 3 0 100-6m-16.5-3a3 3 0 013-3h13.5a3 3 0 013 3m-19.5 0a4.5 4.5 0 01.9-2.7L5.737 5.1a3.375 3.375 0 012.7-1.35h7.126c1.062 0 2.062.5 2.7 1.35l2.587 3.45a4.5 4.5 0 01.9 2.7m0 0a3 3 0 01-3 3m0 3h.008v.008h-.008v-.008zm0-6h.008v.008h-.008v-.008zm-3 6h.008v.008h-.008v-.008zm0-6h.008v.008h-.008v-.008z" />
+                      </svg>
+                    </div>
+                    <div class="flow-card-content">
+                      <h3>Purchase with 3DS Gateway Specific</h3>
+                      <p>Gateway-managed 3D Secure authentication</p>
+                      <span class="flow-badge">3DS Gateway</span>
+                    </div>
+                    <div class="flow-card-arrow">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                      </svg>
+                    </div>
+                  </a>
 
-              <!-- Purchase with 3DS Gateway Specific -->
-              <a href="#" class="flow-card" data-flow="purchase-with-3ds-gateway-specific">
-                <div class="flow-card-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 14.25h13.5m-13.5 0a3 3 0 01-3-3m3 3a3 3 0 100 6h13.5a3 3 0 100-6m-16.5-3a3 3 0 013-3h13.5a3 3 0 013 3m-19.5 0a4.5 4.5 0 01.9-2.7L5.737 5.1a3.375 3.375 0 012.7-1.35h7.126c1.062 0 2.062.5 2.7 1.35l2.587 3.45a4.5 4.5 0 01.9 2.7m0 0a3 3 0 01-3 3m0 3h.008v.008h-.008v-.008zm0-6h.008v.008h-.008v-.008zm-3 6h.008v.008h-.008v-.008zm0-6h.008v.008h-.008v-.008z" />
-                  </svg>
+                  <!-- Stripe Radar -->
+                  <a href="#" class="flow-card" data-flow="stripe-radar">
+                    <div class="flow-card-icon">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 2.25c-2.69 2.34-6.13 3.6-9 3.6 0 7.13 3.6 12.06 9 15.9 5.4-3.84 9-8.77 9-15.9-2.87 0-6.31-1.26-9-3.6Z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 12 11.25 13.5 14.25 10.5" />
+                      </svg>
+                    </div>
+                    <div class="flow-card-content">
+                      <h3>Stripe Radar</h3>
+                      <p>Create a Radar fraud session with <code>sdk.stripeRadar</code> and charge via Stripe</p>
+                      <span class="flow-badge" style="background: #635bff; color: white;">Stripe Radar</span>
+                    </div>
+                    <div class="flow-card-arrow">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                      </svg>
+                    </div>
+                  </a>
                 </div>
-                <div class="flow-card-content">
-                  <h3>Purchase with 3DS Gateway Specific</h3>
-                  <p>Gateway-managed 3D Secure authentication</p>
-                  <span class="flow-badge">3DS Gateway</span>
-                </div>
-                <div class="flow-card-arrow">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                  </svg>
-                </div>
-              </a>
-              
-              <!-- Offsite Payment Gateways -->
-              <a href="#" class="flow-card" data-flow="offsite-payments">
-                <div class="flow-card-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                  </svg>
-                </div>
-                <div class="flow-card-content">
-                  <h3>Offsite Payment Gateways</h3>
-                  <p>Transparent redirect form for PayPal, Stripe APM, and test offsite</p>
-                  <span class="flow-badge" style="background: #0070ba; color: white;">PayPal</span>
-                  <span class="flow-badge" style="background: #635bff; color: white;">Stripe APM</span>
-                </div>
-                <div class="flow-card-arrow">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                  </svg>
-                </div>
-              </a>
+              </details>
+              <details class="flow-group" data-group="wallets">
+                <summary class="flow-group-summary">
+                  <span class="flow-group-title">Wallets</span>
+                  <span class="flow-group-count"></span>
+                  <svg class="flow-group-chevron" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+                </summary>
+                <div class="flow-cards">
+                  <!-- Apple Pay (either SDK bundle; the SDK loads from a local build) -->
+                  <a href="#" class="flow-card" data-flow="apple-pay">
+                    <div class="flow-card-icon">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v16.5a2.25 2.25 0 0 0 2.25 2.25h7.5A2.25 2.25 0 0 0 18 20.25V3.75a2.25 2.25 0 0 0-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
+                      </svg>
+                    </div>
+                    <div class="flow-card-content">
+                      <h3>Apple Pay</h3>
+                      <p>End to end with the SDK's button and sheet, or headless with your own Apple Pay code. Needs a local SDK build for now</p>
+                      <span class="flow-badge" style="background: #000000; color: white;">Apple Pay</span>
+                      <span class="flow-badge" style="background: #4b5563; color: white;">Headless</span>
+                    </div>
+                    <div class="flow-card-arrow">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                      </svg>
+                    </div>
+                  </a>
 
-              <!-- ACH Bank Payments -->
-              <a href="#" class="flow-card" data-flow="ach-payments">
-                <div class="flow-card-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0 0 12 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75Z" />
-                  </svg>
-                </div>
-                <div class="flow-card-content">
-                  <h3>ACH Bank Payments</h3>
-                  <p>Tokenize a US/Canadian bank account in Spreedly iframes with <code>SpreedlyACHFields</code> or <code>SpreedlyACHForm</code></p>
-                  <span class="flow-badge">ACH</span>
-                </div>
-                <div class="flow-card-arrow">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                  </svg>
-                </div>
-              </a>
+                  <!-- Google Pay (either SDK bundle) -->
+                  <a href="#" class="flow-card" data-flow="google-pay">
+                    <div class="flow-card-icon">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v16.5a2.25 2.25 0 0 0 2.25 2.25h7.5A2.25 2.25 0 0 0 18 20.25V3.75a2.25 2.25 0 0 0-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
+                      </svg>
+                    </div>
+                    <div class="flow-card-content">
+                      <h3>Google Pay</h3>
+                      <p>Google-rendered button, in-sheet tokenization, shipping callbacks and googlePayType</p>
+                      <span class="flow-badge" style="background: #1a73e8; color: white;">Google Pay</span>
+                    </div>
+                    <div class="flow-card-arrow">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                      </svg>
+                    </div>
+                  </a>
 
-              <!-- Paze Digital Wallet -->
-              <a href="#" class="flow-card" data-flow="paze">
-                <div class="flow-card-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a2.25 2.25 0 0 0-2.25-2.25H15a3 3 0 1 1-6 0H5.25A2.25 2.25 0 0 0 3 12m18 0v6a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 18v-6m18 0V9M3 12V9m18 0a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 9m18 0V6a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 6v3" />
-                  </svg>
-                </div>
-                <div class="flow-card-content">
-                  <h3>Paze Digital Wallet</h3>
-                  <p>Checkout with Paze popup, dynamic eligibility, and securedPayload</p>
-                  <span class="flow-badge" style="background: #1a1a2e; color: white;">Paze</span>
-                </div>
-                <div class="flow-card-arrow">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                  </svg>
-                </div>
-              </a>
+                  <!-- Paze Digital Wallet -->
+                  <a href="#" class="flow-card" data-flow="paze">
+                    <div class="flow-card-icon">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a2.25 2.25 0 0 0-2.25-2.25H15a3 3 0 1 1-6 0H5.25A2.25 2.25 0 0 0 3 12m18 0v6a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 18v-6m18 0V9M3 12V9m18 0a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 9m18 0V6a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 6v3" />
+                      </svg>
+                    </div>
+                    <div class="flow-card-content">
+                      <h3>Paze Digital Wallet</h3>
+                      <p>Checkout with Paze popup, dynamic eligibility, and securedPayload</p>
+                      <span class="flow-badge" style="background: #1a1a2e; color: white;">Paze</span>
+                    </div>
+                    <div class="flow-card-arrow">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                      </svg>
+                    </div>
+                  </a>
 
-              <!-- Google Pay (either SDK bundle) -->
-              <a href="#" class="flow-card" data-flow="google-pay">
-                <div class="flow-card-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v16.5a2.25 2.25 0 0 0 2.25 2.25h7.5A2.25 2.25 0 0 0 18 20.25V3.75a2.25 2.25 0 0 0-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
-                  </svg>
+                  <a href="#" class="flow-card" data-flow="click-to-pay">
+                    <div class="flow-card-icon">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" />
+                      </svg>
+                    </div>
+                    <div class="flow-card-content">
+                      <h3>Click to Pay</h3>
+                      <p>Mastercard SRC — new-card enrollment, returning-user lookup, and OTP (hosted fields)</p>
+                      <span class="flow-badge" style="background: #eb001b; color: white;">Mastercard</span>
+                    </div>
+                    <div class="flow-card-arrow">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                      </svg>
+                    </div>
+                  </a>
                 </div>
-                <div class="flow-card-content">
-                  <h3>Google Pay</h3>
-                  <p>Google-rendered button, in-sheet tokenization, shipping callbacks and googlePayType</p>
-                  <span class="flow-badge" style="background: #1a73e8; color: white;">Google Pay</span>
-                </div>
-                <div class="flow-card-arrow">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                  </svg>
-                </div>
-              </a>
+              </details>
+              <details class="flow-group" data-group="paypal">
+                <summary class="flow-group-summary">
+                  <span class="flow-group-title">PayPal</span>
+                  <span class="flow-group-count"></span>
+                  <svg class="flow-group-chevron" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+                </summary>
+                <div class="flow-cards">
+                  <!-- PPCP via Spreedly (production path) -->
+                  <a href="#" class="flow-card" data-flow="ppcp">
+                    <div class="flow-card-icon">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a2.25 2.25 0 0 0-2.25-2.25H15a3 3 0 1 1-6 0H5.25A2.25 2.25 0 0 0 3 12m18 0v6a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 18v-6m18 0V9M3 12V9m18 0a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 9m18 0V6a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 6v3" /></svg>
+                    </div>
+                    <div class="flow-card-content">
+                      <h3>PayPal Complete Payments (PPCP)</h3>
+                      <p>PayPal, Venmo, Pay Later &amp; PayPal Credit through Spreedly’s paypal_commerce_platform gateway</p>
+                      <span class="flow-badge" style="background: #0070ba; color: white;">PayPal</span>
+                      <span class="flow-badge" style="background: #008cff; color: white;">Venmo</span>
+                      <span class="flow-badge" style="background: #003087; color: white;">Pay Later</span>
+                      <span class="flow-badge" style="background: #0a0a0a; color: white;">Vaulting</span>
+                    </div>
+                    <div class="flow-card-arrow">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
+                    </div>
+                  </a>
 
-              <!-- Apple Pay (either SDK bundle; the SDK loads from a local build) -->
-              <a href="#" class="flow-card" data-flow="apple-pay">
-                <div class="flow-card-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v16.5a2.25 2.25 0 0 0 2.25 2.25h7.5A2.25 2.25 0 0 0 18 20.25V3.75a2.25 2.25 0 0 0-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
-                  </svg>
+                  <!-- PPCP via PayPal direct (spike) — hidden unless the URL has ?showPPCPDirect -->
+                  <a href="#" class="flow-card" data-flow="ppcp/spike" id="ppcp-direct-card" style="display: none;">
+                    <div class="flow-card-icon">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a2.25 2.25 0 0 0-2.25-2.25H15a3 3 0 1 1-6 0H5.25A2.25 2.25 0 0 0 3 12m18 0v6a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 18v-6m18 0V9M3 12V9m18 0a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 9m18 0V6a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 6v3" /></svg>
+                    </div>
+                    <div class="flow-card-content">
+                      <h3>PPCP via PayPal Direct</h3>
+                      <p>The same SpreedlyPPCP flow, but the backend calls PayPal Orders V2 directly</p>
+                      <span class="flow-badge" style="background: #0070ba; color: white;">PayPal</span>
+                      <span class="flow-badge" style="background: #008cff; color: white;">Venmo</span>
+                      <span class="flow-badge" style="background: #003087; color: white;">Pay Later</span>
+                      <span class="flow-badge" style="background: #92400e; color: white;">Spike</span>
+                    </div>
+                    <div class="flow-card-arrow">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
+                    </div>
+                  </a>
                 </div>
-                <div class="flow-card-content">
-                  <h3>Apple Pay</h3>
-                  <p>End to end with the SDK's button and sheet, or headless with your own Apple Pay code. Needs a local SDK build for now</p>
-                  <span class="flow-badge" style="background: #000000; color: white;">Apple Pay</span>
-                  <span class="flow-badge" style="background: #4b5563; color: white;">Headless</span>
-                </div>
-                <div class="flow-card-arrow">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                  </svg>
-                </div>
-              </a>
+              </details>
+              <details class="flow-group" data-group="bank-offsite">
+                <summary class="flow-group-summary">
+                  <span class="flow-group-title">Bank and offsite payments</span>
+                  <span class="flow-group-count"></span>
+                  <svg class="flow-group-chevron" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+                </summary>
+                <div class="flow-cards">
+                  <!-- ACH Bank Payments -->
+                  <a href="#" class="flow-card" data-flow="ach-payments">
+                    <div class="flow-card-icon">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0 0 12 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75Z" />
+                      </svg>
+                    </div>
+                    <div class="flow-card-content">
+                      <h3>ACH Bank Payments</h3>
+                      <p>Tokenize a US/Canadian bank account in Spreedly iframes with <code>SpreedlyACHFields</code> or <code>SpreedlyACHForm</code></p>
+                      <span class="flow-badge">ACH</span>
+                    </div>
+                    <div class="flow-card-arrow">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                      </svg>
+                    </div>
+                  </a>
 
-              <!-- Stripe Radar -->
-              <a href="#" class="flow-card" data-flow="stripe-radar">
-                <div class="flow-card-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 2.25c-2.69 2.34-6.13 3.6-9 3.6 0 7.13 3.6 12.06 9 15.9 5.4-3.84 9-8.77 9-15.9-2.87 0-6.31-1.26-9-3.6Z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 12 11.25 13.5 14.25 10.5" />
-                  </svg>
+                  <!-- Offsite Payment Gateways -->
+                  <a href="#" class="flow-card" data-flow="offsite-payments">
+                    <div class="flow-card-icon">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                      </svg>
+                    </div>
+                    <div class="flow-card-content">
+                      <h3>Offsite Payment Gateways</h3>
+                      <p>Transparent redirect form for PayPal, Stripe APM, and test offsite</p>
+                      <span class="flow-badge" style="background: #0070ba; color: white;">PayPal</span>
+                      <span class="flow-badge" style="background: #635bff; color: white;">Stripe APM</span>
+                    </div>
+                    <div class="flow-card-arrow">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                      </svg>
+                    </div>
+                  </a>
                 </div>
-                <div class="flow-card-content">
-                  <h3>Stripe Radar</h3>
-                  <p>Create a Radar fraud session with <code>sdk.stripeRadar</code> and charge via Stripe</p>
-                  <span class="flow-badge" style="background: #635bff; color: white;">Stripe Radar</span>
-                </div>
-                <div class="flow-card-arrow">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                  </svg>
-                </div>
-              </a>
-
-              <a href="#" class="flow-card" data-flow="click-to-pay">
-                <div class="flow-card-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" />
-                  </svg>
-                </div>
-                <div class="flow-card-content">
-                  <h3>Click to Pay</h3>
-                  <p>Mastercard SRC — new-card enrollment, returning-user lookup, and OTP (hosted fields)</p>
-                  <span class="flow-badge" style="background: #eb001b; color: white;">Mastercard</span>
-                </div>
-                <div class="flow-card-arrow">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                  </svg>
-                </div>
-              </a>
-
-              <!-- PPCP via Spreedly (production path) -->
-              <a href="#" class="flow-card" data-flow="ppcp">
-                <div class="flow-card-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a2.25 2.25 0 0 0-2.25-2.25H15a3 3 0 1 1-6 0H5.25A2.25 2.25 0 0 0 3 12m18 0v6a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 18v-6m18 0V9M3 12V9m18 0a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 9m18 0V6a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 6v3" /></svg>
-                </div>
-                <div class="flow-card-content">
-                  <h3>PayPal Complete Payments (PPCP)</h3>
-                  <p>PayPal, Venmo, Pay Later &amp; PayPal Credit through Spreedly’s paypal_commerce_platform gateway</p>
-                  <span class="flow-badge" style="background: #0070ba; color: white;">PayPal</span>
-                  <span class="flow-badge" style="background: #008cff; color: white;">Venmo</span>
-                  <span class="flow-badge" style="background: #003087; color: white;">Pay Later</span>
-                  <span class="flow-badge" style="background: #0a0a0a; color: white;">Vaulting</span>
-                </div>
-                <div class="flow-card-arrow">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
-                </div>
-              </a>
-
-              <!-- PPCP via PayPal direct (spike) — hidden unless the URL has ?showPPCPDirect -->
-              <a href="#" class="flow-card" data-flow="ppcp/spike" id="ppcp-direct-card" style="display: none;">
-                <div class="flow-card-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a2.25 2.25 0 0 0-2.25-2.25H15a3 3 0 1 1-6 0H5.25A2.25 2.25 0 0 0 3 12m18 0v6a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 18v-6m18 0V9M3 12V9m18 0a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 9m18 0V6a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 6v3" /></svg>
-                </div>
-                <div class="flow-card-content">
-                  <h3>PPCP via PayPal Direct</h3>
-                  <p>The same SpreedlyPPCP flow, but the backend calls PayPal Orders V2 directly</p>
-                  <span class="flow-badge" style="background: #0070ba; color: white;">PayPal</span>
-                  <span class="flow-badge" style="background: #008cff; color: white;">Venmo</span>
-                  <span class="flow-badge" style="background: #003087; color: white;">Pay Later</span>
-                  <span class="flow-badge" style="background: #92400e; color: white;">Spike</span>
-                </div>
-                <div class="flow-card-arrow">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
-                </div>
-              </a>
-
+              </details>
             </div>
           </div>
 
@@ -377,6 +417,29 @@
     if (new URLSearchParams(window.location.search).has('showPPCPDirect')) {
       document.getElementById('ppcp-direct-card').style.display = '';
     }
+
+    // Each group's heading shows how many flows it holds (hidden cards aren't counted).
+    // Open groups are remembered in this browser only; the page works the same without storage.
+    const OPEN_GROUPS_KEY = 'landing-open-groups';
+    let openGroups = [];
+    try {
+      openGroups = JSON.parse(localStorage.getItem(OPEN_GROUPS_KEY)) || [];
+    } catch (e) {}
+    // Saved on each toggle and again when the page is left: the browser fires 'toggle' a moment
+    // after the click, so leaving the page straight away could skip it.
+    const saveOpenGroups = () => {
+      const open = [...document.querySelectorAll('.flow-group[open]')].map(g => g.dataset.group);
+      try {
+        localStorage.setItem(OPEN_GROUPS_KEY, JSON.stringify(open));
+      } catch (e) {}
+    };
+    document.querySelectorAll('.flow-group').forEach(group => {
+      const shown = [...group.querySelectorAll('.flow-card')].filter(card => card.style.display !== 'none');
+      group.querySelector('.flow-group-count').textContent = `(${shown.length})`;
+      group.open = openGroups.includes(group.dataset.group);
+      group.addEventListener('toggle', saveOpenGroups);
+    });
+    window.addEventListener('pagehide', saveOpenGroups);
 
     // Handle flow card clicks
     document.querySelectorAll('.flow-card').forEach(card => {

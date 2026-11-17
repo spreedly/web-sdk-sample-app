@@ -1,5 +1,6 @@
 import { test, expect } from "../util/fixtures";
 import { MONOREPO_URLS } from "../util/urls";
+import { showFlowCard } from "../pages/landingPage";
 
 // Server checks for Apple Pay and a smoke test of the local-SDK demo page. They run against any
 // deployment, with or without the APPLE_PAY_* settings. Apple's sheet can't be automated, so
@@ -73,7 +74,7 @@ test.describe("Apple Pay demo", () => {
   test("the landing page's Apple Pay card opens the Apple Pay start page with the chosen bundle", async ({ page }) => {
     await page.goto(MONOREPO_URLS.BASE);
     await page.locator("label.sdk-option", { has: page.locator('input[value="express-checkout"]') }).click();
-    await page.locator('[data-flow="apple-pay"]').click();
+    await (await showFlowCard(page, '[data-flow="apple-pay"]')).click();
 
     await expect(page).toHaveURL(/\/apple-pay\/index\.html\?sdk=express-checkout$/);
     await expect(page.getByRole("heading", { name: "Apple Pay", exact: true })).toBeVisible();
