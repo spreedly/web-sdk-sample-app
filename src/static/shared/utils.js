@@ -1,5 +1,7 @@
-const API_BASE_URL = 'https://checkout-web-sample-app-049a3c617015.herokuapp.com/api/v1';
+const STAGING_BASE_URL = 'https://checkout-web-sample-app-049a3c617015.herokuapp.com/api/v1';
 const LOCAL_API_URL = 'http://localhost:3000/api/v1';
+
+const API_BASE_URL = window.location.hostname === 'localhost' ? LOCAL_API_URL : STAGING_BASE_URL;
 
 // SDK URL Helpers
 function getSDKType() {
@@ -10,12 +12,12 @@ function getSDKType() {
 function getSDKScriptUrl() {
   const sdkType = getSDKType();
   //uncomment this to use local sdk
-  // if (window.location.hostname === 'localhost') {
-  //   if (sdkType === 'express-checkout') {
-  //     return 'http://localhost:5173/express-checkout.js';
-  //   }
-  //   return 'http://localhost:5000/index.js';
-  // }
+  if (window.location.hostname === 'localhost') {
+    if (sdkType === 'express-checkout') {
+      return 'http://localhost:5173/express-checkout.js';
+    }
+    return 'http://localhost:5000/index.js';
+  }
 
   if (sdkType === 'express-checkout') {
     return 'https://core.spreedly.com/checkout/elements/rc/express-checkout.js';
