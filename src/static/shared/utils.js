@@ -1,7 +1,12 @@
-const STAGING_BASE_URL = 'https://checkout-web-sample-app-049a3c617015.herokuapp.com/api/v1';
 const LOCAL_API_URL = 'http://localhost:3000/api/v1';
 
-const API_BASE_URL = window.location.hostname === 'localhost' ? LOCAL_API_URL : STAGING_BASE_URL;
+// Each Heroku app calls its own API. Local pages call the sample app on localhost.
+const API_BASE_URL =
+  window.location.hostname === 'localhost' ? LOCAL_API_URL : `${window.location.origin}/api/v1`;
+
+// Production CDN origin. The server rewrites this line from the SDK_BASE_URL env var
+// before the browser receives this file. Do not rename it; app.ts matches this line.
+const SDK_SCRIPT_ORIGIN = 'https://core.spreedly.com';
 
 // SDK URL Helpers
 function getSDKType() {
@@ -9,9 +14,8 @@ function getSDKType() {
   return urlParams.get('sdk') || 'hosted-fields';
 }
 
-function getSDKScriptUrl() {
-  const sdkType = getSDKType();
-  //uncomment this to use local sdk
+function getSDKScriptUrl(sdkType = getSDKType()) {
+  // A page opened on localhost loads the SDK dev servers. Deployed pages load the CDN.
   if (window.location.hostname === 'localhost') {
     if (sdkType === 'express-checkout') {
       return 'http://localhost:5173/express-checkout.js';
@@ -20,9 +24,9 @@ function getSDKScriptUrl() {
   }
 
   if (sdkType === 'express-checkout') {
-    return 'https://core.spreedly.com/checkout/elements/rc/express-checkout.js';
+    return `${SDK_SCRIPT_ORIGIN}/checkout/elements/rc/express-checkout.js`;
   }
-  return 'https://core.spreedly.com/checkout/sdk/rc/index.js';
+  return `${SDK_SCRIPT_ORIGIN}/checkout/sdk/rc/index.js`;
 }
 
 function getSDKDisplayName() {

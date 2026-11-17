@@ -12,10 +12,7 @@ let achForm = null;
 
 function loadExpressCheckoutSDK() {
   return new Promise((resolve, reject) => {
-    const src =
-      window.location.hostname === 'localhost'
-        ? 'http://localhost:5173/express-checkout.js'
-        : 'https://core.spreedly.com/checkout/elements/rc/express-checkout.js';
+    const src = SpreedlyUtils.getSDKScriptUrl('express-checkout');
     const script = document.createElement('script');
     script.src = src;
     script.onload = () => resolve();

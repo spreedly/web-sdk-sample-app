@@ -1,13 +1,41 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import { errorHandler } from './middlewares/errorHandler';
 // import { cspMiddleware } from './middlewares/cspMiddleware';
+import fs from 'fs';
 import path from 'path';
 import morgan from 'morgan';
 import cors from 'cors';
 import { express as useragent } from 'express-useragent';
+import config from './config';
 import routes from './routes';
 import { swaggerSpec, swaggerUiExpress } from './swagger';
 import { serveApplePayDomainAssociation } from './controllers/apple-pay';
+
+// utils.js ships with the production SDK origin. This rewrites that one line from
+// SDK_BASE_URL so each Heroku app can serve a different host without a code change.
+const SDK_SCRIPT_ORIGIN_LINE =
+  "const SDK_SCRIPT_ORIGIN = 'https://core.spreedly.com';";
+
+const serveSharedUtils = (_req: Request, res: Response) => {
+  const filePath = path.join(__dirname, 'static', 'shared', 'utils.js');
+  fs.readFile(filePath, 'utf8', (err, source) => {
+    if (err || source === undefined) {
+      res.status(404).end();
+      return;
+    }
+    if (!source.includes(SDK_SCRIPT_ORIGIN_LINE)) {
+      console.warn(
+        'shared/utils.js is missing the SDK_SCRIPT_ORIGIN line; SDK_BASE_URL will not apply'
+      );
+    }
+    const body = source.replace(
+      SDK_SCRIPT_ORIGIN_LINE,
+      `const SDK_SCRIPT_ORIGIN = ${JSON.stringify(config.sdkBaseUrl)};`
+    );
+    res.set('Cache-Control', 'no-store');
+    res.type('application/javascript').send(body);
+  });
+};
 
 const app = express();
 
@@ -28,6 +56,7 @@ app.get(
   serveApplePayDomainAssociation
 );
 
+app.get('/shared/utils.js', serveSharedUtils);
 app.use('/', express.static(path.join(__dirname, 'static')));
 
 app.use(express.json());

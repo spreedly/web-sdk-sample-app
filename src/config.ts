@@ -2,10 +2,34 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+const PRODUCTION_SDK_BASE_URL = 'https://core.spreedly.com';
+
+// SDK_BASE_URL is set on the Heroku app. It is the origin the browser loads the
+// SDK script from. Only an https origin on spreedly.com is accepted; anything
+// else falls back to production so a bad value cannot point the script tag elsewhere.
+const resolveSdkBaseUrl = (): string => {
+  const raw = process.env.SDK_BASE_URL;
+  if (!raw) return PRODUCTION_SDK_BASE_URL;
+  try {
+    const url = new URL(raw);
+    const spreedlyHost =
+      url.hostname === 'core.spreedly.com' ||
+      url.hostname.endsWith('.spreedly.com');
+    if (url.protocol === 'https:' && spreedlyHost) return url.origin;
+  } catch {
+    // Fall through to the production origin.
+  }
+  console.warn(
+    'SDK_BASE_URL must be an https spreedly.com origin; using the production SDK host'
+  );
+  return PRODUCTION_SDK_BASE_URL;
+};
+
 interface Config {
   port: number;
   nodeEnv: string;
   spreedlyUrl: string;
+  sdkBaseUrl: string;
   privateKey: string;
   certificateToken: string;
   spreedlyEnvironmentKey: string;
@@ -48,6 +72,7 @@ const config: Config = {
   port: Number(process.env.PORT) || 3000,
   nodeEnv: process.env.NODE_ENV || 'development',
   spreedlyUrl: process.env.SPREEDLY_URL || 'https://core.spreedly.com',
+  sdkBaseUrl: resolveSdkBaseUrl(),
   privateKey: process.env.PRIVATE_KEY_NEW || '',
   certificateToken: process.env.CERTIFICATE_TOKEN_NEW || '',
   spreedlyEnvironmentKey: process.env.SPREEDLY_ENVIRONMENT_KEY_NEW || '',
