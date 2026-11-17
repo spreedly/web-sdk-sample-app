@@ -70,8 +70,8 @@ test.describe("Allow Blank Date Option", () => {
     await helperFunctions.clickOnExpressCheckoutSubmitButton(page);
     await expect(await helperFunctions.getExpressCheckoutYearField(page)).toHaveAttribute('aria-invalid', 'true');
     await expect(await helperFunctions.getExpressCheckoutMonthField(page)).toHaveAttribute('aria-invalid', 'true');
-    await expect(page.frameLocator(SELECTORS.EXPRESS_IFRAME).locator(`[aria-label="${ERROR_MESSAGES.YEAR_REQUIRED_EXPRESS_CHECKOUT}"]`).first()).toBeVisible()
-    await expect(page.frameLocator(SELECTORS.EXPRESS_IFRAME).locator(`[aria-label="${ERROR_MESSAGES.MONTH_REQUIRED_EXPRESS_CHECKOUT}"]`).first()).toBeVisible()
+    await expect(page.frameLocator(SELECTORS.EXPRESS_IFRAME).locator(`[aria-label$="${ERROR_MESSAGES.YEAR_REQUIRED_EXPRESS_CHECKOUT}"]`).first()).toBeVisible()
+    await expect(page.frameLocator(SELECTORS.EXPRESS_IFRAME).locator(`[aria-label$="${ERROR_MESSAGES.MONTH_REQUIRED_EXPRESS_CHECKOUT}"]`).first()).toBeVisible()
   });
 
   test("should allow blank date when option is enabled in tokenize flow with Hosted Fields", async ({
@@ -174,8 +174,8 @@ test.describe("Allow Blank Date Option", () => {
     await helperFunctions.clickOnExpressCheckoutSubmitButton(page);
     await expect(await helperFunctions.getExpressCheckoutYearField(page)).toHaveAttribute('aria-invalid', 'true');
     await expect(await helperFunctions.getExpressCheckoutMonthField(page)).toHaveAttribute('aria-invalid', 'true');
-    await expect(page.frameLocator(SELECTORS.EXPRESS_IFRAME).locator(`[aria-label="${ERROR_MESSAGES.YEAR_REQUIRED_EXPRESS_CHECKOUT}"]`).first()).toBeVisible()
-    await expect(page.frameLocator(SELECTORS.EXPRESS_IFRAME).locator(`[aria-label="${ERROR_MESSAGES.MONTH_REQUIRED_EXPRESS_CHECKOUT}"]`).first()).toBeVisible()
+    await expect(page.frameLocator(SELECTORS.EXPRESS_IFRAME).locator(`[aria-label$="${ERROR_MESSAGES.YEAR_REQUIRED_EXPRESS_CHECKOUT}"]`).first()).toBeVisible()
+    await expect(page.frameLocator(SELECTORS.EXPRESS_IFRAME).locator(`[aria-label$="${ERROR_MESSAGES.MONTH_REQUIRED_EXPRESS_CHECKOUT}"]`).first()).toBeVisible()
   });
 });
 
