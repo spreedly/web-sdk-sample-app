@@ -18,9 +18,9 @@ function getSDKScriptUrl() {
   // }
 
   if (sdkType === 'express-checkout') {
-    return 'https://core-test.spreedly.com/checkout/elements/rc/express-checkout.js';
+    return 'https://core.spreedly.com/checkout/elements/rc/express-checkout.js';
   }
-  return 'https://core-test.spreedly.com/checkout/sdk/rc/index.js';
+  return 'https://core.spreedly.com/checkout/sdk/rc/index.js';
 }
 
 function getSDKDisplayName() {

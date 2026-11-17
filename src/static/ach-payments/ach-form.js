@@ -15,7 +15,7 @@ function loadExpressCheckoutSDK() {
     const src =
       window.location.hostname === 'localhost'
         ? 'http://localhost:5173/express-checkout.js'
-        : 'https://core-test.spreedly.com/checkout/elements/rc/express-checkout.js';
+        : 'https://core.spreedly.com/checkout/elements/rc/express-checkout.js';
     const script = document.createElement('script');
     script.src = src;
     script.onload = () => resolve();

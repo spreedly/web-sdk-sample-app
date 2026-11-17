@@ -18,8 +18,9 @@ backend, plain browser JS frontend (no bundler).
   (unix s), signature, certificateToken, environmentKey}`. Signature = RSA-SHA256,
   base64, over the concatenation `nonce + timestamp + certificateToken` — the order
   and algorithm are fixed by what Spreedly verifies; don't touch.
-- The unrestricted `app.use(cors())` in `src/app.ts` is load-bearing — the SDK calls
-  cross-origin from core-test/localhost. No origin allowlist may be added casually.
+- The unrestricted `app.use(cors())` in `src/app.ts` is load-bearing — local SDK
+  builds and localhost pages call this API cross-origin. No origin allowlist may be
+  added casually.
 - Changing the route paths, injecting Basic auth into the proxy routes, or removing
   CORS breaks every SDK developer's local/staging tokenization.
 
@@ -39,14 +40,14 @@ backend, plain browser JS frontend (no bundler).
 
 ## Environments — the traps
 
-- **SDK bundles come from the CDN rc channel on core-test**:
-  `https://core-test.spreedly.com/checkout/sdk/rc/index.js` (hosted-fields) and
-  `.../checkout/elements/rc/express-checkout.js` — i.e. whatever last merged to the
-  SDK's `main`. A commented-out block in `src/static/shared/utils.js` switches to
-  localhost:5000/:5173 for a locally-running SDK build.
+- **SDK bundles come from the production CDN rc channel**:
+  `https://core.spreedly.com/checkout/sdk/rc/index.js` (hosted-fields) and
+  `.../checkout/elements/rc/express-checkout.js`. ACH pages use the same production
+  URLs when the page is not on localhost. A commented-out block in
+  `src/static/shared/utils.js` switches to localhost:5000/:5173 for a locally-running
+  SDK build.
 - **Backend upstream defaults to PRODUCTION** (`SPREEDLY_URL` →
-  `https://core.spreedly.com`) while the SDK loads from core-test. Keep both sides on
-  the same Spreedly environment when changing either.
+  `https://core.spreedly.com`), matching the production SDK bundle.
 - **The frontend calls Heroku even when running locally**: `API_BASE_URL` in
   `shared/utils.js:1` is the hardcoded Heroku URL, and every flow (ACH included —
   `createAchPurchase` uses it) hits Heroku even from a local page. `LOCAL_API_URL` is

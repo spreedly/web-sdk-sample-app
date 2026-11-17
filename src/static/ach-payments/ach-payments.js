@@ -59,7 +59,7 @@ function loadHostedFieldsSDK() {
     const src =
       window.location.hostname === 'localhost'
         ? 'http://localhost:5000/index.js'
-        : 'https://core-test.spreedly.com/checkout/sdk/rc/index.js';
+        : 'https://core.spreedly.com/checkout/sdk/rc/index.js';
     const script = document.createElement('script');
     script.src = src;
     script.onload = () => resolve();
