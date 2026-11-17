@@ -138,8 +138,6 @@
     .cfg-opt input.wide { width: 14rem; }
     .cfg-opt select { font-size: 0.75rem; }
     .cfg-opt:hover { color: var(--color-gray-900); }
-    .cfg-opt input:disabled + span { color: var(--color-gray-400); }
-    .cfg-opt.disabled { cursor: not-allowed; }
     .cfg-opt .why { font-size: 0.65rem; color: var(--color-gray-400); }
     .cfg-sub { border-left: 2px solid var(--color-gray-200); margin: 0.35rem 0 0 0.2rem; padding-left: 0.6rem; }
 
@@ -445,8 +443,8 @@
 
               <div class="cfg-group">
                 <div class="cfg-group-label">Shipping contact <code>requiredShippingContactFields</code></div>
-                <p class="cfg-hint">Tick <code>postalAddress</code> to get a shipping address, for delivery options and
-                  <code>onShippingContactSelected</code>.</p>
+                <p class="cfg-hint">Tick <code>postalAddress</code> to get a shipping address. Shipping type sets how the sheet
+                  labels it.</p>
                 <div class="cfg-options">
                   <label class="cfg-opt"><input type="checkbox" name="shipping-fields" value="email" checked><span>email</span></label>
                   <label class="cfg-opt"><input type="checkbox" name="shipping-fields" value="phone" checked><span>phone</span></label>
@@ -562,7 +560,6 @@
                 <li>The page loads Apple's <code>apple-pay-sdk.js</code> and the Spreedly SDK.</li>
                 <li><code>onValidateMerchant</code> calls this server's <code>/api/v1/apple-pay/validate</code>.</li>
                 <li><code>getAuthDetails</code> calls <code>/api/v1/auth/params</code> for every attempt.</li>
-                <li>The sheet callbacks work out the new total in this page.</li>
                 <li>The SDK turns Apple's token into a Spreedly payment method.</li>
                 <li>The page charges it with <code>/api/v1/simple-purchase</code> on the test gateway, for the total
                   the sheet last showed.</li>
