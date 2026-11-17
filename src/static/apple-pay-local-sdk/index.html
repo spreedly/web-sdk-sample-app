@@ -61,6 +61,11 @@
       overflow: hidden;
     }
 
+    .open-checkout {
+      margin: 1.5rem 0 0.75rem;
+      width: 100%;
+    }
+
     .debug-panel {
       border: 1px dashed var(--color-warning, #b45309);
       border-radius: 8px;
@@ -192,6 +197,7 @@
 
               <div id="apple-pay-button-container" class="apple-pay-button-wrap"></div>
               <div id="ec-container" class="ec-container hidden"></div>
+              <button type="button" id="open-checkout" class="btn btn-primary open-checkout hidden">Checkout</button>
 
               <div id="status-message" class="status-message"></div>
               <div id="result-card" class="result-card hidden">
@@ -227,6 +233,9 @@
                 (<code>processPayment</code> mode)</label>
               <label class="checkbox-row"><input type="checkbox" data-debug="failSheetCallback"> M31: the next sheet
                 callback throws (the sheet closes)</label>
+              <label class="checkbox-row"><input type="checkbox" data-debug="failProcessPayment"> M40:
+                <code>processPayment</code> throws once, before charging (the sheet closes and
+                <code>PAYMENT_PROCESSING_FAILED</code> fires; <code>processPayment</code> mode)</label>
               <button type="button" id="destroy-button" class="btn btn-secondary" style="margin-top: 0.5rem;">
                 M16: destroy now
               </button>
@@ -347,6 +356,25 @@
                       <option value="border-box">border-box</option>
                       <option value="content-box">content-box</option>
                     </select>
+                  </label>
+                </div>
+              </div>
+
+              <div class="cfg-group" id="placement-group" hidden>
+                <div class="cfg-group-label">Where the form opens <code>parentContainerId</code></div>
+                <p class="cfg-hint">Express Checkout only. In a pop-up (no <code>parentContainerId</code>), the page shows a
+                  Checkout button that opens the card form and the Apple Pay button over the page. The SDK doesn't
+                  close the pop-up after Apple Pay; this page does, with <code>close()</code>.</p>
+                <div class="cfg-options">
+                  <label class="cfg-opt">
+                    <input type="radio" name="ec-placement" value="embedded" checked>
+                    <span>In the page</span>
+                    <span class="why">embedded</span>
+                  </label>
+                  <label class="cfg-opt">
+                    <input type="radio" name="ec-placement" value="dialog">
+                    <span>In a pop-up</span>
+                    <span class="why">dialog mode</span>
                   </label>
                 </div>
               </div>

@@ -4,7 +4,8 @@
  * Hosted Fields (?sdk=hosted-fields): the standalone SpreedlyApplePay class draws Apple's button
  * into #apple-pay-button-container.
  * Express Checkout (?sdk=express-checkout): expressCheckout({ applePay }) draws the same button in
- * a wallet row above the card form.
+ * a wallet row above the card form, embedded in the page or in Express Checkout's pop-up (dialog
+ * mode, chosen in the config panel).
  *
  * The SDK loads from a build running on your own machine (`npm run dev` in checkout-web-sdk), so
  * an SDK branch can be tested on this registered domain before it reaches the CDN. Use Chrome on
@@ -59,6 +60,8 @@ const debugEnabled = params.get('debug') === '1';
 const elements = {};
 let applePay = null; // SpreedlyApplePay (Hosted Fields mode)
 let expressCheckout = null; // SpreedlyExpressCheckout (Express Checkout mode)
+let mountedPlacement = null; // 'embedded' or 'dialog': how the current Express Checkout was set up
+let dialogOpen = false; // Express Checkout's pop-up is showing
 let authAttempts = 0;
 let merchantIdentifier = null; // from GET /api/v1/apple-pay/config
 let environmentKey = null; // from GET /api/v1/auth/params; SpreedlyApplePay requires it
@@ -75,6 +78,8 @@ function initElements() {
     'set-total-name',
     'sdk-config',
     'divider-group',
+    'placement-group',
+    'open-checkout',
     'order-details-on',
     'ec-container',
     'status-message',
@@ -259,6 +264,9 @@ const chargeAmount = () => computeOrder().total.amount;
 
 const chargeMode = () => choice('charge-mode') || 'after-token';
 
+/** Express Checkout only: 'embedded' (parentContainerId) or 'dialog' (the SDK's pop-up). */
+const placement = () => (sdkType === 'express-checkout' && choice('ec-placement')) || 'embedded';
+
 // ── Server calls (same origin) ────────────────────────────────────────
 
 async function postJson(path, body) {
@@ -325,6 +333,11 @@ async function purchase(token) {
 /** processPayment: charge while the sheet is still open, so the sheet shows the real result. */
 async function processPayment(result) {
   log('processPayment', { token: result.token, cardType: result.cardType });
+  if (debugFiresOnce('failProcessPayment')) {
+    // Like the store's server being down: nothing was charged, but the SDK can't know that (M40).
+    log('processPayment throws (debug), before charging');
+    throw new Error('Debug: processPayment failed before charging');
+  }
   if (isDebug('slowPurchase')) {
     // Longer than Apple's 30 s limit, so Apple closes the sheet first (M26).
     await wait(40000);
@@ -631,9 +644,30 @@ async function handleEvent(event, payload) {
     setStatus('Apple closed the sheet. Still confirming the payment; please don’t pay again.', 'info');
   } else if (event === 'applePayError') {
     setStatus(`${payload.code}: ${payload.message}`, 'error');
+    if (PAYMENT_STATE_UNKNOWN.includes(payload.code)) {
+      onPaymentStateUnknown(payload.code);
+    }
   } else if (event === 'applePayTokenGenerated') {
     await onTokenGenerated(payload);
   }
+}
+
+// processPayment didn't finish: the charge may or may not have happened.
+const PAYMENT_STATE_UNKNOWN = ['PAYMENT_PROCESSING_FAILED', 'PAYMENT_PROCESSING_TIMEOUT'];
+
+/**
+ * What a store does when processPayment didn't finish: don't let the shopper pay again, and check
+ * the order before saying anything. This demo has no order records, so it stops at the message.
+ */
+function onPaymentStateUnknown(code) {
+  // Deferred, as after success: the SDK finishes delivering this event first.
+  setTimeout(closeDialog, 0);
+  showResult(
+    'Payment not confirmed',
+    `${code}: the charge may or may not have gone through. A real store checks its order records ` +
+      'before telling the shopper anything or letting them pay again.',
+    'error'
+  );
 }
 
 /** Whether Apple issued a merchant token (usable for later charges) or a device token. */
@@ -644,6 +678,9 @@ function describeTokenType(result) {
 }
 
 async function onTokenGenerated(result) {
+  // The SDK leaves its pop-up open after Apple Pay; the page closes it. Deferred so the SDK finishes
+  // delivering this event before close() destroys the Apple Pay button.
+  setTimeout(closeDialog, 0);
   const closedEarly = result.sheetClosedEarly ? ' (the sheet closed before the result)' : '';
   const tokenType = describeTokenType(result);
   if (chargeMode() === 'process-payment') {
@@ -673,8 +710,15 @@ async function onTokenGenerated(result) {
 function teardown() {
   applePay?.destroy();
   applePay = null;
-  expressCheckout?.close(true);
+  // In dialog mode, close() only works while the pop-up is showing.
+  if (expressCheckout && (mountedPlacement === 'embedded' || dialogOpen)) {
+    expressCheckout.close(true);
+  }
   expressCheckout = null;
+  mountedPlacement = null;
+  dialogOpen = false;
+  elements['open-checkout'].classList.add('hidden');
+  elements[EC_CONTAINER_ID].classList.add('hidden');
   document.getElementById(BUTTON_CONTAINER_ID).innerHTML = '';
   Object.keys(debugOnce).forEach(key => delete debugOnce[key]);
 }
@@ -707,11 +751,12 @@ async function mountExpressCheckoutMode() {
     setStatus('Express Checkout did not load.', 'error');
     return;
   }
-  elements[EC_CONTAINER_ID].classList.remove('hidden');
   let config;
   try {
     config = buildApplePayConfig();
-    log('config', describeConfig(config));
+    if (placement() === 'embedded') {
+      log('config', describeConfig(config));
+    }
   } catch (error) {
     setStatus(`Config error: ${error.message}`, 'error');
     return;
@@ -728,8 +773,48 @@ async function mountExpressCheckoutMode() {
   expressCheckout.on('tokenGenerated', payload =>
     log('tokenGenerated (card form)', { token: payload?.payment_method?.token })
   );
+  // The shopper closed the pop-up with its close button.
+  expressCheckout.on('close', () => {
+    dialogOpen = false;
+    log('close (the shopper closed the pop-up)');
+  });
   applyDividerText();
+  mountedPlacement = placement();
+  if (mountedPlacement === 'dialog') {
+    elements['open-checkout'].classList.remove('hidden');
+    setStatus('Tap Checkout to open the payment form.', 'info');
+    return;
+  }
+  elements[EC_CONTAINER_ID].classList.remove('hidden');
   expressCheckout.expressCheckout({ parentContainerId: EC_CONTAINER_ID, applePay: config });
+}
+
+/** Dialog mode: opens Express Checkout's pop-up with the panel's current settings. */
+function openCheckoutDialog() {
+  if (!expressCheckout || dialogOpen) {
+    return;
+  }
+  let config;
+  try {
+    config = buildApplePayConfig();
+    log('config', describeConfig(config));
+  } catch (error) {
+    setStatus(`Config error: ${error.message}`, 'error');
+    return;
+  }
+  elements['result-card'].classList.add('hidden');
+  log('expressCheckout() with no parentContainerId (pop-up)');
+  dialogOpen = true;
+  expressCheckout.expressCheckout({ applePay: config });
+}
+
+/** Closes Express Checkout's pop-up if it's showing (dialog mode only). */
+function closeDialog() {
+  if (expressCheckout && dialogOpen) {
+    dialogOpen = false;
+    expressCheckout.close();
+    log('close() (the page closed the pop-up)');
+  }
 }
 
 /** Express Checkout only: the text between the Apple Pay button and the card form. */
@@ -827,6 +912,10 @@ function onConfigChange(event) {
 }
 
 function updateTotal() {
+  if (mountedPlacement === 'dialog' && !dialogOpen) {
+    log('the pop-up opens with the new total');
+    return;
+  }
   const update = openingAmounts();
   try {
     if (applePay) {
@@ -873,6 +962,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   elements['set-total-name'].textContent =
     sdkType === 'express-checkout' ? 'setApplePayTotal()' : 'setTotal()';
   elements['divider-group'].hidden = sdkType !== 'express-checkout';
+  elements['placement-group'].hidden = sdkType !== 'express-checkout';
   if (debugEnabled) {
     elements['debug-panel'].classList.remove('hidden');
   }
@@ -880,6 +970,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   syncPaymentRequest();
 
   elements['update-total'].addEventListener('click', updateTotal);
+  elements['open-checkout'].addEventListener('click', openCheckoutDialog);
   elements['sdk-config'].addEventListener('change', onConfigChange);
   elements['destroy-button'].addEventListener('click', () => {
     log('destroy() (debug)');
