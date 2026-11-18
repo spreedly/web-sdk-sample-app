@@ -36,8 +36,6 @@ const purchaseGateways = () => [
 const ppcpGateway = () => [config.ppcpGatewayToken];
 
 const CORE_ROUTES: readonly CoreRoute[] = [
-  // Saved cards list (purchase and recache demos)
-  { method: 'GET', path: /^\/v1\/payment_methods$/, query: ['order'] },
   { method: 'PUT', path: new RegExp(`^/v1/payment_methods/${TOKEN}/retain$`) },
   // Paze and PPCP payment method creation
   { method: 'POST', path: /^\/v1\/payment_methods\.json$/ },

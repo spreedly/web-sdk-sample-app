@@ -51,22 +51,60 @@ async function fetchAuthParams() {
 }
 
 // Payment Methods
-async function fetchPaymentMethods() {
-  try {
-    const response = await axios.get(`${API_BASE_URL}/payment_methods`);
-    const paymentMethods = response.data?.payment_methods || [];
+// Saved cards live in this visitor's browser, never in a shared server list. Each visitor sees
+// only the cards they retained on this site. A real merchant would keep them on the customer's
+// account in their own database instead.
+const SAVED_CARDS_KEY = 'spreedlySampleApp.savedPaymentMethods';
+const MAX_SAVED_CARDS = 20;
 
-    // Filter to only credit cards
-    return paymentMethods.filter(pm => pm.payment_method_type === 'credit_card');
-  } catch (error) {
-    console.error('Error fetching payment methods:', error);
-    throw new Error('Failed to fetch saved payment methods');
+// Only the fields the saved-card lists display.
+const SAVED_CARD_FIELDS = [
+  'token',
+  'payment_method_type',
+  'storage_state',
+  'card_type',
+  'first_six_digits',
+  'last_four_digits',
+  'month',
+  'year',
+  'first_name',
+  'last_name',
+  'full_name',
+  'created_at',
+];
+
+function readSavedPaymentMethods() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SAVED_CARDS_KEY) || '[]');
+    return Array.isArray(saved) ? saved : [];
+  } catch {
+    return [];
   }
+}
+
+function rememberPaymentMethod(paymentMethod) {
+  if (!paymentMethod?.token) return;
+  const entry = {};
+  for (const field of SAVED_CARD_FIELDS) {
+    if (paymentMethod[field] !== undefined) entry[field] = paymentMethod[field];
+  }
+  const others = readSavedPaymentMethods().filter(pm => pm.token !== entry.token);
+  try {
+    localStorage.setItem(SAVED_CARDS_KEY, JSON.stringify([entry, ...others].slice(0, MAX_SAVED_CARDS)));
+  } catch {
+    // Storage blocked (private window, full quota): the card is retained but not listed.
+  }
+}
+
+async function fetchPaymentMethods() {
+  // Newest first, credit cards only, as the server list used to return.
+  return readSavedPaymentMethods().filter(pm => pm.payment_method_type === 'credit_card');
 }
 
 async function retainPaymentMethod(paymentMethodToken) {
   try {
     const response = await axios.put(`${API_BASE_URL}/payment_methods/${paymentMethodToken}/retain`);
+    rememberPaymentMethod(response.data?.transaction?.payment_method);
     return response.data;
   } catch (error) {
     console.error('Error retaining payment method:', error);

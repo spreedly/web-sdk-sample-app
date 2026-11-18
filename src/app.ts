@@ -59,7 +59,8 @@ app.get(
 app.get('/shared/utils.js', serveSharedUtils);
 app.use('/', express.static(path.join(__dirname, 'static')));
 
-app.use(express.json());
+// Every JSON body this app accepts is small. The largest is a Paze securedPayload.
+app.use(express.json({ limit: '32kb' }));
 app.use('/api/v1', routes);
 
 app.use(errorHandler);

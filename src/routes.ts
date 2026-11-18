@@ -1,7 +1,6 @@
 import { Router, urlencoded } from 'express';
 import { getAuthParams } from './controllers/auth';
 import { 
-  getPaymentMethods, 
   retainPaymentMethod, 
   createPurchaseTransaction, 
   createPurchaseWith3DS, 
@@ -81,21 +80,6 @@ const router = Router();
  *         description: Error generating authentication parameters
  */
 router.get('/auth/params', getAuthParams);
-/**
- * @swagger
- * /api/v1/payment_methods:
- *   get:
- *     description: Retrieve a list of retained payment methods in descending order (latest first) from Spreedly
- *     tags: [Payment Methods]
- *     produces:
- *       - application/json
- *     responses:
- *       200:
- *         description: List of payment methods retrieved successfully
- *       500:
- *         description: Error retrieving payment methods
- */
-router.get('/payment_methods', getPaymentMethods);
 /**
  * @swagger
  * /api/v1/payment_methods/{paymentMethodToken}/retain:
@@ -1223,7 +1207,7 @@ router.post('/paze-payment-method', createPazePaymentMethod);
 router.post(
   '/paze/oauth/token',
   pazeTokenRateLimit,
-  urlencoded({ extended: false }),
+  urlencoded({ extended: false, limit: '32kb' }),
   getPazeAccessToken
 );
 

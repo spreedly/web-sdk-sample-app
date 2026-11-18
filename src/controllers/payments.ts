@@ -5,12 +5,6 @@ import config from '../config';
 import { core, INVALID_TOKEN, isSpreedlyToken, sendCoreError } from '../coreClient';
 import { checkRedirectUrl, INVALID_REDIRECT_URL, serverCallbackUrl } from '../returnUrls';
 
-interface PaymentMethod {
-  first_name?: string;
-  last_name?: string;
-  full_name?: string;
-}
-
 const OFFSITE_RETURN_PAGE = '/offsite-payments/handle_redirect.html';
 
 const getGatewayKey = (gateway: string = 'spreedly') => {
@@ -29,21 +23,6 @@ const getGatewayKey = (gateway: string = 'spreedly') => {
       return config.spreedlyGatewayToken;
     default:
       return config.spreedlyGatewayToken;
-  }
-};
-
-export const getPaymentMethods = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const response = await core.get('/v1/payment_methods', { order: 'desc' });
-
-    const paymentMethods: PaymentMethod[] = response.data.payment_methods;
-    res.json({ payment_methods: paymentMethods });
-  } catch (error) {
-    if (error instanceof AxiosError) {
-      res.status(500).json({ error: error.message });
-    } else {
-      res.status(500).json({ error: 'An unknown error occurred' });
-    }
   }
 };
 

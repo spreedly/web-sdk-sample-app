@@ -19,6 +19,11 @@ Do not reintroduce `POST /api/v1/payment_methods` as a forwarder to
   (`PUBLIC_APP_ORIGIN` + `/api/v1/offsite-callback`). A caller's `redirect_url` must be on one
   of the app's origins (the Heroku app, `PUBLIC_APP_ORIGIN`, `CORS_ALLOWED_ORIGINS`), or the route
   answers 400. Purchase bodies are built from named fields; never forward `req.body`.
+- **Saved cards live in the visitor's browser**, not on the server. `retainPaymentMethod` in
+  `shared/utils.js` retains through the server, then stores the card's display fields in
+  `localStorage`; `fetchPaymentMethods` reads them back. There is no `GET /payment_methods`
+  route: a server list would show every visitor's cards to everyone.
+- JSON and form bodies are capped at 32 KB.
 - Never log an error object or a request body: body-parser errors carry the raw body, axios
   errors carry the Authorization header.
 - `GET /api/v1/auth/params` (`src/controllers/auth.ts`) → `{nonce (UUID), timestamp
@@ -88,8 +93,8 @@ Do not reintroduce `POST /api/v1/payment_methods` as a forwarder to
 |---|---|---|---|
 | `tokenize/` | Tokenization with a **merchant-hosted form** (name/expiry/address on the page; only number + CVV are iframes) + SDK config panel | HF + EC | `auth/params`, `retain` |
 | `tokenize-catalogue/` | Tokenization with **SDK-hosted catalogue fields** (`inAppElements`) + custom validators (`addValidation`) | HF + EC | `auth/params`, `retain` |
-| `purchase/` | 3-step storefront, saved cards + new card, no 3DS | HF + EC (dialog) | `auth/params`, `payment_methods`, `simple-purchase` |
-| `recache/` | CVV recache on a retained card (`setRecache` → `recache()`) — done client-side via SDK; the server recache route goes unused | HF + EC | `auth/params`, `payment_methods` |
+| `purchase/` | 3-step storefront, saved cards + new card, no 3DS | HF + EC (dialog) | `auth/params`, `simple-purchase` |
+| `recache/` | CVV recache on a retained card (`setRecache` → `recache()`) — done client-side via SDK | HF + EC | `auth/params` |
 | `purchase-with-3ds/` | 3DS **Global** (`sca_provider_key` server-side), `SpreedlyThreeDSLifecycle` + `serializeBrowserInfo` | HF + EC | `create-purchase-with-3ds` |
 | `purchase-with-3ds-gateway-specific/` | 3DS **gateway-specific** with full callback set incl. `onTriggerCompletion` → `transactions/:t/complete` → `event.finalize()` | HF + EC | `create-purchase-with-3ds-gateway-specific`, `complete` |
 | `ach-payments/` | ACH bank-account tokenize + $10 purchase. HF: two secure fields + merchant name/type inputs (`ach-payments.js`); EC: the prebuilt form in one iframe (`ach-form.js`) | HF `SpreedlyACHFields`; EC `SpreedlyACHForm` | `ach-purchase` |

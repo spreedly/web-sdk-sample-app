@@ -60,6 +60,30 @@ test.describe('Proxy routes are gone', () => {
   });
 });
 
+test.describe('No shared list of saved cards', () => {
+  test('GET /payment_methods is gone', async ({ request }) => {
+    const response = await request.get('/api/v1/payment_methods');
+    expect(response.status()).toBe(404);
+  });
+});
+
+test.describe('Request bodies are capped at 32 KB', () => {
+  test('a 33 KB JSON body is refused', async ({ request }) => {
+    const response = await request.post('/api/v1/simple-purchase', {
+      data: { amount: 100, payment_method_token: 'abc', padding: 'x'.repeat(33 * 1024) },
+    });
+    expect(response.status()).toBe(413);
+  });
+
+  test('a normal body is still read', async ({ request }) => {
+    const response = await request.post('/api/v1/offsite-purchase', {
+      data: { payment_method_token: 'abc', amount: 100, redirect_url: 'https://attacker.example/' },
+    });
+    // 400 from the redirect check proves the body was parsed, not refused for size.
+    expect(response.status()).toBe(400);
+  });
+});
+
 test.describe('Offsite routes refuse a redirect_url off this app', () => {
   const cases: Array<[string, Record<string, unknown>]> = [
     ['/api/v1/offsite-purchase', { payment_method_token: 'abc', amount: 100, redirect_url: ATTACKER_URL }],
