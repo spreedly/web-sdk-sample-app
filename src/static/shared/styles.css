@@ -573,10 +573,23 @@ p {
 
 .sdk-option {
   cursor: pointer;
+  position: relative;
 }
 
+/* Visually hidden but still focusable and announced: the card is the visible control, and the radio
+   keeps keyboard and screen-reader access. */
 .sdk-option input[type="radio"] {
-  display: none;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sdk-option input[type="radio"]:focus-visible + .sdk-option-content {
+  outline: 2px solid var(--color-info);
+  outline-offset: 2px;
 }
 
 .sdk-option-content {

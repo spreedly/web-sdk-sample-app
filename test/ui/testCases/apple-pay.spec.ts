@@ -14,9 +14,6 @@ const getServerConfig = async (request: any) => {
   return response.json() as Promise<{ merchantIdentifier: string | null; configured: boolean }>;
 };
 
-// The option cards hide their radio inputs, so click the visible card.
-const chooseMode = (page: any, mode: string) =>
-  page.locator("label.sdk-option", { has: page.locator(`input[name="apple-pay-mode"][value="${mode}"]`) }).click();
 
 test.describe("Apple Pay demo", () => {
   test("serves the domain association file only when it is configured, with no redirect", async ({ request }) => {
@@ -60,13 +57,13 @@ test.describe("Apple Pay demo", () => {
     expect(statuses).toContain(429);
   });
 
-  test("the local-SDK demo page loads without script errors", async ({ page }) => {
+  test("the end-to-end demo page loads without script errors", async ({ page }) => {
     const errors: string[] = [];
     page.on("pageerror", error => errors.push(error.message));
 
     await page.goto(MONOREPO_URLS.APPLE_PAY_LOCAL_SDK);
 
-    await expect(page.getByRole("heading", { name: "Apple Pay (local SDK)" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Apple Pay end to end" })).toBeVisible();
     await expect(page.locator("#event-log")).toContainText("server Apple Pay config");
     expect(errors).toEqual([]);
   });
@@ -80,14 +77,12 @@ test.describe("Apple Pay demo", () => {
     await expect(page.getByRole("heading", { name: "Apple Pay", exact: true })).toBeVisible();
   });
 
-  test("the start page needs an integration and a product, then passes the cart total on", async ({ page }) => {
+  test("the start page needs a product, then opens the Apple Pay page with the cart total", async ({ page }) => {
     const errors: string[] = [];
     page.on("pageerror", error => errors.push(error.message));
     await page.goto(`${MONOREPO_URLS.APPLE_PAY}?sdk=hosted-fields`);
     const proceed = page.locator("#proceed");
 
-    await expect(proceed).toBeDisabled();
-    await chooseMode(page, "headless");
     await expect(proceed).toBeDisabled();
     await expect(page.locator("#proceed-hint")).toHaveText("Add at least one product.");
 
@@ -100,31 +95,33 @@ test.describe("Apple Pay demo", () => {
     await expect(proceed).toBeEnabled();
 
     await proceed.click();
-    await expect(page).toHaveURL(/\/apple-pay-headless\/index\.html\?sdk=hosted-fields&amount=379\.97$/);
+    await expect(page).toHaveURL(/\/apple-pay-local-sdk\/index\.html\?sdk=hosted-fields&amount=379\.97$/);
     await expect(page.locator("#amount")).toHaveValue("379.97");
-    expect(errors).toEqual([]);
-  });
-
-  test("end to end opens the local-SDK page with the cart total", async ({ page }) => {
-    await page.goto(`${MONOREPO_URLS.APPLE_PAY}?sdk=hosted-fields`);
-    await chooseMode(page, "end-to-end");
-    await page.locator(".product-card").nth(1).locator('[data-delta="1"]').click();
-    await page.locator("#proceed").click();
-
-    await expect(page).toHaveURL(/\/apple-pay-local-sdk\/index\.html\?sdk=hosted-fields&amount=299\.99$/);
-    await expect(page.locator("#amount")).toHaveValue("299.99");
     await expect(page.locator("#back-link")).toHaveAttribute("href", "../apple-pay/index.html?sdk=hosted-fields");
+    expect(errors).toEqual([]);
   });
 
-  test("the headless page loads without script errors and ignores a bad amount", async ({ page }) => {
-    const errors: string[] = [];
-    page.on("pageerror", error => errors.push(error.message));
+  test("the start page works with the keyboard alone", async ({ page }) => {
+    await page.goto(`${MONOREPO_URLS.APPLE_PAY}?sdk=hosted-fields`);
+    const focusedIs = (selector: string) =>
+      page.evaluate(sel => document.activeElement?.matches(sel) ?? false, selector);
+    const tabTo = async (selector: string) => {
+      for (let i = 0; i < 20 && !(await focusedIs(selector)); i++) {
+        await page.keyboard.press("Tab");
+      }
+      expect(await focusedIs(selector)).toBe(true);
+    };
 
-    await page.goto(`${MONOREPO_URLS.APPLE_PAY_HEADLESS}?amount=12.5`);
+    await tabTo('[data-delta="1"]');
+    await page.keyboard.press("Enter");
+    await tabTo("#proceed");
+    await expect(page.locator("#proceed")).toBeEnabled();
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/\/apple-pay-local-sdk\/index\.html\?sdk=hosted-fields&amount=\d+\.\d{2}$/);
+  });
 
-    await expect(page.getByRole("heading", { name: "Apple Pay headless (local SDK)" })).toBeVisible();
-    await expect(page.locator("#event-log")).toContainText("server Apple Pay config");
+  test("the Apple Pay page ignores an amount that isn't in Apple's format", async ({ page }) => {
+    await page.goto(`${MONOREPO_URLS.APPLE_PAY_LOCAL_SDK}?amount=12.5`);
     await expect(page.locator("#amount")).toHaveValue("10.00");
-    expect(errors).toEqual([]);
   });
 });
