@@ -25,8 +25,9 @@ export const getAuthParams = (
       sign.write(signatureData);
       const signature = sign.sign(privateKey, 'base64');
       res.json({ nonce: uuid, timestamp, signature, certificateToken, environmentKey });
-    } catch (error) {
-      console.error('Error generating signature:', error);
+    } catch {
+      // The error can describe the private key, so it is not logged.
+      console.error('Error generating signature');
       throw new Error('Error generating signature');
     }
   } catch (error) {

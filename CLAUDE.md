@@ -9,10 +9,18 @@ Do not reintroduce `POST /api/v1/payment_methods` as a forwarder to
 
 ## Backend contract
 
-- `POST /api/v1/payment_methods/:token/recache` forwards the body verbatim to
-  `{SPREEDLY_URL}/v1/payment_methods/:token/recache.json` with ONLY the
-  `spreedly-environment-key` header (no Basic auth). The current SDK recaches
-  directly against Core, so the pages do not call this route.
+- There is no recache route. The SDK recaches directly against Core.
+- **Every Core call goes through `src/coreClient.ts`.** It sends only the method + path
+  combinations in `CORE_ROUTES`, only to configured gateways, never follows redirects, and
+  refuses any token that isn't 1–64 letters and digits. A new Core call needs a new
+  `CORE_ROUTES` entry. Routes that take a token in the URL check it with `isSpreedlyToken`
+  and answer 400 before calling Core.
+- **Return URLs** (`src/returnUrls.ts`): `callback_url` is always set by the server
+  (`PUBLIC_APP_ORIGIN` + `/api/v1/offsite-callback`). A caller's `redirect_url` must be on one
+  of the app's origins (the Heroku app, `PUBLIC_APP_ORIGIN`, `CORS_ALLOWED_ORIGINS`), or the route
+  answers 400. Purchase bodies are built from named fields; never forward `req.body`.
+- Never log an error object or a request body: body-parser errors carry the raw body, axios
+  errors carry the Authorization header.
 - `GET /api/v1/auth/params` (`src/controllers/auth.ts`) → `{nonce (UUID), timestamp
   (unix s), signature, certificateToken, environmentKey}`. Signature = RSA-SHA256,
   base64, over the concatenation `nonce + timestamp + certificateToken` — the order
@@ -67,7 +75,8 @@ Do not reintroduce `POST /api/v1/payment_methods` as a forwarder to
   `POST /api/v1/apple-pay/validate` answers `503 not_configured` and the file route 404s.
   Optional overrides, defaulting to the Heroku app in `src/config.ts`: `APPLE_PAY_MERCHANT_ID`,
   `APPLE_PAY_DISPLAY_NAME`, `APPLE_PAY_DOMAIN` (sent as `initiativeContext`, must be registered with
-  Apple), `APPLE_PAY_ENVIRONMENT` (`sandbox` switches Apple's validation host; default `production`). The test
+  Apple), `APPLE_PAY_ENVIRONMENT` (default `sandbox`; set `production` for Apple's production
+  validation host). The test
   pages: `apple-pay-test/` (plain Apple Pay JS, no SDK) and `apple-pay-local-sdk/` (loads the SDK
   from `localhost:5000` / `:5173`, so an unreleased SDK build can run on the registered Heroku
   domain; use Chrome on the machine running `npm run dev` in checkout-web-sdk). Neither is on the
@@ -89,8 +98,8 @@ Do not reintroduce `POST /api/v1/payment_methods` as a forwarder to
 | `google-pay/` | `SpreedlyGooglePay`: page loads `pay.js`, SDK draws Google's button + tokenizes in-sheet (merchant-page `payment_methods.json`); needs a local SDK build until the global reaches the rc CDN. With `?sdk=express-checkout`, the Placement radio defaults to EC's `googlePay` option (`?placement=standalone` opts out): wallet row above the EC iframe, embedded in the page or in the page's own dialog (never EC's dialog mode), card tokens via `tokenGenerated`. Purchase branches on `googlePayType`: `TOKENIZED_CARD` → no 3DS; otherwise 3DS Global (default) or gateway 3DS + `SpreedlyThreeDSLifecycle` | HF + EC | `auth/params`, `simple-purchase`, `create-purchase-with-3ds-gateway-specific`, `transactions/:t/complete`, `create-purchase-with-3ds` |
 
 Backend routes with no frontend caller: `POST /purchase` (the only one exercising the
-`sca_provider_key` vs `attempt_3dsecure` toggle), the `/recache` proxy (unused by
-the current SDK and by pages), `offsite-callback` (stub).
+`sca_provider_key` vs `attempt_3dsecure` toggle), `offsite-callback` (stub, but the server
+sends it to Spreedly as every offsite `callback_url`).
 
 ## Testing (this repo IS the SDK's e2e coverage — the SDK repo has none)
 

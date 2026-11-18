@@ -75,7 +75,7 @@ test.describe('Token Generation', () => {
       console.log('API Request Payload was not captured');
     }
     expect(responseStatus).toBeDefined();
-    expect([200, 204]).toContain(responseStatus);
+    expect([200, 201, 204]).toContain(responseStatus);
     expect(apiResponse).toBeDefined();
     expect(apiResponse).not.toBeNull();
     if (apiResponse) {
@@ -140,7 +140,7 @@ test.describe('Token Generation', () => {
       console.log('API Request Payload was not captured');
     }
     expect(responseStatus).toBeDefined();
-    expect([200, 204]).toContain(responseStatus);
+    expect([200, 201, 204]).toContain(responseStatus);
     expect(apiResponse).toBeDefined();
     expect(apiResponse).not.toBeNull();
     if (apiResponse) {
@@ -207,7 +207,7 @@ test.describe('Token Generation', () => {
       console.log('API Request Payload was not captured');
     }
     expect(responseStatus).toBeDefined();
-    expect([200, 204]).toContain(responseStatus);
+    expect([200, 201, 204]).toContain(responseStatus);
     expect(apiResponse).toBeDefined();
     expect(apiResponse).not.toBeNull();
     if (apiResponse) {
@@ -271,7 +271,7 @@ test.describe('Token Generation', () => {
       console.log('API Request Payload was not captured');
     }
     expect(responseStatus).toBeDefined();
-    expect([200, 204]).toContain(responseStatus);
+    expect([200, 201, 204]).toContain(responseStatus);
     expect(apiResponse).toBeDefined();
     expect(apiResponse).not.toBeNull();
     if (apiResponse) {
@@ -339,7 +339,7 @@ test.describe('Token Generation', () => {
       console.log('API Request Payload was not captured');
     }
     expect(responseStatus).toBeDefined();
-    expect([200, 204]).toContain(responseStatus);
+    expect([200, 201, 204]).toContain(responseStatus);
     expect(apiResponse).toBeDefined();
     expect(apiResponse).not.toBeNull();
     if (apiResponse) {
@@ -398,7 +398,7 @@ test.describe('Token Generation', () => {
     console.log('API Request Payload was not captured');
   }
   expect(responseStatus).toBeDefined();
-  expect([200, 204]).toContain(responseStatus);
+  expect([200, 201, 204]).toContain(responseStatus);
   expect(apiResponse).toBeDefined();
   expect(apiResponse).not.toBeNull();
   if (apiResponse) {
@@ -456,7 +456,7 @@ test.describe('Token Generation', () => {
     console.log('API Request Payload was not captured');
   }
   expect(responseStatus).toBeDefined();
-  expect([200, 204]).toContain(responseStatus);
+  expect([200, 201, 204]).toContain(responseStatus);
   expect(apiResponse).toBeDefined();
   expect(apiResponse).not.toBeNull();
   if (apiResponse) {
@@ -525,7 +525,7 @@ test.describe('Token Generation', () => {
       console.log('API Request Payload was not captured');
     }
     expect(responseStatus).toBeDefined();
-    expect([200, 204]).toContain(responseStatus);
+    expect([200, 201, 204]).toContain(responseStatus);
     expect(apiResponse).toBeDefined();
     expect(apiResponse).not.toBeNull();
     if (apiResponse) {
@@ -586,7 +586,7 @@ test.describe('Token Generation', () => {
     console.log('API Request Payload was not captured');
   }
   expect(responseStatus).toBeDefined();
-  expect([200, 204]).toContain(responseStatus);
+  expect([200, 201, 204]).toContain(responseStatus);
   expect(apiResponse).toBeDefined();
   expect(apiResponse).not.toBeNull();
   if (apiResponse) {

@@ -4,10 +4,10 @@ dotenv.config();
 
 const PRODUCTION_SDK_BASE_URL = 'https://core.spreedly.com';
 
+const HEROKU_APP_ORIGIN = 'https://checkout-web-sample-app-049a3c617015.herokuapp.com';
+
 // Callers are this app's own pages. The SDK hosts never call it.
-const TRUSTED_FRONTEND_ORIGINS = [
-  'https://checkout-web-sample-app-049a3c617015.herokuapp.com',
-];
+const TRUSTED_FRONTEND_ORIGINS = [HEROKU_APP_ORIGIN];
 
 const SDK_HOSTS = new Set(['core.spreedly.com', 'core-test.spreedly.com']);
 
@@ -49,12 +49,30 @@ const resolveSdkBaseUrl = (): string => {
   return PRODUCTION_SDK_BASE_URL;
 };
 
+// The public https origin this deployment serves. The server builds callback URLs on it, because
+// Spreedly rejects localhost ones. A staging deployment sets PUBLIC_APP_ORIGIN to its own origin.
+const resolvePublicAppOrigin = (): string => {
+  const raw = process.env.PUBLIC_APP_ORIGIN;
+  if (!raw) return HEROKU_APP_ORIGIN;
+  try {
+    const url = new URL(raw);
+    if (url.protocol === 'https:') return url.origin;
+  } catch {
+    // Fall through to the Heroku origin.
+  }
+  console.warn('PUBLIC_APP_ORIGIN must be an https origin; using the Heroku app origin');
+  return HEROKU_APP_ORIGIN;
+};
+
 interface Config {
   port: number;
   nodeEnv: string;
   spreedlyUrl: string;
   sdkBaseUrl: string;
   corsAllowedOrigins: ReadonlySet<string>;
+  publicAppOrigin: string;
+  // Origins a redirect_url may point at: this app's own pages.
+  appOrigins: ReadonlySet<string>;
   privateKey: string;
   certificateToken: string;
   spreedlyEnvironmentKey: string;
@@ -93,12 +111,17 @@ interface Config {
   applePayDomainAssociation: string;
 }
 
+const corsAllowedOrigins = resolveCorsAllowedOrigins();
+const publicAppOrigin = resolvePublicAppOrigin();
+
 const config: Config = {
   port: Number(process.env.PORT) || 3000,
   nodeEnv: process.env.NODE_ENV || 'development',
   spreedlyUrl: process.env.SPREEDLY_URL || 'https://core.spreedly.com',
   sdkBaseUrl: resolveSdkBaseUrl(),
-  corsAllowedOrigins: resolveCorsAllowedOrigins(),
+  corsAllowedOrigins,
+  publicAppOrigin,
+  appOrigins: new Set([...corsAllowedOrigins, publicAppOrigin]),
   privateKey: process.env.PRIVATE_KEY_NEW || '',
   certificateToken: process.env.CERTIFICATE_TOKEN_NEW || '',
   spreedlyEnvironmentKey: process.env.SPREEDLY_ENVIRONMENT_KEY_NEW || '',
@@ -138,8 +161,9 @@ const config: Config = {
   applePayDomain:
     process.env.APPLE_PAY_DOMAIN ||
     'checkout-web-sample-app-049a3c617015.herokuapp.com',
+  // Sandbox unless production is asked for by name.
   applePayEnvironment:
-    process.env.APPLE_PAY_ENVIRONMENT === 'sandbox' ? 'sandbox' : 'production',
+    process.env.APPLE_PAY_ENVIRONMENT === 'production' ? 'production' : 'sandbox',
   // PEMs are stored on one line with \n escapes, like PAZE_SIGNING_PRIVATE_KEY.
   applePayMerchantIdentityCert: (
     process.env.APPLE_PAY_MERCHANT_IDENTITY_CERT || ''
