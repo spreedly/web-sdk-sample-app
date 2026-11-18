@@ -7,9 +7,8 @@
  * a wallet row above the card form, embedded in the page or in Express Checkout's pop-up (dialog
  * mode, chosen in the config panel).
  *
- * The SDK loads from a build running on your own machine (`npm run dev` in checkout-web-sdk), so
- * an SDK branch can be tested on this registered domain before it reaches the CDN. Use Chrome on
- * that machine: it lets this HTTPS page load scripts from http://localhost.
+ * The SDK loads from the CDN's rc channel on core-test, like the other pages
+ * (`SpreedlyUtils.getSDKScriptUrl()`; its commented-out block switches to a local SDK build).
  *
  * Every API call goes to this server (same origin): merchant validation needs the Merchant
  * Identity Certificate, which only the server holds.
@@ -34,13 +33,6 @@ const PREFILLED_CONTACT = {
   countryCode: 'US',
 };
 
-// Local SDK dev servers (checkout-web-sdk `npm run dev`). Fixed localhost URLs only: never take a
-// script URL from the page address.
-const LOCAL_SDK_URLS = {
-  'hosted-fields': 'http://localhost:5000/index.js',
-  'express-checkout': 'http://localhost:5173/express-checkout.js',
-};
-
 const params = new URLSearchParams(window.location.search);
 const sdkType = SpreedlyUtils.getSDKType();
 const debugEnabled = params.get('debug') === '1';
@@ -51,6 +43,10 @@ let expressCheckout = null; // SpreedlyExpressCheckout (Express Checkout mode)
 let mountedPlacement = null; // 'embedded' or 'dialog': how the current Express Checkout was set up
 let dialogOpen = false; // Express Checkout's pop-up is showing
 let authAttempts = 0;
+// The total given to Apple for the next tap, and the total of the sheet that's open. The page charges
+// the open sheet's total, so the charge always matches what the shopper approved.
+let nextTapTotal = null;
+let openSheetTotal = null;
 let merchantIdentifier = null; // from GET /api/v1/apple-pay/config
 let environmentKey = null; // from GET /api/v1/auth/params; SpreedlyApplePay requires it
 let mounting = Promise.resolve(); // redraws run one after another
@@ -177,8 +173,11 @@ function computeTotal() {
   return total;
 }
 
-/** The amount the page charges: what the sheet last showed. */
-const chargeAmount = () => computeTotal().amount;
+/**
+ * The amount the page charges: the total of the sheet the shopper approved, never the amount field,
+ * which can change while the sheet is open. A real store charges its own server-side order total.
+ */
+const chargeAmount = () => openSheetTotal ?? nextTapTotal;
 
 const chargeMode = () => choice('charge-mode') || 'after-token';
 
@@ -239,13 +238,25 @@ async function getAuthDetails() {
   };
 }
 
-/** Charges the Spreedly payment method on the test gateway. */
+/**
+ * Charges the Spreedly payment method on the test gateway. A declined charge comes back as HTTP 422
+ * with `transaction.succeeded: false`: that's a decline, so it resolves rather than throws. Only a
+ * failure where the charge may or may not have happened throws.
+ */
 async function purchase(token) {
-  return postJson('/simple-purchase', {
-    payment_method_token: token,
-    amount: toCents(chargeAmount()),
-    currency_code: currency(),
-  });
+  try {
+    return await postJson('/simple-purchase', {
+      payment_method_token: token,
+      amount: toCents(chargeAmount()),
+      currency_code: currency(),
+    });
+  } catch (error) {
+    const transaction = error.data?.transaction;
+    if (transaction && transaction.succeeded === false) {
+      return { success: false, transaction };
+    }
+    throw error;
+  }
 }
 
 /** processPayment: charge while the sheet is still open, so the sheet shows the real result. */
@@ -278,7 +289,11 @@ async function processPayment(result) {
   }
   const data = await purchase(result.token);
   log('purchase (inside the sheet)', { success: data.success, state: data.transaction?.state });
-  return { success: data.success === true };
+  if (data.success === true) {
+    return { success: true };
+  }
+  // A decline: the sheet stays open with the gateway's message so the shopper can try another card.
+  return { success: false, message: data.transaction?.message };
 }
 
 // ── Apple Pay config and events ───────────────────────────────────────
@@ -410,6 +425,7 @@ function buildApplePayConfig() {
   if (text('metadata')) {
     config.metadata = parseMetadata(text('metadata'));
   }
+  nextTapTotal = config.total.amount;
   return config;
 }
 
@@ -440,6 +456,7 @@ async function handleEvent(event, payload) {
     setStatus(`Apple Pay is unavailable here (${payload.reason}).${seeLog}`, 'error');
   } else if (event === 'applePayButtonClicked') {
     authAttempts = 0;
+    openSheetTotal = nextTapTotal;
     elements['result-card'].classList.add('hidden');
   } else if (event === 'applePayCancelled') {
     setStatus('The shopper closed the sheet.', 'info');
@@ -530,7 +547,7 @@ function teardown() {
 async function mountHostedFieldsMode() {
   if (typeof window.SpreedlyApplePay !== 'function') {
     setStatus(
-      'This SDK build has no SpreedlyApplePay. Run an SDK build with Apple Pay locally (npm run dev in checkout-web-sdk).',
+      'This SDK build has no SpreedlyApplePay yet: Apple Pay reaches the CDN when the SDK releases it.',
       'error'
     );
     return;
@@ -713,6 +730,7 @@ function updateTotal() {
     } else if (expressCheckout) {
       expressCheckout.setApplePayTotal(update);
     }
+    nextTapTotal = update.total.amount;
     log('total updated for the next tap', update.total);
   } catch (error) {
     setStatus(`Invalid total: ${error.message}`, 'error');
@@ -722,13 +740,13 @@ function updateTotal() {
 // ── SDK loading ───────────────────────────────────────────────────────
 
 function loadSDK() {
-  const url = LOCAL_SDK_URLS[sdkType];
+  const url = SpreedlyUtils.getSDKScriptUrl();
   log('loading SDK', { sdk: sdkType, url });
   return new Promise((resolve, reject) => {
     const script = document.createElement('script');
     script.src = url;
     script.onload = resolve;
-    script.onerror = () => reject(new Error(`Could not load ${url}. Is the SDK running locally (npm run dev in checkout-web-sdk)?`));
+    script.onerror = () => reject(new Error(`Could not load ${url}.`));
     document.body.appendChild(script);
   });
 }

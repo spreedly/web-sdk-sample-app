@@ -1,9 +1,6 @@
 /**
- * Apple Pay start page: the shopper's developer picks an integration (end to end or headless)
- * and some products, then Proceed opens that integration's page with the cart total.
- *
- * - End to end: ../apple-pay-local-sdk/ (the SDK draws the button and runs the sheet).
- * - Headless: ../apple-pay-headless/ (the page runs the sheet; the SDK only tokenizes).
+ * Apple Pay start page: pick some products, then Proceed opens the Apple Pay page
+ * (../apple-pay-local-sdk/, where the SDK draws the button and runs the sheet) with the cart total.
  *
  * The ?sdk= bundle chosen on the landing page is passed on unchanged.
  */
@@ -15,16 +12,12 @@ const PRODUCTS = [
   { id: 'prod_3', name: 'Laptop Stand', description: 'Ergonomic aluminum stand', price: 79.99, emoji: '💻' },
 ];
 
-const MODE_PAGES = {
-  'end-to-end': '../apple-pay-local-sdk/index.html',
-  headless: '../apple-pay-headless/index.html',
-};
+const APPLE_PAY_PAGE = '../apple-pay-local-sdk/index.html';
 
 const sdkType = SpreedlyUtils.getSDKType();
 const cart = {}; // { productId: quantity }
 
 const $ = id => document.getElementById(id);
-const selectedMode = () => document.querySelector('input[name="apple-pay-mode"]:checked')?.value;
 
 /** Total in cents, so adding prices can't drift. */
 const cartTotalCents = () =>
@@ -104,30 +97,23 @@ function updateSummary() {
 }
 
 function updateProceed() {
-  const mode = selectedMode();
   const hasItems = Object.keys(cart).length > 0;
-  $('proceed').disabled = !mode || !hasItems;
-  $('proceed-hint').textContent = !mode
-    ? 'Choose an integration.'
-    : !hasItems
-      ? 'Add at least one product.'
-      : `${mode === 'headless' ? 'Headless' : 'End to end'}, total ${SpreedlyUtils.formatCurrency(cartTotalCents() / 100)}.`;
+  $('proceed').disabled = !hasItems;
+  $('proceed-hint').textContent = hasItems
+    ? `Total ${SpreedlyUtils.formatCurrency(cartTotalCents() / 100)}.`
+    : 'Add at least one product.';
 }
 
 function proceed() {
-  const mode = selectedMode();
-  if (!mode || !Object.keys(cart).length) {
+  if (!Object.keys(cart).length) {
     return;
   }
   const params = new URLSearchParams({ sdk: sdkType, amount: cartTotalAmount() });
-  window.location.href = `${MODE_PAGES[mode]}?${params}`;
+  window.location.href = `${APPLE_PAY_PAGE}?${params}`;
 }
 
 document.addEventListener('DOMContentLoaded', () => {
   $('sdk-badge').textContent = `Apple Pay · ${sdkType === 'express-checkout' ? 'Express Checkout' : 'Hosted Fields'}`;
-  document
-    .querySelectorAll('input[name="apple-pay-mode"]')
-    .forEach(input => input.addEventListener('change', updateProceed));
   $('proceed').addEventListener('click', proceed);
   renderProducts();
   updateSummary();

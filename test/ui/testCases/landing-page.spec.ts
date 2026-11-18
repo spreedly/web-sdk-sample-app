@@ -59,6 +59,20 @@ test.describe("Landing page flow groups", () => {
     await expect(page.locator('[data-flow="ppcp"]')).toBeHidden();
   });
 
+  test("the SDK switch works with the keyboard", async ({ page }) => {
+    await page.goto(MONOREPO_URLS.BASE);
+    await expect(page.getByRole("radio")).toHaveCount(2);
+
+    const sdkRadioFocused = () =>
+      page.evaluate(() => document.activeElement?.matches('input[name="sdk"]') ?? false);
+    for (let i = 0; i < 10 && !(await sdkRadioFocused()); i++) {
+      await page.keyboard.press("Tab");
+    }
+    expect(await sdkRadioFocused()).toBe(true);
+    await page.keyboard.press("ArrowRight");
+    await expect(page.locator('input[name="sdk"][value="express-checkout"]')).toBeChecked();
+  });
+
   test("the PayPal group counts the PayPal Direct card only when it is shown", async ({ page }) => {
     await page.goto(`${MONOREPO_URLS.BASE}?showPPCPDirect`);
 
