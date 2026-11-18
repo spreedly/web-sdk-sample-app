@@ -41,7 +41,7 @@ function getDisplayMode() {
 
 async function fetchAuthParams() {
   try {
-    const response = await axios.get(`${API_BASE_URL}/auth/params`);
+    const [response] = await Promise.all([axios.get(`${API_BASE_URL}/auth/params`), ownerTagReady]);
     const authParams = response.data;
     return authParams;
   } catch (error) {
@@ -96,6 +96,38 @@ function rememberPaymentMethod(paymentMethod) {
   }
 }
 
+// Retain only works for the browser that created the card. Each tab keeps a random secret, sends
+// its SHA-256 as tokenization metadata, and sends the secret itself to the retain route. The
+// server reads the payment method's metadata from Core and retains only on a match.
+const OWNER_SECRET_KEY = 'spreedlySampleApp.ownerSecret';
+const OWNER_METADATA_KEY = 'sample_app_owner';
+
+function readOwnerSecret() {
+  try {
+    const stored = sessionStorage.getItem(OWNER_SECRET_KEY);
+    if (stored) return stored;
+    const secret = crypto.randomUUID();
+    sessionStorage.setItem(OWNER_SECRET_KEY, secret);
+    return secret;
+  } catch {
+    // Storage blocked: the secret lasts until the page is reloaded.
+    return crypto.randomUUID();
+  }
+}
+
+const ownerSecret = readOwnerSecret();
+let ownerTag = '';
+const ownerTagReady = crypto.subtle
+  .digest('SHA-256', new TextEncoder().encode(ownerSecret))
+  .then(digest => {
+    ownerTag = Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, '0')).join('');
+  });
+
+// Spread into every tokenization's metadata. Ready once fetchAuthParams() has resolved.
+function ownerMetadata() {
+  return { [OWNER_METADATA_KEY]: ownerTag };
+}
+
 async function fetchPaymentMethods() {
   // Newest first, credit cards only, as the server list used to return.
   return readSavedPaymentMethods().filter(pm => pm.payment_method_type === 'credit_card');
@@ -103,7 +135,9 @@ async function fetchPaymentMethods() {
 
 async function retainPaymentMethod(paymentMethodToken) {
   try {
-    const response = await axios.put(`${API_BASE_URL}/payment_methods/${paymentMethodToken}/retain`);
+    const response = await axios.put(`${API_BASE_URL}/payment_methods/${paymentMethodToken}/retain`, {
+      owner_secret: ownerSecret,
+    });
     rememberPaymentMethod(response.data?.transaction?.payment_method);
     return response.data;
   } catch (error) {
@@ -357,6 +391,7 @@ window.SpreedlyUtils = {
 
   // Payment methods
   fetchPaymentMethods,
+  ownerMetadata,
 
   // API
   retainPaymentMethod,

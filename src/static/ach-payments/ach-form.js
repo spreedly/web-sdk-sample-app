@@ -191,6 +191,7 @@ function buildMountOptions() {
       showSaveAccountCheckbox: checked('config-allow-retain'),
       saveAccountCheckboxLabel: value('config-text-save-label'),
     },
+    submitParams: { metadata: SpreedlyUtils.ownerMetadata() },
   };
 }
 

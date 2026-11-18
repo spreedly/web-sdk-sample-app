@@ -1,4 +1,5 @@
-import { AxiosError } from 'axios';
+import axios, { AxiosError } from 'axios';
+import { createHash, timingSafeEqual } from 'crypto';
 import { Request, Response } from 'express';
 import { UserAgentAugmentedRequest } from 'express-useragent'
 import config from '../config';
@@ -26,10 +27,48 @@ const getGatewayKey = (gateway: string = 'spreedly') => {
   }
 };
 
+// The page tags each payment method it creates with sha256(owner secret) as metadata, and sends
+// the secret to retain. Only the tab that created a payment method can retain it.
+const OWNER_METADATA_KEY = 'sample_app_owner';
+const OWNER_SECRET_PATTERN = /^[A-Za-z0-9-]{16,128}$/;
+const NOT_OWNER = { error: 'This payment method was not created in this session' };
+
+const ownsPaymentMethod = (secret: string, paymentMethod: unknown): boolean => {
+  const stored = (paymentMethod as { metadata?: Record<string, unknown> } | undefined)?.metadata?.[
+    OWNER_METADATA_KEY
+  ];
+  if (typeof stored !== 'string') return false;
+  const expected = createHash('sha256').update(secret).digest();
+  const actual = Buffer.from(stored, 'hex');
+  return actual.length === expected.length && timingSafeEqual(actual, expected);
+};
+
 export const retainPaymentMethod = async (req: Request, res: Response): Promise<void> => {
   const token = req.params.paymentMethodToken;
   if (!isSpreedlyToken(token)) {
     res.status(400).json({ error: 'Invalid payment method token format' });
+    return;
+  }
+
+  const secret = req.body?.owner_secret;
+  if (typeof secret !== 'string' || !OWNER_SECRET_PATTERN.test(secret)) {
+    res.status(403).json(NOT_OWNER);
+    return;
+  }
+
+  try {
+    const existing = await core.get(`/v1/payment_methods/${encodeURIComponent(token)}.json`);
+    if (!ownsPaymentMethod(secret, existing.data?.payment_method)) {
+      res.status(403).json(NOT_OWNER);
+      return;
+    }
+  } catch (error) {
+    // An unknown token gets the same answer as someone else's, so this can't probe for tokens.
+    if (axios.isAxiosError(error) && error.response?.status === 404) {
+      res.status(403).json(NOT_OWNER);
+      return;
+    }
+    sendCoreError(error, res);
     return;
   }
 

@@ -23,6 +23,12 @@ Do not reintroduce `POST /api/v1/payment_methods` as a forwarder to
   `shared/utils.js` retains through the server, then stores the card's display fields in
   `localStorage`; `fetchPaymentMethods` reads them back. There is no `GET /payment_methods`
   route: a server list would show every visitor's cards to everyone.
+- **Retain checks ownership (HC-1940).** Each tab keeps a random secret in `sessionStorage`
+  (`shared/utils.js`). Every tokenization that may be retained sends
+  `...SpreedlyUtils.ownerMetadata()` (`sample_app_owner` = SHA-256 of the secret, hex) in its
+  metadata, and `retainPaymentMethod` sends the secret as `owner_secret`. The route reads the
+  payment method from Core and answers 403 unless the hash matches. A new flow that retains must
+  add the metadata, or its retains fail.
 - JSON and form bodies are capped at 32 KB.
 - Never log an error object or a request body: body-parser errors carry the raw body, axios
   errors carry the Authorization header.

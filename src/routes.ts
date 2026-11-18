@@ -80,11 +80,12 @@ const router = Router();
  *         description: Error generating authentication parameters
  */
 router.get('/auth/params', getAuthParams);
+
 /**
  * @swagger
  * /api/v1/payment_methods/{paymentMethodToken}/retain:
  *   put:
- *     description: Retain a payment method to prevent automatic deletion
+ *     description: Retain a payment method to prevent automatic deletion. Only the browser tab that created it can retain it.
  *     tags: [Payment Methods]
  *     produces:
  *       - application/json
@@ -94,9 +95,24 @@ router.get('/auth/params', getAuthParams);
  *         in: path
  *         required: true
  *         type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [owner_secret]
+ *             properties:
+ *               owner_secret:
+ *                 type: string
+ *                 description: The tab's secret. The payment method's sample_app_owner metadata must be its SHA-256 (hex).
  *     responses:
  *       200:
  *         description: Payment method retained successfully
+ *       400:
+ *         description: Invalid payment method token format
+ *       403:
+ *         description: Missing owner_secret, or the payment method was not created with it
  *       500:
  *         description: Error retaining payment method
  */

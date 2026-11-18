@@ -60,6 +60,28 @@ test.describe('Proxy routes are gone', () => {
   });
 });
 
+test.describe('Retain needs the owner secret of the tab that made the card', () => {
+  // Refused before any Core call, so these need no Spreedly credentials.
+  test('no owner_secret is refused', async ({ request }) => {
+    const response = await request.put('/api/v1/payment_methods/abc123/retain');
+    expect(response.status()).toBe(403);
+  });
+
+  test('a malformed owner_secret is refused', async ({ request }) => {
+    for (const owner_secret of ['short', 'x'.repeat(129), 'a/b/c/d/e/f/g/h/i', 12345678901234567]) {
+      const response = await request.put('/api/v1/payment_methods/abc123/retain', { data: { owner_secret } });
+      expect(response.status()).toBe(403);
+    }
+  });
+
+  test('a bad token is still a 400', async ({ request }) => {
+    const response = await request.put('/api/v1/payment_methods/..%2Fgateways/retain', {
+      data: { owner_secret: '00000000-0000-4000-8000-000000000000' },
+    });
+    expect(response.status()).toBe(400);
+  });
+});
+
 test.describe('No shared list of saved cards', () => {
   test('GET /payment_methods is gone', async ({ request }) => {
     const response = await request.get('/api/v1/payment_methods');
