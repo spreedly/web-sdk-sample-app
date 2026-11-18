@@ -196,3 +196,25 @@ test.describe('Plain HTTP is redirected to HTTPS, and HTTPS sends HSTS', () => {
     expect(response.headers()['strict-transport-security']).toBe('max-age=31536000; includeSubDomains');
   });
 });
+
+test.describe('axios is served by the app, not a CDN', () => {
+  test('/vendor/axios.min.js is JavaScript', async ({ request }) => {
+    const response = await request.get('/vendor/axios.min.js');
+    expect(response.status()).toBe(200);
+    expect(response.headers()['content-type']).toContain('javascript');
+    expect(await response.text()).toContain('axios');
+  });
+
+  test('only the minified build and its map are exposed', async ({ request }) => {
+    for (const path of ['/vendor/axios.js', '/vendor/..%2Fpackage.json', '/vendor/node/axios.cjs']) {
+      const response = await request.get(path);
+      expect(response.status()).toBe(404);
+    }
+  });
+
+  test('pages load the local copy', async ({ request }) => {
+    const html = await (await request.get('/purchase/')).text();
+    expect(html).toContain('src="/vendor/axios.min.js"');
+    expect(html).not.toContain('cdn.jsdelivr.net/npm/axios');
+  });
+});

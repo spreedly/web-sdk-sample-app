@@ -37,6 +37,9 @@ Do not reintroduce `POST /api/v1/payment_methods` as a forwarder to
   base64, over the concatenation `nonce + timestamp + certificateToken` — the order
   and algorithm are fixed by what Spreedly verifies; don't touch.
 - CORS is an allowlist (`src/middlewares/corsMiddleware.ts`).
+- **axios is served by the app** at `/vendor/axios.min.js` (`src/app.ts`, from
+  `node_modules/axios/dist`), so pages run the version in `package-lock.json`. New pages use
+  `<script src="/vendor/axios.min.js"></script>`; never load axios from a CDN.
 
 ## Architecture
 

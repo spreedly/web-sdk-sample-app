@@ -59,6 +59,13 @@ app.get(
 );
 
 app.get('/shared/utils.js', serveSharedUtils);
+
+// The pages load axios from the app, not a CDN, so the version is the one in package-lock.json.
+// __dirname is dist/ or src/, both one level below node_modules.
+const AXIOS_DIST = path.join(__dirname, '..', 'node_modules', 'axios', 'dist');
+app.get(['/vendor/axios.min.js', '/vendor/axios.min.js.map'], (req, res) => {
+  res.sendFile(path.basename(req.path), { root: AXIOS_DIST });
+});
 app.use('/', express.static(path.join(__dirname, 'static')));
 
 // Every JSON body this app accepts is small. The largest is a Paze securedPayload.
