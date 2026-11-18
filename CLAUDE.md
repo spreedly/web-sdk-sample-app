@@ -17,8 +17,7 @@ Do not reintroduce `POST /api/v1/payment_methods` as a forwarder to
   (unix s), signature, certificateToken, environmentKey}`. Signature = RSA-SHA256,
   base64, over the concatenation `nonce + timestamp + certificateToken` — the order
   and algorithm are fixed by what Spreedly verifies; don't touch.
-- The unrestricted `app.use(cors())` in `src/app.ts` is load-bearing — localhost
-  pages call this API cross-origin. No origin allowlist may be added casually.
+- CORS is an allowlist (`src/middlewares/corsMiddleware.ts`).
 
 ## Architecture
 

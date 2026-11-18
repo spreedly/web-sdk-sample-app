@@ -4,9 +4,33 @@ dotenv.config();
 
 const PRODUCTION_SDK_BASE_URL = 'https://core.spreedly.com';
 
-// SDK_BASE_URL is set on the Heroku app. It is the origin the browser loads the
-// SDK script from. Only an https origin on spreedly.com is accepted; anything
-// else falls back to production so a bad value cannot point the script tag elsewhere.
+// Callers are this app's own pages. The SDK hosts never call it.
+const TRUSTED_FRONTEND_ORIGINS = [
+  'https://checkout-web-sample-app-049a3c617015.herokuapp.com',
+];
+
+const SDK_HOSTS = new Set(['core.spreedly.com', 'core-test.spreedly.com']);
+
+export const isSdkHost = (hostname: string): boolean => SDK_HOSTS.has(hostname);
+
+const resolveCorsAllowedOrigins = (): ReadonlySet<string> => {
+  const allowed = new Set<string>(TRUSTED_FRONTEND_ORIGINS);
+  const raw = process.env.CORS_ALLOWED_ORIGINS || '';
+  for (const entry of raw.split(',')) {
+    const candidate = entry.trim();
+    if (!candidate) continue;
+    try {
+      const url = new URL(candidate);
+      if (isSdkHost(url.hostname)) continue;
+      if (url.protocol !== 'http:' && url.protocol !== 'https:') continue;
+      allowed.add(url.origin);
+    } catch {
+      console.warn('Ignoring invalid CORS_ALLOWED_ORIGINS entry');
+    }
+  }
+  return allowed;
+};
+
 const resolveSdkBaseUrl = (): string => {
   const raw = process.env.SDK_BASE_URL;
   if (!raw) return PRODUCTION_SDK_BASE_URL;
@@ -30,6 +54,7 @@ interface Config {
   nodeEnv: string;
   spreedlyUrl: string;
   sdkBaseUrl: string;
+  corsAllowedOrigins: ReadonlySet<string>;
   privateKey: string;
   certificateToken: string;
   spreedlyEnvironmentKey: string;
@@ -73,6 +98,7 @@ const config: Config = {
   nodeEnv: process.env.NODE_ENV || 'development',
   spreedlyUrl: process.env.SPREEDLY_URL || 'https://core.spreedly.com',
   sdkBaseUrl: resolveSdkBaseUrl(),
+  corsAllowedOrigins: resolveCorsAllowedOrigins(),
   privateKey: process.env.PRIVATE_KEY_NEW || '',
   certificateToken: process.env.CERTIFICATE_TOKEN_NEW || '',
   spreedlyEnvironmentKey: process.env.SPREEDLY_ENVIRONMENT_KEY_NEW || '',

@@ -4,12 +4,12 @@ import { errorHandler } from './middlewares/errorHandler';
 import fs from 'fs';
 import path from 'path';
 import morgan from 'morgan';
-import cors from 'cors';
 import { express as useragent } from 'express-useragent';
 import config from './config';
 import routes from './routes';
 import { swaggerSpec, swaggerUiExpress } from './swagger';
 import { serveApplePayDomainAssociation } from './controllers/apple-pay';
+import { corsMiddleware } from './middlewares/corsMiddleware';
 
 // utils.js ships with the production SDK origin. This rewrites that one line from
 // SDK_BASE_URL so each Heroku app can serve a different host without a code change.
@@ -40,7 +40,7 @@ const serveSharedUtils = (_req: Request, res: Response) => {
 const app = express();
 
 app.use(morgan('combined'));
-app.use(cors());
+app.use(corsMiddleware);
 // TODO: Uncomment this when we have a valid CSP policy
 // app.use(cspMiddleware);
 app.use(useragent());
