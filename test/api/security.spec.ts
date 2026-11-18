@@ -134,3 +134,43 @@ test.describe('Errors do not echo the request body', () => {
     expect(text).not.toContain('4111111111111111');
   });
 });
+
+test.describe('Plain HTTP is redirected to HTTPS, and HTTPS sends HSTS', () => {
+  // Against Heroku, ask for the http:// URL and let the router set X-Forwarded-Proto. Locally there
+  // is no router, so send the header the router would have sent.
+  const plainHttp = (baseURL: string | undefined, path: string) => {
+    const base = new URL(baseURL ?? '');
+    return base.protocol === 'https:'
+      ? { url: `http://${base.host}${path}`, headers: {} }
+      : { url: path, headers: { 'X-Forwarded-Proto': 'http' } };
+  };
+
+  test('GET over http gets a 301 to https', async ({ request, baseURL }) => {
+    const { url, headers } = plainHttp(baseURL, '/purchase/?sdk=hosted-fields');
+    const response = await request.get(url, { headers, maxRedirects: 0 });
+    expect(response.status()).toBe(301);
+    expect(response.headers()['location']).toMatch(/^https:\/\/[^/]+\/purchase\/\?sdk=hosted-fields$/);
+  });
+
+  test('POST over http gets a 308, not a 200', async ({ request, baseURL }) => {
+    const { url, headers } = plainHttp(baseURL, '/api/v1/simple-purchase');
+    const response = await request.post(url, { headers, data: {}, maxRedirects: 0 });
+    expect(response.status()).toBe(308);
+    expect(response.headers()['location']).toMatch(/^https:\/\//);
+  });
+
+  test('a forged Host header does not move the redirect off the app', async ({ request, baseURL }) => {
+    const { url, headers } = plainHttp(baseURL, '/');
+    const response = await request.get(url, {
+      headers: { ...headers, Host: 'attacker.example' },
+      maxRedirects: 0,
+    });
+    expect(response.headers()['location'] ?? '').not.toContain('attacker.example');
+  });
+
+  test('https responses carry Strict-Transport-Security', async ({ request, baseURL }) => {
+    const headers = new URL(baseURL ?? '').protocol === 'https:' ? {} : { 'X-Forwarded-Proto': 'https' };
+    const response = await request.get('/', { headers });
+    expect(response.headers()['strict-transport-security']).toBe('max-age=31536000; includeSubDomains');
+  });
+});

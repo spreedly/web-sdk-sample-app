@@ -34,7 +34,7 @@ Do not reintroduce `POST /api/v1/payment_methods` as a forwarder to
 
 ## Architecture
 
-- **Server**: `src/server.ts` → `src/app.ts` (morgan → cors → useragent → Swagger UI
+- **Server**: `src/server.ts` → `src/app.ts` (morgan → https redirect + HSTS → cors → useragent → Swagger UI
   at `/api/v1/docs` → static → json → `/api/v1` router → errorHandler). Port from
   `PORT` (default 3000). `src/config.ts` reads env; `src/routes.ts` +
   `src/controllers/{auth,payments}.ts` hold all routes.
