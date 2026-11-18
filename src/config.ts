@@ -5,9 +5,11 @@ dotenv.config();
 const PRODUCTION_SDK_BASE_URL = 'https://core.spreedly.com';
 
 const HEROKU_APP_ORIGIN = 'https://checkout-web-sample-app-049a3c617015.herokuapp.com';
+const LOCAL_APP_ORIGIN = 'http://localhost:5000';
+const LOCAL_React_APP_ORIGIN = 'http://localhost:5173';
 
 // Callers are this app's own pages. The SDK hosts never call it.
-const TRUSTED_FRONTEND_ORIGINS = [HEROKU_APP_ORIGIN];
+const TRUSTED_FRONTEND_ORIGINS = [HEROKU_APP_ORIGIN, LOCAL_APP_ORIGIN, LOCAL_React_APP_ORIGIN];
 
 const SDK_HOSTS = new Set(['core.spreedly.com', 'core-test.spreedly.com']);
 
