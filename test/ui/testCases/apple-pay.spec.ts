@@ -1,5 +1,6 @@
 import { test, expect } from "../util/fixtures";
 import { MONOREPO_URLS } from "../util/urls";
+import { showFlowCard } from "../pages/landingPage";
 
 // Server checks for Apple Pay and a smoke test of the local-SDK demo page. They run against any
 // deployment, with or without the APPLE_PAY_* settings. Apple's sheet can't be automated, so
@@ -12,6 +13,7 @@ const getServerConfig = async (request: any) => {
   expect(response.status()).toBe(200);
   return response.json() as Promise<{ merchantIdentifier: string | null; configured: boolean }>;
 };
+
 
 test.describe("Apple Pay demo", () => {
   test("serves the domain association file only when it is configured, with no redirect", async ({ request }) => {
@@ -55,14 +57,71 @@ test.describe("Apple Pay demo", () => {
     expect(statuses).toContain(429);
   });
 
-  test("the local-SDK demo page loads without script errors", async ({ page }) => {
+  test("the end-to-end demo page loads without script errors", async ({ page }) => {
     const errors: string[] = [];
     page.on("pageerror", error => errors.push(error.message));
 
     await page.goto(MONOREPO_URLS.APPLE_PAY_LOCAL_SDK);
 
-    await expect(page.getByRole("heading", { name: "Apple Pay (local SDK)" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Apple Pay end to end" })).toBeVisible();
     await expect(page.locator("#event-log")).toContainText("server Apple Pay config");
     expect(errors).toEqual([]);
+  });
+
+  test("the landing page's Apple Pay card opens the Apple Pay start page with the chosen bundle", async ({ page }) => {
+    await page.goto(MONOREPO_URLS.BASE);
+    await page.locator("label.sdk-option", { has: page.locator('input[value="express-checkout"]') }).click();
+    await (await showFlowCard(page, '[data-flow="apple-pay"]')).click();
+
+    await expect(page).toHaveURL(/\/apple-pay\/index\.html\?sdk=express-checkout$/);
+    await expect(page.getByRole("heading", { name: "Apple Pay", exact: true })).toBeVisible();
+  });
+
+  test("the start page needs a product, then opens the Apple Pay page with the cart total", async ({ page }) => {
+    const errors: string[] = [];
+    page.on("pageerror", error => errors.push(error.message));
+    await page.goto(`${MONOREPO_URLS.APPLE_PAY}?sdk=hosted-fields`);
+    const proceed = page.locator("#proceed");
+
+    await expect(proceed).toBeDisabled();
+    await expect(page.locator("#proceed-hint")).toHaveText("Add at least one product.");
+
+    // Synthetic products: 2 × $149.99 + 1 × $79.99 = $379.97.
+    const addOne = (index: number) => page.locator(".product-card").nth(index).locator('[data-delta="1"]').click();
+    await addOne(0);
+    await addOne(0);
+    await addOne(2);
+    await expect(page.locator("#cart-total")).toHaveText("$379.97");
+    await expect(proceed).toBeEnabled();
+
+    await proceed.click();
+    await expect(page).toHaveURL(/\/apple-pay-local-sdk\/index\.html\?sdk=hosted-fields&amount=379\.97$/);
+    await expect(page.locator("#amount")).toHaveValue("379.97");
+    await expect(page.locator("#back-link")).toHaveAttribute("href", "../apple-pay/index.html?sdk=hosted-fields");
+    expect(errors).toEqual([]);
+  });
+
+  test("the start page works with the keyboard alone", async ({ page }) => {
+    await page.goto(`${MONOREPO_URLS.APPLE_PAY}?sdk=hosted-fields`);
+    const focusedIs = (selector: string) =>
+      page.evaluate(sel => document.activeElement?.matches(sel) ?? false, selector);
+    const tabTo = async (selector: string) => {
+      for (let i = 0; i < 20 && !(await focusedIs(selector)); i++) {
+        await page.keyboard.press("Tab");
+      }
+      expect(await focusedIs(selector)).toBe(true);
+    };
+
+    await tabTo('[data-delta="1"]');
+    await page.keyboard.press("Enter");
+    await tabTo("#proceed");
+    await expect(page.locator("#proceed")).toBeEnabled();
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/\/apple-pay-local-sdk\/index\.html\?sdk=hosted-fields&amount=\d+\.\d{2}$/);
+  });
+
+  test("the Apple Pay page ignores an amount that isn't in Apple's format", async ({ page }) => {
+    await page.goto(`${MONOREPO_URLS.APPLE_PAY_LOCAL_SDK}?amount=12.5`);
+    await expect(page.locator("#amount")).toHaveValue("10.00");
   });
 });

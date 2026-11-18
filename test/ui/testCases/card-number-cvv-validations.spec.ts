@@ -35,7 +35,7 @@ test.describe('Card Number and CVV Validation', () => {
       expiryYear: getValidYearString(),
     });
     await expect(await helperFunctions.getExpressCheckoutCardNumberField(page)).toHaveAttribute('aria-invalid', 'true');
-    await expect(page.frameLocator(SELECTORS.EXPRESS_IFRAME).locator(`[aria-label="${ERROR_MESSAGES.INVALID_CARD_NUMBER}"]`).first()).toBeVisible()
+    await expect(page.frameLocator(SELECTORS.EXPRESS_IFRAME).locator(`[aria-label$="${ERROR_MESSAGES.INVALID_CARD_NUMBER}"]`).first()).toBeVisible()
   });
 
   test('shows validation for invalid card in hosted fields', async ({ page }) => {
@@ -81,7 +81,7 @@ test.describe('Card Number and CVV Validation', () => {
       expiryYear: getValidYearString(),
     });
     await expect(await helperFunctions.getExpressCheckoutCvvField(page)).toHaveAttribute('aria-invalid', 'true');
-    await expect(page.frameLocator(SELECTORS.EXPRESS_IFRAME).locator(`[aria-label="${ERROR_MESSAGES.INVALID_CVV}"]`).first()).toBeVisible()
+    await expect(page.frameLocator(SELECTORS.EXPRESS_IFRAME).locator(`[aria-label$="${ERROR_MESSAGES.INVALID_CVV}"]`).first()).toBeVisible()
   });
 
   test('tokenizes hosted fields with empty CVV when CVV optional is enabled', async ({ page }) => {
@@ -190,7 +190,7 @@ test.describe('Card Number and CVV Validation', () => {
       expiryYear: getValidYearString(),
     });
     await expect(await helperFunctions.getExpressCheckoutCvvField(page)).toHaveAttribute('aria-invalid', 'true');
-    await expect(page.frameLocator(SELECTORS.EXPRESS_IFRAME).locator(`[aria-label="${ERROR_MESSAGES.INVALID_CVV}"]`).first()).toBeVisible();
+    await expect(page.frameLocator(SELECTORS.EXPRESS_IFRAME).locator(`[aria-label$="${ERROR_MESSAGES.INVALID_CVV}"]`).first()).toBeVisible();
   });
 
   test('hides CVV and tokenizes express checkout when CVV at launch is hidden', async ({ page }) => {
@@ -278,7 +278,7 @@ test.describe('Card Number and CVV Validation', () => {
       expiryYear: getValidYearString(),
     });
     await expect(await helperFunctions.getExpressCheckoutCvvField(page)).toHaveAttribute('aria-invalid', 'true');
-    await expect(page.frameLocator(SELECTORS.EXPRESS_IFRAME).locator(`[aria-label="${ERROR_MESSAGES.INVALID_CVV}"]`).first()).toBeVisible();
+    await expect(page.frameLocator(SELECTORS.EXPRESS_IFRAME).locator(`[aria-label$="${ERROR_MESSAGES.INVALID_CVV}"]`).first()).toBeVisible();
   });
 
   test('hides CVV and tokenizes express checkout when runtime CVV hidden is enabled', async ({ page }) => {

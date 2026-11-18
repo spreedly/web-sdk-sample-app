@@ -1,6 +1,17 @@
-import { Page } from '@playwright/test';
+import { Locator, Page } from '@playwright/test';
 import { expect } from '../util/fixtures';
 import { SELECTORS } from '../util/test-constants';
+
+// The landing page groups its flow cards into collapsible sections that start closed. Open the
+// card's section (if it isn't open already) and return the card.
+export const showFlowCard = async (page: Page, selector: string): Promise<Locator> => {
+    const card = page.locator(selector);
+    const group = page.locator('details.flow-group', { has: card });
+    if (!(await group.evaluate((details: HTMLDetailsElement) => details.open))) {
+        await group.locator('summary').click();
+    }
+    return card;
+};
 
 export const landingPage = {
     clickOnExpressCheckoutButton: async (page: Page) => {
@@ -10,49 +21,49 @@ export const landingPage = {
 },
 
     clickOnTokenizeButton: async (page: Page) => {
-    const tokenizeButton = page.locator(SELECTORS.TOKENIZE_BUTTON);
+    const tokenizeButton = await showFlowCard(page, SELECTORS.TOKENIZE_BUTTON);
     await expect(tokenizeButton).toBeVisible();
     await tokenizeButton.click();
 },
 
     clickOn3DSButton: async (page: Page) => {
-        const threeDSButton = page.locator(SELECTORS.THREE_DS_BUTTON);
+        const threeDSButton = await showFlowCard(page, SELECTORS.THREE_DS_BUTTON);
         await expect(threeDSButton).toBeVisible();
         await threeDSButton.click();
 },
 
     clickOn3DSGatewaySpecificButton: async (page: Page) => {
-        const threeDSGatewaySpecificButton = page.locator(SELECTORS.THREE_DS_GATEWAY_SPECIFIC_BUTTON);
+        const threeDSGatewaySpecificButton = await showFlowCard(page, SELECTORS.THREE_DS_GATEWAY_SPECIFIC_BUTTON);
         await expect(threeDSGatewaySpecificButton).toBeVisible();
         await threeDSGatewaySpecificButton.click();
 },
     clickOnOffsitePaymentsButton: async (page: Page) => {
-        const offsitePaymentsButton = page.locator(SELECTORS.OFFSITE_PAYMENTS_BUTTON);
+        const offsitePaymentsButton = await showFlowCard(page, SELECTORS.OFFSITE_PAYMENTS_BUTTON);
         await expect(offsitePaymentsButton).toBeVisible();
         await offsitePaymentsButton.click();
 },
     clickOnACHPaymentsButton: async (page: Page) => {
-        const achPaymentsButton = page.locator(SELECTORS.ACH_PAYMENTS_BUTTON);
+        const achPaymentsButton = await showFlowCard(page, SELECTORS.ACH_PAYMENTS_BUTTON);
         await expect(achPaymentsButton).toBeVisible();
         await achPaymentsButton.click();
 },
     clickOnStripeRadarButton: async (page: Page) => {
-        const stripeRadarButton = page.locator(SELECTORS.STRIPE_RADAR_BUTTON);
+        const stripeRadarButton = await showFlowCard(page, SELECTORS.STRIPE_RADAR_BUTTON);
         await expect(stripeRadarButton).toBeVisible();
         await stripeRadarButton.click();
 },
     clickOnTokenizeWithSDKButton: async (page: Page) => {
-        const tokenizeWithSDKButton = page.locator(SELECTORS.TOKENIZE_WITH_SDK_BUTTON);
+        const tokenizeWithSDKButton = await showFlowCard(page, SELECTORS.TOKENIZE_WITH_SDK_BUTTON);
         await expect(tokenizeWithSDKButton).toBeVisible();
         await tokenizeWithSDKButton.click();
     },
     clickOnGooglePayButton: async (page: Page) => {
-        const googlePayButton = page.locator(SELECTORS.GOOGLE_PAY_BUTTON);
+        const googlePayButton = await showFlowCard(page, SELECTORS.GOOGLE_PAY_BUTTON);
         await expect(googlePayButton).toBeVisible();
         await googlePayButton.click();
     },
     clickOnPPCPDirectButton: async (page: Page) => {
-        const ppcpDirectButton = page.locator(SELECTORS.PPCP_DIRECT_BUTTON);
+        const ppcpDirectButton = await showFlowCard(page, SELECTORS.PPCP_DIRECT_BUTTON);
         await expect(ppcpDirectButton).toBeVisible();
         await ppcpDirectButton.click();
 },
