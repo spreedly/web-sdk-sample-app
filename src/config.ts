@@ -11,9 +11,6 @@ const HEROKU_APP_ORIGIN = 'https://checkout-web-sample-app-049a3c617015.herokuap
 // Callers are this app's own pages. The SDK hosts never call it.
 const TRUSTED_FRONTEND_ORIGINS = [HEROKU_APP_ORIGIN];
 
-const SDK_HOSTS = new Set(['core.spreedly.com', 'core-test.spreedly.com']);
-
-export const isSdkHost = (hostname: string): boolean => SDK_HOSTS.has(hostname);
 
 const resolveCorsAllowedOrigins = (): ReadonlySet<string> => {
   const allowed = new Set<string>(TRUSTED_FRONTEND_ORIGINS);
@@ -23,7 +20,6 @@ const resolveCorsAllowedOrigins = (): ReadonlySet<string> => {
     if (!candidate) continue;
     try {
       const url = new URL(candidate);
-      if (isSdkHost(url.hostname)) continue;
       if (url.protocol !== 'http:' && url.protocol !== 'https:') continue;
       allowed.add(url.origin);
     } catch {
