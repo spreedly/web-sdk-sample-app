@@ -61,6 +61,34 @@ const resolveCorsAllowedOrigins = (): ReadonlySet<string> => {
   return allowed;
 };
 
+export interface EdgeGuardConfig {
+  secret: string;
+  headerName: string;
+  herokuAppHost: string;
+}
+
+// The guard is on once FASTLY_SHARED_SECRET is set. Until then every request is let through.
+const resolveEdgeGuard = (): EdgeGuardConfig | null => {
+  const secret = process.env.FASTLY_SHARED_SECRET || '';
+  const headerName = (process.env.FASTLY_SECRET_HEADER || '').trim().toLowerCase();
+  const herokuAppHost = (process.env.HEROKU_APP_HOST || '').trim().toLowerCase();
+  if (!secret && !headerName && !herokuAppHost) return null;
+  if (!secret || !headerName || !herokuAppHost) {
+    throw new Error(
+      'FASTLY_SHARED_SECRET, FASTLY_SECRET_HEADER and HEROKU_APP_HOST must be set together'
+    );
+  }
+  if (secret.length < 32) throw new Error('FASTLY_SHARED_SECRET is too short');
+  if (!/^[a-z0-9-]+$/.test(headerName)) {
+    throw new Error('FASTLY_SECRET_HEADER is not a header name');
+  }
+  // Redirecting the Heroku host to itself would loop.
+  if (new URL(publicAppOrigin).hostname === herokuAppHost) {
+    throw new Error('PUBLIC_APP_ORIGIN must not be the Heroku app host');
+  }
+  return { secret, headerName, herokuAppHost };
+};
+
 const resolveSdkBaseUrl = (): string => {
   const raw = process.env.SDK_BASE_URL;
   if (!raw) return PRODUCTION_SDK_BASE_URL;
@@ -90,6 +118,7 @@ interface Config {
   publicAppOrigin: string;
   // Origins a redirect_url may point at: this app's own pages.
   appOrigins: ReadonlySet<string>;
+  edgeGuard: EdgeGuardConfig | null;
   privateKey: string;
   certificateToken: string;
   spreedlyEnvironmentKey: string;
@@ -138,6 +167,7 @@ const config: Config = {
   corsAllowedOrigins,
   publicAppOrigin,
   appOrigins: new Set([...corsAllowedOrigins, publicAppOrigin]),
+  edgeGuard: resolveEdgeGuard(),
   privateKey: process.env.PRIVATE_KEY_NEW || '',
   certificateToken: process.env.CERTIFICATE_TOKEN_NEW || '',
   spreedlyEnvironmentKey: process.env.SPREEDLY_ENVIRONMENT_KEY_NEW || '',

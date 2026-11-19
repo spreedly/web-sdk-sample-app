@@ -11,6 +11,7 @@ import { swaggerSpec, swaggerUiExpress } from './swagger';
 import { serveApplePayDomainAssociation } from './controllers/apple-pay';
 import { corsMiddleware } from './middlewares/corsMiddleware';
 import { httpsMiddleware } from './middlewares/httpsMiddleware';
+import { createEdgeGuard } from './middlewares/edgeGuardMiddleware';
 
 // utils.js ships with the production SDK origin. This rewrites that one line from
 // SDK_BASE_URL so each Heroku app can serve a different host without a code change.
@@ -41,6 +42,13 @@ const serveSharedUtils = (_req: Request, res: Response) => {
 const app = express();
 
 app.use(morgan('combined'));
+
+app.get('/healthz', (_req, res) => {
+  res.set('Cache-Control', 'no-store').type('text/plain').send('ok');
+});
+if (config.edgeGuard) {
+  app.use(createEdgeGuard(config.edgeGuard, config.publicAppOrigin));
+}
 app.use(httpsMiddleware);
 app.use(corsMiddleware);
 // TODO: Uncomment this when we have a valid CSP policy

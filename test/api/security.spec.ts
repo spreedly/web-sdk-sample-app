@@ -134,7 +134,7 @@ test.describe('Offsite routes refuse a redirect_url off this app', () => {
   });
 
   test('a look-alike host is refused', async ({ request, baseURL }) => {
-    const host = new URL(baseURL).host;
+    const host = new URL(baseURL ?? '').host;
     const response = await request.post('/api/v1/offsite-purchase', {
       data: {
         payment_method_token: 'abc',

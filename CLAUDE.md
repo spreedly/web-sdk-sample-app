@@ -17,7 +17,7 @@ Do not reintroduce `POST /api/v1/payment_methods` as a forwarder to
   and answer 400 before calling Core.
 - **Return URLs** (`src/returnUrls.ts`): `callback_url` is always set by the server
   (`PUBLIC_APP_ORIGIN` + `/api/v1/offsite-callback`). A caller's `redirect_url` must be on one
-  of the app's origins (the Heroku app, `PUBLIC_APP_ORIGIN`, `CORS_ALLOWED_ORIGINS`), or the route
+  of the app's origins (`PUBLIC_APP_ORIGIN`, `FRONTEND_ORIGINS`, `CORS_ALLOWED_ORIGINS`), or the route
   answers 400. Purchase bodies are built from named fields; never forward `req.body`.
 - **Saved cards live in the visitor's browser**, not on the server. `retainPaymentMethod` in
   `shared/utils.js` retains through the server, then stores the card's display fields in
@@ -43,7 +43,7 @@ Do not reintroduce `POST /api/v1/payment_methods` as a forwarder to
 
 ## Architecture
 
-- **Server**: `src/server.ts` → `src/app.ts` (morgan → https redirect + HSTS → cors → useragent → Swagger UI
+- **Server**: `src/server.ts` → `src/app.ts` (morgan → `GET /healthz` → edge guard → https redirect + HSTS → cors → useragent → Swagger UI
   at `/api/v1/docs` → static → json → `/api/v1` router → errorHandler). Port from
   `PORT` (default 3000). `src/config.ts` reads env; `src/routes.ts` +
   `src/controllers/{auth,payments}.ts` hold all routes.
@@ -65,12 +65,18 @@ Do not reintroduce `POST /api/v1/payment_methods` as a forwarder to
   SDK build.
 - **Backend upstream defaults to PRODUCTION** (`SPREEDLY_URL` →
   `https://core.spreedly.com`), matching the production SDK bundle.
-- **The frontend calls Heroku even when running locally**: `API_BASE_URL` in
-  `shared/utils.js:1` is the hardcoded Heroku URL, and every flow (ACH included —
-  `createAchPurchase` uses it) hits Heroku even from a local page. `LOCAL_API_URL` is
-  exported but no longer used. More
-  hardcoded Heroku URLs in `offsite-payments/{braintree,stripe-apm}/`, `ebanx.js`,
-  and `transparent_redirect_complete.html`.
+- **No hardcoded app URL (HC-2088).** `PUBLIC_APP_ORIGIN` (required, https) is the app's public
+  origin; config throws at startup without it. Pages call `${window.location.origin}/api/v1`, or
+  `localhost:3000` from a localhost page, and build return URLs with `getRedirectOrigin()` in
+  `shared/utils.js`. `FRONTEND_ORIGINS` defaults to `PUBLIC_APP_ORIGIN`.
+- **Edge guard (HC-2089)** (`src/middlewares/edgeGuardMiddleware.ts`): the app sits behind Fastly,
+  which adds a shared secret header to every request. With the secret, a request goes through;
+  without it, the herokuapp host is redirected (301/308) to `PUBLIC_APP_ORIGIN` and any other host
+  gets an empty 403. `GET /healthz` is mounted before the guard. Off until `FASTLY_SHARED_SECRET`
+  is set; then `FASTLY_SECRET_HEADER` and `HEROKU_APP_HOST` are required too, the secret must be
+  32+ chars, and `PUBLIC_APP_ORIGIN` must not be the herokuapp host (config throws otherwise).
+  Never log the header, and never put the secret in Playwright's `extraHTTPHeaders`: the browser
+  would send it to the SDK and third-party hosts.
 - **Env vars: config reads ONLY the `_NEW`-suffixed names** (`PRIVATE_KEY_NEW`,
   `CERTIFICATE_TOKEN_NEW`, `SPREEDLY_ENVIRONMENT_KEY_NEW`, `SPREEDLY_ACCESS_SECRET_NEW`,
   `SPREEDLY_GATEWAY_TOKEN_NEW`, `SPREEDLY_SCA_PROVIDER_KEY_NEW`,
@@ -87,9 +93,9 @@ Do not reintroduce `POST /api/v1/payment_methods` as a forwarder to
   `_KEY` (PEM, line breaks may be `\n`) and `APPLE_PAY_DOMAIN_ASSOCIATION` (Apple's verification
   file, served at `/.well-known/apple-developer-merchantid-domain-association`). Without them
   `POST /api/v1/apple-pay/validate` answers `503 not_configured` and the file route 404s.
-  Optional overrides, defaulting to the Heroku app in `src/config.ts`: `APPLE_PAY_MERCHANT_ID`,
+  Optional overrides in `src/config.ts`: `APPLE_PAY_MERCHANT_ID`,
   `APPLE_PAY_DISPLAY_NAME`, `APPLE_PAY_DOMAIN` (sent as `initiativeContext`, must be registered with
-  Apple), `APPLE_PAY_ENVIRONMENT` (default `sandbox`; set `production` for Apple's production
+  Apple; defaults to the `PUBLIC_APP_ORIGIN` hostname), `APPLE_PAY_ENVIRONMENT` (default `sandbox`; set `production` for Apple's production
   validation host). The test
   pages: `apple-pay-test/` (plain Apple Pay JS, no SDK) and `apple-pay-local-sdk/` (loads the SDK
   from `localhost:5000` / `:5173`, so an unreleased SDK build can run on the registered Heroku
@@ -120,8 +126,9 @@ sends it to Spreedly as every offsite `callback_url`).
 - Playwright, specs in `test/ui/testCases/` (8 files: token-generation, 3ds-flow,
   3ds-gateway-specific, offsite-payments, validations, allow-blank-date/-name/-expired).
   Page objects in `test/ui/pages/`, selectors/test data in `test/ui/util/test-constants.ts`.
-- **`npm run test:e2e` targets the HEROKU deployment** (hardcoded baseURL in
-  `playwright.config.js`) — it does NOT test local changes. Local: start the server,
+- **`npm run test:e2e` targets the deployment at `PUBLIC_APP_ORIGIN`** (baseURL in
+  `playwright.config.js`, read from `.env`) — it does NOT test local changes.
+  `test/api/edge-guard.spec.ts` starts its own app on a random port and needs no server. Local: start the server,
   then `npm run test:e2e:local` (localhost:3000). No Playwright `webServer` config.
 - **CI runs e2e only on a nightly cron (06:00 UTC)** against Heroku; the PR/push
   triggers in `.github/workflows/test_e2e.yml` are commented out. junit results go to
