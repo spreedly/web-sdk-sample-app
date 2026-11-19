@@ -133,12 +133,13 @@ test.describe('Offsite routes refuse a redirect_url off this app', () => {
     expect(response.status()).toBe(400);
   });
 
-  test('a look-alike host is refused', async ({ request }) => {
+  test('a look-alike host is refused', async ({ request, baseURL }) => {
+    const host = new URL(baseURL).host;
     const response = await request.post('/api/v1/offsite-purchase', {
       data: {
         payment_method_token: 'abc',
         amount: 100,
-        redirect_url: 'https://checkout-web-sample-app-049a3c617015.herokuapp.com.attacker.example/',
+        redirect_url: `https://${host}.attacker.example/`,
       },
     });
     expect(response.status()).toBe(400);

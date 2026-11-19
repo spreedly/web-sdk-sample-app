@@ -1,10 +1,12 @@
+require('dotenv').config();
+
 // This is a sample config for what users might be running locally
 const config = {
   testDir: './test',
   testMatch: '**/*.spec.ts',
   retries: 1, // retry once on failure (2 total attempts)
   use: {
-    baseURL: 'https://checkout-web-sample-app-049a3c617015.herokuapp.com',
+    baseURL: process.env.PUBLIC_APP_ORIGIN,
     trace: 'on-first-retry',
   },
 

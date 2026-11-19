@@ -4,30 +4,58 @@ dotenv.config();
 
 const PRODUCTION_SDK_BASE_URL = 'https://core.spreedly.com';
 
-const HEROKU_APP_ORIGIN = 'https://checkout-web-sample-app-049a3c617015.herokuapp.com';
-// const LOCAL_APP_ORIGIN = 'http://localhost:5000';
-// const LOCAL_React_APP_ORIGIN = 'http://localhost:5173';
-
-// Callers are this app's own pages. The SDK hosts never call it.
-const TRUSTED_FRONTEND_ORIGINS = [HEROKU_APP_ORIGIN];
-
 const SDK_HOSTS = new Set(['core.spreedly.com', 'core-test.spreedly.com']);
 
 export const isSdkHost = (hostname: string): boolean => SDK_HOSTS.has(hostname);
 
-const resolveCorsAllowedOrigins = (): ReadonlySet<string> => {
-  const allowed = new Set<string>(TRUSTED_FRONTEND_ORIGINS);
-  const raw = process.env.CORS_ALLOWED_ORIGINS || '';
+const resolvePublicAppOrigin = (): string => {
+  const raw = process.env.PUBLIC_APP_ORIGIN;
+  if (!raw) throw new Error('PUBLIC_APP_ORIGIN is required');
+  try {
+    const url = new URL(raw);
+    if (url.protocol === 'https:') return url.origin;
+  } catch {
+    // Fall through to the error below.
+  }
+  throw new Error('PUBLIC_APP_ORIGIN must be an https origin');
+};
+const publicAppOrigin = resolvePublicAppOrigin();
+
+const resolveOriginList = (raw: string, name: string): string[] => {
+  const origins: string[] = [];
   for (const entry of raw.split(',')) {
     const candidate = entry.trim();
     if (!candidate) continue;
+    let url: URL;
     try {
-      const url = new URL(candidate);
-      if (isSdkHost(url.hostname)) continue;
-      if (url.protocol !== 'http:' && url.protocol !== 'https:') continue;
-      allowed.add(url.origin);
+      url = new URL(candidate);
     } catch {
-      console.warn('Ignoring invalid CORS_ALLOWED_ORIGINS entry');
+      throw new Error(`${name} has an invalid origin`);
+    }
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+      throw new Error(`${name} origins must be http or https`);
+    }
+    if (isSdkHost(url.hostname)) throw new Error(`${name} must not include an SDK host`);
+    origins.push(url.origin);
+  }
+  if (origins.length === 0) throw new Error(`${name} is required`);
+  return origins;
+};
+
+const resolveFrontendOrigins = (): string[] => {
+  const raw = process.env.FRONTEND_ORIGINS;
+  if (!raw || !raw.trim()) return [publicAppOrigin];
+  return resolveOriginList(raw, 'FRONTEND_ORIGINS');
+};
+const frontendOrigins = resolveFrontendOrigins();
+
+
+const resolveCorsAllowedOrigins = (): ReadonlySet<string> => {
+  const allowed = new Set<string>(frontendOrigins);
+  const raw = process.env.CORS_ALLOWED_ORIGINS || '';
+  if (raw.trim()) {
+    for (const origin of resolveOriginList(raw, 'CORS_ALLOWED_ORIGINS')) {
+      allowed.add(origin);
     }
   }
   return allowed;
@@ -51,20 +79,7 @@ const resolveSdkBaseUrl = (): string => {
   return PRODUCTION_SDK_BASE_URL;
 };
 
-// The public https origin this deployment serves. The server builds callback URLs on it, because
-// Spreedly rejects localhost ones. A staging deployment sets PUBLIC_APP_ORIGIN to its own origin.
-const resolvePublicAppOrigin = (): string => {
-  const raw = process.env.PUBLIC_APP_ORIGIN;
-  if (!raw) return HEROKU_APP_ORIGIN;
-  try {
-    const url = new URL(raw);
-    if (url.protocol === 'https:') return url.origin;
-  } catch {
-    // Fall through to the Heroku origin.
-  }
-  console.warn('PUBLIC_APP_ORIGIN must be an https origin; using the Heroku app origin');
-  return HEROKU_APP_ORIGIN;
-};
+
 
 interface Config {
   port: number;
@@ -114,7 +129,6 @@ interface Config {
 }
 
 const corsAllowedOrigins = resolveCorsAllowedOrigins();
-const publicAppOrigin = resolvePublicAppOrigin();
 
 const config: Config = {
   port: Number(process.env.PORT) || 3000,
@@ -160,9 +174,7 @@ const config: Config = {
     process.env.APPLE_PAY_MERCHANT_ID || 'merchant.com.spreedly.example',
   applePayDisplayName:
     process.env.APPLE_PAY_DISPLAY_NAME || 'Spreedly Sample App',
-  applePayDomain:
-    process.env.APPLE_PAY_DOMAIN ||
-    'checkout-web-sample-app-049a3c617015.herokuapp.com',
+  applePayDomain: process.env.APPLE_PAY_DOMAIN || new URL(publicAppOrigin).hostname,
   // Sandbox unless production is asked for by name.
   applePayEnvironment:
     process.env.APPLE_PAY_ENVIRONMENT === 'production' ? 'production' : 'sandbox',

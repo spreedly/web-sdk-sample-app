@@ -4,6 +4,11 @@ const LOCAL_API_URL = 'http://localhost:3000/api/v1';
 const API_BASE_URL =
   window.location.hostname === 'localhost' ? LOCAL_API_URL : `${window.location.origin}/api/v1`;
 
+function getRedirectOrigin() {
+  if (window.location.hostname === 'localhost') return '';
+  return window.location.origin;
+}
+
 // Production CDN origin. The server rewrites this line from the SDK_BASE_URL env var
 // before the browser receives this file. Do not rename it; app.ts matches this line.
 const SDK_SCRIPT_ORIGIN = 'https://core.spreedly.com';
@@ -378,6 +383,7 @@ window.SpreedlyUtils = {
   // Config
   API_BASE_URL,
   LOCAL_API_URL,
+  getRedirectOrigin,
 
   // SDK helpers
   getSDKType,
