@@ -379,6 +379,23 @@ function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, c => HTML_ESCAPE_MAP[c]);
 }
 
+function showTestCardsBanner() {
+  if (document.querySelector('.test-cards-banner')) return;
+  const banner = document.createElement('div');
+  banner.className = 'test-cards-banner';
+  banner.setAttribute('role', 'note');
+  const label = document.createElement('strong');
+  label.textContent = 'Test cards only.';
+  banner.append(label, ' Do not enter a real card number on this page.');
+  document.body.prepend(banner);
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', showTestCardsBanner);
+} else {
+  showTestCardsBanner();
+}
+
 window.SpreedlyUtils = {
   // Config
   API_BASE_URL,

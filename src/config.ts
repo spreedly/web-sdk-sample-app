@@ -67,12 +67,24 @@ export interface EdgeGuardConfig {
   herokuAppHost: string;
 }
 
-// The guard is on once FASTLY_SHARED_SECRET is set. Until then every request is let through.
+// The guard fails closed: the app won't start without the three Fastly vars. Off Heroku,
+// EDGE_GUARD_DISABLED=true turns it off for local runs. On Heroku (DYNO is set) it can't be turned off.
 const resolveEdgeGuard = (): EdgeGuardConfig | null => {
   const secret = process.env.FASTLY_SHARED_SECRET || '';
   const headerName = (process.env.FASTLY_SECRET_HEADER || '').trim().toLowerCase();
   const herokuAppHost = (process.env.HEROKU_APP_HOST || '').trim().toLowerCase();
-  if (!secret && !headerName && !herokuAppHost) return null;
+  if (!secret && !headerName && !herokuAppHost) {
+    if (process.env.DYNO) {
+      throw new Error(
+        'FASTLY_SHARED_SECRET, FASTLY_SECRET_HEADER and HEROKU_APP_HOST are required on Heroku'
+      );
+    }
+    if (process.env.EDGE_GUARD_DISABLED === 'true') return null;
+    throw new Error(
+      'FASTLY_SHARED_SECRET, FASTLY_SECRET_HEADER and HEROKU_APP_HOST are required; ' +
+        'set EDGE_GUARD_DISABLED=true to run locally without them'
+    );
+  }
   if (!secret || !headerName || !herokuAppHost) {
     throw new Error(
       'FASTLY_SHARED_SECRET, FASTLY_SECRET_HEADER and HEROKU_APP_HOST must be set together'

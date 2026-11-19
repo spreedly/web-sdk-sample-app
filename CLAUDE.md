@@ -72,9 +72,10 @@ Do not reintroduce `POST /api/v1/payment_methods` as a forwarder to
 - **Edge guard (HC-2089)** (`src/middlewares/edgeGuardMiddleware.ts`): the app sits behind Fastly,
   which adds a shared secret header to every request. With the secret, a request goes through;
   without it, the herokuapp host is redirected (301/308) to `PUBLIC_APP_ORIGIN` and any other host
-  gets an empty 403. `GET /healthz` is mounted before the guard. Off until `FASTLY_SHARED_SECRET`
-  is set; then `FASTLY_SECRET_HEADER` and `HEROKU_APP_HOST` are required too, the secret must be
-  32+ chars, and `PUBLIC_APP_ORIGIN` must not be the herokuapp host (config throws otherwise).
+  gets an empty 403. `GET /healthz` is mounted before the guard. Fails closed: config throws
+  unless `FASTLY_SHARED_SECRET`, `FASTLY_SECRET_HEADER` and `HEROKU_APP_HOST` are all set. Off
+  Heroku, `EDGE_GUARD_DISABLED=true` turns the guard off for local runs; on Heroku (`DYNO` is set)
+  it can't be turned off. The secret must be 32+ chars, and `PUBLIC_APP_ORIGIN` must not be the herokuapp host (config throws otherwise).
   Never log the header, and never put the secret in Playwright's `extraHTTPHeaders`: the browser
   would send it to the SDK and third-party hosts.
 - **Env vars: config reads ONLY the `_NEW`-suffixed names** (`PRIVATE_KEY_NEW`,
