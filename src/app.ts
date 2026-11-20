@@ -12,6 +12,7 @@ import { serveApplePayDomainAssociation } from './controllers/apple-pay';
 import { corsMiddleware } from './middlewares/corsMiddleware';
 import { httpsMiddleware } from './middlewares/httpsMiddleware';
 import { createEdgeGuard } from './middlewares/edgeGuardMiddleware';
+import { createBasicAuth } from './middlewares/basicAuthMiddleware';
 
 // utils.js ships with the production SDK origin. This rewrites that one line from
 // SDK_BASE_URL so each Heroku app can serve a different host without a code change.
@@ -50,6 +51,11 @@ if (config.edgeGuard) {
   app.use(createEdgeGuard(config.edgeGuard, config.publicAppOrigin));
 }
 app.use(httpsMiddleware);
+// The staging app's login. Off unless BASIC_AUTH_USER and BASIC_AUTH_PASSWORD are set. After the
+// https redirect, so the browser never sends the password over plain http.
+if (config.basicAuth) {
+  app.use(createBasicAuth(config.basicAuth));
+}
 app.use(corsMiddleware);
 // TODO: Uncomment this when we have a valid CSP policy
 // app.use(cspMiddleware);

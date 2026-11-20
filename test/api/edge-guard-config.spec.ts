@@ -27,12 +27,14 @@ test.afterAll(() => {
   rmSync(cwd, { recursive: true, force: true });
 });
 
-// Returns the guard's on/off state, or the startup error.
+// Returns whether the edge guard and the login are on, or the startup error.
 const loadConfig = (env: Record<string, string>) => {
   const program = `
     try {
       const config = require(${JSON.stringify(CONFIG)}).default;
-      console.log(JSON.stringify({ guard: config.edgeGuard !== null }));
+      console.log(
+        JSON.stringify({ guard: config.edgeGuard !== null, basicAuth: config.basicAuth !== null })
+      );
     } catch (error) {
       console.log(JSON.stringify({ error: error.message }));
     }`;
@@ -74,20 +76,55 @@ test.describe('The edge guard fails closed', () => {
   });
 
   test('off Heroku with EDGE_GUARD_DISABLED=true, the app starts with the guard off', () => {
-    expect(loadConfig({ EDGE_GUARD_DISABLED: 'true' })).toEqual({ guard: false });
+    expect(loadConfig({ EDGE_GUARD_DISABLED: 'true' })).toMatchObject({ guard: false });
   });
 
   test('on Heroku with all three Fastly vars, the guard is on', () => {
-    expect(loadConfig({ DYNO: 'web.1', ...FASTLY_ENV })).toEqual({ guard: true });
+    expect(loadConfig({ DYNO: 'web.1', ...FASTLY_ENV })).toMatchObject({ guard: true });
   });
 
   test('with all three Fastly vars, EDGE_GUARD_DISABLED does not turn the guard off', () => {
-    expect(loadConfig({ EDGE_GUARD_DISABLED: 'true', ...FASTLY_ENV })).toEqual({ guard: true });
+    expect(loadConfig({ EDGE_GUARD_DISABLED: 'true', ...FASTLY_ENV })).toMatchObject({ guard: true });
   });
 
   test('only some of the Fastly vars still fails', () => {
     expect(
       loadConfig({ DYNO: 'web.1', FASTLY_SHARED_SECRET: FASTLY_ENV.FASTLY_SHARED_SECRET }).error
     ).toMatch(/must be set together/);
+  });
+});
+
+test.describe('The staging login (Basic Auth)', () => {
+  const LOCAL = { EDGE_GUARD_DISABLED: 'true' };
+  const PASSWORD = 'staging-login-test-password';
+
+  test('is off when neither var is set', () => {
+    expect(loadConfig(LOCAL)).toEqual({ guard: false, basicAuth: false });
+  });
+
+  test('is on when both vars are set', () => {
+    expect(
+      loadConfig({ ...LOCAL, BASIC_AUTH_USER: 'demo', BASIC_AUTH_PASSWORD: PASSWORD })
+    ).toEqual({ guard: false, basicAuth: true });
+  });
+
+  test('only the user fails', () => {
+    expect(loadConfig({ ...LOCAL, BASIC_AUTH_USER: 'demo' }).error).toMatch(/set together/);
+  });
+
+  test('only the password fails', () => {
+    expect(loadConfig({ ...LOCAL, BASIC_AUTH_PASSWORD: PASSWORD }).error).toMatch(/set together/);
+  });
+
+  test('a password under 16 characters fails', () => {
+    expect(
+      loadConfig({ ...LOCAL, BASIC_AUTH_USER: 'demo', BASIC_AUTH_PASSWORD: 'short' }).error
+    ).toMatch(/too short/);
+  });
+
+  test('a user with a colon fails', () => {
+    expect(
+      loadConfig({ ...LOCAL, BASIC_AUTH_USER: 'de:mo', BASIC_AUTH_PASSWORD: PASSWORD }).error
+    ).toMatch(/colon/);
   });
 });

@@ -101,6 +101,26 @@ const resolveEdgeGuard = (): EdgeGuardConfig | null => {
   return { secret, headerName, herokuAppHost };
 };
 
+export interface BasicAuthConfig {
+  user: string;
+  password: string;
+}
+
+// A browser login for the staging app only: on once BASIC_AUTH_USER and BASIC_AUTH_PASSWORD are set.
+// Never set them on the public app.
+const resolveBasicAuth = (): BasicAuthConfig | null => {
+  const user = process.env.BASIC_AUTH_USER || '';
+  const password = process.env.BASIC_AUTH_PASSWORD || '';
+  if (!user && !password) return null;
+  if (!user || !password) {
+    throw new Error('BASIC_AUTH_USER and BASIC_AUTH_PASSWORD must be set together');
+  }
+  // Basic Auth splits user and password at the first colon.
+  if (user.includes(':')) throw new Error('BASIC_AUTH_USER must not contain a colon');
+  if (password.length < 8) throw new Error('BASIC_AUTH_PASSWORD is too short');
+  return { user, password };
+};
+
 const resolveSdkBaseUrl = (): string => {
   const raw = process.env.SDK_BASE_URL;
   if (!raw) return PRODUCTION_SDK_BASE_URL;
@@ -131,6 +151,7 @@ interface Config {
   // Origins a redirect_url may point at: this app's own pages.
   appOrigins: ReadonlySet<string>;
   edgeGuard: EdgeGuardConfig | null;
+  basicAuth: BasicAuthConfig | null;
   privateKey: string;
   certificateToken: string;
   spreedlyEnvironmentKey: string;
@@ -180,6 +201,7 @@ const config: Config = {
   publicAppOrigin,
   appOrigins: new Set([...corsAllowedOrigins, publicAppOrigin]),
   edgeGuard: resolveEdgeGuard(),
+  basicAuth: resolveBasicAuth(),
   privateKey: process.env.PRIVATE_KEY_NEW || '',
   certificateToken: process.env.CERTIFICATE_TOKEN_NEW || '',
   spreedlyEnvironmentKey: process.env.SPREEDLY_ENVIRONMENT_KEY_NEW || '',
