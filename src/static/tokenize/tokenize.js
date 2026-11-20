@@ -812,6 +812,7 @@ window.openExpressCheckoutForm = function () {
     submitParams: {
       metadata: {
         source: 'tokenize-flow-demo',
+        ...SpreedlyUtils.ownerMetadata(),
         timestamp: new Date().toISOString(),
       },
       allow_blank_date: config.allowBlankDate,
@@ -968,6 +969,7 @@ function handleFormSubmit(e) {
   sdk.submit(formData, {
     metadata: {
       source: 'tokenize-flow-demo',
+      ...SpreedlyUtils.ownerMetadata(),
       timestamp: new Date().toISOString(),
     },
     allow_blank_date: config.allowBlankDate,

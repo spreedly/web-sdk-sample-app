@@ -1120,6 +1120,7 @@ window.openHostedFieldsForm = function () {
         {
           metadata: {
             source: 'tokenize-catalogue-flow-demo',
+            ...SpreedlyUtils.ownerMetadata(),
             timestamp: new Date().toISOString(),
             hostedSubmitButton: true,
           },
@@ -1255,6 +1256,7 @@ window.openExpressCheckoutForm = function () {
     submitParams: {
       metadata: {
         source: 'tokenize-catalogue-flow-demo',
+        ...SpreedlyUtils.ownerMetadata(),
         timestamp: new Date().toISOString(),
       },
       allow_blank_date: config.allowBlankDate,
@@ -1325,6 +1327,7 @@ function handleFormSubmit(e) {
     {
       metadata: {
         source: 'tokenize-catalogue-flow-demo',
+        ...SpreedlyUtils.ownerMetadata(),
         timestamp: new Date().toISOString(),
       },
       allow_blank_date: config.allowBlankDate,

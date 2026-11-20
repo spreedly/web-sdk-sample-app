@@ -1,5 +1,17 @@
-const API_BASE_URL = 'https://checkout-web-sample-app-049a3c617015.herokuapp.com/api/v1';
 const LOCAL_API_URL = 'http://localhost:3000/api/v1';
+
+// Each Heroku app calls its own API. Local pages call the sample app on localhost.
+const API_BASE_URL =
+  window.location.hostname === 'localhost' ? LOCAL_API_URL : `${window.location.origin}/api/v1`;
+
+function getRedirectOrigin() {
+  if (window.location.hostname === 'localhost') return '';
+  return window.location.origin;
+}
+
+// Production CDN origin. The server rewrites this line from the SDK_BASE_URL env var
+// before the browser receives this file. Do not rename it; app.ts matches this line.
+const SDK_SCRIPT_ORIGIN = 'https://core.spreedly.com';
 
 // SDK URL Helpers
 function getSDKType() {
@@ -7,20 +19,19 @@ function getSDKType() {
   return urlParams.get('sdk') || 'hosted-fields';
 }
 
-function getSDKScriptUrl() {
-  const sdkType = getSDKType();
-  //uncomment this to use local sdk
-  // if (window.location.hostname === 'localhost') {
-  //   if (sdkType === 'express-checkout') {
-  //     return 'http://localhost:5173/express-checkout.js';
-  //   }
-  //   return 'http://localhost:5000/index.js';
-  // }
+function getSDKScriptUrl(sdkType = getSDKType()) {
+  // A page opened on localhost loads the SDK dev servers. Deployed pages load the CDN.
+  if (window.location.hostname === 'localhost') {
+    if (sdkType === 'express-checkout') {
+      return 'http://localhost:5173/express-checkout.js';
+    }
+    return 'http://localhost:5000/index.js';
+  }
 
   if (sdkType === 'express-checkout') {
-    return 'https://core-test.spreedly.com/checkout/elements/rc/express-checkout.js';
+    return `${SDK_SCRIPT_ORIGIN}/checkout/elements/rc/express-checkout.js`;
   }
-  return 'https://core-test.spreedly.com/checkout/sdk/rc/index.js';
+  return `${SDK_SCRIPT_ORIGIN}/checkout/sdk/rc/index.js`;
 }
 
 function getSDKDisplayName() {
@@ -35,7 +46,7 @@ function getDisplayMode() {
 
 async function fetchAuthParams() {
   try {
-    const response = await axios.get(`${API_BASE_URL}/auth/params`);
+    const [response] = await Promise.all([axios.get(`${API_BASE_URL}/auth/params`), ownerTagReady]);
     const authParams = response.data;
     return authParams;
   } catch (error) {
@@ -45,22 +56,94 @@ async function fetchAuthParams() {
 }
 
 // Payment Methods
-async function fetchPaymentMethods() {
-  try {
-    const response = await axios.get(`${API_BASE_URL}/payment_methods`);
-    const paymentMethods = response.data?.payment_methods || [];
+// Saved cards live in this visitor's browser, never in a shared server list. Each visitor sees
+// only the cards they retained on this site. A real merchant would keep them on the customer's
+// account in their own database instead.
+const SAVED_CARDS_KEY = 'spreedlySampleApp.savedPaymentMethods';
+const MAX_SAVED_CARDS = 20;
 
-    // Filter to only credit cards
-    return paymentMethods.filter(pm => pm.payment_method_type === 'credit_card');
-  } catch (error) {
-    console.error('Error fetching payment methods:', error);
-    throw new Error('Failed to fetch saved payment methods');
+// Only the fields the saved-card lists display.
+const SAVED_CARD_FIELDS = [
+  'token',
+  'payment_method_type',
+  'storage_state',
+  'card_type',
+  'first_six_digits',
+  'last_four_digits',
+  'month',
+  'year',
+  'first_name',
+  'last_name',
+  'full_name',
+  'created_at',
+];
+
+function readSavedPaymentMethods() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SAVED_CARDS_KEY) || '[]');
+    return Array.isArray(saved) ? saved : [];
+  } catch {
+    return [];
   }
+}
+
+function rememberPaymentMethod(paymentMethod) {
+  if (!paymentMethod?.token) return;
+  const entry = {};
+  for (const field of SAVED_CARD_FIELDS) {
+    if (paymentMethod[field] !== undefined) entry[field] = paymentMethod[field];
+  }
+  const others = readSavedPaymentMethods().filter(pm => pm.token !== entry.token);
+  try {
+    localStorage.setItem(SAVED_CARDS_KEY, JSON.stringify([entry, ...others].slice(0, MAX_SAVED_CARDS)));
+  } catch {
+    // Storage blocked (private window, full quota): the card is retained but not listed.
+  }
+}
+
+// Retain only works for the browser that created the card. Each tab keeps a random secret, sends
+// its SHA-256 as tokenization metadata, and sends the secret itself to the retain route. The
+// server reads the payment method's metadata from Core and retains only on a match.
+const OWNER_SECRET_KEY = 'spreedlySampleApp.ownerSecret';
+const OWNER_METADATA_KEY = 'sample_app_owner';
+
+function readOwnerSecret() {
+  try {
+    const stored = sessionStorage.getItem(OWNER_SECRET_KEY);
+    if (stored) return stored;
+    const secret = crypto.randomUUID();
+    sessionStorage.setItem(OWNER_SECRET_KEY, secret);
+    return secret;
+  } catch {
+    // Storage blocked: the secret lasts until the page is reloaded.
+    return crypto.randomUUID();
+  }
+}
+
+const ownerSecret = readOwnerSecret();
+let ownerTag = '';
+const ownerTagReady = crypto.subtle
+  .digest('SHA-256', new TextEncoder().encode(ownerSecret))
+  .then(digest => {
+    ownerTag = Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, '0')).join('');
+  });
+
+// Spread into every tokenization's metadata. Ready once fetchAuthParams() has resolved.
+function ownerMetadata() {
+  return { [OWNER_METADATA_KEY]: ownerTag };
+}
+
+async function fetchPaymentMethods() {
+  // Newest first, credit cards only, as the server list used to return.
+  return readSavedPaymentMethods().filter(pm => pm.payment_method_type === 'credit_card');
 }
 
 async function retainPaymentMethod(paymentMethodToken) {
   try {
-    const response = await axios.put(`${API_BASE_URL}/payment_methods/${paymentMethodToken}/retain`);
+    const response = await axios.put(`${API_BASE_URL}/payment_methods/${paymentMethodToken}/retain`, {
+      owner_secret: ownerSecret,
+    });
+    rememberPaymentMethod(response.data?.transaction?.payment_method);
     return response.data;
   } catch (error) {
     console.error('Error retaining payment method:', error);
@@ -296,10 +379,28 @@ function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, c => HTML_ESCAPE_MAP[c]);
 }
 
+function showTestCardsBanner() {
+  if (document.querySelector('.test-cards-banner')) return;
+  const banner = document.createElement('div');
+  banner.className = 'test-cards-banner';
+  banner.setAttribute('role', 'note');
+  const label = document.createElement('strong');
+  label.textContent = 'Test cards only.';
+  banner.append(label, ' Do not enter a real card number on this page.');
+  document.body.prepend(banner);
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', showTestCardsBanner);
+} else {
+  showTestCardsBanner();
+}
+
 window.SpreedlyUtils = {
   // Config
   API_BASE_URL,
   LOCAL_API_URL,
+  getRedirectOrigin,
 
   // SDK helpers
   getSDKType,
@@ -313,6 +414,7 @@ window.SpreedlyUtils = {
 
   // Payment methods
   fetchPaymentMethods,
+  ownerMetadata,
 
   // API
   retainPaymentMethod,

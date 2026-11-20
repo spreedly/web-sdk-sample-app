@@ -1,10 +1,26 @@
+require('dotenv').config();
+
+const resolveHttpCredentials = () => {
+  const username = process.env.E2E_BASIC_AUTH_USER;
+  const password = process.env.E2E_BASIC_AUTH_PASSWORD;
+  if (!username && !password) return undefined;
+  if (!username || !password || !process.env.PUBLIC_APP_ORIGIN) {
+    throw new Error(
+      'E2E_BASIC_AUTH_USER, E2E_BASIC_AUTH_PASSWORD and PUBLIC_APP_ORIGIN must be set together'
+    );
+  }
+  return { username, password, origin: new URL(process.env.PUBLIC_APP_ORIGIN).origin };
+};
+const httpCredentials = resolveHttpCredentials();
+
 // This is a sample config for what users might be running locally
 const config = {
   testDir: './test',
   testMatch: '**/*.spec.ts',
   retries: 1, // retry once on failure (2 total attempts)
   use: {
-    baseURL: 'https://checkout-web-sample-app-049a3c617015.herokuapp.com',
+    baseURL: process.env.PUBLIC_APP_ORIGIN,
+    httpCredentials,
     trace: 'on-first-retry',
   },
 

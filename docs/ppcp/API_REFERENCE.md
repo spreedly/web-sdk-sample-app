@@ -43,8 +43,7 @@ bundle.
 <script src="https://core.spreedly.com/checkout/elements/{version}/express-checkout.js"></script>
 ```
 
-Replace `{version}` with your pinned SDK version. Staging is `core-test.spreedly.com` with the same
-paths.
+Replace `{version}` with your pinned SDK version.
 
 Both bundles expose the class as `window.SpreedlyPPCP` and both re-export the same 17 TypeScript
 types listed in [Types and unions](#types-and-unions). Load the one your checkout already uses.

@@ -260,7 +260,7 @@ metrics across SDK flows, with an events reference doc.
 
 - Separate deployment workflows per package
 - Path-filtered deployments (only changed packages deploy)
-- Staging branch support with staging CDN (`core-test.spreedly.com`)
+- Staging branch support with a staging CDN
 - Production deployment on push to main
 - Manual stable promotion via tags (`stable-hf`, `stable-ec`)
 - Automated GitHub Release creation with security artifacts
@@ -342,7 +342,7 @@ We follow [Semantic Versioning](https://semver.org/):
   lockstep and run `npm i` to sync the lockfile. Versions are never reused.
 2. Update `CHANGELOG.md` with the changes
 3. Open a PR targeting `main`; merging deploys the changed package(s) to
-  staging (`core-test.spreedly.com`, versioned + `rc` channels)
+  staging (versioned + `rc` channels)
 4. Verify on staging
 5. For production, push a `hosted-fields-vX.Y.Z` and/or `express-checkout-vX.Y.Z`
   tag — the tag version must exactly match `package.json`
@@ -353,11 +353,6 @@ We follow [Semantic Versioning](https://semver.org/):
 
 - Hosted Fields: `https://core.spreedly.com/checkout/sdk/{version}/index.js`
 - Express Checkout: `https://core.spreedly.com/checkout/elements/{version}/express-checkout.js`
-
-### Staging
-
-- Hosted Fields: `https://core-test.spreedly.com/checkout/sdk/{version}/index.js`
-- Express Checkout: `https://core-test.spreedly.com/checkout/elements/{version}/express-checkout.js`
 
 ## Change Categories
 

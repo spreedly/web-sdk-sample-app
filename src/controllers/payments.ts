@@ -1,21 +1,12 @@
 import axios, { AxiosError } from 'axios';
+import { createHash, timingSafeEqual } from 'crypto';
 import { Request, Response } from 'express';
 import { UserAgentAugmentedRequest } from 'express-useragent'
 import config from '../config';
+import { core, INVALID_TOKEN, isSpreedlyToken, sendCoreError } from '../coreClient';
+import { checkRedirectUrl, INVALID_REDIRECT_URL, serverCallbackUrl } from '../returnUrls';
 
-interface PaymentMethod {
-  first_name?: string;
-  last_name?: string;
-  full_name?: string;
-}
-
-const getAuthorizationHeader = () => {
-  if (!config.spreedlyEnvironmentKey || !config.spreedlyAccessSecret) {
-    throw new Error('SPREEDLY_ENVIRONMENT_KEY and SPREEDLY_ACCESS_SECRET environment variables are required');
-  }
-  const credentials = Buffer.from(`${config.spreedlyEnvironmentKey}:${config.spreedlyAccessSecret}`).toString('base64');
-  return `Basic ${credentials}`;
-};
+const OFFSITE_RETURN_PAGE = '/offsite-payments/handle_redirect.html';
 
 const getGatewayKey = (gateway: string = 'spreedly') => {
   switch (gateway) {
@@ -36,105 +27,56 @@ const getGatewayKey = (gateway: string = 'spreedly') => {
   }
 };
 
-export const createPaymentMethod = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const response = await axios.post(
-      `${config.spreedlyUrl}/v1/payment_methods/restricted.json`,
-      req.body,
-      {
-        headers: {
-          'spreedly-environment-key': req.headers['spreedly-environment-key'],
-        },
-      }
-    );
+// The page tags each payment method it creates with sha256(owner secret) as metadata, and sends
+// the secret to retain. Only the tab that created a payment method can retain it.
+const OWNER_METADATA_KEY = 'sample_app_owner';
+const OWNER_SECRET_PATTERN = /^[A-Za-z0-9-]{16,128}$/;
+const NOT_OWNER = { error: 'This payment method was not created in this session' };
 
-    res.json(response.data);
-  } catch (error) {
-    // Forward Spreedly's real status + body (e.g. a 422 with validation errors)
-    // instead of collapsing everything into a generic 500 — otherwise the actual
-    // tokenization failure reason is lost to the caller.
-    if (axios.isAxiosError(error) && error.response) {
-      res.status(error.response.status).json(error.response.data);
-    } else if (error instanceof Error) {
-      res.status(500).json({ error: error.message });
-    } else {
-      res.status(500).json({ error: 'An unknown error occurred' });
-    }
-  }
-};
-
-export const getPaymentMethods = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const response = await axios.get(
-      `${config.spreedlyUrl}/v1/payment_methods`,
-      {
-        params: {
-          order: 'desc',
-        },
-        headers: {
-          Authorization: getAuthorizationHeader(),
-        },
-      }
-    );
-
-    const paymentMethods: PaymentMethod[] = response.data.payment_methods;
-    res.json({ payment_methods: paymentMethods });
-  } catch (error) {
-    if (error instanceof AxiosError) {
-      res.status(500).json({ error: error.message });
-    } else {
-      res.status(500).json({ error: 'An unknown error occurred' });
-    }
-  }
+const ownsPaymentMethod = (secret: string, paymentMethod: unknown): boolean => {
+  const stored = (paymentMethod as { metadata?: Record<string, unknown> } | undefined)?.metadata?.[
+    OWNER_METADATA_KEY
+  ];
+  if (typeof stored !== 'string') return false;
+  const expected = createHash('sha256').update(secret).digest();
+  const actual = Buffer.from(stored, 'hex');
+  return actual.length === expected.length && timingSafeEqual(actual, expected);
 };
 
 export const retainPaymentMethod = async (req: Request, res: Response): Promise<void> => {
-  const token = req.params.paymentMethodToken || '';
-  // Only allow token to contain alphanumeric, underscore, or hyphen
-  if (!/^[a-zA-Z0-9_\-]+$/.test(token)) {
+  const token = req.params.paymentMethodToken;
+  if (!isSpreedlyToken(token)) {
     res.status(400).json({ error: 'Invalid payment method token format' });
     return;
   }
 
+  const secret = req.body?.owner_secret;
+  if (typeof secret !== 'string' || !OWNER_SECRET_PATTERN.test(secret)) {
+    res.status(403).json(NOT_OWNER);
+    return;
+  }
+
   try {
-    const response = await axios.put(
-      `${config.spreedlyUrl}/v1/payment_methods/${token}/retain`,
-      { data: true },
-      {
-        headers: {
-          Authorization: getAuthorizationHeader(),
-        },
-      },
-    );
-    res.json(response.data);
-  } catch (error) {
-    if (error instanceof AxiosError) {
-      res.status(500).json({ error: error.message });
-    } else {
-      res.status(500).json({ error: 'An unknown error occurred' });
+    const existing = await core.get(`/v1/payment_methods/${encodeURIComponent(token)}.json`);
+    if (!ownsPaymentMethod(secret, existing.data?.payment_method)) {
+      res.status(403).json(NOT_OWNER);
+      return;
     }
-  }
-};
-
-export const recachePaymentMethod = async (req: Request, res: Response): Promise<void> => {
-  const token = req.params.paymentMethodToken || '';
-  // Only allow token to contain alphanumeric, underscore, or hyphen
-  if (!/^[a-zA-Z0-9_\-]+$/.test(token)) {
-    res.status(400).json({ error: 'Invalid payment method token format' });
+  } catch (error) {
+    // An unknown token gets the same answer as someone else's, so this can't probe for tokens.
+    if (axios.isAxiosError(error) && error.response?.status === 404) {
+      res.status(403).json(NOT_OWNER);
+      return;
+    }
+    sendCoreError(error, res);
     return;
   }
 
   try {
-    const response = await axios.post(
-      `${config.spreedlyUrl}/v1/payment_methods/${token}/recache.json`,
-      req.body,
-      {
-        headers: {
-          'spreedly-environment-key': req.headers['spreedly-environment-key'],
-        },
-      }
+    const response = await core.put(
+      `/v1/payment_methods/${encodeURIComponent(token)}/retain`,
+      { data: true }
     );
-
     res.json(response.data);
   } catch (error) {
     if (error instanceof AxiosError) {
@@ -201,19 +143,13 @@ export const createPurchaseTransaction = async (req: UserAgentAugmentedRequest, 
   };
 
   try {
-    const response = await axios.post(
-      `${config.spreedlyUrl}/v1/gateways/${config.spreedlyGatewayToken}/purchase.json`,
-      requestBody,
-      {
-        headers: {
-          Authorization: getAuthorizationHeader(),
-        },
-      }
+    const response = await core.post(
+      `/v1/gateways/${config.spreedlyGatewayToken}/purchase.json`,
+      requestBody
     );
     res.json(response.data);
   } catch (error) {
-    const apiError = error as AxiosError;
-    res.status(apiError.response?.status || 500).json(apiError.response?.data);
+    sendCoreError(error, res);
   }
 };
 
@@ -245,18 +181,10 @@ export const createPurchaseWith3DS = async (req: Request, res: Response): Promis
     },
   };
   try {
-    const response = await axios.post(
-      `${config.spreedlyUrl}/v1/gateways/${gateway_key}/purchase.json`, body,
-      {
-        headers: {
-          Authorization: getAuthorizationHeader(),
-        },
-      }
-    );
+    const response = await core.post(`/v1/gateways/${gateway_key}/purchase.json`, body);
     res.json(response.data);
   } catch (error) {
-    const apiError = error as AxiosError;
-    res.status(apiError.response?.status || 500).json(apiError.response?.data);
+    sendCoreError(error, res);
   }
 };
 
@@ -282,38 +210,28 @@ export const createPurchaseWith3DSGatewaySpecific = async (req: Request, res: Re
   };
 
   try {
-    const response = await axios.post(
-      `${config.spreedlyUrl}/v1/gateways/${gateway_key}/purchase.json`, body,
-      {
-        headers: {
-          Authorization: getAuthorizationHeader(),
-        },
-      }
-    );
+    const response = await core.post(`/v1/gateways/${gateway_key}/purchase.json`, body);
     res.json(response.data);
   } catch (error) {
-    const apiError = error as AxiosError;
-    res.status(apiError.response?.status || 500).json(apiError.response?.data);
+    sendCoreError(error, res);
   }
 };
 
 // Complete a 3DS transaction
 export const completeTransaction = async (req: Request, res: Response): Promise<void> => {
-  const transactionToken = req.params.transactionToken || '';
+  const transactionToken = req.params.transactionToken;
+  if (!isSpreedlyToken(transactionToken)) {
+    res.status(400).json(INVALID_TOKEN);
+    return;
+  }
   try {
-    const response = await axios.post(
-      `${config.spreedlyUrl}/v1/transactions/${transactionToken}/complete.json`,
-      {},
-      {
-        headers: {
-          Authorization: getAuthorizationHeader(),
-        },
-      }
+    const response = await core.post(
+      `/v1/transactions/${encodeURIComponent(transactionToken)}/complete.json`,
+      {}
     );
     res.json(response.data);
   } catch (error) {
-    const apiError = error as AxiosError;
-    res.status(apiError.response?.status || 500).json(apiError.response?.data);
+    sendCoreError(error, res);
   }
 };
 
@@ -334,14 +252,7 @@ export const createSimplePurchase = async (req: Request, res: Response): Promise
   };
 
   try {
-    const response = await axios.post(
-      `${config.spreedlyUrl}/v1/gateways/${gateway_key}/purchase.json`, body,
-      {
-        headers: {
-          Authorization: getAuthorizationHeader(),
-        },
-      }
-    );
+    const response = await core.post(`/v1/gateways/${gateway_key}/purchase.json`, body);
 
     const transaction = response.data?.transaction;
     res.json({
@@ -349,8 +260,7 @@ export const createSimplePurchase = async (req: Request, res: Response): Promise
       transaction: transaction,
     });
   } catch (error) {
-    const apiError = error as AxiosError;
-    res.status(apiError.response?.status || 500).json(apiError.response?.data);
+    sendCoreError(error, res);
   }
 };
 
@@ -392,15 +302,7 @@ export const createStripeRadarPurchase = async (req: Request, res: Response): Pr
   }
 
   try {
-    const response = await axios.post(
-      `${config.spreedlyUrl}/v1/gateways/${gateway_key}/purchase.json`,
-      { transaction },
-      {
-        headers: {
-          Authorization: getAuthorizationHeader(),
-        },
-      }
-    );
+    const response = await core.post(`/v1/gateways/${gateway_key}/purchase.json`, { transaction });
 
     const tx = response.data?.transaction;
     res.json({
@@ -409,8 +311,7 @@ export const createStripeRadarPurchase = async (req: Request, res: Response): Pr
       transaction: tx,
     });
   } catch (error) {
-    const apiError = error as AxiosError;
-    res.status(apiError.response?.status || 500).json(apiError.response?.data);
+    sendCoreError(error, res);
   }
 };
 
@@ -418,30 +319,26 @@ export const createStripeRadarPurchase = async (req: Request, res: Response): Pr
 export const createOffsitePurchase = async (req: Request, res: Response): Promise<void> => {
   const gateway_key = getGatewayKey(req.body.gateway || 'spreedly');
 
-  const { payment_method_token, amount, currency_code = 'USD', redirect_url, callback_url, ...rest } = req.body;
+  const { payment_method_token, amount, currency_code = 'USD', redirect_url } = req.body;
+
+  const redirect = checkRedirectUrl(redirect_url, OFFSITE_RETURN_PAGE);
+  if (!redirect.ok) {
+    res.status(400).json(INVALID_REDIRECT_URL);
+    return;
+  }
 
   const body = {
     transaction: {
       payment_method_token,
       amount,
       currency_code,
-      redirect_url,
-      callback_url,
-      ...rest,
+      redirect_url: redirect.url,
+      callback_url: serverCallbackUrl(),
     },
   };
 
   try {
-    const response = await axios.post(
-      `${config.spreedlyUrl}/v1/gateways/${gateway_key}/purchase.json`,
-      body,
-      {
-        headers: {
-          Authorization: getAuthorizationHeader(),
-          'Content-Type': 'application/json',
-        },
-      }
-    );
+    const response = await core.post(`/v1/gateways/${gateway_key}/purchase.json`, body);
 
     const transaction = response.data?.transaction;
 
@@ -453,26 +350,21 @@ export const createOffsitePurchase = async (req: Request, res: Response): Promis
       state: transaction?.state,
     });
   } catch (error) {
-    const apiError = error as AxiosError;
-    res.status(apiError.response?.status || 500).json(apiError.response?.data);
+    sendCoreError(error, res);
   }
 };
 
 export const getTransaction = async (req: Request, res: Response): Promise<void> => {
-  const transactionToken = req.params.transactionToken || '';
+  const transactionToken = req.params.transactionToken;
+  if (!isSpreedlyToken(transactionToken)) {
+    res.status(400).json(INVALID_TOKEN);
+    return;
+  }
   try {
-    const response = await axios.get(
-      `${config.spreedlyUrl}/v1/transactions/${transactionToken}.json`,
-      {
-        headers: {
-          Authorization: getAuthorizationHeader(),
-        },
-      }
-    );
+    const response = await core.get(`/v1/transactions/${encodeURIComponent(transactionToken)}.json`);
     res.json(response.data);
   } catch (error) {
-    const apiError = error as AxiosError;
-    res.status(apiError.response?.status || 500).json(apiError.response?.data);
+    sendCoreError(error, res);
   }
 };
 
@@ -486,14 +378,22 @@ export const handleOffsiteCallback = async (req: Request, res: Response): Promis
   res.status(200).json({ received: true });
 };
 
+// Stripe APM types the demo offers. Anything else is dropped.
+const STRIPE_APM_TYPES = ['ideal', 'bancontact', 'eps', 'p24', 'sepa_debit'];
+
 export const createStripeAPMPurchase = async (req: Request, res: Response): Promise<void> => {
   const {
     amount = 1000,
     currency_code = 'EUR',
-    apm_types = ['ideal', 'bancontact', 'eps', 'p24', 'sepa_debit'],
+    apm_types = STRIPE_APM_TYPES,
     redirect_url,
-    callback_url
   } = req.body;
+
+  const redirect = checkRedirectUrl(redirect_url, OFFSITE_RETURN_PAGE);
+  if (!redirect.ok) {
+    res.status(400).json(INVALID_REDIRECT_URL);
+    return;
+  }
 
   const gateway_key = config.stripeGatewayToken;
 
@@ -501,50 +401,52 @@ export const createStripeAPMPurchase = async (req: Request, res: Response): Prom
     transaction: {
       amount,
       currency_code,
-      redirect_url,
-      callback_url,
+      redirect_url: redirect.url,
+      callback_url: serverCallbackUrl(),
       payment_method: {
         payment_method_type: 'stripe_apm',
-        apm_types,
+        apm_types: Array.isArray(apm_types)
+          ? apm_types.filter((type: unknown) => STRIPE_APM_TYPES.includes(type as string))
+          : STRIPE_APM_TYPES,
       },
     },
   };
 
   try {
-    const response = await axios.post(
-      `${config.spreedlyUrl}/v1/gateways/${gateway_key}/purchase.json`,
-      body,
-      {
-        headers: {
-          Authorization: getAuthorizationHeader(),
-          'Content-Type': 'application/json',
-        },
-      }
-    );
+    const response = await core.post(`/v1/gateways/${gateway_key}/purchase.json`, body);
     res.json(response.data);
   } catch (error) {
-    const apiError = error as AxiosError;
-    res.status(apiError.response?.status || 500).json(apiError.response?.data);
+    sendCoreError(error, res);
   }
 };
 
+// EBANX offsite purchase. The page sends { gateway, transaction: { ... } }; only the fields
+// below reach Spreedly.
 export const createPurchase = async (req: Request, res: Response): Promise<void> => {
   const gateway_key = getGatewayKey(req.body.gateway || 'spreedly');
+  const { payment_method_token, amount, currency_code, redirect_url } = req.body.transaction || {};
+
+  const redirect = checkRedirectUrl(redirect_url, OFFSITE_RETURN_PAGE);
+  if (!redirect.ok) {
+    res.status(400).json(INVALID_REDIRECT_URL);
+    return;
+  }
+
+  const body = {
+    transaction: {
+      payment_method_token,
+      amount,
+      currency_code,
+      redirect_url: redirect.url,
+      callback_url: serverCallbackUrl(),
+    },
+  };
+
   try {
-    const response = await axios.post(
-      `${config.spreedlyUrl}/v1/gateways/${gateway_key}/purchase.json`,
-      req.body,
-      {
-        headers: {
-          Authorization: getAuthorizationHeader(),
-          'Content-Type': 'application/json',
-        },
-      }
-    );
+    const response = await core.post(`/v1/gateways/${gateway_key}/purchase.json`, body);
     res.json(response.data);
   } catch (error) {
-    const apiError = error as AxiosError;
-    res.status(apiError.response?.status || 500).json(apiError.response?.data);
+    sendCoreError(error, res);
   }
 }
 
@@ -553,16 +455,21 @@ export const createBraintreePurchase = async (req: Request, res: Response): Prom
     amount = 1000,
     currency_code = 'USD',
     redirect_url,
-    callback_url,
   } = req.body;
+
+  const redirect = checkRedirectUrl(redirect_url, OFFSITE_RETURN_PAGE);
+  if (!redirect.ok) {
+    res.status(400).json(INVALID_REDIRECT_URL);
+    return;
+  }
 
   const gateway_key = config.braintreeGatewayToken;
   const body: Record<string, unknown> = {
     transaction: {
       amount,
       currency_code,
-      redirect_url,
-      callback_url,
+      redirect_url: redirect.url,
+      callback_url: serverCallbackUrl(),
       payment_method: {
         payment_method_type: 'paypal',
         offsite_sync: true,
@@ -576,21 +483,11 @@ export const createBraintreePurchase = async (req: Request, res: Response): Prom
   };
 
   try {
-    const response = await axios.post(
-      `${config.spreedlyUrl}/v1/gateways/${gateway_key}/purchase.json`,
-      body,
-      {
-        headers: {
-          Authorization: getAuthorizationHeader(),
-          'Content-Type': 'application/json',
-        },
-      }
-    );
+    const response = await core.post(`/v1/gateways/${gateway_key}/purchase.json`, body);
 
     res.json(response.data);
   } catch (error) {
-    const apiError = error as AxiosError;
-    res.status(apiError.response?.status || 500).json(apiError.response?.data);
+    sendCoreError(error, res);
   }
 };
 
@@ -616,16 +513,7 @@ export const createAchPurchase = async (req: Request, res: Response): Promise<vo
   };
 
   try {
-    const response = await axios.post(
-      `${config.spreedlyUrl}/v1/gateways/${gateway_key}/purchase.json`,
-      body,
-      {
-        headers: {
-          Authorization: getAuthorizationHeader(),
-          'Content-Type': 'application/json',
-        },
-      }
-    );
+    const response = await core.post(`/v1/gateways/${gateway_key}/purchase.json`, body);
 
     const transaction = response.data?.transaction;
     res.json({
@@ -633,14 +521,17 @@ export const createAchPurchase = async (req: Request, res: Response): Promise<vo
       transaction,
     });
   } catch (error) {
-    const apiError = error as AxiosError;
-    res.status(apiError.response?.status || 500).json(apiError.response?.data);
+    sendCoreError(error, res);
   }
 };
 
 // Confirm a Braintree/Stripe-apm transaction with the nonce from PayPal/Venmo
 export const confirmTransaction = async (req: Request, res: Response): Promise<void> => {
-  const transaction_token = req.params.transactionToken || '';
+  const transaction_token = req.params.transactionToken;
+  if (!isSpreedlyToken(transaction_token)) {
+    res.status(400).json(INVALID_TOKEN);
+    return;
+  }
   const { state, nonce, payment_method_type } = req.body;
 
   const body: Record<string, unknown> = {
@@ -652,21 +543,14 @@ export const confirmTransaction = async (req: Request, res: Response): Promise<v
   };
 
   try {
-    const response = await axios.post(
-      `${config.spreedlyUrl}/v1/transactions/${transaction_token}/confirm.json`,
-      body,
-      {
-        headers: {
-          Authorization: getAuthorizationHeader(),
-          'Content-Type': 'application/json',
-        },
-      }
+    const response = await core.post(
+      `/v1/transactions/${encodeURIComponent(transaction_token)}/confirm.json`,
+      body
     );
 
     res.json(response.data);
   } catch (error) {
-    const apiError = error as AxiosError;
-    res.status(apiError.response?.status || 500).json(apiError.response?.data);
+    sendCoreError(error, res);
   }
 };
 
@@ -753,16 +637,7 @@ export const createPazePaymentMethod = async (req: Request, res: Response): Prom
   }
 
   try {
-    const response = await axios.post(
-      `${config.spreedlyUrl}/v1/payment_methods.json`,
-      { payment_method: paymentMethod },
-      {
-        headers: {
-          Authorization: getAuthorizationHeader(),
-          'Content-Type': 'application/json',
-        },
-      }
-    );
+    const response = await core.post('/v1/payment_methods.json', { payment_method: paymentMethod });
 
     const paymentMethodToken = response.data?.transaction?.payment_method?.token;
     res.json({
@@ -772,7 +647,6 @@ export const createPazePaymentMethod = async (req: Request, res: Response): Prom
       transaction: response.data?.transaction,
     });
   } catch (error) {
-    const apiError = error as AxiosError;
-    res.status(apiError.response?.status || 500).json(apiError.response?.data);
+    sendCoreError(error, res);
   }
 };
