@@ -127,4 +127,47 @@ test.describe('The staging login (Basic Auth)', () => {
       loadConfig({ ...LOCAL, BASIC_AUTH_USER: 'de:mo', BASIC_AUTH_PASSWORD: PASSWORD }).error
     ).toMatch(/colon/);
   });
+
+  test('a 15-character password fails and a 16-character one starts', () => {
+    const login = (password: string) =>
+      loadConfig({ ...LOCAL, BASIC_AUTH_USER: 'demo', BASIC_AUTH_PASSWORD: password });
+    expect(login('x'.repeat(15)).error).toMatch(/too short/);
+    expect(login('x'.repeat(16))).toEqual({ guard: false, basicAuth: true });
+  });
+});
+
+test.describe('On Heroku, an app on core-test needs the staging login', () => {
+  const HEROKU = { DYNO: 'web.1', ...FASTLY_ENV };
+  const CORE_TEST = 'https://core-test.spreedly.com';
+  const LOGIN = { BASIC_AUTH_USER: 'demo', BASIC_AUTH_PASSWORD: 'staging-login-test-password' };
+
+  for (const name of ['SPREEDLY_URL', 'SDK_BASE_URL']) {
+    test(`${name} on core-test without the login does not start`, () => {
+      expect(loadConfig({ ...HEROKU, [name]: CORE_TEST }).error).toMatch(
+        /required on Heroku when SPREEDLY_URL or SDK_BASE_URL is core-test/
+      );
+    });
+  }
+
+  test('core-test with the login starts with the login on', () => {
+    expect(
+      loadConfig({ ...HEROKU, SPREEDLY_URL: CORE_TEST, SDK_BASE_URL: CORE_TEST, ...LOGIN })
+    ).toEqual({ guard: true, basicAuth: true });
+  });
+
+  test('production core without the login starts with the login off', () => {
+    expect(
+      loadConfig({
+        ...HEROKU,
+        SPREEDLY_URL: 'https://core.spreedly.com',
+        SDK_BASE_URL: 'https://core.spreedly.com',
+      })
+    ).toEqual({ guard: true, basicAuth: false });
+  });
+
+  test('off Heroku, core-test without the login still starts', () => {
+    expect(
+      loadConfig({ EDGE_GUARD_DISABLED: 'true', SPREEDLY_URL: CORE_TEST, SDK_BASE_URL: CORE_TEST })
+    ).toEqual({ guard: false, basicAuth: false });
+  });
 });

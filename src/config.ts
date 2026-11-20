@@ -106,18 +106,43 @@ export interface BasicAuthConfig {
   password: string;
 }
 
+const CORE_TEST_HOST = 'core-test.spreedly.com';
+
+const hostnameOf = (raw: string | undefined): string | undefined => {
+  if (!raw) return undefined;
+  try {
+    return new URL(raw).hostname.toLowerCase();
+  } catch {
+    return undefined;
+  }
+};
+
+// The server calls core-test, or the pages load SDK builds from core-test.
+const usesCoreTest = (): boolean =>
+  hostnameOf(process.env.SPREEDLY_URL) === CORE_TEST_HOST ||
+  hostnameOf(process.env.SDK_BASE_URL) === CORE_TEST_HOST;
+
 // A browser login for the staging app only: on once BASIC_AUTH_USER and BASIC_AUTH_PASSWORD are set.
-// Never set them on the public app.
+// Never set them on the public app. On Heroku, an app that uses core-test won't start without them,
+// so the staging app can't run without its login, and the public app can't run on core-test.
 const resolveBasicAuth = (): BasicAuthConfig | null => {
   const user = process.env.BASIC_AUTH_USER || '';
   const password = process.env.BASIC_AUTH_PASSWORD || '';
-  if (!user && !password) return null;
+  if (!user && !password) {
+    if (process.env.DYNO && usesCoreTest()) {
+      throw new Error(
+        'BASIC_AUTH_USER and BASIC_AUTH_PASSWORD are required on Heroku when SPREEDLY_URL or SDK_BASE_URL is core-test'
+      );
+    }
+    return null;
+  }
   if (!user || !password) {
     throw new Error('BASIC_AUTH_USER and BASIC_AUTH_PASSWORD must be set together');
   }
   // Basic Auth splits user and password at the first colon.
   if (user.includes(':')) throw new Error('BASIC_AUTH_USER must not contain a colon');
-  if (password.length < 8) throw new Error('BASIC_AUTH_PASSWORD is too short');
+  // Nothing limits login attempts, so the password has to be long.
+  if (password.length < 16) throw new Error('BASIC_AUTH_PASSWORD is too short');
   return { user, password };
 };
 

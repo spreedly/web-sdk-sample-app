@@ -78,6 +78,9 @@ Do not reintroduce `POST /api/v1/payment_methods` as a forwarder to
   it can't be turned off. The secret must be 32+ chars, and `PUBLIC_APP_ORIGIN` must not be the herokuapp host (config throws otherwise).
   Never log the header, and never put the secret in Playwright's `extraHTTPHeaders`: the browser
   would send it to the SDK and third-party hosts.
+- **Staging login (HC-2083)** (`src/middlewares/basicAuthMiddleware.ts`): on when `BASIC_AUTH_USER` and
+  `BASIC_AUTH_PASSWORD` are set (password 16+ chars). On Heroku, config throws if `SPREEDLY_URL` or
+  `SDK_BASE_URL` is core-test and the login vars are missing. Never set them on the public app.
 - **Env vars: config reads ONLY the `_NEW`-suffixed names** (`PRIVATE_KEY_NEW`,
   `CERTIFICATE_TOKEN_NEW`, `SPREEDLY_ENVIRONMENT_KEY_NEW`, `SPREEDLY_ACCESS_SECRET_NEW`,
   `SPREEDLY_GATEWAY_TOKEN_NEW`, `SPREEDLY_SCA_PROVIDER_KEY_NEW`,
