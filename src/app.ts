@@ -19,25 +19,40 @@ import { createBasicAuth } from './middlewares/basicAuthMiddleware';
 const SDK_SCRIPT_ORIGIN_LINE =
   "const SDK_SCRIPT_ORIGIN = 'https://core.spreedly.com';";
 
-const serveSharedUtils = (_req: Request, res: Response) => {
-  const filePath = path.join(__dirname, 'static', 'shared', 'utils.js');
-  fs.readFile(filePath, 'utf8', (err, source) => {
-    if (err || source === undefined) {
-      res.status(404).end();
-      return;
-    }
-    if (!source.includes(SDK_SCRIPT_ORIGIN_LINE)) {
-      console.warn(
-        'shared/utils.js is missing the SDK_SCRIPT_ORIGIN line; SDK_BASE_URL will not apply'
-      );
-    }
-    const body = source.replace(
-      SDK_SCRIPT_ORIGIN_LINE,
-      `const SDK_SCRIPT_ORIGIN = ${JSON.stringify(config.sdkBaseUrl)};`
+// Files served by the routes below are read once at startup, so a request never touches the disk.
+// A missing file is served as a 404, as before.
+const readOnce = (filePath: string): Buffer | null => {
+  try {
+    return fs.readFileSync(filePath);
+  } catch {
+    return null;
+  }
+};
+
+const buildSharedUtils = (): string | null => {
+  const source = readOnce(
+    path.join(__dirname, 'static', 'shared', 'utils.js')
+  )?.toString('utf8');
+  if (source === undefined) return null;
+  if (!source.includes(SDK_SCRIPT_ORIGIN_LINE)) {
+    console.warn(
+      'shared/utils.js is missing the SDK_SCRIPT_ORIGIN line; SDK_BASE_URL will not apply'
     );
-    res.set('Cache-Control', 'no-store');
-    res.type('application/javascript').send(body);
-  });
+  }
+  return source.replace(
+    SDK_SCRIPT_ORIGIN_LINE,
+    `const SDK_SCRIPT_ORIGIN = ${JSON.stringify(config.sdkBaseUrl)};`
+  );
+};
+const SHARED_UTILS_BODY = buildSharedUtils();
+
+const serveSharedUtils = (_req: Request, res: Response) => {
+  if (SHARED_UTILS_BODY === null) {
+    res.status(404).end();
+    return;
+  }
+  res.set('Cache-Control', 'no-store');
+  res.type('application/javascript').send(SHARED_UTILS_BODY);
 };
 
 const app = express();
@@ -77,8 +92,19 @@ app.get('/shared/utils.js', serveSharedUtils);
 // The pages load axios from the app, not a CDN, so the version is the one in package-lock.json.
 // __dirname is dist/ or src/, both one level below node_modules.
 const AXIOS_DIST = path.join(__dirname, '..', 'node_modules', 'axios', 'dist');
-app.get(['/vendor/axios.min.js', '/vendor/axios.min.js.map'], (req, res) => {
-  res.sendFile(path.basename(req.path), { root: AXIOS_DIST });
+const AXIOS_FILES = new Map(
+  ['axios.min.js', 'axios.min.js.map'].map(name => [
+    `/vendor/${name}`,
+    { type: path.extname(name), body: readOnce(path.join(AXIOS_DIST, name)) },
+  ])
+);
+app.get([...AXIOS_FILES.keys()], (req, res) => {
+  const file = AXIOS_FILES.get(req.path);
+  if (!file?.body) {
+    res.status(404).end();
+    return;
+  }
+  res.type(file.type).send(file.body);
 });
 app.use('/', express.static(path.join(__dirname, 'static')));
 

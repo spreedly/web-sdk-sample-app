@@ -16,12 +16,13 @@ export const isAllowedCorsOrigin = (origin: string | undefined): boolean => {
   return config.corsAllowedOrigins.has(parsed.origin);
 };
 
-const reflectOrigin = cors({ origin: true });
+// cors() gets the allowlist itself, so it only ever echoes an origin on that list.
+const allowlistedCors = cors({ origin: Array.from(config.corsAllowedOrigins) });
 
 export const corsMiddleware: RequestHandler = (req, res, next) => {
   if (!isAllowedCorsOrigin(req.header('origin'))) {
     res.status(403).end();
     return;
   }
-  reflectOrigin(req, res, next);
+  allowlistedCors(req, res, next);
 };
