@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../shared/styles.css">
-  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="/vendor/axios.min.js"></script>
   <script src="../shared/utils.js"></script>
   <style>
     .processing-container {
@@ -270,14 +270,13 @@
       updateStep(2, 'active');
       
       try {
-        // Configure redirect and callback URLs
-        const baseUrl =  'https://checkout-web-sample-app-049a3c617015.herokuapp.com'
-        const redirectUrl = `${baseUrl}/offsite-payments/handle_redirect.html`;
-        const callbackUrl = `${baseUrl}/offsite-payments/handle_callback.html`;
+
+        const baseUrl = getRedirectOrigin();
+        const redirectUrl = baseUrl ? `${baseUrl}/offsite-payments/handle_redirect.html` : undefined;
+        const callbackUrl = baseUrl ? `${baseUrl}/offsite-payments/handle_callback.html` : undefined;
 
         
-        // Store transaction info for the final redirect page
-        sessionStorage.setItem('offsite_redirect_url', redirectUrl);
+        if (redirectUrl) sessionStorage.setItem('offsite_redirect_url', redirectUrl);
         
         // Call the purchase API
         document.getElementById('processing-message').textContent = 'Creating purchase transaction with payment provider...';

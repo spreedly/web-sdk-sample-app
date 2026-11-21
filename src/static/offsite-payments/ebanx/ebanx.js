@@ -350,12 +350,10 @@ async function handleOffsiteTokenGenerated(data) {
     const amount = Math.round(parseFloat(elements.amountInput().value) * 100);
     const currency = elements.currencySelector().value;
     
-    // Configure URLs
-    const isLocalhost = window.location.hostname === 'localhost';
-    const productionUrl = 'https://checkout-web-sample-app-049a3c617015.herokuapp.com';
-    const baseUrl = isLocalhost ? productionUrl : window.location.origin;
-    const redirectUrl = `${baseUrl}/offsite-payments/handle_redirect.html`;
-    const callbackUrl = `${baseUrl}/api/v1/offsite-callback`;
+
+    const baseUrl = getRedirectOrigin();
+    const redirectUrl = baseUrl ? `${baseUrl}/offsite-payments/handle_redirect.html` : undefined;
+    const callbackUrl = baseUrl ? `${baseUrl}/api/v1/offsite-callback` : undefined;
     
     // Create purchase transaction
     const purchaseResponse = await axios.post('/api/v1/create-purchase', {

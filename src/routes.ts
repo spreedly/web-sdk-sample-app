@@ -1,10 +1,7 @@
 import { Router, urlencoded } from 'express';
 import { getAuthParams } from './controllers/auth';
 import { 
-  createPaymentMethod, 
-  getPaymentMethods, 
   retainPaymentMethod, 
-  recachePaymentMethod, 
   createPurchaseTransaction, 
   createPurchaseWith3DS, 
   createPurchaseWith3DSGatewaySpecific, 
@@ -83,53 +80,12 @@ const router = Router();
  *         description: Error generating authentication parameters
  */
 router.get('/auth/params', getAuthParams);
-/**
- * @swagger
- * /api/v1/payment_methods:
- *   post:
- *     description: Create a restricted payment method token using Spreedly
- *     tags: [Payment Methods]
- *     produces:
- *       - application/json
- *     parameters:
- *       - name: spreedly-environment-key
- *         description: Spreedly environment key for authentication
- *         in: header
- *         required: true
- *         type: string
- *       - name: body
- *         description: Payment method details including card information
- *         in: body
- *         required: true
- *         schema:
- *           type: object
- *     responses:
- *       200:
- *         description: Payment method created successfully
- *       500:
- *         description: Error creating payment method
- */
-router.post('/payment_methods', createPaymentMethod);
-/**
- * @swagger
- * /api/v1/payment_methods:
- *   get:
- *     description: Retrieve a list of retained payment methods in descending order (latest first) from Spreedly
- *     tags: [Payment Methods]
- *     produces:
- *       - application/json
- *     responses:
- *       200:
- *         description: List of payment methods retrieved successfully
- *       500:
- *         description: Error retrieving payment methods
- */
-router.get('/payment_methods', getPaymentMethods);
+
 /**
  * @swagger
  * /api/v1/payment_methods/{paymentMethodToken}/retain:
  *   put:
- *     description: Retain a payment method to prevent automatic deletion
+ *     description: Retain a payment method to prevent automatic deletion. Only the browser tab that created it can retain it.
  *     tags: [Payment Methods]
  *     produces:
  *       - application/json
@@ -139,36 +95,29 @@ router.get('/payment_methods', getPaymentMethods);
  *         in: path
  *         required: true
  *         type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [owner_secret]
+ *             properties:
+ *               owner_secret:
+ *                 type: string
+ *                 description: The tab's secret. The payment method's sample_app_owner metadata must be its SHA-256 (hex).
  *     responses:
  *       200:
  *         description: Payment method retained successfully
+ *       400:
+ *         description: Invalid payment method token format
+ *       403:
+ *         description: Missing owner_secret, or the payment method was not created with it
  *       500:
  *         description: Error retaining payment method
  */
 router.put('/payment_methods/:paymentMethodToken/retain', retainPaymentMethod);
 
-
-/**
- * @swagger
- * /api/v1/payment_methods/{paymentMethodToken}/recache:
- *   post:
- *     description: Recache a payment method
- *     tags: [Payment Methods]
- *     produces:
- *       - application/json
- *     parameters:
- *       - name: paymentMethodToken
- *         description: The unique token identifying the payment method
- *         in: path
- *         required: true
- *         type: string
- *     responses:
- *       200:
- *         description: Payment method recached successfully
- *       500:
- *         description: Error recaching payment method
- */
-router.post('/payment_methods/:paymentMethodToken/recache', recachePaymentMethod);
 /**
  * @swagger
  * /api/v1/purchase:
@@ -1274,7 +1223,7 @@ router.post('/paze-payment-method', createPazePaymentMethod);
 router.post(
   '/paze/oauth/token',
   pazeTokenRateLimit,
-  urlencoded({ extended: false }),
+  urlencoded({ extended: false, limit: '32kb' }),
   getPazeAccessToken
 );
 

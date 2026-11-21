@@ -18,16 +18,18 @@ Include the Spreedly Web SDK on your checkout page. Choose either Hosted Fields 
 **Hosted Fields**
 ```html
 <head>
-  <script src="https://core-test.spreedly.com/checkout/sdk/rc/index.js"></script>
+  <script src="https://core.spreedly.com/checkout/sdk/{version}/index.js"></script>
 </head>
 ```
 
 **Express Checkout**
 ```html
 <head>
-  <script src="https://core-test.spreedly.com/checkout/elements/rc/express-checkout.js"></script>
+  <script src="https://core.spreedly.com/checkout/elements/{version}/express-checkout.js"></script>
 </head>
 ```
+
+Replace `{version}` with your pinned SDK version.
 
 ---
 

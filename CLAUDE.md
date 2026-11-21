@@ -1,31 +1,49 @@
 # web-sdk-sample-app
 
-Sample e-commerce app demoing every flow of Spreedly's checkout-web-sdk — **and,
-critically, production-load-bearing infrastructure**: its Heroku deployment
-(`checkout-web-sample-app-049a3c617015.herokuapp.com`) is the tokenization **proxy**
-the SDK's core package uses for ALL local and staging development (Spreedly's
-`restricted.json` endpoint rejects non-`*.spreedly.com` origins). Breaking the proxy
-contract here breaks SDK development everywhere. Node 22.x, Express 5 + TypeScript
-backend, plain browser JS frontend (no bundler).
+Sample e-commerce app demoing every flow of Spreedly's checkout-web-sdk.
+Node 22.x, Express 5 + TypeScript backend, plain browser JS frontend (no bundler).
 
-## The proxy contract — never break these
+Card data does not pass through this app. The SDK posts it to Spreedly Core.
+Do not reintroduce `POST /api/v1/payment_methods` as a forwarder to
+`restricted.json`.
 
-- `POST /api/v1/payment_methods` (`src/controllers/payments.ts`) → forwards the body
-  verbatim to `{SPREEDLY_URL}/v1/payment_methods/restricted.json` with ONLY the
-  `spreedly-environment-key` header (no Basic auth). The SDK POSTs here directly.
-- `POST /api/v1/payment_methods/:token/recache` — same forwarding pattern.
+## Backend contract
+
+- There is no recache route. The SDK recaches directly against Core.
+- **Every Core call goes through `src/coreClient.ts`.** It sends only the method + path
+  combinations in `CORE_ROUTES`, only to configured gateways, never follows redirects, and
+  refuses any token that isn't 1–64 letters and digits. A new Core call needs a new
+  `CORE_ROUTES` entry. Routes that take a token in the URL check it with `isSpreedlyToken`
+  and answer 400 before calling Core.
+- **Return URLs** (`src/returnUrls.ts`): `callback_url` is always set by the server
+  (`PUBLIC_APP_ORIGIN` + `/api/v1/offsite-callback`). A caller's `redirect_url` must be on one
+  of the app's origins (`PUBLIC_APP_ORIGIN`, `FRONTEND_ORIGINS`, `CORS_ALLOWED_ORIGINS`), or the route
+  answers 400. Purchase bodies are built from named fields; never forward `req.body`.
+- **Saved cards live in the visitor's browser**, not on the server. `retainPaymentMethod` in
+  `shared/utils.js` retains through the server, then stores the card's display fields in
+  `localStorage`; `fetchPaymentMethods` reads them back. There is no `GET /payment_methods`
+  route: a server list would show every visitor's cards to everyone.
+- **Retain checks ownership (HC-1940).** Each tab keeps a random secret in `sessionStorage`
+  (`shared/utils.js`). Every tokenization that may be retained sends
+  `...SpreedlyUtils.ownerMetadata()` (`sample_app_owner` = SHA-256 of the secret, hex) in its
+  metadata, and `retainPaymentMethod` sends the secret as `owner_secret`. The route reads the
+  payment method from Core and answers 403 unless the hash matches. A new flow that retains must
+  add the metadata, or its retains fail.
+- JSON and form bodies are capped at 32 KB.
+- Never log an error object or a request body: body-parser errors carry the raw body, axios
+  errors carry the Authorization header.
 - `GET /api/v1/auth/params` (`src/controllers/auth.ts`) → `{nonce (UUID), timestamp
   (unix s), signature, certificateToken, environmentKey}`. Signature = RSA-SHA256,
   base64, over the concatenation `nonce + timestamp + certificateToken` — the order
   and algorithm are fixed by what Spreedly verifies; don't touch.
-- The unrestricted `app.use(cors())` in `src/app.ts` is load-bearing — the SDK calls
-  cross-origin from core-test/localhost. No origin allowlist may be added casually.
-- Changing the route paths, injecting Basic auth into the proxy routes, or removing
-  CORS breaks every SDK developer's local/staging tokenization.
+- CORS is an allowlist (`src/middlewares/corsMiddleware.ts`).
+- **axios is served by the app** at `/vendor/axios.min.js` (`src/app.ts`, from
+  `node_modules/axios/dist`), so pages run the version in `package-lock.json`. New pages use
+  `<script src="/vendor/axios.min.js"></script>`; never load axios from a CDN.
 
 ## Architecture
 
-- **Server**: `src/server.ts` → `src/app.ts` (morgan → cors → useragent → Swagger UI
+- **Server**: `src/server.ts` → `src/app.ts` (morgan → `GET /healthz` → edge guard → https redirect + HSTS → cors → useragent → Swagger UI
   at `/api/v1/docs` → static → json → `/api/v1` router → errorHandler). Port from
   `PORT` (default 3000). `src/config.ts` reads env; `src/routes.ts` +
   `src/controllers/{auth,payments}.ts` hold all routes.
@@ -39,20 +57,30 @@ backend, plain browser JS frontend (no bundler).
 
 ## Environments — the traps
 
-- **SDK bundles come from the CDN rc channel on core-test**:
-  `https://core-test.spreedly.com/checkout/sdk/rc/index.js` (hosted-fields) and
-  `.../checkout/elements/rc/express-checkout.js` — i.e. whatever last merged to the
-  SDK's `main`. A commented-out block in `src/static/shared/utils.js` switches to
-  localhost:5000/:5173 for a locally-running SDK build.
+- **SDK bundles come from the production CDN rc channel**:
+  `https://core.spreedly.com/checkout/sdk/rc/index.js` (hosted-fields) and
+  `.../checkout/elements/rc/express-checkout.js`. ACH pages use the same production
+  URLs when the page is not on localhost. A commented-out block in
+  `src/static/shared/utils.js` switches to localhost:5000/:5173 for a locally-running
+  SDK build.
 - **Backend upstream defaults to PRODUCTION** (`SPREEDLY_URL` →
-  `https://core.spreedly.com`) while the SDK loads from core-test. Keep both sides on
-  the same Spreedly environment when changing either.
-- **The frontend calls Heroku even when running locally**: `API_BASE_URL` in
-  `shared/utils.js:1` is the hardcoded Heroku URL, and every flow (ACH included —
-  `createAchPurchase` uses it) hits Heroku even from a local page. `LOCAL_API_URL` is
-  exported but no longer used. More
-  hardcoded Heroku URLs in `offsite-payments/{braintree,stripe-apm}/`, `ebanx.js`,
-  and `transparent_redirect_complete.html`.
+  `https://core.spreedly.com`), matching the production SDK bundle.
+- **No hardcoded app URL (HC-2088).** `PUBLIC_APP_ORIGIN` (required, https) is the app's public
+  origin; config throws at startup without it. Pages call `${window.location.origin}/api/v1`, or
+  `localhost:3000` from a localhost page, and build return URLs with `getRedirectOrigin()` in
+  `shared/utils.js`. `FRONTEND_ORIGINS` defaults to `PUBLIC_APP_ORIGIN`.
+- **Edge guard (HC-2089)** (`src/middlewares/edgeGuardMiddleware.ts`): the app sits behind Fastly,
+  which adds a shared secret header to every request. With the secret, a request goes through;
+  without it, the herokuapp host is redirected (301/308) to `PUBLIC_APP_ORIGIN` and any other host
+  gets an empty 403. `GET /healthz` is mounted before the guard. Fails closed: config throws
+  unless `FASTLY_SHARED_SECRET`, `FASTLY_SECRET_HEADER` and `HEROKU_APP_HOST` are all set. Off
+  Heroku, `EDGE_GUARD_DISABLED=true` turns the guard off for local runs; on Heroku (`DYNO` is set)
+  it can't be turned off. The secret must be 32+ chars, and `PUBLIC_APP_ORIGIN` must not be the herokuapp host (config throws otherwise).
+  Never log the header, and never put the secret in Playwright's `extraHTTPHeaders`: the browser
+  would send it to the SDK and third-party hosts.
+- **Staging login (HC-2083)** (`src/middlewares/basicAuthMiddleware.ts`): on when `BASIC_AUTH_USER` and
+  `BASIC_AUTH_PASSWORD` are set (password 16+ chars). On Heroku, config throws if `SPREEDLY_URL` or
+  `SDK_BASE_URL` is core-test and the login vars are missing. Never set them on the public app.
 - **Env vars: config reads ONLY the `_NEW`-suffixed names** (`PRIVATE_KEY_NEW`,
   `CERTIFICATE_TOKEN_NEW`, `SPREEDLY_ENVIRONMENT_KEY_NEW`, `SPREEDLY_ACCESS_SECRET_NEW`,
   `SPREEDLY_GATEWAY_TOKEN_NEW`, `SPREEDLY_SCA_PROVIDER_KEY_NEW`,
@@ -69,9 +97,10 @@ backend, plain browser JS frontend (no bundler).
   `_KEY` (PEM, line breaks may be `\n`) and `APPLE_PAY_DOMAIN_ASSOCIATION` (Apple's verification
   file, served at `/.well-known/apple-developer-merchantid-domain-association`). Without them
   `POST /api/v1/apple-pay/validate` answers `503 not_configured` and the file route 404s.
-  Optional overrides, defaulting to the Heroku app in `src/config.ts`: `APPLE_PAY_MERCHANT_ID`,
+  Optional overrides in `src/config.ts`: `APPLE_PAY_MERCHANT_ID`,
   `APPLE_PAY_DISPLAY_NAME`, `APPLE_PAY_DOMAIN` (sent as `initiativeContext`, must be registered with
-  Apple), `APPLE_PAY_ENVIRONMENT` (`sandbox` switches Apple's validation host; default `production`). The test
+  Apple; defaults to the `PUBLIC_APP_ORIGIN` hostname), `APPLE_PAY_ENVIRONMENT` (default `sandbox`; set `production` for Apple's production
+  validation host). The test
   pages: `apple-pay-test/` (plain Apple Pay JS, no SDK) and `apple-pay-local-sdk/` (loads the SDK
   from `localhost:5000` / `:5173`, so an unreleased SDK build can run on the registered Heroku
   domain; use Chrome on the machine running `npm run dev` in checkout-web-sdk). Neither is on the
@@ -83,8 +112,8 @@ backend, plain browser JS frontend (no bundler).
 |---|---|---|---|
 | `tokenize/` | Tokenization with a **merchant-hosted form** (name/expiry/address on the page; only number + CVV are iframes) + SDK config panel | HF + EC | `auth/params`, `retain` |
 | `tokenize-catalogue/` | Tokenization with **SDK-hosted catalogue fields** (`inAppElements`) + custom validators (`addValidation`) | HF + EC | `auth/params`, `retain` |
-| `purchase/` | 3-step storefront, saved cards + new card, no 3DS | HF + EC (dialog) | `auth/params`, `payment_methods`, `simple-purchase` |
-| `recache/` | CVV recache on a retained card (`setRecache` → `recache()`) — done client-side via SDK; the server recache route goes unused | HF + EC | `auth/params`, `payment_methods` |
+| `purchase/` | 3-step storefront, saved cards + new card, no 3DS | HF + EC (dialog) | `auth/params`, `simple-purchase` |
+| `recache/` | CVV recache on a retained card (`setRecache` → `recache()`) — done client-side via SDK | HF + EC | `auth/params` |
 | `purchase-with-3ds/` | 3DS **Global** (`sca_provider_key` server-side), `SpreedlyThreeDSLifecycle` + `serializeBrowserInfo` | HF + EC | `create-purchase-with-3ds` |
 | `purchase-with-3ds-gateway-specific/` | 3DS **gateway-specific** with full callback set incl. `onTriggerCompletion` → `transactions/:t/complete` → `event.finalize()` | HF + EC | `create-purchase-with-3ds-gateway-specific`, `complete` |
 | `ach-payments/` | ACH bank-account tokenize + $10 purchase. HF: two secure fields + merchant name/type inputs (`ach-payments.js`); EC: the prebuilt form in one iframe (`ach-form.js`) | HF `SpreedlyACHFields`; EC `SpreedlyACHForm` | `ach-purchase` |
@@ -93,20 +122,25 @@ backend, plain browser JS frontend (no bundler).
 | `google-pay/` | `SpreedlyGooglePay`: page loads `pay.js`, SDK draws Google's button + tokenizes in-sheet (merchant-page `payment_methods.json`); needs a local SDK build until the global reaches the rc CDN. With `?sdk=express-checkout`, the Placement radio defaults to EC's `googlePay` option (`?placement=standalone` opts out): wallet row above the EC iframe, embedded in the page or in the page's own dialog (never EC's dialog mode), card tokens via `tokenGenerated`. Purchase branches on `googlePayType`: `TOKENIZED_CARD` → no 3DS; otherwise 3DS Global (default) or gateway 3DS + `SpreedlyThreeDSLifecycle` | HF + EC | `auth/params`, `simple-purchase`, `create-purchase-with-3ds-gateway-specific`, `transactions/:t/complete`, `create-purchase-with-3ds` |
 
 Backend routes with no frontend caller: `POST /purchase` (the only one exercising the
-`sca_provider_key` vs `attempt_3dsecure` toggle), `POST /payment_methods` and
-`/recache` proxies (called by the SDK itself, not by pages), `offsite-callback` (stub).
+`sca_provider_key` vs `attempt_3dsecure` toggle), `offsite-callback` (stub, but the server
+sends it to Spreedly as every offsite `callback_url`).
 
 ## Testing (this repo IS the SDK's e2e coverage — the SDK repo has none)
 
 - Playwright, specs in `test/ui/testCases/` (8 files: token-generation, 3ds-flow,
   3ds-gateway-specific, offsite-payments, validations, allow-blank-date/-name/-expired).
   Page objects in `test/ui/pages/`, selectors/test data in `test/ui/util/test-constants.ts`.
-- **`npm run test:e2e` targets the HEROKU deployment** (hardcoded baseURL in
-  `playwright.config.js`) — it does NOT test local changes. Local: start the server,
+- **`npm run test:e2e` targets the deployment at `PUBLIC_APP_ORIGIN`** (baseURL in
+  `playwright.config.js`, read from `.env`) — it does NOT test local changes.
+  `test/api/edge-guard.spec.ts` starts its own app on a random port and needs no server. Local: start the server,
   then `npm run test:e2e:local` (localhost:3000). No Playwright `webServer` config.
-- **CI runs e2e only on a nightly cron (06:00 UTC)** against Heroku; the PR/push
-  triggers in `.github/workflows/test_e2e.yml` are commented out. junit results go to
-  Datadog, non-blocking. `dependency-review.yml` still gates PRs.
+- **CI e2e (`.github/workflows/test_e2e.yml`)**: against staging (`https://checkout.spreedly-demo.dev`,
+  with the `E2E_BASIC_AUTH_USER`/`_PASSWORD` secrets) after each successful Heroku deploy of
+  `checkout-web-app-staging` (a merge to `staging`); against production (no login) after each
+  successful deploy of `checkout-web-sample-app` (a merge to `main`) and on the nightly cron
+  (06:00 UTC); both at the deployed commit; manually via workflow_dispatch (`target`). The
+  workflow sets `PUBLIC_APP_ORIGIN`. No PR trigger. junit results go to Datadog (tagged
+  `target:`), non-blocking. `dependency-review.yml` still gates PRs.
   `browserstack.yml` is dead config (no SDK dep, nothing invokes it).
 - SDK iframes reached via `frameLocator`: EC `iframe[title='Spreedly Secure Payment
   Form']`; HF `iframe[src*="numberField.html"]` / `[src*="cvvField.html"]`; 3DS

@@ -56,10 +56,7 @@ async function init() {
 // SpreedlyACHFields is in the Hosted Fields bundle. SpreedlyACHForm is in the Express Checkout one.
 function loadHostedFieldsSDK() {
   return new Promise((resolve, reject) => {
-    const src =
-      window.location.hostname === 'localhost'
-        ? 'http://localhost:5000/index.js'
-        : 'https://core-test.spreedly.com/checkout/sdk/rc/index.js';
+    const src = SpreedlyUtils.getSDKScriptUrl('hosted-fields');
     const script = document.createElement('script');
     script.src = src;
     script.onload = () => resolve();

@@ -111,8 +111,7 @@ one PayPal script — the production URL in production, the sandbox URL in sandb
 <script src="https://core.spreedly.com/checkout/elements/{version}/express-checkout.js"></script>
 ```
 
-Replace `{version}` with your pinned SDK version. Staging is `core-test.spreedly.com` with the same
-paths.
+Replace `{version}` with your pinned SDK version.
 
 **One thing to get right: amounts have two representations.**
 
