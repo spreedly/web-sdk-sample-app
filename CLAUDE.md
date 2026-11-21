@@ -134,9 +134,13 @@ sends it to Spreedly as every offsite `callback_url`).
   `playwright.config.js`, read from `.env`) — it does NOT test local changes.
   `test/api/edge-guard.spec.ts` starts its own app on a random port and needs no server. Local: start the server,
   then `npm run test:e2e:local` (localhost:3000). No Playwright `webServer` config.
-- **CI runs e2e only on a nightly cron (06:00 UTC)** against Heroku; the PR/push
-  triggers in `.github/workflows/test_e2e.yml` are commented out. junit results go to
-  Datadog, non-blocking. `dependency-review.yml` still gates PRs.
+- **CI e2e (`.github/workflows/test_e2e.yml`)**: against staging (`https://checkout.spreedly-demo.dev`,
+  with the `E2E_BASIC_AUTH_USER`/`_PASSWORD` secrets) after each successful Heroku deploy of
+  `checkout-web-app-staging` (a merge to `staging`); against production (no login) after each
+  successful deploy of `checkout-web-sample-app` (a merge to `main`) and on the nightly cron
+  (06:00 UTC); both at the deployed commit; manually via workflow_dispatch (`target`). The
+  workflow sets `PUBLIC_APP_ORIGIN`. No PR trigger. junit results go to Datadog (tagged
+  `target:`), non-blocking. `dependency-review.yml` still gates PRs.
   `browserstack.yml` is dead config (no SDK dep, nothing invokes it).
 - SDK iframes reached via `frameLocator`: EC `iframe[title='Spreedly Secure Payment
   Form']`; HF `iframe[src*="numberField.html"]` / `[src*="cvvField.html"]`; 3DS
