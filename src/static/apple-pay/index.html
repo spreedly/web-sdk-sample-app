@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apple Pay | Spreedly Web SDK Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="../shared/styles.css">
+  <style>
+    /* Products and cart: as in the Purchase flow. */
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .product-card {
+      border: 2px solid var(--color-gray-200);
+      border-radius: var(--radius-lg);
+      padding: 1rem;
+      background: var(--color-white);
+      transition: all var(--transition);
+    }
+
+    .product-card.selected {
+      border-color: var(--color-primary);
+      background: rgba(79, 70, 229, 0.05);
+    }
+
+    .product-image {
+      width: 100%;
+      height: 120px;
+      background: var(--color-gray-100);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 0.75rem;
+      font-size: 2.5rem;
+    }
+
+    .product-name {
+      font-weight: 600;
+      color: var(--color-gray-900);
+      margin-bottom: 0.25rem;
+    }
+
+    .product-description {
+      font-size: 0.75rem;
+      color: var(--color-gray-500);
+      margin-bottom: 0.5rem;
+    }
+
+    .product-price {
+      font-weight: 700;
+      color: var(--color-primary);
+    }
+
+    .product-quantity {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+
+    .quantity-btn {
+      width: 1.75rem;
+      height: 1.75rem;
+      border: 1px solid var(--color-gray-300);
+      border-radius: var(--radius-sm);
+      background: var(--color-white);
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--color-gray-600);
+    }
+
+    .quantity-btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+
+    .order-summary {
+      background: var(--color-gray-50);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+    }
+
+    .order-summary-title {
+      font-weight: 600;
+      color: var(--color-gray-900);
+      margin-bottom: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--color-gray-200);
+    }
+
+    .order-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 0;
+    }
+
+    .order-item-name {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .order-item-qty {
+      font-size: 0.75rem;
+      color: var(--color-gray-500);
+    }
+
+    .order-total {
+      display: flex;
+      justify-content: space-between;
+      font-weight: 700;
+      font-size: 1.125rem;
+      padding-top: 0.75rem;
+      margin-top: 0.5rem;
+      border-top: 1px solid var(--color-gray-300);
+    }
+
+    .proceed-row {
+      align-items: center;
+      display: flex;
+      gap: 1rem;
+      justify-content: flex-end;
+      margin-top: 1.5rem;
+    }
+
+    .proceed-hint {
+      color: var(--color-gray-500);
+      font-size: 0.875rem;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page-wrapper">
+    <header class="header">
+      <div class="container header-inner">
+        <a href="../index.html" class="logo">
+          <span class="logo-icon">S</span>
+          Spreedly Web SDK
+        </a>
+        <span class="nav-badge" id="sdk-badge">Apple Pay</span>
+      </div>
+    </header>
+
+    <main class="main">
+      <div class="container">
+        <a href="../index.html" class="back-link">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+            stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+          </svg>
+          Back to flows
+        </a>
+
+        <h1 class="mb-2">Apple Pay</h1>
+        <p class="mb-6" style="color: var(--color-gray-500);">
+          Pick some products, then pay with Apple Pay through the Spreedly SDK: it draws Apple's button, opens the
+          Apple Pay sheet, and turns the shopper's approved payment into a Spreedly payment method. Test data only:
+          run the sheet with an Apple sandbox tester account.
+        </p>
+
+        <div class="card">
+          <div class="section-title">Choose your products</div>
+          <div class="products-grid" id="products-grid"></div>
+
+          <div class="order-summary hidden" id="cart-summary">
+            <div class="order-summary-title">Cart summary</div>
+            <div id="cart-items"></div>
+            <div class="order-total">
+              <span>Total</span>
+              <span id="cart-total">$0.00</span>
+            </div>
+          </div>
+
+          <div class="proceed-row">
+            <span class="proceed-hint" id="proceed-hint">Add at least one product.</span>
+            <button type="button" class="btn btn-primary" id="proceed" disabled>Proceed →</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="container footer-inner">
+        <span>Spreedly Web SDK Demo</span>
+        <div class="footer-links">
+          <a href="https://spreedly.com" target="_blank">Spreedly</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script src="../shared/utils.js"></script>
+  <script src="./apple-pay-start.js"></script>
+</body>
+
+</html>

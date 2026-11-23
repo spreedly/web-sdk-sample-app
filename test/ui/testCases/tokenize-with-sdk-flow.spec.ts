@@ -130,12 +130,12 @@ test.describe('Tokenize with SDK Flow', () => {
             zip: TEST_DATA.INVALID_ZIP_CODE,
         });
         await helperFunctions.clickOnExpressCheckoutSubmitButton(page);
-        await expect(page.frameLocator(SELECTORS.EXPRESS_IFRAME).locator(`[aria-label="${ERROR_MESSAGES.ZIP_ERROR_EXPRESS_CHECKOUT}"]`)).toBeVisible()
+        await expect(page.frameLocator(SELECTORS.EXPRESS_IFRAME).locator(`[aria-label$="${ERROR_MESSAGES.ZIP_ERROR_EXPRESS_CHECKOUT}"]`)).toBeVisible()
         await helperFunctions.fillExpressCheckoutForm(page, TEST_DATA.CARD_NUMBER, {
             zip: TEST_DATA.VALID_ZIP_CODE,
         });
         await helperFunctions.clickOnExpressCheckoutSubmitButton(page);
-        await expect(page.frameLocator(SELECTORS.EXPRESS_IFRAME).locator(`[aria-label="${ERROR_MESSAGES.ZIP_ERROR_EXPRESS_CHECKOUT}"]`)).not.toBeVisible()
+        await expect(page.frameLocator(SELECTORS.EXPRESS_IFRAME).locator(`[aria-label$="${ERROR_MESSAGES.ZIP_ERROR_EXPRESS_CHECKOUT}"]`)).not.toBeVisible()
     });
 
     test('Verify Cross-field rule on state in express checkout', async ({ page }) => {
@@ -153,25 +153,25 @@ test.describe('Tokenize with SDK Flow', () => {
             country: TEST_DATA.COUNTRY_US,
         });
         await helperFunctions.clickOnExpressCheckoutSubmitButton(page);
-        await expect(page.frameLocator(SELECTORS.EXPRESS_IFRAME).locator(`[aria-label="${ERROR_MESSAGES.STATE_ERROR_EXPRESS_CHECKOUT}"]`)).toBeVisible();
+        await expect(page.frameLocator(SELECTORS.EXPRESS_IFRAME).locator(`[aria-label$="${ERROR_MESSAGES.STATE_ERROR_EXPRESS_CHECKOUT}"]`)).toBeVisible();
         await helperFunctions.fillExpressCheckoutForm(page, TEST_DATA.CARD_NUMBER, {
             country: TEST_DATA.COUNTRY_US,
             state: TEST_DATA.STATE_INVALID_FORMAT,
         });
         await helperFunctions.clickOnExpressCheckoutSubmitButton(page);
-        await expect(page.frameLocator(SELECTORS.EXPRESS_IFRAME).locator(`[aria-label="${ERROR_MESSAGES.STATE_ERROR_EXPRESS_CHECKOUT}"]`)).toBeVisible();
+        await expect(page.frameLocator(SELECTORS.EXPRESS_IFRAME).locator(`[aria-label$="${ERROR_MESSAGES.STATE_ERROR_EXPRESS_CHECKOUT}"]`)).toBeVisible();
         await helperFunctions.fillExpressCheckoutForm(page, TEST_DATA.CARD_NUMBER, {
             country: TEST_DATA.COUNTRY_US,
             state: TEST_DATA.STATE_VALID_FORMAT,
         });
         await helperFunctions.clickOnExpressCheckoutSubmitButton(page);
-        await expect(page.frameLocator(SELECTORS.EXPRESS_IFRAME).locator(`[aria-label="${ERROR_MESSAGES.STATE_ERROR_EXPRESS_CHECKOUT}"]`)).not.toBeVisible();
+        await expect(page.frameLocator(SELECTORS.EXPRESS_IFRAME).locator(`[aria-label$="${ERROR_MESSAGES.STATE_ERROR_EXPRESS_CHECKOUT}"]`)).not.toBeVisible();
         await helperFunctions.fillExpressCheckoutForm(page, TEST_DATA.CARD_NUMBER, {
             country: TEST_DATA.COUNTRY_NON_US,
             state: TEST_DATA.STATE_INVALID_FORMAT,
         });
         await helperFunctions.clickOnExpressCheckoutSubmitButton(page);
-        await expect(page.frameLocator(SELECTORS.EXPRESS_IFRAME).locator(`[aria-label="${ERROR_MESSAGES.STATE_ERROR_EXPRESS_CHECKOUT}"]`)).not.toBeVisible();
+        await expect(page.frameLocator(SELECTORS.EXPRESS_IFRAME).locator(`[aria-label$="${ERROR_MESSAGES.STATE_ERROR_EXPRESS_CHECKOUT}"]`)).not.toBeVisible();
     });
 
     test('Verify conditonal requirement on ZIP Validator in express checkout', async ({ page }) => {
@@ -189,18 +189,18 @@ test.describe('Tokenize with SDK Flow', () => {
             country: TEST_DATA.COUNTRY_US,
         });
         await helperFunctions.clickOnExpressCheckoutSubmitButton(page);
-        await expect(page.frameLocator(SELECTORS.EXPRESS_IFRAME).locator(`[aria-label="${ERROR_MESSAGES.ZIP_REQUIRED_ERROR_EXPRESS_CHECKOUT}"]`)).toBeVisible()
+        await expect(page.frameLocator(SELECTORS.EXPRESS_IFRAME).locator(`[aria-label$="${ERROR_MESSAGES.ZIP_REQUIRED_ERROR_EXPRESS_CHECKOUT}"]`)).toBeVisible()
         await helperFunctions.fillExpressCheckoutForm(page, TEST_DATA.CARD_NUMBER, {
             country: TEST_DATA.COUNTRY_US,
             zip: TEST_DATA.VALID_ZIP_CODE,
         });
         await helperFunctions.clickOnExpressCheckoutSubmitButton(page);
-        await expect(page.frameLocator(SELECTORS.EXPRESS_IFRAME).locator(`[aria-label="${ERROR_MESSAGES.ZIP_REQUIRED_ERROR_EXPRESS_CHECKOUT}"]`)).not.toBeVisible()
+        await expect(page.frameLocator(SELECTORS.EXPRESS_IFRAME).locator(`[aria-label$="${ERROR_MESSAGES.ZIP_REQUIRED_ERROR_EXPRESS_CHECKOUT}"]`)).not.toBeVisible()
         await helperFunctions.fillExpressCheckoutForm(page, TEST_DATA.CARD_NUMBER, {
             country: TEST_DATA.COUNTRY_NON_US,
         });
         await helperFunctions.clickOnExpressCheckoutSubmitButton(page);
-        await expect(page.frameLocator(SELECTORS.EXPRESS_IFRAME).locator(`[aria-label="${ERROR_MESSAGES.ZIP_REQUIRED_ERROR_EXPRESS_CHECKOUT}"]`)).not.toBeVisible()
+        await expect(page.frameLocator(SELECTORS.EXPRESS_IFRAME).locator(`[aria-label$="${ERROR_MESSAGES.ZIP_REQUIRED_ERROR_EXPRESS_CHECKOUT}"]`)).not.toBeVisible()
     });
 
     test('Verify Canonical Fields for Address in hosted fields', async ({ page }) => {

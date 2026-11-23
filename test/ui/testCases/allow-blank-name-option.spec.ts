@@ -79,8 +79,8 @@ test.describe("Allow Blank Name Option - Monorepo", () => {
     await helperFunctions.clickOnExpressCheckoutSubmitButton(page);
     await expect(await helperFunctions.getExpressCheckoutFirstNameField(page)).toHaveAttribute('aria-invalid', 'true');
     await expect(await helperFunctions.getExpressCheckoutLastNameField(page)).toHaveAttribute('aria-invalid', 'true');
-    await expect(page.frameLocator(SELECTORS.EXPRESS_IFRAME).locator(`[aria-label="${ERROR_MESSAGES.FIRST_NAME_REQUIRED_EXPRESS_CHECKOUT}"]`).first()).toBeVisible()
-    await expect(page.frameLocator(SELECTORS.EXPRESS_IFRAME).locator(`[aria-label="${ERROR_MESSAGES.LAST_NAME_REQUIRED_EXPRESS_CHECKOUT}"]`).first()).toBeVisible()
+    await expect(page.frameLocator(SELECTORS.EXPRESS_IFRAME).locator(`[aria-label$="${ERROR_MESSAGES.FIRST_NAME_REQUIRED_EXPRESS_CHECKOUT}"]`).first()).toBeVisible()
+    await expect(page.frameLocator(SELECTORS.EXPRESS_IFRAME).locator(`[aria-label$="${ERROR_MESSAGES.LAST_NAME_REQUIRED_EXPRESS_CHECKOUT}"]`).first()).toBeVisible()
   });
 
   test("should allow blank name when option is enabled in tokenize flow with Hosted Fields", async ({
@@ -193,8 +193,8 @@ test.describe("Allow Blank Name Option - Monorepo", () => {
     await helperFunctions.clickOnExpressCheckoutSubmitButton(page);
     await expect(await helperFunctions.getExpressCheckoutFirstNameField(page)).toHaveAttribute('aria-invalid', 'true');
     await expect(await helperFunctions.getExpressCheckoutLastNameField(page)).toHaveAttribute('aria-invalid', 'true');
-    await expect(page.frameLocator(SELECTORS.EXPRESS_IFRAME).locator(`[aria-label="${ERROR_MESSAGES.FIRST_NAME_REQUIRED_EXPRESS_CHECKOUT}"]`).first()).toBeVisible()
-    await expect(page.frameLocator(SELECTORS.EXPRESS_IFRAME).locator(`[aria-label="${ERROR_MESSAGES.LAST_NAME_REQUIRED_EXPRESS_CHECKOUT}"]`).first()).toBeVisible()
+    await expect(page.frameLocator(SELECTORS.EXPRESS_IFRAME).locator(`[aria-label$="${ERROR_MESSAGES.FIRST_NAME_REQUIRED_EXPRESS_CHECKOUT}"]`).first()).toBeVisible()
+    await expect(page.frameLocator(SELECTORS.EXPRESS_IFRAME).locator(`[aria-label$="${ERROR_MESSAGES.LAST_NAME_REQUIRED_EXPRESS_CHECKOUT}"]`).first()).toBeVisible()
   });
 });
 

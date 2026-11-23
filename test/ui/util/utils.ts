@@ -133,7 +133,7 @@ export const PLACEHOLDERS = {
     },
 
     getExpiredYearErrorMessage: async (page: Page) => {
-        return page.frameLocator(SELECTORS.EXPRESS_IFRAME).locator(`[aria-label="${ERROR_MESSAGES.CARD_EXPIRED}"]`);
+        return page.frameLocator(SELECTORS.EXPRESS_IFRAME).locator(`[aria-label$="${ERROR_MESSAGES.CARD_EXPIRED}"]`);
     },
 
     getTokenizationFailedMessage: async (page: Page) => {

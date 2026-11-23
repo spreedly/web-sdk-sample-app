@@ -583,10 +583,23 @@ p {
 
 .sdk-option {
   cursor: pointer;
+  position: relative;
 }
 
+/* Visually hidden but still focusable and announced: the card is the visible control, and the radio
+   keeps keyboard and screen-reader access. */
 .sdk-option input[type="radio"] {
-  display: none;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sdk-option input[type="radio"]:focus-visible + .sdk-option-content {
+  outline: 2px solid var(--color-info);
+  outline-offset: 2px;
 }
 
 .sdk-option-content {
@@ -649,6 +662,68 @@ p {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+}
+
+/* Landing page: flows grouped into collapsible sections */
+.flow-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.flow-group {
+  background: var(--color-white);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-lg);
+}
+
+.flow-group-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 1.25rem;
+  cursor: pointer;
+  list-style: none;
+  border-radius: var(--radius-lg);
+}
+
+.flow-group-summary::-webkit-details-marker {
+  display: none;
+}
+
+.flow-group-summary:hover {
+  background: var(--color-gray-50);
+}
+
+.flow-group-summary:focus-visible {
+  outline: 2px solid var(--color-info);
+  outline-offset: 2px;
+}
+
+.flow-group-title {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.flow-group-count {
+  font-size: 0.875rem;
+  color: var(--color-gray-500);
+}
+
+.flow-group-chevron {
+  width: 18px;
+  height: 18px;
+  margin-left: auto;
+  color: var(--color-gray-500);
+  transition: transform var(--transition);
+}
+
+.flow-group[open] .flow-group-chevron {
+  transform: rotate(180deg);
+}
+
+.flow-group > .flow-cards {
+  padding: 0 1rem 1rem;
 }
 
 .flow-card {

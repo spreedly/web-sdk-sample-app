@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Apple Pay (local SDK) | Spreedly Web SDK Demo</title>
+  <title>Apple Pay end to end | Spreedly Web SDK Demo</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
@@ -26,12 +26,6 @@
       font-size: 1rem;
       font-weight: 600;
       margin: 1.25rem 0 0.75rem;
-    }
-
-    .settings-grid {
-      display: grid;
-      gap: 0.75rem 1rem;
-      grid-template-columns: 1fr 1fr;
     }
 
     .checkbox-row {
@@ -65,6 +59,11 @@
       height: 660px;
       margin: 1.5rem 0 0.75rem;
       overflow: hidden;
+    }
+
+    .open-checkout {
+      margin: 1.5rem 0 0.75rem;
+      width: 100%;
     }
 
     .debug-panel {
@@ -103,10 +102,50 @@
       border-color: var(--color-error);
     }
 
-    @media (max-width: 640px) {
-      .settings-grid {
-        grid-template-columns: 1fr;
-      }
+    /* SDK config panel: one group per SpreedlyApplePay option, as on the PayPal page */
+    .cfg-heading {
+      border-top: 1px solid var(--color-gray-200);
+      color: var(--color-gray-500);
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      margin: 1.25rem 0 0.75rem;
+      padding-top: 0.75rem;
+      text-transform: uppercase;
+    }
+    .cfg-group { margin-bottom: 1.1rem; }
+    .cfg-group:last-child { margin-bottom: 0; }
+    .cfg-group-label {
+      font-size: 0.75rem; font-weight: 600; color: var(--color-gray-800); margin-bottom: 0.1rem;
+      display: flex; align-items: baseline; gap: 0.4rem; flex-wrap: wrap;
+    }
+    .cfg-group-label code {
+      font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; font-weight: 400;
+      color: var(--color-gray-500); background: var(--color-gray-100);
+      padding: 0.05rem 0.3rem; border-radius: 3px;
+    }
+    .cfg-hint { font-size: 0.6875rem; color: var(--color-gray-500); line-height: 1.4; margin: 0.15rem 0 0.4rem; }
+    .cfg-options { display: flex; flex-flow: row wrap; gap: 0.15rem 0.85rem; }
+    .cfg-opt {
+      display: flex; align-items: center; gap: 0.45rem; font-size: 0.75rem;
+      color: var(--color-gray-700); cursor: pointer; padding: 0.15rem 0; line-height: 1.35;
+    }
+    .cfg-opt input { width: auto; margin: 0; flex-shrink: 0; accent-color: var(--color-gray-900); }
+    .cfg-opt input[type="text"] {
+      border: 1px solid var(--color-gray-300); border-radius: 4px; font-size: 0.75rem;
+      padding: 0.15rem 0.35rem; width: 7.5rem;
+    }
+    .cfg-opt input.wide { width: 14rem; }
+    .cfg-opt select { font-size: 0.75rem; }
+    .cfg-opt:hover { color: var(--color-gray-900); }
+    .cfg-opt .why { font-size: 0.65rem; color: var(--color-gray-400); }
+    .cfg-sub { border-left: 2px solid var(--color-gray-200); margin: 0.35rem 0 0 0.2rem; padding-left: 0.6rem; }
+
+    /* The shared two-column layout doesn't stack on narrow screens: stack it here. */
+    .tokenize-form, .config-panel { min-width: 0; }
+    @media (max-width: 900px) {
+      .tokenize-layout { flex-direction: column; align-items: stretch; }
+      .config-panel { position: static; }
     }
   </style>
 </head>
@@ -127,85 +166,51 @@
       <div class="container">
         <div class="tokenize-layout">
           <div class="tokenize-form">
-            <a href="../index.html" class="back-link">
+            <a href="../apple-pay/index.html" class="back-link" id="back-link">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
                 stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
               </svg>
-              Back to flows
+              Back to Apple Pay
             </a>
 
-            <h1 class="mb-2">Apple Pay (local SDK)</h1>
-            <p class="mb-6" style="color: var(--color-gray-500);">
+            <h1 class="mb-2">Apple Pay end to end</h1>
+            <p class="mb-2" style="color: var(--color-gray-500);">
               Pay with Apple Pay through <code id="sdk-surface">SpreedlyApplePay</code>. Test data only: run the
               sheet with an Apple sandbox tester account.
+            </p>
+            <p class="cfg-hint mb-6">
+              SDK from <span id="sdk-source">this computer (localhost dev servers)</span>.
+              <a href="?sdk-source=cdn" id="sdk-source-toggle">Load from the CDN</a>
             </p>
 
             <div class="card">
               <div class="amount-row">
                 <div class="form-group" style="margin-bottom: 0;">
-                  <label class="form-label" for="amount"><strong>Total (USD)</strong></label>
+                  <label class="form-label" for="amount"><strong>Subtotal (<span id="currency-label">USD</span>)</strong></label>
                   <input type="text" id="amount" class="form-input" value="10.00">
                 </div>
                 <button type="button" id="update-total" class="btn btn-secondary">Update total</button>
               </div>
-
-              <h3 class="section-title">When to charge</h3>
-              <label class="checkbox-row">
-                <input type="radio" name="charge-mode" value="after-token" checked>
-                After <code>applePayTokenGenerated</code> (the sheet shows success when the token exists)
-              </label>
-              <label class="checkbox-row">
-                <input type="radio" name="charge-mode" value="process-payment">
-                Inside <code>processPayment</code> (the sheet shows the real result)
-              </label>
-
-              <h3 class="section-title">Button and request</h3>
-              <div class="settings-grid">
-                <div class="form-group">
-                  <label class="form-label" for="button-type">Button type</label>
-                  <select id="button-type" class="form-input">
-                    <option value="plain">plain</option>
-                    <option value="buy" selected>buy</option>
-                    <option value="check-out">check-out</option>
-                    <option value="pay">pay</option>
-                    <option value="order">order</option>
-                    <option value="subscribe">subscribe</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label class="form-label" for="button-style">Button style</label>
-                  <select id="button-style" class="form-input">
-                    <option value="black" selected>black</option>
-                    <option value="white">white</option>
-                    <option value="white-outline">white-outline</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label class="form-label" for="button-locale">Locale</label>
-                  <input type="text" id="button-locale" class="form-input" value="en-US">
-                </div>
-                <div class="form-group">
-                  <label class="form-label" for="test-card">test_card_number (sandbox)</label>
-                  <input type="text" id="test-card" class="form-input" value="4111111111111111">
-                </div>
-              </div>
-              <label class="checkbox-row"><input type="checkbox" id="require-contacts" checked> Ask for billing
-                (name, address) and shipping (email, phone)</label>
-              <label class="checkbox-row"><input type="checkbox" id="recurring"> Recurring payment request
-                (monthly)</label>
-              <button type="button" id="apply-settings" class="btn btn-secondary" style="margin-top: 0.5rem;">
-                Apply and redraw the button
-              </button>
+              <p class="cfg-hint" style="margin-top: 0.4rem;">
+                <strong>Update total</strong> calls <code id="set-total-name">setTotal()</code>: the next tap opens with
+                the new amount, without redrawing the button.
+              </p>
 
               <div id="apple-pay-button-container" class="apple-pay-button-wrap"></div>
               <div id="ec-container" class="ec-container hidden"></div>
+              <button type="button" id="open-checkout" class="btn btn-primary open-checkout hidden">Checkout</button>
 
               <div id="status-message" class="status-message"></div>
               <div id="result-card" class="result-card hidden">
                 <h4 id="result-title" style="margin-bottom: 0.5rem;"></h4>
                 <p id="result-message" style="color: var(--color-gray-600); font-size: 0.875rem;"></p>
               </div>
+            </div>
+
+            <div class="config-section" style="margin-top: 1.5rem;">
+              <div class="config-section-title">Event log</div>
+              <div id="event-log" class="event-log"></div>
             </div>
 
             <div id="debug-panel" class="debug-panel hidden">
@@ -222,11 +227,15 @@
               <label class="checkbox-row"><input type="checkbox" data-debug="slowAuth"> M7: <code>getAuthDetails</code>
                 waits 8 s (close the sheet meanwhile)</label>
               <label class="checkbox-row"><input type="checkbox" data-debug="declinePurchase"> M24: the purchase
-                declines once (<code>processPayment</code> mode)</label>
+                declines once, with a message (<code>processPayment</code> mode)</label>
               <label class="checkbox-row"><input type="checkbox" data-debug="addressUnserviceable"> M25: flag the
                 shipping address as unserviceable once (<code>processPayment</code> mode)</label>
-              <label class="checkbox-row"><input type="checkbox" data-debug="slowPurchase"> M26: the purchase takes 20 s
+              <label class="checkbox-row"><input type="checkbox" data-debug="slowPurchase"> M26: the purchase takes 40 s, so
+                Apple closes the sheet at 30 s and <code>applePaySheetClosedEarly</code> fires
                 (<code>processPayment</code> mode)</label>
+              <label class="checkbox-row"><input type="checkbox" data-debug="failProcessPayment"> M40:
+                <code>processPayment</code> throws once, before charging (the sheet closes and
+                <code>PAYMENT_PROCESSING_FAILED</code> fires; <code>processPayment</code> mode)</label>
               <button type="button" id="destroy-button" class="btn btn-secondary" style="margin-top: 0.5rem;">
                 M16: destroy now
               </button>
@@ -237,10 +246,318 @@
           </div>
 
           <div class="config-panel">
-            <div class="config-section">
-              <div class="config-section-title">Event log</div>
-              <div id="event-log" class="event-log"></div>
+            <div class="config-section" id="sdk-config">
+              <div class="config-section-title">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
+                </svg>
+                SDK Configuration
+              </div>
+              <p class="cfg-hint" style="margin-top:0;">Apple Pay config options. Changing one redraws the button.
+                The page always sets <code>merchantIdentifier</code>, <code>onValidateMerchant</code> and
+                <code>getAuthDetails</code>.</p>
+
+              <!-- Charging -->
+              <div class="cfg-heading" style="border-top: none; padding-top: 0; margin-top: 0.5rem;">Charging</div>
+              <div class="cfg-group">
+                <div class="cfg-group-label">When to charge <code>processPayment</code></div>
+                <p class="cfg-hint">Without <code>processPayment</code> the sheet shows success as soon as the token
+                  exists, and the page charges after. With it, the page charges while the sheet is open, and the sheet
+                  shows the real result.</p>
+                <div class="cfg-options">
+                  <label class="cfg-opt">
+                    <input type="radio" name="charge-mode" value="after-token" checked>
+                    <span>After the token</span>
+                    <span class="why">applePayTokenGenerated</span>
+                  </label>
+                  <label class="cfg-opt">
+                    <input type="radio" name="charge-mode" value="process-payment">
+                    <span>Inside the sheet</span>
+                    <span class="why">processPayment</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Button -->
+              <div class="cfg-heading">Button</div>
+              <div class="cfg-group">
+                <div class="cfg-group-label">Button label <code>button.type</code></div>
+                <p class="cfg-hint">The words on Apple's button.</p>
+                <div class="cfg-options">
+                  <label class="cfg-opt"><input type="radio" name="button-type" value="" checked><span>Not sent</span><span class="why">SDK uses plain</span></label>
+                  <label class="cfg-opt"><input type="radio" name="button-type" value="plain"><span>plain</span></label>
+                  <label class="cfg-opt"><input type="radio" name="button-type" value="buy"><span>buy</span></label>
+                  <label class="cfg-opt"><input type="radio" name="button-type" value="pay"><span>pay</span></label>
+                  <label class="cfg-opt"><input type="radio" name="button-type" value="check-out"><span>check-out</span></label>
+                  <label class="cfg-opt"><input type="radio" name="button-type" value="continue"><span>continue</span></label>
+                  <label class="cfg-opt"><input type="radio" name="button-type" value="order"><span>order</span></label>
+                  <label class="cfg-opt"><input type="radio" name="button-type" value="book"><span>book</span></label>
+                  <label class="cfg-opt"><input type="radio" name="button-type" value="rent"><span>rent</span></label>
+                  <label class="cfg-opt"><input type="radio" name="button-type" value="subscribe"><span>subscribe</span></label>
+                  <label class="cfg-opt"><input type="radio" name="button-type" value="add-money"><span>add-money</span></label>
+                  <label class="cfg-opt"><input type="radio" name="button-type" value="reload"><span>reload</span></label>
+                  <label class="cfg-opt"><input type="radio" name="button-type" value="top-up"><span>top-up</span></label>
+                  <label class="cfg-opt"><input type="radio" name="button-type" value="contribute"><span>contribute</span></label>
+                  <label class="cfg-opt"><input type="radio" name="button-type" value="donate"><span>donate</span></label>
+                  <label class="cfg-opt"><input type="radio" name="button-type" value="support"><span>support</span></label>
+                  <label class="cfg-opt"><input type="radio" name="button-type" value="tip"><span>tip</span></label>
+                </div>
+              </div>
+
+              <div class="cfg-group">
+                <div class="cfg-group-label">Button colour <code>button.style</code></div>
+                <div class="cfg-options">
+                  <label class="cfg-opt"><input type="radio" name="button-style" value="" checked><span>Not sent</span><span class="why">SDK uses black</span></label>
+                  <label class="cfg-opt"><input type="radio" name="button-style" value="black"><span>black</span></label>
+                  <label class="cfg-opt"><input type="radio" name="button-style" value="white"><span>white</span></label>
+                  <label class="cfg-opt"><input type="radio" name="button-style" value="white-outline"><span>white-outline</span></label>
+                </div>
+              </div>
+
+              <div class="cfg-group">
+                <div class="cfg-group-label">Button language <code>button.locale</code></div>
+                <p class="cfg-hint">A language tag. Blank leaves it out.</p>
+                <div class="cfg-options">
+                  <label class="cfg-opt"><input type="text" name="button-locale" placeholder="e.g. en-US" autocomplete="off"></label>
+                </div>
+              </div>
+
+              <div class="cfg-group">
+                <div class="cfg-group-label">Button size <code>button.width</code> <code>button.height</code> <code>button.borderRadius</code> <code>button.padding</code> <code>button.boxSizing</code></div>
+                <p class="cfg-hint">CSS values. Blank leaves each out: the SDK uses width 100% and height 44px, and
+                  Apple's defaults are a 4px corner radius and no padding. The SDK raises a px size below Apple's minimum (30px high; 100px wide
+                  for plain, 140px with words) and logs a warning.</p>
+                <div class="cfg-options">
+                  <label class="cfg-opt"><span>width</span><input type="text" name="button-width" placeholder="100%" autocomplete="off"></label>
+                  <label class="cfg-opt"><span>height</span><input type="text" name="button-height" placeholder="44px" autocomplete="off"></label>
+                  <label class="cfg-opt"><span>borderRadius</span><input type="text" name="button-radius" placeholder="e.g. 8px" autocomplete="off"></label>
+                  <label class="cfg-opt"><span>padding</span><input type="text" name="button-padding" placeholder="e.g. 4px 0px" autocomplete="off"></label>
+                  <label class="cfg-opt">
+                    <span>boxSizing</span>
+                    <select name="button-box-sizing">
+                      <option value="" selected>Not sent</option>
+                      <option value="border-box">border-box</option>
+                      <option value="content-box">content-box</option>
+                    </select>
+                  </label>
+                </div>
+              </div>
+
+              <div class="cfg-group" id="placement-group" hidden>
+                <div class="cfg-group-label">Where the form opens <code>parentContainerId</code></div>
+                <p class="cfg-hint">Express Checkout only. In a pop-up (no <code>parentContainerId</code>), the page shows a
+                  Checkout button that opens the card form and the Apple Pay button over the page. The SDK doesn't
+                  close the pop-up after Apple Pay; this page does, with <code>close()</code>.</p>
+                <div class="cfg-options">
+                  <label class="cfg-opt">
+                    <input type="radio" name="ec-placement" value="embedded" checked>
+                    <span>In the page</span>
+                    <span class="why">embedded</span>
+                  </label>
+                  <label class="cfg-opt">
+                    <input type="radio" name="ec-placement" value="dialog">
+                    <span>In a pop-up</span>
+                    <span class="why">dialog mode</span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="cfg-group" id="divider-group" hidden>
+                <div class="cfg-group-label">Divider text <code>updateTextElement('walletDividerText')</code></div>
+                <p class="cfg-hint">Express Checkout only: the line between the Apple Pay button and the card form.
+                  Applied straight away, without a redraw. Blank sends nothing.</p>
+                <div class="cfg-options">
+                  <label class="cfg-opt"><input type="text" class="wide" name="divider-text" placeholder="or pay with card" autocomplete="off"></label>
+                </div>
+              </div>
+
+              <!-- Merchant and cards -->
+              <div class="cfg-heading">Merchant and cards</div>
+              <div class="cfg-group">
+                <div class="cfg-group-label">Merchant country <code>countryCode</code></div>
+                <p class="cfg-hint">Apple: the country of your main place of business. Ask your payment provider which to use.</p>
+                <div class="cfg-options">
+                  <label class="cfg-opt"><input type="radio" name="country-code" value="US" checked><span>US</span></label>
+                  <label class="cfg-opt"><input type="radio" name="country-code" value="GB"><span>GB</span></label>
+                  <label class="cfg-opt"><input type="radio" name="country-code" value="CA"><span>CA</span></label>
+                  <label class="cfg-opt"><input type="radio" name="country-code" value="AU"><span>AU</span></label>
+                </div>
+              </div>
+
+              <div class="cfg-group">
+                <div class="cfg-group-label">Currency <code>currencyCode</code></div>
+                <p class="cfg-hint">The page also charges in this currency, on Spreedly's test gateway.</p>
+                <div class="cfg-options">
+                  <label class="cfg-opt"><input type="radio" name="currency-code" value="USD" checked><span>USD</span></label>
+                  <label class="cfg-opt"><input type="radio" name="currency-code" value="EUR"><span>EUR</span></label>
+                  <label class="cfg-opt"><input type="radio" name="currency-code" value="GBP"><span>GBP</span></label>
+                  <label class="cfg-opt"><input type="radio" name="currency-code" value="CAD"><span>CAD</span></label>
+                </div>
+              </div>
+
+              <div class="cfg-group">
+                <div class="cfg-group-label">Card networks <code>supportedNetworks</code></div>
+                <p class="cfg-hint">The sheet only offers cards on these networks. Apple's list is on its
+                  <a href="https://developer.apple.com/documentation/applepayontheweb/supported-networks" target="_blank" rel="noopener">supported networks</a>
+                  page. Some networks need a newer Apple Pay version.</p>
+                <div class="cfg-options">
+                  <label class="cfg-opt"><input type="radio" name="networks" value="" checked><span>Not sent</span><span class="why">SDK: visa, masterCard, amex, discover, jcb, maestro, elo, cartesBancaires, interac, mada, bancontact, dankort</span></label>
+                  <label class="cfg-opt"><input type="radio" name="networks" value="visa"><span>visa only</span></label>
+                  <label class="cfg-opt"><input type="radio" name="networks" value="masterCard"><span>masterCard only</span></label>
+                  <label class="cfg-opt"><input type="radio" name="networks" value="custom"><span>List</span></label>
+                  <label class="cfg-opt"><input type="text" class="wide" name="networks-custom" value="visa, masterCard, amex, interac" autocomplete="off"></label>
+                </div>
+              </div>
+
+              <div class="cfg-group">
+                <div class="cfg-group-label">Card types <code>merchantCapabilities</code></div>
+                <p class="cfg-hint">Apple: <code>supports3DS</code> is required. <code>supportsCredit</code> or
+                  <code>supportsDebit</code> alone allows only that type. Add <code>supportsEMV</code> only if you take
+                  China Union Pay.</p>
+                <div class="cfg-options">
+                  <label class="cfg-opt"><input type="radio" name="capabilities" value="" checked><span>Not sent</span><span class="why">SDK: supports3DS</span></label>
+                  <label class="cfg-opt"><input type="radio" name="capabilities" value="supportsCredit"><span>Credit only</span></label>
+                  <label class="cfg-opt"><input type="radio" name="capabilities" value="supportsDebit"><span>Debit only</span></label>
+                  <label class="cfg-opt"><input type="radio" name="capabilities" value="supportsEMV"><span>With supportsEMV</span></label>
+                </div>
+              </div>
+
+              <div class="cfg-group">
+                <div class="cfg-group-label">Card countries <code>supportedCountries</code></div>
+                <p class="cfg-hint">The sheet only offers cards issued in these countries. Comma-separated ISO codes.</p>
+                <div class="cfg-options">
+                  <label class="cfg-opt"><input type="radio" name="card-countries" value="" checked><span>Not sent</span><span class="why">any country</span></label>
+                  <label class="cfg-opt"><input type="radio" name="card-countries" value="custom"><span>List</span></label>
+                  <label class="cfg-opt"><input type="text" class="wide" name="card-countries-custom" value="US" autocomplete="off"></label>
+                </div>
+              </div>
+
+              <!-- Contact details -->
+              <div class="cfg-heading">Contact details</div>
+              <div class="cfg-group">
+                <div class="cfg-group-label">Billing contact <code>requiredBillingContactFields</code></div>
+                <div class="cfg-options">
+                  <label class="cfg-opt"><input type="checkbox" name="billing-fields" value="name" checked><span>name</span></label>
+                  <label class="cfg-opt"><input type="checkbox" name="billing-fields" value="postalAddress" checked><span>postalAddress</span></label>
+                  <label class="cfg-opt"><input type="checkbox" name="billing-fields" value="email"><span>email</span></label>
+                  <label class="cfg-opt"><input type="checkbox" name="billing-fields" value="phone"><span>phone</span></label>
+                  <label class="cfg-opt"><input type="checkbox" name="billing-fields" value="phoneticName"><span>phoneticName</span></label>
+                </div>
+              </div>
+
+              <div class="cfg-group">
+                <div class="cfg-group-label">Shipping contact <code>requiredShippingContactFields</code></div>
+                <p class="cfg-hint">Tick <code>postalAddress</code> to get a shipping address. Shipping type sets how the sheet
+                  labels it.</p>
+                <div class="cfg-options">
+                  <label class="cfg-opt"><input type="checkbox" name="shipping-fields" value="email" checked><span>email</span></label>
+                  <label class="cfg-opt"><input type="checkbox" name="shipping-fields" value="phone" checked><span>phone</span></label>
+                  <label class="cfg-opt"><input type="checkbox" name="shipping-fields" value="name"><span>name</span></label>
+                  <label class="cfg-opt"><input type="checkbox" name="shipping-fields" value="postalAddress"><span>postalAddress</span></label>
+                  <label class="cfg-opt"><input type="checkbox" name="shipping-fields" value="phoneticName"><span>phoneticName</span></label>
+                </div>
+              </div>
+
+              <div class="cfg-group">
+                <div class="cfg-group-label">Prefilled contacts <code>billingContact</code> <code>shippingContact</code></div>
+                <p class="cfg-hint">A synthetic address on file, shown as the default in the sheet. The shopper can pick
+                  another. Apple needs <code>postalAddress</code> in the billing fields for a prefilled billing address,
+                  and at least one shipping field for a prefilled shipping contact. The SDK rejects the config
+                  otherwise.</p>
+                <div class="cfg-options">
+                  <label class="cfg-opt"><input type="checkbox" name="prefill" value="billingContact"><span>Billing</span></label>
+                  <label class="cfg-opt"><input type="checkbox" name="prefill" value="shippingContact"><span>Shipping</span></label>
+                </div>
+              </div>
+
+              <!-- Total -->
+              <div class="cfg-heading">Total</div>
+              <div class="cfg-group">
+                <div class="cfg-group-label">Total type <code>total.type</code></div>
+                <div class="cfg-options">
+                  <label class="cfg-opt"><input type="radio" name="total-type" value="" checked><span>Not sent</span><span class="why">Apple's default is final</span></label>
+                  <label class="cfg-opt"><input type="radio" name="total-type" value="final"><span>final</span></label>
+                  <label class="cfg-opt"><input type="radio" name="total-type" value="pending"><span>pending</span><span class="why">amount may change</span></label>
+                </div>
+              </div>
+
+              <!-- Payment type -->
+              <div class="cfg-heading">Payment type</div>
+              <div class="cfg-group">
+                <div class="cfg-group-label">Payment request <code>recurringPaymentRequest</code></div>
+                <p class="cfg-hint">The SDK asks for Apple Pay version 14. The billing amount is the subtotal, and
+                  <code>managementURL</code> is this site.</p>
+                <div class="cfg-options">
+                  <label class="cfg-opt"><input type="radio" name="payment-request" value="" checked><span>One-off</span></label>
+                  <label class="cfg-opt"><input type="radio" name="payment-request" value="recurring"><span>Recurring</span><span class="why">subscription</span></label>
+                </div>
+
+                <div class="cfg-sub" data-request="recurring" hidden>
+                  <div class="cfg-options">
+                    <label class="cfg-opt"><span>Every</span><input type="text" name="interval-count" value="1" style="width: 3rem;" autocomplete="off"></label>
+                    <label class="cfg-opt">
+                      <select name="interval-unit">
+                        <option value="month" selected>month</option>
+                        <option value="year">year</option>
+                        <option value="day">day</option>
+                        <option value="hour">hour</option>
+                        <option value="minute">minute</option>
+                      </select>
+                      <span class="why">recurringPaymentIntervalUnit</span>
+                    </label>
+                  </div>
+                  <div class="cfg-options">
+                    <label class="cfg-opt"><input type="checkbox" name="recurring-trial"><span>Free first month</span><span class="why">trialBilling</span></label>
+                    <label class="cfg-opt"><input type="checkbox" name="recurring-end"><span>Ends after a year</span><span class="why">recurringPaymentEndDate</span></label>
+                  </div>
+                </div>
+
+                <div class="cfg-sub" data-request="any" hidden>
+                  <div class="cfg-options">
+                    <label class="cfg-opt"><input type="checkbox" name="billing-agreement"><span>Billing agreement</span><span class="why">billingAgreement</span></label>
+                    <label class="cfg-opt"><input type="checkbox" name="token-notifications"><span>Token notification URL</span><span class="why">tokenNotificationURL</span></label>
+                  </div>
+                  <p class="cfg-hint">This server has no route for Apple's token notifications, so Apple's calls to the
+                    URL would fail.</p>
+                </div>
+              </div>
+
+              <!-- Shipping -->
+              <div class="cfg-heading">Shipping</div>
+              <div class="cfg-group">
+                <div class="cfg-group-label">Shipping type <code>shippingType</code></div>
+                <p class="cfg-hint">How the sheet labels the shipping information. Shows with a shipping address
+                  (<code>postalAddress</code> under Shipping contact).</p>
+                <div class="cfg-options">
+                  <label class="cfg-opt"><input type="radio" name="shipping-type" value="" checked><span>Not sent</span><span class="why">Apple uses shipping</span></label>
+                  <label class="cfg-opt"><input type="radio" name="shipping-type" value="shipping"><span>shipping</span></label>
+                  <label class="cfg-opt"><input type="radio" name="shipping-type" value="delivery"><span>delivery</span></label>
+                  <label class="cfg-opt"><input type="radio" name="shipping-type" value="storePickup"><span>storePickup</span></label>
+                  <label class="cfg-opt"><input type="radio" name="shipping-type" value="servicePickup"><span>servicePickup</span></label>
+                </div>
+              </div>
+
+              <!-- Spreedly -->
+              <div class="cfg-heading">Spreedly</div>
+              <div class="cfg-group">
+                <div class="cfg-group-label">Sandbox card <code>testCardNumber</code></div>
+                <p class="cfg-hint">Spreedly stores this card number instead of the one in Apple's token, so the test
+                  gateway accepts it. Blank leaves it out.</p>
+                <div class="cfg-options">
+                  <label class="cfg-opt"><input type="text" class="wide" name="test-card" value="4111111111111111" autocomplete="off"></label>
+                </div>
+              </div>
+
+              <div class="cfg-group">
+                <div class="cfg-group-label">Metadata <code>metadata</code></div>
+                <p class="cfg-hint">Stored on the Spreedly payment method. <code>key=value</code> pairs, comma-separated.
+                  Blank leaves it out.</p>
+                <div class="cfg-options">
+                  <label class="cfg-opt"><input type="text" class="wide" name="metadata" value="demo=apple-pay" autocomplete="off"></label>
+                </div>
+              </div>
             </div>
+
             <div class="config-section">
               <div class="config-section-title">How this page works</div>
               <ol style="color: var(--color-gray-600); font-size: 0.875rem; line-height: 1.8; padding-left: 1.25rem;">
@@ -248,7 +565,8 @@
                 <li><code>onValidateMerchant</code> calls this server's <code>/api/v1/apple-pay/validate</code>.</li>
                 <li><code>getAuthDetails</code> calls <code>/api/v1/auth/params</code> for every attempt.</li>
                 <li>The SDK turns Apple's token into a Spreedly payment method.</li>
-                <li>The page charges it with <code>/api/v1/simple-purchase</code> on the test gateway.</li>
+                <li>The page charges it with <code>/api/v1/simple-purchase</code> on the test gateway, for the total
+                  the sheet last showed.</li>
               </ol>
             </div>
           </div>

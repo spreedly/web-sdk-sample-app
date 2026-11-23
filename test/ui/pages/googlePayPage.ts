@@ -1,6 +1,7 @@
 import { Page } from '@playwright/test';
 import { expect } from '../util/fixtures';
 import { SELECTORS, TEST_DATA } from '../util/test-constants';
+import { showFlowCard } from './landingPage';
 
 type StubOptions = { ready?: boolean };
 
@@ -141,7 +142,7 @@ export const googlePayPage = {
   },
 
   clickOnGooglePayButton: async (page: Page) => {
-    const googlePayButton = page.locator(SELECTORS.GOOGLE_PAY_BUTTON);
+    const googlePayButton = await showFlowCard(page, SELECTORS.GOOGLE_PAY_BUTTON);
     await expect(googlePayButton).toBeVisible();
     await googlePayButton.click();
   },
