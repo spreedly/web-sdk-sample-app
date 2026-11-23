@@ -109,9 +109,9 @@ function proceed() {
     return;
   }
   const params = new URLSearchParams({ sdk: sdkType, amount: cartTotalAmount() });
-  // Keeps the SDK source the payment page was using (?sdk-source=local), when it's that.
-  if (new URLSearchParams(window.location.search).get('sdk-source') === 'local') {
-    params.set('sdk-source', 'local');
+  // Keeps the SDK source the payment page was using (?sdk-source=cdn), when it's that.
+  if (new URLSearchParams(window.location.search).get('sdk-source') === 'cdn') {
+    params.set('sdk-source', 'cdn');
   }
   window.location.href = `${APPLE_PAY_PAGE}?${params}`;
 }

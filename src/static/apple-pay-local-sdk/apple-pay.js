@@ -7,10 +7,10 @@
  * a wallet row above the card form, embedded in the page or in Express Checkout's pop-up (dialog
  * mode, chosen in the config panel).
  *
- * The SDK loads from the CDN's rc channel, like the other pages (`SpreedlyUtils.getSDKScriptUrl()`).
- * With ?sdk-source=local it loads from the SDK dev servers on the computer showing the page
- * (`npm run dev` in checkout-web-sdk), so an SDK branch can be tried on a registered domain before
- * it reaches the CDN. Use Chrome on that computer: it lets an HTTPS page load http://localhost.
+ * The SDK loads from the SDK dev servers on the computer showing the page (`npm run dev` in
+ * checkout-web-sdk), because Apple Pay isn't on the CDN yet. Use Chrome on that computer: it lets
+ * an HTTPS page load http://localhost. ?sdk-source=cdn loads the CDN's rc channel instead, like the
+ * other pages (`SpreedlyUtils.getSDKScriptUrl()`).
  *
  * Every API call goes to this server (same origin): merchant validation needs the Merchant
  * Identity Certificate, which only the server holds.
@@ -44,7 +44,7 @@ const LOCAL_SDK_URLS = {
 
 const params = new URLSearchParams(window.location.search);
 const sdkType = SpreedlyUtils.getSDKType();
-const sdkFromLocalhost = params.get('sdk-source') === 'local';
+const sdkFromLocalhost = params.get('sdk-source') !== 'cdn';
 const debugEnabled = params.get('debug') === '1';
 
 const elements = {};
@@ -784,9 +784,9 @@ function showSdkSource() {
     : 'the CDN (rc channel)';
   const other = new URLSearchParams(window.location.search);
   if (sdkFromLocalhost) {
-    other.delete('sdk-source');
+    other.set('sdk-source', 'cdn');
   } else {
-    other.set('sdk-source', 'local');
+    other.delete('sdk-source');
   }
   const toggle = elements['sdk-source-toggle'];
   toggle.href = `?${other}`;
@@ -805,8 +805,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   initElements();
   applyAmountFromStartPage();
   const backParams = new URLSearchParams({ sdk: sdkType });
-  if (sdkFromLocalhost) {
-    backParams.set('sdk-source', 'local');
+  if (!sdkFromLocalhost) {
+    backParams.set('sdk-source', 'cdn');
   }
   document.getElementById('back-link').href = `../apple-pay/index.html?${backParams}`;
   showSdkSource();
