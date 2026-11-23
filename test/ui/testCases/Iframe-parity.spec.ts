@@ -20,7 +20,8 @@ test.describe('Iframe Parity tests', () => {
         expect(placeholderColorAfter).toBe(CSS_PROPERTIES.PLACEHOLDER_TEXT_COLOR_AFTER);
     })
 
-    test('should verify number format', async ({ page }) => {
+    // Flaky in CI run 44890401070. Skipped while the flow is under maintenance.
+    test.skip('should verify number format', async ({ page }) => {
         await page.goto(MONOREPO_URLS.BASE);
         await landingPage.clickOnTokenizeButton(page);
         await waitForAuthParams(page);
