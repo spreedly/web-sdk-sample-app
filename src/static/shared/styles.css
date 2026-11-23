@@ -713,6 +713,11 @@ p {
   color: var(--color-white);
   border-radius: 100px;
   margin-top: 0.375rem;
+  margin-right: 0.375rem;
+}
+
+.flow-badge-maintenance {
+  background: #b45309;
 }
 
 .flow-card-arrow {
