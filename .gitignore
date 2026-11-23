@@ -1,6 +1,9 @@
 dist/
 node_modules/
+# Env files hold credentials: .env, .env.staging, .env.local, credentials.env, ...
 .env
+.env.*
+*.env
 *.pem
 .cursor/
 log/

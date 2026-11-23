@@ -3,6 +3,7 @@ import { Request, Response } from 'express';
 import { ipKeyGenerator, rateLimit } from 'express-rate-limit';
 import { createSign, randomUUID, timingSafeEqual } from 'crypto';
 import config from '../config';
+import { clientIp } from '../clientIp';
 
 // POST /api/v1/paze/oauth/token
 // Mints a Paze access token for the Spreedly mobile SDK's Paze checkout (CAT/sandbox).
@@ -28,21 +29,14 @@ const isAuthorized = (req: Request): boolean => {
   );
 };
 
-const callerIp = (req: Request): string => {
-  const forwarded = req.get('x-forwarded-for');
-  return (
-    forwarded?.split(',').pop()?.trim() || req.socket.remoteAddress || 'unknown'
-  );
-};
-
 // Runs before the demo key check, so callers with a wrong key are limited too.
 export const pazeTokenRateLimit = rateLimit({
   windowMs: 60_000,
   limit: 10,
   standardHeaders: 'draft-8', // also sets Retry-After on a 429
   legacyHeaders: false,
-  keyGenerator: req => ipKeyGenerator(callerIp(req)),
-  // callerIp reads X-Forwarded-For itself, so the app doesn't need `trust proxy`.
+  keyGenerator: req => ipKeyGenerator(clientIp(req, Boolean(config.edgeGuard))),
+  // clientIp reads the forwarding headers itself, so the app doesn't need `trust proxy`.
   validate: { xForwardedForHeader: false },
   handler: (_req, res) => {
     res

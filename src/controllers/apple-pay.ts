@@ -3,6 +3,7 @@ import https from 'https';
 import { Request, Response } from 'express';
 import { ipKeyGenerator, rateLimit } from 'express-rate-limit';
 import config from '../config';
+import { clientIp } from '../clientIp';
 
 // POST /api/v1/apple-pay/validate
 // Requests an Apple Pay merchant session over mutual TLS with the Merchant Identity Certificate.
@@ -48,19 +49,12 @@ const isConfigured = (): boolean =>
       config.applePayMerchantIdentityKey
   );
 
-const callerIp = (req: Request): string => {
-  const forwarded = req.get('x-forwarded-for');
-  return (
-    forwarded?.split(',').pop()?.trim() || req.socket.remoteAddress || 'unknown'
-  );
-};
-
 export const applePayValidateRateLimit = rateLimit({
   windowMs: 60_000,
   limit: 10,
   standardHeaders: 'draft-8',
   legacyHeaders: false,
-  keyGenerator: req => ipKeyGenerator(callerIp(req)),
+  keyGenerator: req => ipKeyGenerator(clientIp(req, Boolean(config.edgeGuard))),
   validate: { xForwardedForHeader: false },
   handler: (_req, res) => {
     res

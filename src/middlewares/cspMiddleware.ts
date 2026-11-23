@@ -1,4 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
+import config from '../config';
+
+const appConnectSources = config.publicAppOrigin
 
 export const cspMiddleware = (req: Request, res: Response, next: NextFunction) => {
   res.setHeader(
@@ -7,7 +10,7 @@ export const cspMiddleware = (req: Request, res: Response, next: NextFunction) =
       "default-src 'self'",
       "script-src 'self' https://*.spreedly.com https://cdn.jsdelivr.net https://checkout.wallet.cat.earlywarning.io https://checkout.paze.com https://applepay.cdn-apple.com https://pay.google.com",
       "style-src 'self' 'unsafe-inline'",
-      "connect-src 'self' https://*.spreedly.com https://pci.browser-intake-datadoghq.com https://checkout-web-sample-app-049a3c617015.herokuapp.com https://checkout.wallet.cat.earlywarning.io https://checkout.paze.com https://pay.google.com",
+      `connect-src 'self' ${appConnectSources} https://*.spreedly.com https://pci.browser-intake-datadoghq.com https://checkout.wallet.cat.earlywarning.io https://checkout.paze.com https://pay.google.com`,
       "frame-src 'self' https://*.spreedly.com https://checkout.wallet.cat.earlywarning.io https://checkout.paze.com https://applepay.cdn-apple.com https://pay.google.com",
       "img-src 'self' data: https://applepay.cdn-apple.com",
       "font-src 'self'",

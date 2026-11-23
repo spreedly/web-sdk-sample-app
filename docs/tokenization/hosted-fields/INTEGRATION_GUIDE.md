@@ -61,11 +61,7 @@ Non-secure tokenization was deprecated on October 31, 2026 (end of life December
 Add the Hosted Fields script to your page:
 
 ```html
-<!-- Production -->
 <script src="https://core.spreedly.com/checkout/sdk/{version}/index.js"></script>
-
-<!-- Staging (testing) -->
-<script src="https://core-test.spreedly.com/checkout/sdk/{version}/index.js"></script>
 ```
 
 | Channel | Description | Example |
@@ -844,6 +840,8 @@ sdk.on('error', (error) => {
 
 ## Testing
 
+Load the production script from [Installation](#installation) and use these test card numbers.
+
 ### Test Card Numbers
 
 | Card Type | Number | CVV | Expiry |
@@ -852,14 +850,6 @@ sdk.on('error', (error) => {
 | Mastercard | 5555555555554444 | 123 | Any future date |
 | Amex | 378282246310005 | 1234 | Any future date |
 | Discover | 6011111111111117 | 123 | Any future date |
-
-### Staging Environment
-
-Use `core-test.spreedly.com` for testing:
-
-```html
-<script src="https://core-test.spreedly.com/checkout/sdk/{version}/index.js"></script>
-```
 
 ---
 
@@ -884,9 +874,9 @@ Add Spreedly domains to your Content Security Policy:
 
 ```html
 <meta http-equiv="Content-Security-Policy" content="
-  frame-src https://core.spreedly.com https://core-test.spreedly.com;
-  script-src https://core.spreedly.com https://core-test.spreedly.com;
-  connect-src https://core.spreedly.com https://core-test.spreedly.com;
+  frame-src https://core.spreedly.com;
+  script-src https://core.spreedly.com;
+  connect-src https://core.spreedly.com;
 ">
 ```
 

@@ -54,8 +54,8 @@ In your checkout page `<head>` — Mastercard's UI kit + Click to Pay library, t
 <script
   src="https://sandbox.src.mastercard.com/srci/integration/2/lib.js?srcDpaId=YOUR_DPA_ID&locale=en_US"></script>
 
-<!-- Spreedly checkout SDK (rc = release-candidate channel; use the channel Spreedly gives you) -->
-<script src="https://core-test.spreedly.com/checkout/sdk/rc/index.js"></script>
+<!-- Spreedly checkout SDK. Replace {version} with your pinned SDK version. -->
+<script src="https://core.spreedly.com/checkout/sdk/{version}/index.js"></script>
 ```
 
 > Use the `sandbox.src.mastercard.com` host for testing and Mastercard's production host for live.

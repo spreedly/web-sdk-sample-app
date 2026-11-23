@@ -94,12 +94,10 @@ async function createPendingPurchase() {
   
   console.log('Creating pending purchase with:', { amount, currency });
   
-  // Configure redirect URLs
-  // Use production URL for Stripe redirects (Stripe requires public URLs)
-  // For local testing, deploy changes first or use ngrok
-  const baseUrl = 'https://checkout-web-sample-app-049a3c617015.herokuapp.com' || window.location.origin;
-  const redirectUrl = `${baseUrl}/offsite-payments/handle_redirect.html`;
-  const callbackUrl = `${baseUrl}/api/v1/offsite-callback`;
+
+  const baseUrl = getRedirectOrigin();
+  const redirectUrl = baseUrl ? `${baseUrl}/offsite-payments/handle_redirect.html` : undefined;
+  const callbackUrl = baseUrl ? `${baseUrl}/api/v1/offsite-callback` : undefined;
   
   const response = await axios.post(`${API_BASE_URL}/stripe-apm-purchase`, {
     amount,
