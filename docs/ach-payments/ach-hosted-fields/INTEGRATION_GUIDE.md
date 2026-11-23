@@ -607,12 +607,6 @@ The test gateway approves a purchase only with this account number. Any other va
 number still tokenizes, but the purchase fails, which is useful for testing your failure path.
 See [Spreedly's test data](https://developer.spreedly.com/docs/test-data) for more.
 
-To test against Spreedly's staging environment, load the SDK from `core-test.spreedly.com`:
-
-```html
-<script src="https://core-test.spreedly.com/checkout/sdk/{version}/index.js"></script>
-```
-
 ---
 
 ## Troubleshooting
@@ -630,8 +624,8 @@ If your page has a Content Security Policy, allow Spreedly's domains for scripts
 
 ```html
 <meta http-equiv="Content-Security-Policy" content="
-  frame-src https://core.spreedly.com https://core-test.spreedly.com;
-  script-src https://core.spreedly.com https://core-test.spreedly.com;
+  frame-src https://core.spreedly.com;
+  script-src https://core.spreedly.com;
 ">
 ```
 

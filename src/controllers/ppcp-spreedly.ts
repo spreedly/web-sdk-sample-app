@@ -1,7 +1,14 @@
-import axios, { AxiosError } from 'axios';
+import { AxiosError } from 'axios';
 import { Request, Response } from 'express';
 import config from '../config';
-import { callerUrl } from './ppcp';
+import {
+  core,
+  CoreRequestRefusedError,
+  INVALID_TOKEN,
+  isSpreedlyToken,
+  sendCoreError,
+} from '../coreClient';
+import { checkRedirectUrl, INVALID_REDIRECT_URL, serverCallbackUrl } from '../returnUrls';
 
 // PPCP through Spreedly's `paypal_commerce_platform` gateway.
 
@@ -18,29 +25,15 @@ const captureIfNeeded = async (authorization: {
   if (authorization.transaction_type === 'OffsitePurchase') {
     return authorization as Record<string, unknown>;
   }
-  const response = await axios.post(
-    `${config.spreedlyUrl}/v1/transactions/${authorization.token}/capture.json`,
-    { transaction: {} },
-    { headers: spreedlyHeaders() }
-  );
+  const response = await core.post(`/v1/transactions/${authorization.token}/capture.json`, {
+    transaction: {},
+  });
   return response.data?.transaction;
 };
 
 // The SDK's callbacks carry the PayPal order id, but capture addresses the Spreedly transaction.
 // Kept in memory for the demo; persist this against your own order record.
 const orderToTransaction = new Map<string, string>();
-
-const getAuthorizationHeader = (): string => {
-  if (!config.spreedlyEnvironmentKey || !config.spreedlyAccessSecret) {
-    throw new Error(
-      'SPREEDLY_ENVIRONMENT_KEY_NEW and SPREEDLY_ACCESS_SECRET_NEW environment variables are required'
-    );
-  }
-  const credentials = Buffer.from(
-    `${config.spreedlyEnvironmentKey}:${config.spreedlyAccessSecret}`
-  ).toString('base64');
-  return `Basic ${credentials}`;
-};
 
 const assertGatewayConfigured = (): void => {
   if (!config.ppcpGatewayToken) {
@@ -50,12 +43,11 @@ const assertGatewayConfigured = (): void => {
   }
 };
 
-const spreedlyHeaders = () => ({
-  Authorization: getAuthorizationHeader(),
-  'Content-Type': 'application/json',
-});
-
 const handleError = (error: unknown, res: Response): void => {
+  if (error instanceof CoreRequestRefusedError) {
+    sendCoreError(error, res);
+    return;
+  }
   const apiError = error as AxiosError;
   res
     .status(apiError.response?.status || 500)
@@ -70,13 +62,7 @@ const approvalSessionId = (checkoutUrl: string): string | undefined => {
   }
 };
 
-// Spreedly rejects localhost redirect/callback URLs, so fall back to the deployed sample app.
-const publicOrigin = (req: Request): string => {
-  const origin = req.headers.origin || `${req.protocol}://${req.get('host')}`;
-  return /^https:\/\//.test(origin) && !/localhost|127\.0\.0\.1/.test(origin)
-    ? origin
-    : 'https://checkout-web-sample-app-049a3c617015.herokuapp.com';
-};
+const PPCP_RETURN_PAGE = '/ppcp/return/';
 
 // Only paypal and venmo are distinct wallet types. Pay Later and PayPal Credit are funding
 // sources on a PayPal account, so they transact as paypal.
@@ -104,22 +90,25 @@ export const createSpreedlyPPCPOrder = async (
     amount = '10.00',
     currency_code = 'USD',
     redirect_url,
-    callback_url,
     // Vault WITH purchase: save the wallet as part of taking the payment. One offsite flow, not two.
     store_in_vault = false,
   } = req.body || {};
   const paymentMethodType = resolvePaymentMethodType(req.body?.payment_method_type);
   const transactionType = resolveTransactionType(req.body?.transaction_type);
+  // A caller (the web page or the mobile app) may name its own return page, but only on this app.
+  const redirect = checkRedirectUrl(redirect_url, PPCP_RETURN_PAGE);
+  if (!redirect.ok) {
+    res.status(400).json(INVALID_REDIRECT_URL);
+    return;
+  }
   try {
     assertGatewayConfigured();
 
     // The offsite transaction needs a payment method even though the buyer's wallet identity
     // only materializes at approval.
-    const paymentMethodResponse = await axios.post(
-      `${config.spreedlyUrl}/v1/payment_methods.json`,
-      { payment_method: { payment_method_type: paymentMethodType } },
-      { headers: spreedlyHeaders() }
-    );
+    const paymentMethodResponse = await core.post('/v1/payment_methods.json', {
+      payment_method: { payment_method_type: paymentMethodType },
+    });
     const paymentMethodToken =
       paymentMethodResponse.data?.transaction?.payment_method?.token ||
       paymentMethodResponse.data?.payment_method?.token;
@@ -128,19 +117,15 @@ export const createSpreedlyPPCPOrder = async (
       return;
     }
 
-    const origin = publicOrigin(req);
-    // Caller-supplied URLs win, so a mobile client can send its own deep links.
-    const callerRedirect = callerUrl(redirect_url);
-    const callerCallback = callerUrl(callback_url);
-    const transactionResponse = await axios.post(
-      `${config.spreedlyUrl}/v1/gateways/${config.ppcpGatewayToken}/${transactionType}.json`,
+    const transactionResponse = await core.post(
+      `/v1/gateways/${config.ppcpGatewayToken}/${transactionType}.json`,
       {
         transaction: {
           payment_method_token: paymentMethodToken,
           amount: toMinorUnits(amount),
           currency_code,
           // Where Spreedly lands the buyer, with ?transaction_token= appended.
-          redirect_url: callerRedirect || `${origin}/ppcp/return/`,
+          redirect_url: redirect.url,
           // Without retain_on_success the payment method lands in storage_state 'used'.
           retain_on_success: true,
           // Vault WITH purchase. ON_SUCCESS = only vault if the payment goes through.
@@ -154,8 +139,7 @@ export const createSpreedlyPPCPOrder = async (
               }
             : {}),
         },
-      },
-      { headers: spreedlyHeaders() }
+      }
     );
 
     const transaction = transactionResponse.data?.transaction;
@@ -179,7 +163,6 @@ export const createSpreedlyPPCPOrder = async (
       checkout_url: transaction.response?.checkout_url,
     });
   } catch (error) {
-    console.error(error);
     handleError(error, res);
   }
 };
@@ -201,10 +184,7 @@ export const captureSpreedlyPPCPOrder = async (
     return;
   }
   try {
-    const current = await axios.get(
-      `${config.spreedlyUrl}/v1/transactions/${transactionToken}.json`,
-      { headers: spreedlyHeaders() }
-    );
+    const current = await core.get(`/v1/transactions/${transactionToken}.json`);
     const authorization = current.data?.transaction;
     if (!authorization?.succeeded) {
       res.status(409).json({
@@ -250,10 +230,7 @@ export const captureSpreedlyPPCPByTransaction = async (
     return;
   }
   try {
-    const current = await axios.get(
-      `${config.spreedlyUrl}/v1/transactions/${transactionToken}.json`,
-      { headers: spreedlyHeaders() }
-    );
+    const current = await core.get(`/v1/transactions/${transactionToken}.json`);
     const authorization = current.data?.transaction;
 
     if (!authorization?.succeeded) {
@@ -301,10 +278,7 @@ export const getSpreedlyPPCPTransaction = async (
     return;
   }
   try {
-    const response = await axios.get(
-      `${config.spreedlyUrl}/v1/transactions/${transactionToken}.json`,
-      { headers: spreedlyHeaders() }
-    );
+    const response = await core.get(`/v1/transactions/${transactionToken}.json`);
     res.json(response.data);
   } catch (error) {
     handleError(error, res);
@@ -351,10 +325,7 @@ const recordVaultedWalletByToken = async (
 ): Promise<SpreedlyVaultedToken | null> => {
   if (!paymentMethodToken) return null;
   try {
-    const response = await axios.get(
-      `${config.spreedlyUrl}/v1/payment_methods/${encodeURIComponent(paymentMethodToken)}.json`,
-      { headers: spreedlyHeaders() }
-    );
+    const response = await core.get(`/v1/payment_methods/${encodeURIComponent(paymentMethodToken)}.json`);
     return recordVaultedWallet(response.data?.payment_method);
   } catch {
     return null;
@@ -384,15 +355,18 @@ export const createSpreedlyPPCPVaultSetup = async (
   req: Request,
   res: Response
 ): Promise<void> => {
-  const { redirect_url, callback_url } = req.body || {};
+  const { redirect_url } = req.body || {};
+  const redirect = checkRedirectUrl(redirect_url, PPCP_RETURN_PAGE);
+  if (!redirect.ok) {
+    res.status(400).json(INVALID_REDIRECT_URL);
+    return;
+  }
   try {
     assertGatewayConfigured();
 
-    const pmResponse = await axios.post(
-      `${config.spreedlyUrl}/v1/payment_methods.json`,
-      { payment_method: { payment_method_type: 'paypal', retained: true } },
-      { headers: spreedlyHeaders() }
-    );
+    const pmResponse = await core.post('/v1/payment_methods.json', {
+      payment_method: { payment_method_type: 'paypal', retained: true },
+    });
   
     const paymentMethodToken =
       pmResponse.data?.transaction?.payment_method?.token ||
@@ -402,14 +376,13 @@ export const createSpreedlyPPCPVaultSetup = async (
       return;
     }
 
-    const origin = publicOrigin(req);
-    const verifyResponse = await axios.post(
-      `${config.spreedlyUrl}/v1/gateways/${config.ppcpGatewayToken}/verify.json`,
+    const verifyResponse = await core.post(
+      `/v1/gateways/${config.ppcpGatewayToken}/verify.json`,
       {
         transaction: {
           payment_method_token: paymentMethodToken,
-          redirect_url: callerUrl(redirect_url) || `${origin}/ppcp/return/`,
-          callback_url: callerUrl(callback_url) || `${origin}/api/v1/offsite-callback`,
+          redirect_url: redirect.url,
+          callback_url: serverCallbackUrl(),
           retain_on_success: true,
           gateway_specific_fields: {
             paypal_commerce_platform: {
@@ -421,8 +394,7 @@ export const createSpreedlyPPCPVaultSetup = async (
             },
           },
         },
-      },
-      { headers: spreedlyHeaders() }
+      }
     );
     const transaction = verifyResponse.data?.transaction;
     const checkoutUrl = transaction?.checkout_url || transaction?.response?.checkout_url;
@@ -457,12 +429,13 @@ export const completeSpreedlyPPCPVaultSetup = async (
     res.status(400).json({ error: 'transactionToken is required' });
     return;
   }
+  if (!isSpreedlyToken(transactionToken)) {
+    res.status(400).json(INVALID_TOKEN);
+    return;
+  }
 
   try {
-    const after = await axios.get(
-      `${config.spreedlyUrl}/v1/transactions/${encodeURIComponent(transactionToken)}.json`,
-      { headers: spreedlyHeaders() }
-    );
+    const after = await core.get(`/v1/transactions/${encodeURIComponent(transactionToken)}.json`);
     const transaction = after.data?.transaction;
     if (!transaction?.succeeded || !transaction.payment_method?.token) {
       res.status(502).json({
@@ -498,11 +471,12 @@ export const getSpreedlyPPCPTransactionByToken = async (
     res.status(400).json({ error: 'transactionToken is required' });
     return;
   }
+  if (!isSpreedlyToken(transactionToken)) {
+    res.status(400).json(INVALID_TOKEN);
+    return;
+  }
   try {
-    const response = await axios.get(
-      `${config.spreedlyUrl}/v1/transactions/${encodeURIComponent(transactionToken)}.json`,
-      { headers: spreedlyHeaders() }
-    );
+    const response = await core.get(`/v1/transactions/${encodeURIComponent(transactionToken)}.json`);
     const transaction = response.data?.transaction;
     res.json({
       token: transaction?.token,
@@ -568,8 +542,8 @@ export const chargeSpreedlyPPCPVaultToken = async (
   const buyerPresent = initiator === 'CUSTOMER';
   try {
     assertGatewayConfigured();
-    const response = await axios.post(
-      `${config.spreedlyUrl}/v1/gateways/${config.ppcpGatewayToken}/purchase.json`,
+    const response = await core.post(
+      `/v1/gateways/${config.ppcpGatewayToken}/purchase.json`,
       {
         transaction: {
           payment_method_token: token.paymentMethodToken,
@@ -578,8 +552,7 @@ export const chargeSpreedlyPPCPVaultToken = async (
           stored_credential_initiator: buyerPresent ? 'cardholder' : 'merchant',
           stored_credential_reason_type: buyerPresent ? 'unscheduled' : 'recurring',
         },
-      },
-      { headers: spreedlyHeaders() }
+      }
     );
     const transaction = response.data?.transaction;
     res.json({

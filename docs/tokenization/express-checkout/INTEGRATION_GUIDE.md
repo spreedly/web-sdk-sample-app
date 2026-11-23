@@ -61,11 +61,7 @@ Non-secure tokenization was deprecated on October 31, 2026 (end of life December
 Add the Express Checkout script to your page:
 
 ```html
-<!-- Production -->
 <script src="https://core.spreedly.com/checkout/elements/{version}/express-checkout.js"></script>
-
-<!-- Staging (testing) -->
-<script src="https://core-test.spreedly.com/checkout/elements/{version}/express-checkout.js"></script>
 ```
 
 | Channel | Description | Example |
@@ -550,6 +546,8 @@ Don't turn off secure tokenization to avoid this: it is Spreedly's protection ag
 
 ## Testing
 
+Load the production script from [Installation](#installation) and use these test card numbers.
+
 ### Test Card Numbers
 
 | Card Type | Number | CVV | Expiry |
@@ -558,12 +556,6 @@ Don't turn off secure tokenization to avoid this: it is Spreedly's protection ag
 | Mastercard | 5555555555554444 | 123 | Any future date |
 | Amex | 378282246310005 | 1234 | Any future date |
 | Discover | 6011111111111117 | 123 | Any future date |
-
-### Staging Environment
-
-```html
-<script src="https://core-test.spreedly.com/checkout/elements/{version}/express-checkout.js"></script>
-```
 
 ---
 
@@ -588,9 +580,9 @@ Add Spreedly domains to your Content Security Policy:
 
 ```html
 <meta http-equiv="Content-Security-Policy" content="
-  frame-src https://core.spreedly.com https://core-test.spreedly.com;
-  script-src https://core.spreedly.com https://core-test.spreedly.com;
-  connect-src https://core.spreedly.com https://core-test.spreedly.com;
+  frame-src https://core.spreedly.com;
+  script-src https://core.spreedly.com;
+  connect-src https://core.spreedly.com;
 ">
 ```
 

@@ -113,16 +113,15 @@ async function createPendingPurchase() {
   const amount = Math.round(parseFloat(elements.amountInput?.value || '10') * 100);
   const currencyCode = elements.currencySelector?.value || 'USD';
 
-  // Get base URL for redirects
-  const baseUrl = 'https://checkout-web-sample-app-049a3c617015.herokuapp.com';
+  const baseUrl = getRedirectOrigin();
 
   const response = await axios.post(`${API_BASE_URL}/braintree-purchase`, {
     amount,
     currency_code: currencyCode,
     payment_method_type: 'paypal',
     paypal_flow: 'checkout',
-    redirect_url: `${baseUrl}/offsite-payments/handle_redirect.html`,
-    callback_url: `${baseUrl}/api/v1/offsite-callback`,
+    redirect_url: baseUrl ? `${baseUrl}/offsite-payments/handle_redirect.html` : undefined,
+    callback_url: baseUrl ? `${baseUrl}/api/v1/offsite-callback` : undefined,
   });
 
   return response.data;

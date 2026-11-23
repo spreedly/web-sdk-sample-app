@@ -57,7 +57,7 @@ it in `<head>` before the body exists. Then load a Spreedly bundle that exposes 
 <!-- Production -->
 <!-- <script defer src="https://checkout.paze.com/web/resources/js/digitalwallet-sdk.js"></script> -->
 
-<script src="https://core-test.spreedly.com/checkout/sdk/{version}/index.js"></script>
+<script src="https://core.spreedly.com/checkout/sdk/{version}/index.js"></script>
 <!-- or Express Checkout: /checkout/elements/{version}/express-checkout.js -->
 ```
 Replace the version with your SDK version. Paze is available as an offering above versions 1.5.1.

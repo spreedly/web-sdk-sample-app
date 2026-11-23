@@ -4,22 +4,64 @@ permissions:
 
 on:
   # pull_request:
-  push:
-    branches:
-      - main
+  # Heroku posts a deployment status when a deploy finishes: checkout-web-app-staging (merge to
+  # `staging`) and checkout-web-sample-app (merge to `main`). The tests run once the deploy succeeds.
+  deployment_status:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'App to test'
+        type: choice
+        options:
+          - staging
+          - production
+        default: staging
   schedule:
     # Run at 06:00 UTC daily
     - cron: '0 6 * * *'
 
+env:
+  STAGING_APP_ORIGIN: https://checkout.spreedly-demo.dev
+  PRODUCTION_APP_ORIGIN: https://checkout.spreedly-demo.app
+
 jobs:
   test:
+    # Deployment statuses: only a successful deploy of the staging or production app.
+    if: >-
+      github.event_name != 'deployment_status' ||
+      (github.event.deployment_status.state == 'success' &&
+       contains(fromJSON('["checkout-web-app-staging", "checkout-web-sample-app"]'), github.event.deployment.environment))
     runs-on: ubuntu-24.04
+
+    concurrency:
+      group: e2e-${{ (github.event.deployment.environment == 'checkout-web-app-staging' || inputs.target == 'staging') && 'staging' || 'production' }}
+      cancel-in-progress: false
 
     strategy:
       matrix:
         node-version: [22.x]
 
     steps:
+    - name: Select the app to test
+      id: target
+      env:
+        TARGET: ${{ (github.event.deployment.environment == 'checkout-web-app-staging' || inputs.target == 'staging') && 'staging' || 'production' }}
+        E2E_BASIC_AUTH_USER: ${{ secrets.E2E_BASIC_AUTH_USER }}
+        E2E_BASIC_AUTH_PASSWORD: ${{ secrets.E2E_BASIC_AUTH_PASSWORD }}
+      run: |
+        if [ "$TARGET" = staging ]; then
+          # The staging app is behind a login; without it every page answers 401.
+          if [ -z "$E2E_BASIC_AUTH_USER" ] || [ -z "$E2E_BASIC_AUTH_PASSWORD" ]; then
+            echo "::error::Set the E2E_BASIC_AUTH_USER and E2E_BASIC_AUTH_PASSWORD secrets to the staging app's BASIC_AUTH_USER and BASIC_AUTH_PASSWORD."
+            exit 1
+          fi
+          echo "origin=$STAGING_APP_ORIGIN" >> "$GITHUB_OUTPUT"
+        else
+          echo "origin=$PRODUCTION_APP_ORIGIN" >> "$GITHUB_OUTPUT"
+        fi
+        echo "target=$TARGET" >> "$GITHUB_OUTPUT"
+        echo "Testing $TARGET at the commit ${GITHUB_SHA}"
+
     - name: Checkout code
       uses: actions/checkout@v4
 
@@ -37,6 +79,9 @@ jobs:
 
     - name: Run E2E tests
       env:
+        PUBLIC_APP_ORIGIN: ${{ steps.target.outputs.origin }}
+        E2E_BASIC_AUTH_USER: ${{ steps.target.outputs.target == 'staging' && secrets.E2E_BASIC_AUTH_USER || '' }}
+        E2E_BASIC_AUTH_PASSWORD: ${{ steps.target.outputs.target == 'staging' && secrets.E2E_BASIC_AUTH_PASSWORD || '' }}
         PAYPAL_USER_ID: ${{ secrets.PAYPAL_USER_ID }}
         PAYPAL_USER_PASSWORD: ${{ secrets.PAYPAL_USER_PASSWORD }}
         VENMO_USER_ID: ${{ secrets.VENMO_USER_ID }}
@@ -49,6 +94,7 @@ jobs:
         DATADOG_API_KEY: ${{ secrets.DD_API_KEY }}
         DATADOG_APP_KEY: ${{ secrets.DD_APP_KEY }}
         DATADOG_SITE: datadoghq.com
+        TARGET: ${{ steps.target.outputs.target }}
       run: |
         # Validate environment variables
         if [ -z "$DATADOG_API_KEY" ] || [ -z "$DATADOG_APP_KEY" ]; then
@@ -83,7 +129,7 @@ jobs:
         for attempt in 1 2 3; do
           if npx @datadog/datadog-ci junit upload \
             --service web-sdk-sample-app \
-            --tags "project:web-sdk-sample-app,environment:ci" \
+            --tags "project:web-sdk-sample-app,environment:ci,target:${TARGET}" \
             ./playwright-report/junit.xml; then
             echo "Successfully uploaded test results to Datadog (attempt $attempt)"
             break
