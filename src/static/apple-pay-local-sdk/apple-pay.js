@@ -7,8 +7,10 @@
  * a wallet row above the card form, embedded in the page or in Express Checkout's pop-up (dialog
  * mode, chosen in the config panel).
  *
- * The SDK loads from the CDN's rc channel on core-test, like the other pages
- * (`SpreedlyUtils.getSDKScriptUrl()`; its commented-out block switches to a local SDK build).
+ * The SDK loads from the CDN's rc channel, like the other pages (`SpreedlyUtils.getSDKScriptUrl()`).
+ * With ?sdk-source=local it loads from the SDK dev servers on the computer showing the page
+ * (`npm run dev` in checkout-web-sdk), so an SDK branch can be tried on a registered domain before
+ * it reaches the CDN. Use Chrome on that computer: it lets an HTTPS page load http://localhost.
  *
  * Every API call goes to this server (same origin): merchant validation needs the Merchant
  * Identity Certificate, which only the server holds.
@@ -33,8 +35,16 @@ const PREFILLED_CONTACT = {
   countryCode: 'US',
 };
 
+// The SDK dev servers (checkout-web-sdk `npm run dev`). Fixed URLs only: the page address picks
+// one of these, never supplies a script URL.
+const LOCAL_SDK_URLS = {
+  'hosted-fields': 'http://localhost:5000/index.js',
+  'express-checkout': 'http://localhost:5173/express-checkout.js',
+};
+
 const params = new URLSearchParams(window.location.search);
 const sdkType = SpreedlyUtils.getSDKType();
+const sdkFromLocalhost = params.get('sdk-source') === 'local';
 const debugEnabled = params.get('debug') === '1';
 
 const elements = {};
@@ -74,6 +84,8 @@ function initElements() {
     'event-log',
     'sdk-badge',
     'sdk-surface',
+    'sdk-source',
+    'sdk-source-toggle',
   ].forEach(id => {
     elements[id] = document.getElementById(id);
   });
@@ -739,16 +751,46 @@ function updateTotal() {
 
 // ── SDK loading ───────────────────────────────────────────────────────
 
+function sdkScriptUrl() {
+  if (sdkFromLocalhost) {
+    return LOCAL_SDK_URLS[sdkType === 'express-checkout' ? 'express-checkout' : 'hosted-fields'];
+  }
+  return SpreedlyUtils.getSDKScriptUrl();
+}
+
 function loadSDK() {
-  const url = SpreedlyUtils.getSDKScriptUrl();
-  log('loading SDK', { sdk: sdkType, url });
+  const url = sdkScriptUrl();
+  log('loading SDK', { sdk: sdkType, source: sdkFromLocalhost ? 'localhost' : 'CDN', url });
   return new Promise((resolve, reject) => {
     const script = document.createElement('script');
     script.src = url;
     script.onload = resolve;
-    script.onerror = () => reject(new Error(`Could not load ${url}.`));
+    script.onerror = () =>
+      reject(
+        new Error(
+          sdkFromLocalhost
+            ? `Could not load ${url}. Run \`npm run dev\` in checkout-web-sdk on this computer, and use Chrome.`
+            : `Could not load ${url}.`
+        )
+      );
     document.body.appendChild(script);
   });
+}
+
+/** Shows where the SDK comes from, with a link that reloads the page with the other source. */
+function showSdkSource() {
+  elements['sdk-source'].textContent = sdkFromLocalhost
+    ? 'this computer (localhost dev servers)'
+    : 'the CDN (rc channel)';
+  const other = new URLSearchParams(window.location.search);
+  if (sdkFromLocalhost) {
+    other.delete('sdk-source');
+  } else {
+    other.set('sdk-source', 'local');
+  }
+  const toggle = elements['sdk-source-toggle'];
+  toggle.href = `?${other}`;
+  toggle.textContent = sdkFromLocalhost ? 'Load from the CDN' : 'Load from localhost';
 }
 
 /** The cart total from the Apple Pay start page (?amount=), when it's a valid amount. */
@@ -762,7 +804,12 @@ function applyAmountFromStartPage() {
 document.addEventListener('DOMContentLoaded', async () => {
   initElements();
   applyAmountFromStartPage();
-  document.getElementById('back-link').href = `../apple-pay/index.html?sdk=${encodeURIComponent(sdkType)}`;
+  const backParams = new URLSearchParams({ sdk: sdkType });
+  if (sdkFromLocalhost) {
+    backParams.set('sdk-source', 'local');
+  }
+  document.getElementById('back-link').href = `../apple-pay/index.html?${backParams}`;
+  showSdkSource();
   const surface = sdkType === 'express-checkout' ? 'Express Checkout' : 'Hosted Fields';
   elements['sdk-badge'].textContent = `Apple Pay · ${surface}`;
   elements['sdk-surface'].textContent =

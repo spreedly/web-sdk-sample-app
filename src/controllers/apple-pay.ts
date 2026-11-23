@@ -16,6 +16,28 @@ const APPLE_HOSTS = {
   production: 'apple-pay-gateway.apple.com',
 } as const;
 const MAX_DISPLAY_NAME_LENGTH = 64; // Apple's limit, in UTF-8 characters
+const MAX_LOGGED_MESSAGE_LENGTH = 300;
+
+/**
+ * Apple's reason for an error answer, on one line and cut short. A JSON answer carries it in
+ * `statusMessage` ("Payment Services Exception merchantId=… not registered for domain=…"). A
+ * rejected client certificate gets an HTML page instead ("400 The SSL certificate error"), so
+ * that is logged as its text. Neither holds a key or certificate.
+ */
+const appleErrorReason = (body: unknown): string | undefined => {
+  let text: unknown = body;
+  if (typeof body === 'object' && body !== null) {
+    text = (body as { statusMessage?: unknown }).statusMessage;
+  }
+  if (typeof text !== 'string') {
+    return undefined;
+  }
+  const oneLine = text
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return oneLine ? oneLine.slice(0, MAX_LOGGED_MESSAGE_LENGTH) : undefined;
+};
 
 const isConfigured = (): boolean =>
   Boolean(
@@ -102,8 +124,12 @@ export const validateApplePayMerchant = async (
     res.status(503).json({ error: 'upstream_unavailable' });
     return;
   }
+  // On an error answer, Apple's own reason too (for example, a domain not registered for the
+  // merchant ID). A session is never logged: it's a credential for the next 5 minutes.
+  const reason = status >= 400 ? appleErrorReason(session) : undefined;
   console.info(
-    `[apple-pay] validation upstream status=${status} host=${host} latency_ms=${Date.now() - startedAt}`
+    `[apple-pay] validation upstream status=${status} host=${host} latency_ms=${Date.now() - startedAt}` +
+      (reason === undefined ? '' : ` apple_message=${JSON.stringify(reason)}`)
   );
 
   if (status >= 500) {
