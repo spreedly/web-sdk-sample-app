@@ -432,6 +432,17 @@
                 </div>
               </div>
 
+              <div class="cfg-group">
+                <div class="cfg-group-label">Card check <code>checkPaymentCredentialStatus</code></div>
+                <p class="cfg-hint">On: before drawing the button, the SDK asks Apple (<code>applePayCapabilities</code>, up to
+                  3 s) whether Wallet holds a card that can pay. The answer comes as <code>paymentCredentialStatus</code> on
+                  <code>applePayReady</code>, and <code>applePayUnsupported</code> means no button. Off: no call to Apple
+                  before the tap.</p>
+                <div class="cfg-options">
+                  <label class="cfg-opt"><input type="checkbox" name="check-credential-status"><span>Check first</span><span class="why">default: off</span></label>
+                </div>
+              </div>
+
               <!-- Contact details -->
               <div class="cfg-heading">Contact details</div>
               <div class="cfg-group">

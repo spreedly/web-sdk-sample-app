@@ -407,6 +407,9 @@ function buildApplePayConfig() {
   if (choice('card-countries') === 'custom') {
     config.supportedCountries = list(text('card-countries-custom'));
   }
+  if (isTicked('check-credential-status')) {
+    config.checkPaymentCredentialStatus = true;
+  }
 
   const billingFields = ticked('billing-fields');
   if (billingFields.length) {
@@ -462,7 +465,8 @@ async function handleEvent(event, payload) {
   log(event, Object.keys(shown).length ? shown : undefined);
 
   if (event === 'applePayReady') {
-    setStatus('Apple Pay is ready. Tap the button.', 'success');
+    const status = payload?.paymentCredentialStatus;
+    setStatus(`Apple Pay is ready${status ? ` (${status})` : ''}. Tap the button.`, 'success');
   } else if (event === 'applePayUnavailable') {
     const seeLog = payload.reason === 'DEVELOPER_ERROR' ? ' See applePayError in the event log.' : '';
     setStatus(`Apple Pay is unavailable here (${payload.reason}).${seeLog}`, 'error');
