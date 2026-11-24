@@ -70,15 +70,7 @@ The routing and account numbers never reach your page or your servers. After tok
 
 ### Digital Wallets
 
-With a digital wallet, the shopper picks a card saved with the wallet provider, in the provider's own button, sheet or popup. The card number never reaches your page or the SDK in readable form: the wallet returns the card encrypted for Spreedly, or a reference that only Spreedly can use to retrieve it.
-
-| Data Type | When | Retention |
-|-----------|------|-----------|
-| **Encrypted Card Data or Card Reference** | Always | Passed on unopened, not retained by SDK |
-| **Shopper's Email, Name and Billing Address** | Only when you ask the wallet for them | Can be sent to Spreedly with the payment method, not retained by SDK |
-| **Shipping Address** | Only when you ask the wallet for it | Passed to your page only, not sent to Spreedly |
-
-The SDK also passes the contact details you asked for, and display details such as the card network and last four digits, to your page in its events.
+With a digital wallet, the shopper picks a card saved with the wallet provider, in the provider's own button, sheet or popup. The card number never reaches your page or the SDK in readable form: the wallet returns the card encrypted, or as a reference that only Spreedly can use, and the SDK does not keep it. If you ask the wallet for the shopper's contact details, such as their email or addresses, the SDK passes them to your page, and some can be sent to Spreedly with the payment method.
 
 ### Technical Data
 
@@ -111,22 +103,6 @@ None of this technical data is personally identifiable.
 ```
 
 ACH bank accounts follow the same flow: the routing and account numbers are entered, validated and tokenized inside Spreedly-hosted iframes.
-
-### Digital Wallet Flow
-
-```
-1. Shopper picks a card in the wallet provider's button, sheet or popup
-   ↓
-2. The wallet returns encrypted card data or a card reference (plus any contact details you asked for)
-   ↓
-3. The encrypted data or reference is sent to Spreedly via HTTPS/TLS
-   ↓
-4. Spreedly decrypts or retrieves the card and returns a payment method token
-   ↓
-5. Token returned to your application
-```
-
-To show the shopper their wallet, the wallet provider receives your merchant name and the amount and currency of the payment. Some wallets also use the shopper's email address or phone number to find their wallet.
 
 ---
 
@@ -166,7 +142,7 @@ All payment card data is transmitted securely:
 
 **Destination:** `https://core.spreedly.com` — Spreedly's PCI DSS Level 1 certified infrastructure.
 
-**No card or bank account data goes elsewhere.** Card numbers, CVVs, and bank routing and account numbers are sent exclusively to Spreedly's tokenization API. With a digital wallet, the shopper's card comes from the wallet provider, encrypted for Spreedly or as a reference only Spreedly can use. Telemetry data (see below) is sent separately and never contains card or bank account data.
+**No card or bank account data goes elsewhere.** Card numbers, CVVs, and bank routing and account numbers are sent exclusively to Spreedly's tokenization API. With a digital wallet, the shopper's card comes from the wallet provider, encrypted or as a reference only Spreedly can use. Telemetry data (see below) is sent separately and never contains card or bank account data.
 
 ### Cross-Origin Communication
 
@@ -189,7 +165,7 @@ The SDK sends **anonymized operational telemetry** to Datadog for service health
 ### What telemetry does NOT include:
 - Card numbers, CVVs, or any payment card data
 - Bank routing or account numbers
-- Encrypted wallet card data
+- Encrypted wallet card data or card references
 - Personally identifiable information (names, emails, addresses, IP addresses)
 - User behavior tracking, session recordings, or clickstreams
 - Cookies or persistent identifiers
@@ -263,7 +239,7 @@ The SDK does **not** retain any data beyond the active processing lifecycle:
 2. CVV is cleared after tokenization or after 3 minutes (whichever comes first)
 3. Card number is cleared after tokenization
 4. Bank routing and account numbers are cleared after tokenization
-5. Encrypted wallet card data is held in memory only until it is passed on
+5. Encrypted wallet card data and card references are not kept after they are passed on
 6. No data is written to any persistent browser storage
 
 ### Spreedly Retention
@@ -280,7 +256,7 @@ The SDK sends card and bank account data **only** to Spreedly (`core.spreedly.co
 
 ### Digital Wallet Providers
 
-When you offer a digital wallet, the wallet provider is part of the flow. The shopper's card and contact details come from their wallet, and the provider receives the payment details described in [Digital Wallet Flow](#digital-wallet-flow). Each provider's own privacy policy covers how it handles that data.
+When you offer a digital wallet, the wallet provider is part of the flow and receives the payment details it needs to show the shopper their wallet. Each provider's own privacy policy covers how it handles that data.
 
 ### No Sale of Personal Information
 
