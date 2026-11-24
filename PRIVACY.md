@@ -4,11 +4,11 @@
 
 ## Overview
 
-The Spreedly Web SDK is a client-side JavaScript library that securely collects payment card information for tokenization. This document describes how payment data is handled by the SDK.
+The Spreedly Web SDK is a client-side JavaScript library that securely collects payment card information, ACH bank account details and Google Pay payments for tokenization. This document describes how payment data is handled by the SDK.
 
 **Key Privacy Principles:**
-- **No Persistent Data Storage** — Card data is never stored persistently in the browser
-- **Memory-Only Processing** — Card data exists only during the active tokenization lifecycle
+- **No Persistent Data Storage** — Card and bank account data is never stored persistently in the browser
+- **Memory-Only Processing** — Card and bank account data exists only during the active tokenization lifecycle
 - **Minimal Data Collection** — Only payment data required for tokenization is collected
 - **Secure Transmission** — All data sent via TLS encryption
 - **Cleanup After Use** — Card data is cleared from memory after tokenization or expiry
@@ -54,6 +54,32 @@ The SDK processes the following payment card information **in memory only**:
 
 **CVV Retention Window:** The CVV value is held in the iframe's memory from the moment the user enters it until tokenization completes or a 3-minute timeout expires — whichever comes first. After either event, the CVV is cleared. This timeout prevents stale CVV data from persisting if the user abandons the form.
 
+### Bank Account Data (ACH)
+
+From version 1.9.0, the SDK can tokenize US and Canadian bank accounts for ACH payments, with ACH Hosted Fields (`SpreedlyACHFields`) or the ACH Form (`SpreedlyACHForm`). It processes the following **in memory only**:
+
+| Data Type | Where it is entered | Retention |
+|-----------|---------------------|-----------|
+| **Routing Number** | Spreedly-hosted iframe | Cleared after tokenization |
+| **Account Number** | Spreedly-hosted iframe | Cleared after tokenization |
+| **Account Holder Name** | ACH Form: inside the iframe. ACH Hosted Fields: your page, passed to `submit()` | Sent to Spreedly, not retained by SDK |
+| **Bank Name, Account Type, Account Holder Type** (Optional) | Same as the name | Sent to Spreedly, not retained by SDK |
+| **Email, Phone Number, Billing Address** (Optional) | Same as the name | Sent to Spreedly, not retained by SDK |
+
+The routing and account numbers never reach your page or your servers. After tokenization, your page receives a payment method token, and the bank numbers in the response are masked. If tokenization fails, the numbers stay in the fields so the customer can correct them, and the SDK masks them in any error it passes to your page.
+
+### Google Pay
+
+The Google Pay button and payment sheet are provided by Google. Your page loads Google's `pay.js`, and the shopper picks a card saved in their Google account. Google encrypts the card for Spreedly, so neither your page nor the SDK can read the card number. The SDK sends Spreedly:
+
+| Data Type | When | Retention |
+|-----------|------|-----------|
+| **Encrypted Google Pay Token** | Always | Passed to Spreedly unopened, not retained by SDK |
+| **Shopper's Email Address** | Only when you set `emailRequired` | Sent to Spreedly, not retained by SDK |
+| **Cardholder Name and Billing Address** | Only when you set `billingAddressRequired` | Sent to Spreedly, not retained by SDK |
+
+The SDK also passes the shopper's email, billing and shipping addresses, card network and last four digits to your page in its events, when you ask Google for them. The shipping address goes only to your page, not to Spreedly.
+
 ### Technical Data
 
 The SDK processes minimal technical data for authentication:
@@ -83,6 +109,24 @@ None of this technical data is personally identifiable.
    ↓
 6. Token returned to your application
 ```
+
+ACH bank accounts follow the same flow: the routing and account numbers are entered, validated and tokenized inside Spreedly-hosted iframes.
+
+### Google Pay Flow
+
+```
+1. Shopper clicks the Google Pay button and picks a card in Google's payment sheet
+   ↓
+2. Google returns an encrypted token (plus email and addresses, if requested) to the SDK on your page
+   ↓
+3. SDK sends the encrypted token to Spreedly via HTTPS/TLS
+   ↓
+4. Spreedly decrypts the token and returns a payment method token
+   ↓
+5. Token returned to your application
+```
+
+To open the payment sheet, the SDK gives Google your merchant name, the amount and currency, the card networks you accept, and your Spreedly environment key (so Google encrypts the card for your Spreedly environment).
 
 ---
 
@@ -122,7 +166,7 @@ All payment card data is transmitted securely:
 
 **Destination:** `https://core.spreedly.com` — Spreedly's PCI DSS Level 1 certified infrastructure.
 
-**No card data goes elsewhere.** Card numbers and CVVs are sent exclusively to Spreedly's tokenization API. Telemetry data (see below) is sent separately and never contains card data.
+**No card or bank account data goes elsewhere.** Card numbers, CVVs, and bank routing and account numbers are sent exclusively to Spreedly's tokenization API. With Google Pay, the shopper's card comes from Google, already encrypted for Spreedly. Telemetry data (see below) is sent separately and never contains card or bank account data.
 
 ### Cross-Origin Communication
 
@@ -144,6 +188,8 @@ The SDK sends **anonymized operational telemetry** to Datadog for service health
 
 ### What telemetry does NOT include:
 - Card numbers, CVVs, or any payment card data
+- Bank routing or account numbers
+- Google Pay tokens
 - Personally identifiable information (names, emails, addresses, IP addresses)
 - User behavior tracking, session recordings, or clickstreams
 - Cookies or persistent identifiers
@@ -216,7 +262,9 @@ The SDK does **not** retain any data beyond the active processing lifecycle:
 1. Card data exists in iframe memory only while the user is interacting with the form
 2. CVV is cleared after tokenization or after 3 minutes (whichever comes first)
 3. Card number is cleared after tokenization
-4. No data is written to any persistent browser storage
+4. Bank routing and account numbers are cleared after tokenization
+5. The Google Pay token is held in memory only until it is sent to Spreedly
+6. No data is written to any persistent browser storage
 
 ### Spreedly Retention
 
@@ -228,7 +276,11 @@ For information about how Spreedly retains tokenized data, refer to [Spreedly's 
 
 ### Card Data
 
-The SDK sends card data **only** to Spreedly (`core.spreedly.com`). Card numbers and CVVs are not shared with analytics providers, advertising networks, marketing services, data brokers, or any other external services.
+The SDK sends card and bank account data **only** to Spreedly (`core.spreedly.com`). Card numbers, CVVs, and bank routing and account numbers are not shared with analytics providers, advertising networks, marketing services, data brokers, or any other external services.
+
+### Google Pay
+
+When you offer Google Pay, Google is part of the flow. The shopper's card, email and addresses come from their Google account, and Google sees the payment request described in [Google Pay Flow](#google-pay-flow). Google's handling of that data is covered by the [Google Privacy Policy](https://policies.google.com/privacy).
 
 ### No Sale of Personal Information
 
