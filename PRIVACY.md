@@ -4,7 +4,7 @@
 
 ## Overview
 
-The Spreedly Web SDK is a client-side JavaScript library that securely collects payment card information, ACH bank account details and Google Pay payments for tokenization. This document describes how payment data is handled by the SDK.
+The Spreedly Web SDK is a client-side JavaScript library that securely collects payment card information, ACH bank account details and digital wallet payments for tokenization. This document describes how payment data is handled by the SDK.
 
 **Key Privacy Principles:**
 - **No Persistent Data Storage** — Card and bank account data is never stored persistently in the browser
@@ -68,17 +68,17 @@ From version 1.9.0, the SDK can tokenize US and Canadian bank accounts for ACH p
 
 The routing and account numbers never reach your page or your servers. After tokenization, your page receives a payment method token, and the bank numbers in the response are masked. If tokenization fails, the numbers stay in the fields so the customer can correct them, and the SDK masks them in any error it passes to your page.
 
-### Google Pay
+### Digital Wallets
 
-The Google Pay button and payment sheet are provided by Google. Your page loads Google's `pay.js`, and the shopper picks a card saved in their Google account. Google encrypts the card for Spreedly, so neither your page nor the SDK can read the card number. The SDK sends Spreedly:
+With a digital wallet, the shopper picks a card saved with the wallet provider, in the provider's own button, sheet or popup. The card number never reaches your page or the SDK in readable form: the wallet returns the card encrypted for Spreedly, or a reference that only Spreedly can use to retrieve it.
 
 | Data Type | When | Retention |
 |-----------|------|-----------|
-| **Encrypted Google Pay Token** | Always | Passed to Spreedly unopened, not retained by SDK |
-| **Shopper's Email Address** | Only when you set `emailRequired` | Sent to Spreedly, not retained by SDK |
-| **Cardholder Name and Billing Address** | Only when you set `billingAddressRequired` | Sent to Spreedly, not retained by SDK |
+| **Encrypted Card Data or Card Reference** | Always | Passed on unopened, not retained by SDK |
+| **Shopper's Email, Name and Billing Address** | Only when you ask the wallet for them | Can be sent to Spreedly with the payment method, not retained by SDK |
+| **Shipping Address** | Only when you ask the wallet for it | Passed to your page only, not sent to Spreedly |
 
-The SDK also passes the shopper's email, billing and shipping addresses, card network and last four digits to your page in its events, when you ask Google for them. The shipping address goes only to your page, not to Spreedly.
+The SDK also passes the contact details you asked for, and display details such as the card network and last four digits, to your page in its events.
 
 ### Technical Data
 
@@ -112,21 +112,21 @@ None of this technical data is personally identifiable.
 
 ACH bank accounts follow the same flow: the routing and account numbers are entered, validated and tokenized inside Spreedly-hosted iframes.
 
-### Google Pay Flow
+### Digital Wallet Flow
 
 ```
-1. Shopper clicks the Google Pay button and picks a card in Google's payment sheet
+1. Shopper picks a card in the wallet provider's button, sheet or popup
    ↓
-2. Google returns an encrypted token (plus email and addresses, if requested) to the SDK on your page
+2. The wallet returns encrypted card data or a card reference (plus any contact details you asked for)
    ↓
-3. SDK sends the encrypted token to Spreedly via HTTPS/TLS
+3. The encrypted data or reference is sent to Spreedly via HTTPS/TLS
    ↓
-4. Spreedly decrypts the token and returns a payment method token
+4. Spreedly decrypts or retrieves the card and returns a payment method token
    ↓
 5. Token returned to your application
 ```
 
-To open the payment sheet, the SDK gives Google your merchant name, the amount and currency, the card networks you accept, and your Spreedly environment key (so Google encrypts the card for your Spreedly environment).
+To show the shopper their wallet, the wallet provider receives your merchant name and the amount and currency of the payment. Some wallets also use the shopper's email address or phone number to find their wallet.
 
 ---
 
@@ -166,7 +166,7 @@ All payment card data is transmitted securely:
 
 **Destination:** `https://core.spreedly.com` — Spreedly's PCI DSS Level 1 certified infrastructure.
 
-**No card or bank account data goes elsewhere.** Card numbers, CVVs, and bank routing and account numbers are sent exclusively to Spreedly's tokenization API. With Google Pay, the shopper's card comes from Google, already encrypted for Spreedly. Telemetry data (see below) is sent separately and never contains card or bank account data.
+**No card or bank account data goes elsewhere.** Card numbers, CVVs, and bank routing and account numbers are sent exclusively to Spreedly's tokenization API. With a digital wallet, the shopper's card comes from the wallet provider, encrypted for Spreedly or as a reference only Spreedly can use. Telemetry data (see below) is sent separately and never contains card or bank account data.
 
 ### Cross-Origin Communication
 
@@ -189,7 +189,7 @@ The SDK sends **anonymized operational telemetry** to Datadog for service health
 ### What telemetry does NOT include:
 - Card numbers, CVVs, or any payment card data
 - Bank routing or account numbers
-- Google Pay tokens
+- Encrypted wallet card data
 - Personally identifiable information (names, emails, addresses, IP addresses)
 - User behavior tracking, session recordings, or clickstreams
 - Cookies or persistent identifiers
@@ -263,7 +263,7 @@ The SDK does **not** retain any data beyond the active processing lifecycle:
 2. CVV is cleared after tokenization or after 3 minutes (whichever comes first)
 3. Card number is cleared after tokenization
 4. Bank routing and account numbers are cleared after tokenization
-5. The Google Pay token is held in memory only until it is sent to Spreedly
+5. Encrypted wallet card data is held in memory only until it is passed on
 6. No data is written to any persistent browser storage
 
 ### Spreedly Retention
@@ -278,9 +278,9 @@ For information about how Spreedly retains tokenized data, refer to [Spreedly's 
 
 The SDK sends card and bank account data **only** to Spreedly (`core.spreedly.com`). Card numbers, CVVs, and bank routing and account numbers are not shared with analytics providers, advertising networks, marketing services, data brokers, or any other external services.
 
-### Google Pay
+### Digital Wallet Providers
 
-When you offer Google Pay, Google is part of the flow. The shopper's card, email and addresses come from their Google account, and Google sees the payment request described in [Google Pay Flow](#google-pay-flow). Google's handling of that data is covered by the [Google Privacy Policy](https://policies.google.com/privacy).
+When you offer a digital wallet, the wallet provider is part of the flow. The shopper's card and contact details come from their wallet, and the provider receives the payment details described in [Digital Wallet Flow](#digital-wallet-flow). Each provider's own privacy policy covers how it handles that data.
 
 ### No Sale of Personal Information
 
