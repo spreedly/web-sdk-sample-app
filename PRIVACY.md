@@ -56,17 +56,15 @@ The SDK processes the following payment card information **in memory only**:
 
 ### Bank Account Data (ACH)
 
-From version 1.9.0, the SDK can tokenize US and Canadian bank accounts for ACH payments, with ACH Hosted Fields (`SpreedlyACHFields`) or the ACH Form (`SpreedlyACHForm`). It processes the following **in memory only**:
+From version 1.9.0, the SDK can also tokenize bank accounts for ACH payments. It processes the following **in memory only**:
 
-| Data Type | Where it is entered | Retention |
-|-----------|---------------------|-----------|
-| **Routing Number** | Spreedly-hosted iframe | Cleared after tokenization |
-| **Account Number** | Spreedly-hosted iframe | Cleared after tokenization |
-| **Account Holder Name** | ACH Form: inside the iframe. ACH Hosted Fields: your page, passed to `submit()` | Sent to Spreedly, not retained by SDK |
-| **Bank Name, Account Type, Account Holder Type** (Optional) | Same as the name | Sent to Spreedly, not retained by SDK |
-| **Email, Phone Number, Billing Address** (Optional) | Same as the name | Sent to Spreedly, not retained by SDK |
+| Data Type | Purpose | Retention |
+|-----------|---------|-----------|
+| **Routing and Account Number** | Tokenization | Cleared after tokenization |
+| **Account Holder Name** | Payment method details | Sent to Spreedly, not retained by SDK |
+| **Bank Name, Account Type, Email, Phone, Billing Address** (Optional) | Payment method details | Sent to Spreedly, not retained by SDK |
 
-The routing and account numbers never reach your page or your servers. After tokenization, your page receives a payment method token, and the bank numbers in the response are masked. If tokenization fails, the numbers stay in the fields so the customer can correct them, and the SDK masks them in any error it passes to your page.
+The routing and account numbers are entered in Spreedly-hosted iframes and never reach your page. Your page receives a payment method token, with the bank numbers masked.
 
 ### Digital Wallets
 
