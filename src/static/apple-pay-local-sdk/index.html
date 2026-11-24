@@ -471,13 +471,28 @@
 
               <div class="cfg-group">
                 <div class="cfg-group-label">Prefilled contacts <code>billingContact</code> <code>shippingContact</code></div>
-                <p class="cfg-hint">A synthetic address on file, shown as the default in the sheet. The shopper can pick
-                  another. Apple needs <code>postalAddress</code> in the billing fields for a prefilled billing address,
+                <p class="cfg-hint">An address on file, shown as the default in the sheet. The shopper can pick
+                  another. The fields below start with a made-up contact; Apple checks the values (for example, a US
+                  phone needs 10 digits), and blank fields are left out. Apple needs <code>postalAddress</code> in the billing fields for a prefilled billing address,
                   and at least one shipping field for a prefilled shipping contact. The SDK rejects the config
                   otherwise.</p>
                 <div class="cfg-options">
                   <label class="cfg-opt"><input type="checkbox" name="prefill" value="billingContact"><span>Billing</span></label>
                   <label class="cfg-opt"><input type="checkbox" name="prefill" value="shippingContact"><span>Shipping</span></label>
+                </div>
+                <div class="cfg-sub">
+                  <div class="cfg-options">
+                    <label class="cfg-opt"><span>Given name</span><input type="text" name="prefill-given-name" value="Ada" autocomplete="off"></label>
+                    <label class="cfg-opt"><span>Family name</span><input type="text" name="prefill-family-name" value="Example" autocomplete="off"></label>
+                    <label class="cfg-opt"><span>Email</span><input type="text" class="wide" name="prefill-email" value="ada@example.com" autocomplete="off"></label>
+                    <label class="cfg-opt"><span>Phone</span><input type="text" name="prefill-phone" value="+1 202 555 0100" autocomplete="off"></label>
+                    <label class="cfg-opt"><span>Street</span><input type="text" class="wide" name="prefill-street" value="100 Example Street" autocomplete="off"></label>
+                    <label class="cfg-opt"><span>City</span><input type="text" name="prefill-city" value="Springfield" autocomplete="off"></label>
+                    <label class="cfg-opt"><span>State</span><input type="text" name="prefill-state" value="IL" autocomplete="off"></label>
+                    <label class="cfg-opt"><span>Postal code</span><input type="text" name="prefill-postal-code" value="62701" autocomplete="off"></label>
+                    <label class="cfg-opt"><span>Country</span><input type="text" name="prefill-country" value="United States" autocomplete="off"></label>
+                    <label class="cfg-opt"><span>Country code</span><input type="text" name="prefill-country-code" value="US" autocomplete="off"></label>
+                  </div>
                 </div>
               </div>
 
