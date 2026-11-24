@@ -21,18 +21,19 @@ const BUTTON_CONTAINER_ID = 'apple-pay-button-container';
 const EC_CONTAINER_ID = 'ec-container';
 const STORE_LABEL = 'Spreedly Demo Store';
 
-// Synthetic contact for the prefilled billing and shipping contacts.
-const PREFILLED_CONTACT = {
-  givenName: 'Ada',
-  familyName: 'Example',
-  emailAddress: 'ada@example.com',
-  phoneNumber: '+1 555 0100',
-  addressLines: ['100 Example Street'],
-  locality: 'Springfield',
-  administrativeArea: 'IL',
-  postalCode: '62701',
-  country: 'United States',
-  countryCode: 'US',
+// The prefilled contact's fields in the settings panel: Apple's contact key → the panel field's name.
+// The panel starts with a synthetic contact; Apple validates the values (for example the phone).
+const PREFILL_FIELDS = {
+  givenName: 'prefill-given-name',
+  familyName: 'prefill-family-name',
+  emailAddress: 'prefill-email',
+  phoneNumber: 'prefill-phone',
+  addressLines: 'prefill-street',
+  locality: 'prefill-city',
+  administrativeArea: 'prefill-state',
+  postalCode: 'prefill-postal-code',
+  country: 'prefill-country',
+  countryCode: 'prefill-country-code',
 };
 
 // The SDK dev servers (checkout-web-sdk `npm run dev`). Fixed URLs only: the page address picks
@@ -155,6 +156,18 @@ const list = value =>
 const currency = () => choice('currency-code');
 
 /** 'a=1, b=2' → { a: '1', b: '2' } */
+/** The prefilled contact from the panel's fields. Blank fields are left out. */
+function prefilledContact() {
+  const contact = {};
+  Object.entries(PREFILL_FIELDS).forEach(([key, name]) => {
+    const value = text(name);
+    if (value) {
+      contact[key] = key === 'addressLines' ? [value] : value;
+    }
+  });
+  return contact;
+}
+
 function parseMetadata(value) {
   const metadata = {};
   list(value).forEach(pair => {
@@ -407,6 +420,9 @@ function buildApplePayConfig() {
   if (choice('card-countries') === 'custom') {
     config.supportedCountries = list(text('card-countries-custom'));
   }
+  if (isTicked('check-credential-status')) {
+    config.checkPaymentCredentialStatus = true;
+  }
 
   const billingFields = ticked('billing-fields');
   if (billingFields.length) {
@@ -417,7 +433,7 @@ function buildApplePayConfig() {
     config.requiredShippingContactFields = shippingFields;
   }
   ticked('prefill').forEach(name => {
-    config[name] = { ...PREFILLED_CONTACT };
+    config[name] = prefilledContact();
   });
 
   const paymentRequest = choice('payment-request');
@@ -462,7 +478,8 @@ async function handleEvent(event, payload) {
   log(event, Object.keys(shown).length ? shown : undefined);
 
   if (event === 'applePayReady') {
-    setStatus('Apple Pay is ready. Tap the button.', 'success');
+    const status = payload?.paymentCredentialStatus;
+    setStatus(`Apple Pay is ready${status ? ` (${status})` : ''}. Tap the button.`, 'success');
   } else if (event === 'applePayUnavailable') {
     const seeLog = payload.reason === 'DEVELOPER_ERROR' ? ' See applePayError in the event log.' : '';
     setStatus(`Apple Pay is unavailable here (${payload.reason}).${seeLog}`, 'error');
