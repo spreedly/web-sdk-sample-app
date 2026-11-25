@@ -9,6 +9,7 @@ export const MONOREPO_URLS = {
     APPLE_PAY: "/apple-pay/index.html",
     APPLE_PAY_LOCAL_SDK: "/apple-pay-local-sdk/index.html",
     GOOGLE_PAY: "/google-pay/index.html",
+    CASH_APP_PAY: "/cash-app-pay/index.html",
   } as const;
 
    

@@ -208,6 +208,21 @@ async function createPazePaymentMethod({
   }
 }
 
+// Mock until Spreedly Core's cash_app gateway exists; the server returns a synthetic transaction.
+async function createCashAppPayPurchase({ paymentMethodToken, amount, currencyCode = 'USD' }) {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/cash-app-pay-purchase`, {
+      amount,
+      currency_code: currencyCode,
+      payment_method_token: paymentMethodToken,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error creating Cash App Pay purchase:', error.response?.data || error);
+    throw error.response?.data || error;
+  }
+}
+
 // UI Helpers
 function showStatus(elementId, message, type = 'info') {
   const statusEl = document.getElementById(elementId);
@@ -421,6 +436,9 @@ window.SpreedlyUtils = {
   createPurchase,
   createPurchaseWith3DS,
   createPazePaymentMethod,
+
+  // Cash App Pay
+  createCashAppPayPurchase,
 
   // Stripe Radar
   createStripeRadarPurchase,

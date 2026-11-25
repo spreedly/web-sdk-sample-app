@@ -19,6 +19,7 @@ import {
   createPazePaymentMethod,
 } from './controllers/payments';
 import { getPazeAccessToken, pazeTokenRateLimit } from './controllers/paze-oauth';
+import { createCashAppPayPurchase } from './controllers/cash-app-pay';
 import {
   applePayValidateRateLimit,
   getApplePayConfig,
@@ -1260,5 +1261,36 @@ router.post('/apple-pay/validate', applePayValidateRateLimit, validateApplePayMe
  *         description: '{"merchantIdentifier": string | null, "configured": boolean}'
  */
 router.get('/apple-pay/config', getApplePayConfig);
+
+/**
+ * @swagger
+ * /api/v1/cash-app-pay-purchase:
+ *   post:
+ *     description: MOCK purchase with a Cash App Pay payment method token. Returns a synthetic transaction (mock true) and makes no call to Spreedly, pending Core's cash_app gateway.
+ *     tags: [Cash App Pay]
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - in: body
+ *         name: body
+ *         required: true
+ *         schema:
+ *           type: object
+ *           properties:
+ *             payment_method_token:
+ *               type: string
+ *             amount:
+ *               type: integer
+ *               description: Amount in cents
+ *             currency_code:
+ *               type: string
+ *               description: USD only
+ *     responses:
+ *       200:
+ *         description: Synthetic succeeded transaction
+ *       422:
+ *         description: Missing token, invalid amount, or non-USD currency
+ */
+router.post('/cash-app-pay-purchase', createCashAppPayPurchase);
 
 export default router;

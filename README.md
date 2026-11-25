@@ -280,6 +280,7 @@ This sample app demonstrates the following payment flows:
 | **PayPal Complete Payments (PPCP)**      | PayPal, Venmo and Pay Later buttons with `SpreedlyPPCP` and PayPal's JS SDK v6                              | [PPCP Guide](./docs/ppcp/INTEGRATION_GUIDE.md), [PPCP API Reference](./docs/ppcp/API_REFERENCE.md)                                                                 |
 | **Click to Pay**                         | Mastercard Click to Pay with Hosted Fields: returning-shopper lookup, new-card enrollment and OTP           | [Click to Pay Guide](./docs/click-to-pay/integration-guide/README.md), [Click to Pay API Reference](./docs/click-to-pay/integration-guide/api-reference.md)         |
 | **Google Pay**                           | `SpreedlyGooglePay` (both bundles), or inside the Express Checkout form: Google button, in-sheet tokenization, shipping callbacks, purchase | [Google Pay Guide](./docs/google-pay/INTEGRATION_GUIDE.md), [Google Pay API Reference](./docs/google-pay/API_REFERENCE.md), [Demo Guide](./docs/google-pay/DEMO_GUIDE.md)                                                                                                    |
+| **Cash App Pay**                         | Pay Kit QR code / app redirect to a payment method token (mock until Core's Cash App API ships)              | [Cash App Pay Guide](./docs/cash-app-pay/INTEGRATION_GUIDE.md), [Demo Guide](./docs/cash-app-pay/DEMO_GUIDE.md)                                                    |
 
 ---
 
@@ -327,6 +328,9 @@ When integrating the SDK into your production application:
 | [Google Pay Integration Guide](./docs/google-pay/INTEGRATION_GUIDE.md) | `SpreedlyGooglePay` setup, events, shipping/offers/enrollments, backend purchase and 3DS |
 | [Google Pay API Reference](./docs/google-pay/API_REFERENCE.md)   | `SpreedlyGooglePay` config, methods, events and error codes     |
 | [Google Pay Demo Guide](./docs/google-pay/DEMO_GUIDE.md)         | The `/google-pay` demo page, local run and synthetic e2e stub   |
+| [Cash App Pay Integration Guide](./docs/cash-app-pay/INTEGRATION_GUIDE.md) | `SpreedlyCashAppPay.load()`, setup, mobile redirect, CSP, errors |
+| [Cash App Pay API Reference](./docs/cash-app-pay/API_REFERENCE.md) | `SpreedlyCashAppPay.load()`, instance methods, events and options |
+| [Cash App Pay Demo Guide](./docs/cash-app-pay/DEMO_GUIDE.md)     | Running and testing the demo; mock routes                       |
 | [Testing Guide](./docs/testing/TESTING_GUIDE.md)                 | Test card numbers and how to verify each flow                   |
 | [Troubleshooting Guide](./docs/testing/TROUBLESHOOTING_GUIDE.md) | SDK loading, auth, CSP, tokenization and 3DS issues             |
 

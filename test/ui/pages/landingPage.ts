@@ -62,6 +62,11 @@ export const landingPage = {
         await expect(googlePayButton).toBeVisible();
         await googlePayButton.click();
     },
+    clickOnCashAppPayButton: async (page: Page) => {
+        const cashAppPayButton = await showFlowCard(page, SELECTORS.CASH_APP_PAY_BUTTON);
+        await expect(cashAppPayButton).toBeVisible();
+        await cashAppPayButton.click();
+    },
     clickOnPPCPDirectButton: async (page: Page) => {
         const ppcpDirectButton = await showFlowCard(page, SELECTORS.PPCP_DIRECT_BUTTON);
         await expect(ppcpDirectButton).toBeVisible();

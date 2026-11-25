@@ -5,7 +5,14 @@ All notable changes to the Spreedly Web SDK will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.12.0] - 2026-11-25
+
+### Added
+
+- **Cash App Pay (`SpreedlyCashAppPay`)**: new standalone integration, exposed as `window.SpreedlyCashAppPay` by both the Hosted Fields and Express Checkout bundles. Create an instance with `await SpreedlyCashAppPay.load(config)` (not a constructor). In Hosted Fields, `load()` downloads the Cash App Pay code (`cashAppPay.js`, beside `index.js`) on first use, so `index.js` doesn't grow; in Express Checkout the code is already in the bundle. You load Block's Pay Kit (`https://sandbox.kit.cash.app/v1/pay.js` / `https://kit.cash.app/v1/pay.js`); `setup()` initializes it with your Client ID and `beginCheckout({ amount, currency, referenceId })` renders the Cash App Pay button. Optional `button` options: `shape` (`round`/`semiround`), `size` (`medium`/`small`), `theme` (`dark`/`light`) and `width` (`static`/`full`). Block's docs also list the `monochromeDark`, `monochromeLight` and `green` themes and a `label` option, but the Pay Kit Block ships rejects those themes and ignores `label`, so the SDK rejects them up front. Pass `merchantId` or `brandId` (at least one; when both are set, `merchantId` is the Pay Kit payment scope). The shopper approves by QR code (desktop) or in the Cash App app (mobile, returning to `redirectURL`). Events: `cashAppReady`, `cashAppApproved`, `cashAppTokenGenerated`, `cashAppDeclined`, `cashAppDismissed`, `cashAppError`. Also `restart()` for single-page apps and `destroy()`. **The token exchange is a mock** (`mock: true`, `mock_` token) until Spreedly Core's Cash App API is available — not for production use yet. See `docs/cash-app-pay/INTEGRATION_GUIDE.md`.
+- **Cash App Pay demo** (`/cash-app-pay/index.html`): `await SpreedlyCashAppPay.load(config)` with Block's sandbox Pay Kit — button options, amount updates, event log, and approval → payment method token → purchase. The token and the purchase are **mocks** until Spreedly Core's Cash App API is available. The sandbox Client ID and Brand ID are inlined in the page. New route `POST /api/v1/cash-app-pay-purchase` (mock, no Spreedly call). Playwright spec with a stubbed Pay Kit. See `docs/cash-app-pay/DEMO_GUIDE.md`.
+
+## [1.11.0] - 2026-11-23
 
 ### Added
 
