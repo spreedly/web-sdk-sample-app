@@ -37,10 +37,10 @@ Both options provide the same security guarantees — card data never touches yo
 
 ### Latest version
 
-The latest released version is `1.9.0`, released on 3rd Nov'26, available at:
+The latest released version is `1.11.0`, released on 25th Nov'26, available at:
 
-- Hosted Fields: [`https://core.spreedly.com/checkout/sdk/1.9.0/index.js`](https://core.spreedly.com/checkout/sdk/1.9.0/index.js)
-- Express Checkout: [`https://core.spreedly.com/checkout/elements/1.9.0/express-checkout.js`](https://core.spreedly.com/checkout/elements/1.9.0/express-checkout.js)
+- Hosted Fields: [`https://core.spreedly.com/checkout/sdk/1.11.0/index.js`](https://core.spreedly.com/checkout/sdk/1.11.0/index.js)
+- Express Checkout: [`https://core.spreedly.com/checkout/elements/1.11.0/express-checkout.js`](https://core.spreedly.com/checkout/elements/1.11.0/express-checkout.js)
 
 
 
@@ -51,6 +51,7 @@ Previous production releases of the SDK:
 
 | Version | Packages                                                                                                                                                               | Release Date   | Notes |
 | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- | ----- |
+| `1.9.0` | Hosted Fields (`https://core.spreedly.com/checkout/sdk/1.9.0/index.js`) and Express Checkout (`https://core.spreedly.com/checkout/elements/1.9.0/express-checkout.js`) | November 3, 2026 | —     |
 | `1.8.0` | Hosted Fields (`https://core.spreedly.com/checkout/sdk/1.8.0/index.js`) and Express Checkout (`https://core.spreedly.com/checkout/elements/1.8.0/express-checkout.js`) | September 28, 2026 | —     |
 | `1.7.0` | Hosted Fields (`https://core.spreedly.com/checkout/sdk/1.7.0/index.js`) and Express Checkout (`https://core.spreedly.com/checkout/elements/1.7.0/express-checkout.js`) | September 17, 2026 | —     |
 | `1.6.2` | Hosted Fields (`https://core.spreedly.com/checkout/sdk/1.6.2/index.js`) and Express Checkout (`https://core.spreedly.com/checkout/elements/1.6.2/express-checkout.js`) | September 10, 2026 | —     |
@@ -97,7 +98,7 @@ Replace `{version}` with:
 
 | Channel            | Description                                 | Example |
 | ------------------ | ------------------------------------------- | ------- |
-| A specific version | Pinned release (recommended for production) | `1.2.0` |
+| A specific version | Pinned release (recommended for production) | `1.11.0` |
 | `rc`               | Latest release candidate                    | `rc`    |
 
 
