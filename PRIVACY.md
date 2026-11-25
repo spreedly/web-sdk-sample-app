@@ -56,7 +56,7 @@ The SDK processes the following payment card information **in memory only**:
 
 ### Bank Account Data (ACH)
 
-From version 1.9.0, the SDK can also tokenize bank accounts for ACH payments. It processes the following **in memory only**:
+The SDK can also tokenize bank accounts for ACH payments. It processes the following **in memory only**:
 
 | Data Type | Purpose | Retention |
 |-----------|---------|-----------|
@@ -64,7 +64,9 @@ From version 1.9.0, the SDK can also tokenize bank accounts for ACH payments. It
 | **Account Holder Name** | Payment method details | Sent to Spreedly, not retained by SDK |
 | **Bank Name, Account Type, Email, Phone, Billing Address** (Optional) | Payment method details | Sent to Spreedly, not retained by SDK |
 
-The routing and account numbers are entered in Spreedly-hosted iframes and never reach your page. Your page receives a payment method token, with the bank numbers masked.
+With `SpreedlyACHFields` and `SpreedlyACHForm` (from 1.9.0), the routing and account numbers are entered in Spreedly-hosted iframes and never reach your page. Your page receives a payment method token, with the bank numbers masked.
+
+The older `setupACHPayment` / `submitACHPayment` methods (added in 1.3.1) are deprecated since 1.9.0 and should no longer be used. They still work, but with them your page collects both numbers in its own inputs and passes them to the SDK. Use `SpreedlyACHFields` or `SpreedlyACHForm` instead, so the numbers stay in Spreedly-hosted iframes.
 
 ### Digital Wallets
 
@@ -100,7 +102,7 @@ None of this technical data is personally identifiable.
 6. Token returned to your application
 ```
 
-ACH bank accounts follow the same flow: the routing and account numbers are entered, validated and tokenized inside Spreedly-hosted iframes.
+ACH bank accounts follow the same flow with `SpreedlyACHFields` and `SpreedlyACHForm`: the routing and account numbers are entered, validated and tokenized inside Spreedly-hosted iframes. With the deprecated `setupACHPayment` / `submitACHPayment`, your page collects both numbers in its own inputs instead.
 
 ---
 
