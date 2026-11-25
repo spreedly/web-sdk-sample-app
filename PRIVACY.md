@@ -4,11 +4,11 @@
 
 ## Overview
 
-The Spreedly Web SDK is a client-side JavaScript library that securely collects payment card information for tokenization. This document describes how payment data is handled by the SDK.
+The Spreedly Web SDK is a client-side JavaScript library that securely collects payment card information, ACH bank account details and digital wallet payments for tokenization. This document describes how payment data is handled by the SDK.
 
 **Key Privacy Principles:**
-- **No Persistent Data Storage** — Card data is never stored persistently in the browser
-- **Memory-Only Processing** — Card data exists only during the active tokenization lifecycle
+- **No Persistent Data Storage** — Card and bank account data is never stored persistently in the browser
+- **Memory-Only Processing** — Card and bank account data exists only during the active tokenization lifecycle
 - **Minimal Data Collection** — Only payment data required for tokenization is collected
 - **Secure Transmission** — All data sent via TLS encryption
 - **Cleanup After Use** — Card data is cleared from memory after tokenization or expiry
@@ -54,6 +54,24 @@ The SDK processes the following payment card information **in memory only**:
 
 **CVV Retention Window:** The CVV value is held in the iframe's memory from the moment the user enters it until tokenization completes or a 3-minute timeout expires — whichever comes first. After either event, the CVV is cleared. This timeout prevents stale CVV data from persisting if the user abandons the form.
 
+### Bank Account Data (ACH)
+
+The SDK can also tokenize bank accounts for ACH payments. It processes the following **in memory only**:
+
+| Data Type | Purpose | Retention |
+|-----------|---------|-----------|
+| **Routing and Account Number** | Tokenization | Cleared after tokenization |
+| **Account Holder Name** | Payment method details | Sent to Spreedly, not retained by SDK |
+| **Bank Name, Account Type, Email, Phone, Billing Address** (Optional) | Payment method details | Sent to Spreedly, not retained by SDK |
+
+With `SpreedlyACHFields` and `SpreedlyACHForm` (from 1.9.0), the routing and account numbers are entered in Spreedly-hosted iframes and never reach your page. Your page receives a payment method token, with the bank numbers masked.
+
+The older `setupACHPayment` / `submitACHPayment` methods (added in 1.3.1) are deprecated since 1.9.0 and should no longer be used. They still work, but with them your page collects both numbers in its own inputs and passes them to the SDK. Use `SpreedlyACHFields` or `SpreedlyACHForm` instead, so the numbers stay in Spreedly-hosted iframes.
+
+### Digital Wallets
+
+With a digital wallet, the shopper picks a card saved with the wallet provider, in the provider's own button, sheet or popup. The card number never reaches your page or the SDK in readable form: the wallet returns the card encrypted, or as a reference that only Spreedly can use, and the SDK does not keep it. If you ask the wallet for the shopper's contact details, such as their email or addresses, the SDK passes them to your page, and some can be sent to Spreedly with the payment method.
+
 ### Technical Data
 
 The SDK processes minimal technical data for authentication:
@@ -83,6 +101,8 @@ None of this technical data is personally identifiable.
    ↓
 6. Token returned to your application
 ```
+
+ACH bank accounts follow the same flow with `SpreedlyACHFields` and `SpreedlyACHForm`: the routing and account numbers are entered, validated and tokenized inside Spreedly-hosted iframes. With the deprecated `setupACHPayment` / `submitACHPayment`, your page collects both numbers in its own inputs instead.
 
 ---
 
@@ -122,7 +142,7 @@ All payment card data is transmitted securely:
 
 **Destination:** `https://core.spreedly.com` — Spreedly's PCI DSS Level 1 certified infrastructure.
 
-**No card data goes elsewhere.** Card numbers and CVVs are sent exclusively to Spreedly's tokenization API. Telemetry data (see below) is sent separately and never contains card data.
+**No card or bank account data goes elsewhere.** Card numbers, CVVs, and bank routing and account numbers are sent exclusively to Spreedly's tokenization API. With a digital wallet, the shopper's card comes from the wallet provider, encrypted or as a reference only Spreedly can use. Telemetry data (see below) is sent separately and never contains card or bank account data.
 
 ### Cross-Origin Communication
 
@@ -144,6 +164,8 @@ The SDK sends **anonymized operational telemetry** to Datadog for service health
 
 ### What telemetry does NOT include:
 - Card numbers, CVVs, or any payment card data
+- Bank routing or account numbers
+- Encrypted wallet card data or card references
 - Personally identifiable information (names, emails, addresses, IP addresses)
 - User behavior tracking, session recordings, or clickstreams
 - Cookies or persistent identifiers
@@ -216,7 +238,9 @@ The SDK does **not** retain any data beyond the active processing lifecycle:
 1. Card data exists in iframe memory only while the user is interacting with the form
 2. CVV is cleared after tokenization or after 3 minutes (whichever comes first)
 3. Card number is cleared after tokenization
-4. No data is written to any persistent browser storage
+4. Bank routing and account numbers are cleared after tokenization
+5. Encrypted wallet card data and card references are not kept after they are passed on
+6. No data is written to any persistent browser storage
 
 ### Spreedly Retention
 
@@ -228,7 +252,11 @@ For information about how Spreedly retains tokenized data, refer to [Spreedly's 
 
 ### Card Data
 
-The SDK sends card data **only** to Spreedly (`core.spreedly.com`). Card numbers and CVVs are not shared with analytics providers, advertising networks, marketing services, data brokers, or any other external services.
+The SDK sends card and bank account data **only** to Spreedly (`core.spreedly.com`). Card numbers, CVVs, and bank routing and account numbers are not shared with analytics providers, advertising networks, marketing services, data brokers, or any other external services.
+
+### Digital Wallet Providers
+
+When you offer a digital wallet, the wallet provider is part of the flow and receives the payment details it needs to show the shopper their wallet. Each provider's own privacy policy covers how it handles that data.
 
 ### No Sale of Personal Information
 
