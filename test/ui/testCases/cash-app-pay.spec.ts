@@ -36,7 +36,7 @@ test.describe('Cash App Pay', () => {
     });
     expect(calls.render[0]).toEqual({
       options: {
-        button: { label: 'cashAppPay', shape: 'round', size: 'medium', theme: 'dark', width: 'full' },
+        button: { shape: 'round', size: 'medium', theme: 'dark', width: 'full' },
         manage: true,
       },
       target: '#cash-app-pay-container',

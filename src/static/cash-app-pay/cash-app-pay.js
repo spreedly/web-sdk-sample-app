@@ -30,7 +30,6 @@ function initElements() {
   elements.errorMessage = document.getElementById('error-message');
   elements.amount = document.getElementById('cap-amount');
   elements.reference = document.getElementById('cap-reference');
-  elements.btnLabel = document.getElementById('cap-btn-label');
   elements.btnTheme = document.getElementById('cap-btn-theme');
   elements.btnShape = document.getElementById('cap-btn-shape');
   elements.btnSize = document.getElementById('cap-btn-size');
@@ -80,7 +79,6 @@ function getReferenceId() {
 
 function getButtonOptions() {
   return {
-    label: elements.btnLabel.value,
     shape: elements.btnShape.value,
     size: elements.btnSize.value,
     theme: elements.btnTheme.value,

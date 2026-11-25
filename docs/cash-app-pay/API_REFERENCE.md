@@ -81,11 +81,14 @@ Supply `merchantId` or `brandId`. The constructor throws if neither is set. When
 
 | Field | Values (default first) |
 |-------|------------------------|
-| `label` | `cashAppPay`, `cashApp`, `pay`, `buy`, `cashOut`, `checkout`, `continue`, `connect` |
 | `shape` | `round`, `semiround` |
 | `size` | `medium`, `small` |
-| `theme` | `dark`, `light`, `monochromeDark`, `monochromeLight`, `green` |
+| `theme` | `dark`, `light` |
 | `width` | `static`, `full` |
+
+The constructor throws for any other key or value. Block's Pay Kit docs also describe the themes
+`monochromeDark`, `monochromeLight` and `green` and a `label` option, but the Pay Kit Block serves
+(`v1/pay.js` 1.0.33) rejects those themes and ignores `label`, so the SDK doesn't accept them yet.
 
 ## Events
 
