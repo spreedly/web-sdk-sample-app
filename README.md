@@ -328,8 +328,8 @@ When integrating the SDK into your production application:
 | [Google Pay Integration Guide](./docs/google-pay/INTEGRATION_GUIDE.md) | `SpreedlyGooglePay` setup, events, shipping/offers/enrollments, backend purchase and 3DS |
 | [Google Pay API Reference](./docs/google-pay/API_REFERENCE.md)   | `SpreedlyGooglePay` config, methods, events and error codes     |
 | [Google Pay Demo Guide](./docs/google-pay/DEMO_GUIDE.md)         | The `/google-pay` demo page, local run and synthetic e2e stub   |
-| [Cash App Pay Integration Guide](./docs/cash-app-pay/INTEGRATION_GUIDE.md) | `SpreedlyCashAppPay` setup, mobile redirect, CSP, errors |
-| [Cash App Pay API Reference](./docs/cash-app-pay/API_REFERENCE.md) | `SpreedlyCashAppPay` methods, events and options |
+| [Cash App Pay Integration Guide](./docs/cash-app-pay/INTEGRATION_GUIDE.md) | `SpreedlyCashAppPay.load()`, setup, mobile redirect, CSP, errors |
+| [Cash App Pay API Reference](./docs/cash-app-pay/API_REFERENCE.md) | `SpreedlyCashAppPay.load()`, instance methods, events and options |
 | [Cash App Pay Demo Guide](./docs/cash-app-pay/DEMO_GUIDE.md)     | Running and testing the demo; mock routes                       |
 | [Testing Guide](./docs/testing/TESTING_GUIDE.md)                 | Test card numbers and how to verify each flow                   |
 | [Troubleshooting Guide](./docs/testing/TROUBLESHOOTING_GUIDE.md) | SDK loading, auth, CSP, tokenization and 3DS issues             |

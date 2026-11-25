@@ -27,7 +27,7 @@ charges like any other token.
 |-------|------|
 | **Pay Kit `pay.js`** | Block's client. **You load it**; the SDK drives `window.CashApp` |
 | **Cash App Pay button / QR code** | Rendered by Pay Kit into your `renderTarget` |
-| **`SpreedlyCashAppPay`** | The class you call: `setup`, `beginCheckout`, `restart`, events |
+| **`SpreedlyCashAppPay`** | `load(config)` gives you the instance you call: `setup`, `beginCheckout`, `restart`, events |
 | **Your server** | Signs auth details and charges the token |
 
 ## Quick start
@@ -37,6 +37,12 @@ charges like any other token.
 Load Pay Kit, then a Spreedly bundle. Both the Hosted Fields and Express Checkout bundles expose
 `window.SpreedlyCashAppPay`. Pay Kit must come from Block's CDN; it can't be bundled or
 self-hosted.
+
+The Cash App Pay code isn't part of the Hosted Fields `index.js`. `SpreedlyCashAppPay.load()`
+downloads it on first use (`cashAppPay.js`, next to `index.js` on the same Spreedly host), so pages
+that never call `load()` don't pay for it. If your Content Security Policy already allows
+`index.js`, it allows this file too. Express Checkout has the same `load()`, with the code
+already inside `express-checkout.js`.
 
 ```html
 <!-- Sandbox -->
@@ -51,10 +57,10 @@ self-hosted.
 
 `setup()` waits up to 10 seconds for `window.CashApp`, so an `async` tag is fine.
 
-### 2. Create the instance and listen for events
+### 2. Load the instance and listen for events
 
 ```javascript
-const cashApp = new SpreedlyCashAppPay({
+const cashApp = await SpreedlyCashAppPay.load({
   authDetails,                       // from your server
   clientId: 'CAS-CI_YOUR_CLIENT_ID',
   merchantId: 'YOUR_CASH_APP_MERCHANT_ID', // or brandId: 'BRAND_…'
@@ -71,6 +77,9 @@ cashApp.on('cashAppDeclined', () => offerOtherPaymentMethods());
 cashApp.on('cashAppDismissed', () => {});
 cashApp.on('cashAppError', ({ code, message }) => console.error(code, message));
 ```
+
+`load()` rejects with an `Error` if the config is invalid or the Cash App Pay code can't be
+downloaded. Each call resolves to a new instance.
 
 Register handlers **before** `setup()`. See [Mobile redirect](#mobile-redirect).
 
@@ -108,14 +117,14 @@ Cash App grant behind it is single-use and short-lived, so charge promptly.
 
 ## Mobile redirect
 
-On mobile the shopper leaves your page. When they come back to `redirectURL`, create the instance
+On mobile the shopper leaves your page. When they come back to `redirectURL`, load an instance
 again with the same config, register handlers, and call `setup()`. Pay Kit reports the approval
 almost immediately, and `cashAppApproved` / `cashAppTokenGenerated` fire without another
 `beginCheckout()`:
 
 ```javascript
 // on the redirectURL page
-const cashApp = new SpreedlyCashAppPay(sameConfig);
+const cashApp = await SpreedlyCashAppPay.load(sameConfig);
 cashApp.on('cashAppTokenGenerated', ({ token }) => chargeOnServer(token));
 await cashApp.setup();
 ```

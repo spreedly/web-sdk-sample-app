@@ -7,13 +7,22 @@ need a `SpreedlyHostedFields` or `SpreedlyExpressCheckout` instance.
 > The token exchange is a **mock** until Spreedly Core's Cash App API ships. See the
 > [Integration Guide](./INTEGRATION_GUIDE.md).
 
-## `SpreedlyCashAppPay`
+## `SpreedlyCashAppPay.load(config)`
 
 ```javascript
-new SpreedlyCashAppPay(config: CashAppPayConfig)
+SpreedlyCashAppPay.load(config: CashAppPayConfig): Promise<CashAppPayInstance>
 ```
 
-Throws `Error` if the config is invalid.
+Resolves to a new Cash App Pay instance. In the Hosted Fields bundle the first call downloads
+`cashAppPay.js` from the same path as `index.js`; in Express Checkout the code is already in the
+bundle. Rejects with an `Error` if the config is invalid (invalid `authDetails` reject before
+anything is downloaded) or if the code can't be loaded. `SpreedlyCashAppPay` is not a
+constructor.
+
+TypeScript: `CashAppPayLoader` is the type of `window.SpreedlyCashAppPay`, and
+`CashAppPayInstance` the type of the instance.
+
+## Instance
 
 ### Methods
 

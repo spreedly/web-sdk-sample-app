@@ -1,6 +1,7 @@
 /**
  * Cash App Pay Demo
- * Uses the SpreedlyCashAppPay standalone class with the merchant-loaded Pay Kit script.
+ * Uses `await SpreedlyCashAppPay.load(config)` with the merchant-loaded Pay Kit script. On the
+ * Hosted Fields bundle, load() downloads the SDK's cashAppPay.js chunk on first use.
  *
  * The page loads Pay Kit and supplies an empty #cash-app-pay-container; the SDK initializes Pay
  * Kit, renders the button and turns the shopper's approval into a payment method token.
@@ -16,6 +17,7 @@ const CASH_APP_CLIENT_ID = 'CAS-CI_AFTERPAY';
 const CASH_APP_BRAND_ID = 'BRAND_e44pamx63nr4b7ch15v1io5b5';
 
 let cashAppInstance = null;
+let latestMountId = 0;
 let lastToken = null;
 
 const elements = {};
@@ -154,6 +156,8 @@ function registerEvents(instance) {
 
 /** Destroys any current instance and starts a fresh checkout with the current controls */
 async function mountCashAppPay() {
+  // load() is async: a remount started meanwhile makes this one stale.
+  const mountId = ++latestMountId;
   if (cashAppInstance) {
     cashAppInstance.destroy();
     cashAppInstance = null;
@@ -166,6 +170,7 @@ async function mountCashAppPay() {
   try {
     authDetails = await fetchAuthDetails();
   } catch (error) {
+    if (mountId !== latestMountId) return;
     logEvent(`Auth params failed: ${error.message}`, 'error');
     SpreedlyUtils.showStatus('status-message', 'Could not fetch auth params.', 'error');
     return;
@@ -173,7 +178,7 @@ async function mountCashAppPay() {
 
   let instance;
   try {
-    instance = new window.SpreedlyCashAppPay({
+    instance = await window.SpreedlyCashAppPay.load({
       authDetails,
       brandId: CASH_APP_BRAND_ID,
       button: getButtonOptions(),
@@ -184,8 +189,13 @@ async function mountCashAppPay() {
       renderTarget: `#${CONTAINER_ID}`,
     });
   } catch (error) {
-    logEvent(`Constructor threw: ${error.message}`, 'error');
+    if (mountId !== latestMountId) return;
+    logEvent(`load() rejected: ${error.message}`, 'error');
     SpreedlyUtils.showStatus('status-message', error.message, 'error');
+    return;
+  }
+  if (mountId !== latestMountId) {
+    instance.destroy();
     return;
   }
   cashAppInstance = instance;
@@ -271,7 +281,7 @@ function init() {
       showFatalError('Failed to load the Spreedly SDK.');
       return;
     }
-    if (typeof window.SpreedlyCashAppPay !== 'function') {
+    if (typeof window.SpreedlyCashAppPay?.load !== 'function') {
       showFatalError(
         'This SDK build has no SpreedlyCashAppPay. Run the SDK locally (see the local-SDK toggle in shared/utils.js).'
       );

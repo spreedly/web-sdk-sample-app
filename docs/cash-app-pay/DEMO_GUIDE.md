@@ -12,7 +12,8 @@ The demo at `/cash-app-pay/index.html` runs `SpreedlyCashAppPay` against Block's
 1. Loads `https://sandbox.kit.cash.app/v1/pay.js`, then the selected SDK bundle.
 2. Uses the sandbox Client ID (`CAS-CI_AFTERPAY`) and Brand ID inlined in the page, and fetches
    fresh auth params from `GET /api/v1/auth/params`.
-3. Creates `SpreedlyCashAppPay` with `redirectURL` set to this page, registers the event handlers,
+3. Gets an instance from `await SpreedlyCashAppPay.load(config)` (on the Hosted Fields bundle this
+   downloads the SDK's `cashAppPay.js` chunk) with `redirectURL` set to this page, registers the event handlers,
    then calls `setup()` and `beginCheckout({ amount })`.
 4. On `cashAppTokenGenerated`, shows the cashtag and token and enables **Complete purchase
    (mock)**, which posts `{ payment_method_token, amount, currency_code }` to
