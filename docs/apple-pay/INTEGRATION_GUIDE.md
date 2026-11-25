@@ -22,6 +22,10 @@ Every method, option, event and error code is listed in the [API reference](./AP
   details. If you already use the Hosted Fields card form with signed auth, you have one. If not,
   create one as described in Spreedly's
   [security guide](https://developer.spreedly.com/docs/using-certificates-iframe-security).
+- **Secure tokenization turned on** for your Spreedly environment, in the Spreedly app: under
+  **Security → Enhanced Security**, check **Enable secure tokenization**. Until you do, Spreedly
+  doesn't check the signed auth details. See Spreedly's
+  [Securing iFrame or Checkout SDK](https://developer.spreedly.com/docs/securing-iframe).
 - A **Spreedly gateway** that supports Apple Pay.
 - An **HTTPS website** on a domain you control. Apple only allows Apple Pay on pages served over
   HTTPS, and you have to prove to Apple that you control the domain.

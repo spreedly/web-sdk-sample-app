@@ -377,13 +377,14 @@ getAuthDetails: () => fetch('/api/spreedly/auth-params').then(res => res.json())
 - Called after each approval and before each call to Spreedly, never at tap time. A second
   approval in the same sheet calls it again.
 - Resolve with `AuthDetails`: `environment_key`, `certificate_token`, `nonce`, `signature` and
-  `timestamp`, all non-empty, signed by your server.
+  `timestamp`, all non-empty, signed by your server. `environment_key` must be the config's
+  `environmentKey`.
 - Return a new set every time. Spreedly accepts each nonce once, even when the request fails: a
   reused nonce gets `401 errors.replayed_tokenization_nonce`. Spreedly's docs: "Your `timestamp`
   and `nonce` will expire after 30 minutes."
-- Throwing, rejecting, resolving with a missing or empty field, or not resolving before the 20 s
-  limit gives `AUTH_DETAILS_FAILED`. Spreedly is not called, and the sheet stays open so the
-  shopper can approve again.
+- Throwing, rejecting, resolving with a missing or empty field or a different `environment_key`,
+  or not resolving before the 20 s limit gives `AUTH_DETAILS_FAILED`. Spreedly is not called, and
+  the sheet stays open so the shopper can approve again.
 
 ### `processPayment`
 
@@ -572,7 +573,7 @@ No payload holds Apple's encrypted payment data, the merchant session or your au
 | `SESSION_FAILED` | A tap: Apple's `ApplePaySession` constructor or `begin()` threw. | Not open | See `details`. The button stays usable. |
 | `MERCHANT_VALIDATION_FAILED` | `onValidateMerchant` threw, rejected, or resolved with something other than an object. | Closed by the SDK | See `details` and your server's call to Apple. Final for this tap. |
 | `MERCHANT_VALIDATION_TIMEOUT` | `onValidateMerchant` took longer than 20 s. | Closed by the SDK | Final for this tap. |
-| `AUTH_DETAILS_FAILED` | `getAuthDetails` threw, rejected, returned incomplete auth, or didn't resolve within 20 s. | Stays open | Fix your auth endpoint. The shopper can approve again. |
+| `AUTH_DETAILS_FAILED` | `getAuthDetails` threw, rejected, returned incomplete auth or auth for a different `environment_key`, or didn't resolve within 20 s. | Stays open | Fix your auth endpoint. The shopper can approve again. |
 | `TOKENIZATION_FAILED` | The call to Spreedly failed, or its response had no payment method token. | Stays open | Read `details.errors[].key`. The shopper can approve again. |
 | `TOKENIZATION_TIMEOUT` | The 20 s limit ran out while the SDK was waiting for Spreedly. A late reply is ignored. | Stays open | A payment method may still have been created. The shopper can approve again. |
 | `PAYMENT_DECLINED` | `processPayment` resolved `{ success: false }`. `message` is yours, or "The payment was declined." | Stays open if Apple hasn't closed it; otherwise final | The shopper can approve again while the sheet is open. |
