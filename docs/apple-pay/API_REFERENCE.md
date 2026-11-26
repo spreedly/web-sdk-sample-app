@@ -1,6 +1,6 @@
 # Apple Pay — API Reference
 
-> **Preview.** Apple Pay in Spreedly's checkout SDK is in final testing and not yet released, so no published SDK version includes it yet. Method names, options and behaviour may change before release. Payments have been tested end to end in desktop Chrome with an iPhone scanning Apple's code; testing in Safari on Mac and iPhone is in progress.
+> **Preview.** Apple Pay in Spreedly's checkout SDK is in final testing and not yet released, so no published SDK version includes it yet. Method names, options and behaviour may change before release. Payments have been tested end to end in desktop Chrome with an iPhone scanning Apple's code and in Safari on a Mac; testing in Safari on iPhone is in progress.
 
 The `SpreedlyApplePay` class, its configuration, the callbacks you supply, its events and error
 codes, and the `applePay` option of Express Checkout. Setup and integration steps are in
@@ -423,7 +423,8 @@ puts `message` in the sheet as an Apple `unknown` error. When `errors` is set, t
 the `errors`. The SDK never sends `message` to telemetry.
 
 In Chrome with an iPhone scanning the code, the sheet shows only that the payment failed, not the
-`message`; show it on your page from `applePayError`.
+`message`. In Mac Safari, confirmed on an iPhone, the sheet shows Apple's own "Try Again", not the
+`message`. Show it on your page from `applePayError`.
 
 `ApplePaySheetError` points Apple's sheet at what's wrong:
 
@@ -449,7 +450,7 @@ the SDK keeps waiting for your result (up to 120 s). It then reports it without 
 `completePayment` "before the 30 second timeout, after which a message appears stating that the
 payment couldn't be completed."
 
-In a device test (Chrome, iPhone scanning the code), a 40-second `processPayment` made Apple close the sheet at 30 seconds; `applePaySheetClosedEarly` fired then, and the result arrived later with `sheetClosedEarly: true`.
+In device tests (Chrome with an iPhone scanning the code, and Mac Safari), a 40-second `processPayment` made Apple close the sheet at 30 seconds; `applePaySheetClosedEarly` fired then, and the result arrived later with `sheetClosedEarly: true`.
 
 ---
 
