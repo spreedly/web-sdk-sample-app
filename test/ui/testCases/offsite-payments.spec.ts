@@ -5,8 +5,7 @@ import { MONOREPO_URLS } from '../util/urls';
 import { authorizationPage, paymentPage, redirectResultPage } from '../pages/offsitePaymentsPage';
 import { TEST_DATA, waitForAuthParams } from '../util/test-constants';
 
-// Every active case failed in CI run 44890401070. Skipped while the flow is under maintenance.
-test.describe.skip('offsite payments flow', () => {
+test.describe('offsite payments flow', () => {
 
   // test('offsite payments flow for hosted fields PayPal success case', async ({ page }) => {
   //   await page.goto(MONOREPO_URLS.BASE);

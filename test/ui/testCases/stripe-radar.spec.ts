@@ -5,8 +5,7 @@ import { helperFunctions } from "../util/utils";
 import { MONOREPO_URLS } from "../util/urls";
 import { stripeRadarPage } from "../pages/stripeRadarPage";
 
-// The only case failed in CI run 44890401070. Skipped while the flow is under maintenance.
-test.describe.skip('Stripe Radar', () => {
+test.describe('Stripe Radar', () => {
     test('should process Stripe Radar payment', async ({ page }) => {
         await page.goto(MONOREPO_URLS.BASE);
         await landingPage.clickOnStripeRadarButton(page);

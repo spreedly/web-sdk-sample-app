@@ -17,8 +17,7 @@ import { paypalUserId, paypalUserPassword, venmoUserId, venmoUserPassword} from 
 
 
 test.describe('PPCP Payment flows', () => {
-    // Failed in CI run 44890401070. Skipped while the flow is under maintenance.
-    test.skip('PPCP paypal payment flow success', async ({ page }) => {
+    test('PPCP paypal payment flow success', async ({ page }) => {
         await page.goto(MONOREPO_URLS.BASE);
         await landingPage.clickOnPPCPDirectButton(page);
         await ppcpPage.clickOnProductIncreaseButton(page, TEST_DATA.PRODUCT_ID_WIRELESS_HEADPHONE);
@@ -31,8 +30,7 @@ test.describe('PPCP Payment flows', () => {
         // expect(orderStatus).toContain(TEST_DATA.ORDER_STATUS_SUCCESS);
     });
 
-    // Failed in CI run 44890401070. Skipped while the flow is under maintenance.
-    test.skip('PPCP payment flow failure', async ({ page }) => {
+    test('PPCP payment flow failure', async ({ page }) => {
         await page.goto(MONOREPO_URLS.BASE);
         await landingPage.clickOnPPCPDirectButton(page);
         await ppcpPage.clickOnProductIncreaseButton(page, TEST_DATA.PRODUCT_ID_WIRELESS_HEADPHONE);
@@ -45,8 +43,7 @@ test.describe('PPCP Payment flows', () => {
         expect(orderStatus).toContain(TEST_DATA.ORDER_STATUS_CANCELLED);
     });
 
-    // Failed in CI run 44890401070. Skipped while the flow is under maintenance.
-    test.skip('PPCP paypal paylater payment flow success', async ({ page }) => {
+    test('PPCP paypal paylater payment flow success', async ({ page }) => {
         await page.goto(MONOREPO_URLS.BASE);
         await landingPage.clickOnPPCPDirectButton(page);
         await ppcpPage.clickOnProductIncreaseButton(page, TEST_DATA.PRODUCT_ID_WIRELESS_HEADPHONE);
@@ -62,8 +59,7 @@ test.describe('PPCP Payment flows', () => {
         // expect(orderStatus).toContain(TEST_DATA.ORDER_STATUS_SUCCESS);
     });
 
-    // Failed in CI run 44890401070. Skipped while the flow is under maintenance.
-    test.skip('PPCP paypal paylater payment flow failure', async ({ page }) => {
+    test('PPCP paypal paylater payment flow failure', async ({ page }) => {
         await page.goto(MONOREPO_URLS.BASE);
         await landingPage.clickOnPPCPDirectButton(page);
         await ppcpPage.clickOnProductIncreaseButton(page, TEST_DATA.PRODUCT_ID_WIRELESS_HEADPHONE);
