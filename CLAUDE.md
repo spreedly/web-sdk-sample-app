@@ -93,6 +93,18 @@ Do not reintroduce `POST /api/v1/payment_methods` as a forwarder to
   not the web client id), `PAZE_SIGNING_KID`, `PAZE_SIGNING_PRIVATE_KEY` (PKCS#8 PEM, line
   breaks may be `\n`), `PAZE_DEMO_API_KEY` (callers send it as `X-Demo-Api-Key`), optional
   `PAZE_TOKEN_URL`. Without them that endpoint answers `503 not_configured`; nothing else breaks.
+- **Backend-mediated Paze checkout** (HC-2101; `POST /api/v1/paze/sessions`, `.../:sessionId/review`,
+  `.../:sessionId/complete`; code in `src/paze/` + `src/controllers/paze-sessions.ts`). The backend
+  mints a token per Paze call, calls create/review/complete, and creates the Spreedly payment method
+  from `securedPayload`, which never reaches the app. Uses the mobile token vars above plus
+  `PAZE_CERTIFICATE_TOKEN`, the Spreedly `_NEW` key/secret, `PAZE_CLIENT_CONTEXT_KEY` (32 random bytes,
+  hex or base64),
+  optional `PAZE_ENVIRONMENT` (`cat` default / `uat` / `production`; also picks the default token URL)
+  and the same `PAZE_CLIENT_ID` / `PAZE_CLIENT_NAME` / `PAZE_PROFILE_ID` as the web flow. Callers send `X-Demo-Api-Key` and `X-Shopper-Session` (stands in for the shopper's
+  app session; review/complete only work for the creator). Sessions live in an in-memory map (30 min
+  TTL), so a restart loses the duplicate-complete check. Without the settings these routes answer
+  `503 {"source":"backend","message":"not_configured"}`. Unit tests: `test/api/paze-sessions.spec.ts`
+  (no `.env`, no network).
 - **The Apple Pay vars are unsuffixed too.** Required: `APPLE_PAY_MERCHANT_IDENTITY_CERT` /
   `_KEY` (PEM, line breaks may be `\n`) and `APPLE_PAY_DOMAIN_ASSOCIATION` (Apple's verification
   file, served at `/.well-known/apple-developer-merchantid-domain-association`). Without them

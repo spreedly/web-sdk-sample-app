@@ -1,13 +1,13 @@
 import axios from 'axios';
 import { Request, Response } from 'express';
 import { ipKeyGenerator, rateLimit } from 'express-rate-limit';
-import { createSign, randomUUID, timingSafeEqual } from 'crypto';
+import { timingSafeEqual } from 'crypto';
 import config from '../config';
 import { clientIp } from '../clientIp';
+import { buildClientAssertion } from '../paze/assertion';
 
 // POST /api/v1/paze/oauth/token
 // Mints a Paze access token for the Spreedly mobile SDK's Paze checkout (CAT/sandbox).
-const ASSERTION_LIFETIME_S = 1800; // Paze's limit
 const PAZE_TIMEOUT_MS = 15_000; // well under the SDK's 30 s budget, so this endpoint fails first
 const MAX_TOKEN_BYTES = 8 * 1024; // the SDK rejects larger tokens as malformed
 // Paze binds the token to the checkout session, so the app sends its session_id (JSON or form body).
@@ -21,7 +21,7 @@ const isConfigured = (): boolean =>
       config.pazeDemoApiKey
   );
 
-const isAuthorized = (req: Request): boolean => {
+export const isAuthorized = (req: Request): boolean => {
   const supplied = Buffer.from(req.get('x-demo-api-key') || '');
   const expected = Buffer.from(config.pazeDemoApiKey);
   return (
@@ -46,28 +46,6 @@ export const pazeTokenRateLimit = rateLimit({
   },
 });
 
-const base64url = (value: object): string =>
-  Buffer.from(JSON.stringify(value)).toString('base64url');
-
-const buildClientAssertion = (): string => {
-  const now = Math.floor(Date.now() / 1000);
-  const header = { alg: 'RS256', typ: 'JWT', kid: config.pazeSigningKid };
-  const claims = {
-    iss: config.pazeMobileLoginId,
-    sub: config.pazeMobileLoginId,
-    aud: config.pazeTokenUrl,
-    jti: randomUUID(),
-    iat: now,
-    nbf: now,
-    exp: now + ASSERTION_LIFETIME_S,
-  };
-  const unsigned = `${base64url(header)}.${base64url(claims)}`;
-  const signature = createSign('RSA-SHA256')
-    .update(unsigned)
-    .sign(config.pazeSigningPrivateKey, 'base64url');
-  return `${unsigned}.${signature}`;
-};
-
 export const getPazeAccessToken = async (
   req: Request,
   res: Response
@@ -90,7 +68,12 @@ export const getPazeAccessToken = async (
 
   let clientAssertion: string;
   try {
-    clientAssertion = buildClientAssertion();
+    clientAssertion = buildClientAssertion({
+      loginId: config.pazeMobileLoginId,
+      signingKid: config.pazeSigningKid,
+      signingPrivateKey: config.pazeSigningPrivateKey,
+      tokenUrl: config.pazeTokenUrl,
+    });
   } catch {
     console.error(
       '[paze-oauth] could not sign the client assertion: check PAZE_SIGNING_PRIVATE_KEY'

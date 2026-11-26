@@ -19,6 +19,14 @@ import {
   createPazePaymentMethod,
 } from './controllers/payments';
 import { getPazeAccessToken, pazeTokenRateLimit } from './controllers/paze-oauth';
+import { getPazeWebConfig } from './controllers/paze-web-config';
+import {
+  completePazeSession,
+  createPazeSession,
+  pazeCreateSessionRateLimit,
+  pazeSessionStepRateLimit,
+  reviewPazeSession,
+} from './controllers/paze-sessions';
 import {
   applePayValidateRateLimit,
   getApplePayConfig,
@@ -1229,6 +1237,159 @@ router.post(
 
 /**
  * @swagger
+ * components:
+ *   parameters:
+ *     PazeDemoApiKey:
+ *       in: header
+ *       name: X-Demo-Api-Key
+ *       required: true
+ *       schema:
+ *         type: string
+ *       description: Shared demo key (PAZE_DEMO_API_KEY)
+ *     PazeShopperSession:
+ *       in: header
+ *       name: X-Shopper-Session
+ *       required: true
+ *       schema:
+ *         type: string
+ *         pattern: '^[A-Za-z0-9._:-]{16,128}$'
+ *       description: Stands in for the shopper's authenticated app session. Review and complete only work with the value that created the session.
+ *     PazeSessionId:
+ *       in: path
+ *       name: sessionId
+ *       required: true
+ *       schema:
+ *         type: string
+ *         pattern: '^[A-Za-z0-9]{24}$'
+ *   schemas:
+ *     PazeTransactionValue:
+ *       type: object
+ *       properties:
+ *         transactionCurrency: { type: string, example: USD }
+ *         transactionAmount: { type: string, example: '10.00' }
+ *     PazeError:
+ *       oneOf:
+ *         - type: object
+ *           description: Paze failed. Its status and body are passed through unchanged.
+ *           properties:
+ *             source: { type: string, enum: [paze] }
+ *             pazeStatusCode: { type: integer }
+ *             pazeError: { type: object }
+ *         - type: object
+ *           properties:
+ *             source: { type: string, enum: [backend] }
+ *             message: { type: string }
+ */
+
+/**
+ * @swagger
+ * /api/v1/paze/sessions:
+ *   post:
+ *     description: Starts a backend-mediated Paze checkout for the mobile SDK. The backend generates sessionId, derives clientContext, mints a Paze token and calls Paze sessions/create. Every response has Cache-Control no-store.
+ *     tags: [Paze Payments]
+ *     parameters:
+ *       - $ref: '#/components/parameters/PazeDemoApiKey'
+ *       - $ref: '#/components/parameters/PazeShopperSession'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [callbackURLScheme, intent]
+ *             properties:
+ *               callbackURLScheme: { type: string, example: com.example.merchant.paze, description: 'The app scheme the wallet redirects back to, sent to Paze as given' }
+ *               intent: { type: string, enum: [REVIEW_AND_PAY, EXPRESS_CHECKOUT, ADD_CARD] }
+ *               transactionType: { type: string, enum: [PURCHASE, CARD_ON_FILE, BOTH], default: PURCHASE }
+ *               transactionValue: { $ref: '#/components/schemas/PazeTransactionValue' }
+ *               emailAddress: { type: string, example: shopper@example.com }
+ *               phoneNumber: { type: string, nullable: true }
+ *               shippingPreference: { type: string, default: ALL }
+ *               billingPreference: { type: string, default: ALL }
+ *     responses:
+ *       200:
+ *         description: '{"sessionId": string, "checkoutUrl": string}'
+ *       400:
+ *         description: Invalid request
+ *       401:
+ *         description: Wrong demo key or missing X-Shopper-Session
+ *       429:
+ *         description: More than 10 creates a minute for this shopper, or Paze's own 429
+ *       502:
+ *         description: Paze rejected the request or answered with something unusable
+ *       503:
+ *         description: Paze is unavailable, or the Paze session settings are missing (not_configured)
+ */
+router.post('/paze/sessions', pazeCreateSessionRateLimit, createPazeSession);
+
+/**
+ * @swagger
+ * /api/v1/paze/sessions/{sessionId}/review:
+ *   post:
+ *     description: Calls Paze sessions/review with the code from the wallet redirect and returns Paze's body for the confirmation screen (REVIEW_AND_PAY only).
+ *     tags: [Paze Payments]
+ *     parameters:
+ *       - $ref: '#/components/parameters/PazeDemoApiKey'
+ *       - $ref: '#/components/parameters/PazeShopperSession'
+ *       - $ref: '#/components/parameters/PazeSessionId'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [code]
+ *             properties:
+ *               code: { type: string }
+ *     responses:
+ *       200:
+ *         description: '{"pazeResponse": {...Paze sessions/review body, unchanged...}}'
+ *       404:
+ *         description: Unknown session, or one another caller created
+ *       409:
+ *         description: The session is already completing, completed or failed
+ */
+router.post('/paze/sessions/:sessionId/review', pazeSessionStepRateLimit, reviewPazeSession);
+
+/**
+ * @swagger
+ * /api/v1/paze/sessions/{sessionId}/complete:
+ *   post:
+ *     description: Calls Paze sessions/complete, creates the Spreedly payment method from securedPayload (third_party_network_token, source paze) and returns display-safe fields with the payment method token. securedPayload never leaves the backend. A repeated complete returns the stored result.
+ *     tags: [Paze Payments]
+ *     parameters:
+ *       - $ref: '#/components/parameters/PazeDemoApiKey'
+ *       - $ref: '#/components/parameters/PazeShopperSession'
+ *       - $ref: '#/components/parameters/PazeSessionId'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [code]
+ *             properties:
+ *               code: { type: string }
+ *               transactionType: { type: string, enum: [PURCHASE, CARD_ON_FILE, BOTH] }
+ *               transactionValue: { $ref: '#/components/schemas/PazeTransactionValue' }
+ *               billingPreference: { type: string }
+ *               merchantCategoryCode: { type: string, nullable: true, pattern: '^[0-9]{4}$' }
+ *     responses:
+ *       200:
+ *         description: '{"paymentMethodToken", "paymentCardNetwork", "lastFour", "consumer", "billingAddress"}'
+ *       400:
+ *         description: Invalid request, or transactionType/transactionValue differs from the order
+ *       404:
+ *         description: Unknown session, or one another caller created
+ *       409:
+ *         description: The session failed and can't be completed
+ *       502:
+ *         description: Paze failed, or the Spreedly payment method couldn't be created (retry complete; Paze isn't called again)
+ */
+router.post('/paze/sessions/:sessionId/complete', pazeSessionStepRateLimit, completePazeSession);
+
+/**
+ * @swagger
  * /api/v1/apple-pay/validate:
  *   post:
  *     description: Requests an Apple Pay merchant session from Apple over mutual TLS with the Merchant Identity Certificate. Always calls Apple's fixed host for APPLE_PAY_ENVIRONMENT; the browser's validationURL is never fetched.
@@ -1260,5 +1421,21 @@ router.post('/apple-pay/validate', applePayValidateRateLimit, validateApplePayMe
  *         description: '{"merchantIdentifier": string | null, "configured": boolean}'
  */
 router.get('/apple-pay/config', getApplePayConfig);
+
+/**
+ * @swagger
+ * /api/v1/paze/web-config:
+ *   get:
+ *     description: Paze client settings and wallet host for the web demo page, from PAZE_ENVIRONMENT and PAZE_CLIENT_ID / PAZE_CLIENT_NAME / PAZE_PROFILE_ID. None of them are secret.
+ *     tags: [Paze Payments]
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: '{"environment": "cat" | "uat" | "production", "checkoutHost": string, "clientConfig": {"id": string, "name": string, "profileId": string}}'
+ *       503:
+ *         description: The Paze settings are missing ({"error":"not_configured"})
+ */
+router.get('/paze/web-config', getPazeWebConfig);
 
 export default router;
