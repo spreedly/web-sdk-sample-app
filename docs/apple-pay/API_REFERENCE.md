@@ -485,16 +485,20 @@ Apple the approval failed with Apple's `unknown` error, which Apple documents as
 "The user can attempt authorization again". The sheet stays open, each failed approval emits its
 own `applePayError`, and the tap ends later with one of the final outcomes.
 
+In device tests (Chrome with an iPhone scanning the code, and Mac Safari), the sheet stayed open after a failed `getAuthDetails` and the second approval succeeded.
+
 If the browser has no `window.ApplePayError`, the SDK can't keep the sheet open after a failure:
 the failure becomes final, you get one `applePayError`, and the button works again.
 
 `applePayCancelled` fires when the shopper closes the sheet during merchant validation, before
-approving, after a failed approval, or while the SDK is getting auth details and calling
-Spreedly. In the last case a token that arrives later is dropped and never emitted.
+approving, or after a failed approval.
 
-In Chrome with an iPhone scanning the code, the shopper can't close the sheet while the SDK is
-getting auth details and calling Spreedly; only Apple closes it then, for example at its 30-second
-limit.
+If the sheet closes while the SDK is getting auth details and calling Spreedly, you get a final
+`applePayError` with `SHEET_CLOSED_BEFORE_CHARGE` instead, as in Spreedly's iOS SDK. The shopper
+can't close the sheet then (in Chrome with an iPhone scanning the code and in Mac Safari, its Cancel
+button is disabled), so Apple closed it, for example at its 30-second limit. Nothing was charged. A
+token that arrives later is dropped and never emitted, but a payment method may still have been
+created at Spreedly.
 
 `applePayCancelled` does not fire after `destroy()`, after the SDK closed the sheet itself
 (merchant validation or `processPayment` failure), or while `processPayment` is running (then
@@ -577,6 +581,7 @@ No payload holds Apple's encrypted payment data, the merchant session or your au
 | `AUTH_DETAILS_FAILED` | `getAuthDetails` threw, rejected, returned incomplete auth or auth for a different `environment_key`, or didn't resolve within 20 s. | Stays open | Fix your auth endpoint. The shopper can approve again. |
 | `TOKENIZATION_FAILED` | The call to Spreedly failed, or its response had no payment method token. | Stays open | Read `details.errors[].key`. The shopper can approve again. |
 | `TOKENIZATION_TIMEOUT` | The 20 s limit ran out while the SDK was waiting for Spreedly. A late reply is ignored. | Stays open | A payment method may still have been created. The shopper can approve again. |
+| `SHEET_CLOSED_BEFORE_CHARGE` | The sheet closed while the SDK was getting auth details or calling Spreedly, for example at Apple's 30 s limit. A late reply is ignored. | Closed | Nothing was charged; a payment method may still have been created. Final; the shopper can tap the button again. |
 | `PAYMENT_DECLINED` | `processPayment` resolved `{ success: false }`. `message` is yours, or "The payment was declined." | Stays open if Apple hasn't closed it; otherwise final | The shopper can approve again while the sheet is open. |
 | `PAYMENT_PROCESSING_FAILED` | `processPayment` threw, rejected, or resolved with an invalid outcome. | Closed by the SDK | The charge may have happened; check your order state. Final. |
 | `PAYMENT_PROCESSING_TIMEOUT` | `processPayment` took longer than 120 s. A late result is ignored. | Closed by the SDK | The charge may have happened; check your order state. Final. |

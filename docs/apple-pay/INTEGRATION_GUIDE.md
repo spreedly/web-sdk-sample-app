@@ -659,6 +659,7 @@ or the shopper's contact details.
 | `AUTH_DETAILS_FAILED` | Check your auth endpoint. The shopper can approve again. |
 | `TOKENIZATION_FAILED` | Read Spreedly's error in `details`. The shopper can approve again. |
 | `TOKENIZATION_TIMEOUT` | A payment method may still have been created at Spreedly. The shopper can approve again. |
+| `SHEET_CLOSED_BEFORE_CHARGE` | The sheet closed while the payment method was being created. Nothing was charged. The shopper can tap the button again. |
 | `PAYMENT_DECLINED` | The shopper can pick another card and approve again. |
 | `PAYMENT_PROCESSING_FAILED` | Your charge may have gone through. Check your order before charging again. |
 | `PAYMENT_PROCESSING_TIMEOUT` | Your charge may have gone through. Check your order before charging again. |
@@ -672,9 +673,14 @@ Each tap ends with exactly one of `applePayTokenGenerated`, `applePayCancelled` 
 `applePayError` (`AUTH_DETAILS_FAILED`, `TOKENIZATION_FAILED`, `TOKENIZATION_TIMEOUT` or
 `PAYMENT_DECLINED`) and the shopper can try again, so don't treat those as the end of the payment.
 
-If the shopper closes the sheet before `processPayment` runs, you get `applePayCancelled`. The SDK
-discards any token that arrives after that, so there is nothing to charge, and the shopper starts
-again by tapping the button. If the sheet closes while `processPayment` is running, you get
+In device tests (Chrome with an iPhone scanning the code, and Mac Safari), the sheet stayed open
+after a failed `getAuthDetails` and the second approval succeeded.
+
+If the shopper closes the sheet before approving, or after a failed approval, you get
+`applePayCancelled`, and the shopper starts again by tapping the button. If the sheet closes while
+the SDK is creating the payment method, you get `applePayError` with `SHEET_CLOSED_BEFORE_CHARGE`:
+the shopper can't close it then, so Apple did. The SDK discards any token that arrives after that,
+so there is nothing to charge, and the shopper starts again by tapping the button. If the sheet closes while `processPayment` is running, you get
 `applePaySheetClosedEarly` instead, followed by the result of your charge (see
 [Apple's 30-second limit](#apples-30-second-limit)).
 
