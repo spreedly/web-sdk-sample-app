@@ -6,8 +6,7 @@ import { MONOREPO_URLS } from "../util/urls";
 import { helperFunctions } from "../util/utils";
 import { tokenizePage } from "../pages/tokenizePage";
 
-// Every case failed in CI run 44890401070. Skipped while the flow is under maintenance.
-test.describe.skip('3DS Flow', () => {
+test.describe('3DS Flow', () => {
     test('3DS flow for hosted fields Challenge Flow authentication success case', async ({ page }) => {
         await page.goto(MONOREPO_URLS.BASE);
         await landingPage.clickOn3DSButton(page);
