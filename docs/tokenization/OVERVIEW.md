@@ -61,3 +61,10 @@ Need to collect card details and tokenize?
 **Key methods:** `expressCheckout()`, `addField()`, `removeField()`, `setFieldConfig()`, `updateTextElement()`
 
 📖 See: [Express Checkout Integration Guide](./express-checkout/INTEGRATION_GUIDE.md) · [Styling Guide](./STYLING_GUIDE.md)
+
+---
+
+## Mobile apps
+
+Both products are built for browsers. For native and wrapper apps, use the native Spreedly SDKs.
+If you load your web checkout in an app WebView, see [Mobile WebViews](../webview/INTEGRATION_GUIDE.md).
