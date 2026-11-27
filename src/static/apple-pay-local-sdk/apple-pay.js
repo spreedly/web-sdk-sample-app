@@ -7,10 +7,10 @@
  * a wallet row above the card form, embedded in the page or in Express Checkout's pop-up (dialog
  * mode, chosen in the config panel).
  *
- * The SDK loads from the SDK dev servers on the computer showing the page (`npm run dev` in
- * checkout-web-sdk), because Apple Pay isn't on the CDN yet. Use Chrome on that computer: it lets
- * an HTTPS page load http://localhost. ?sdk-source=cdn loads the CDN's rc channel instead, like the
- * other pages (`SpreedlyUtils.getSDKScriptUrl()`).
+ * The SDK loads from the CDN's rc channel, like the other pages
+ * (`SpreedlyUtils.getSDKScriptUrl()`). ?sdk-source=local loads it from the SDK dev servers on the
+ * computer showing the page (`npm run dev` in checkout-web-sdk) instead. Use Chrome for that: it
+ * lets an HTTPS page load http://localhost. A page opened on localhost always uses the dev servers.
  *
  * Every API call goes to this server (same origin): merchant validation needs the Merchant
  * Identity Certificate, which only the server holds.
@@ -45,7 +45,8 @@ const LOCAL_SDK_URLS = {
 
 const params = new URLSearchParams(window.location.search);
 const sdkType = SpreedlyUtils.getSDKType();
-const sdkFromLocalhost = params.get('sdk-source') !== 'cdn';
+const pageOnLocalhost = window.location.hostname === 'localhost';
+const sdkFromLocalhost = pageOnLocalhost || params.get('sdk-source') === 'local';
 const debugEnabled = params.get('debug') === '1';
 
 const elements = {};
@@ -801,13 +802,16 @@ function showSdkSource() {
     : 'the CDN (rc channel)';
   const other = new URLSearchParams(window.location.search);
   if (sdkFromLocalhost) {
-    other.set('sdk-source', 'cdn');
-  } else {
     other.delete('sdk-source');
+  } else {
+    other.set('sdk-source', 'local');
   }
   const toggle = elements['sdk-source-toggle'];
   toggle.href = `?${other}`;
   toggle.textContent = sdkFromLocalhost ? 'Load from the CDN' : 'Load from localhost';
+  // A page opened on localhost can't load the CDN build: getSDKScriptUrl() returns the dev
+  // servers there.
+  toggle.hidden = pageOnLocalhost;
 }
 
 /** The cart total from the Apple Pay start page (?amount=), when it's a valid amount. */
@@ -822,8 +826,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   initElements();
   applyAmountFromStartPage();
   const backParams = new URLSearchParams({ sdk: sdkType });
-  if (!sdkFromLocalhost) {
-    backParams.set('sdk-source', 'cdn');
+  if (sdkFromLocalhost && !pageOnLocalhost) {
+    backParams.set('sdk-source', 'local');
   }
   document.getElementById('back-link').href = `../apple-pay/index.html?${backParams}`;
   showSdkSource();
