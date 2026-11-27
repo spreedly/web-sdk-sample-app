@@ -726,6 +726,9 @@ attribute on your `pay.js` `<script>` tag. With that nonce you do not need `'uns
 - `SpreedlyGooglePay` always seals the token for Spreedly (`gateway: "spreedly"`).
   [Third Party Google Pay](https://developer.spreedly.com/docs/third-party-google-pay), where
   another gateway decrypts the token, is not supported by this class.
+- In a mobile app WebView (Android `WebView`, iOS `WKWebView`), the native app has to turn Google
+  Pay on. Until it does, no button is drawn and `googlePayUnavailable` fires. See
+  [Mobile WebViews](../webview/INTEGRATION_GUIDE.md#google-pay).
 
 ---
 
