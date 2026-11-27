@@ -1,4 +1,10 @@
 import dotenv from 'dotenv';
+import { parseClientContextKey } from './paze/clientContext';
+import {
+  isPazeEnvironment,
+  PAZE_ENVIRONMENTS,
+  PazeEnvironment,
+} from './paze/pazeClient';
 
 dotenv.config();
 
@@ -146,6 +152,18 @@ const resolveBasicAuth = (): BasicAuthConfig | null => {
   return { user, password };
 };
 
+// PAZE_ENVIRONMENT picks Paze's hosts for the backend-mediated checkout: cat (default), uat or
+// production. An unknown value leaves it null, and the session routes answer not_configured.
+const resolvePazeEnvironment = (): PazeEnvironment | null => {
+  const raw = (process.env.PAZE_ENVIRONMENT || 'cat').trim().toLowerCase();
+  if (isPazeEnvironment(raw)) return raw;
+  console.warn(
+    'PAZE_ENVIRONMENT must be cat, uat or production; Paze sessions are off'
+  );
+  return null;
+};
+const pazeEnvironment = resolvePazeEnvironment();
+
 const resolveSdkBaseUrl = (): string => {
   const raw = process.env.SDK_BASE_URL;
   if (!raw) return PRODUCTION_SDK_BASE_URL;
@@ -203,6 +221,10 @@ interface Config {
   pazeSigningPrivateKey: string;
   pazeTokenUrl: string;
   pazeDemoApiKey: string;
+  // Backend-mediated Paze checkout (POST /paze/sessions...). The mobile client fields fall back
+  // to the web ones.
+  pazeEnvironment: PazeEnvironment | null;
+  pazeClientContextKey: Buffer | null;
   // Apple Pay (web): merchant validation and domain verification. Merchant ID, display name,
   // domain and environment default to the Heroku sample app; the routes answer
   // 503 not_configured / 404 until the certificate, key and verification file are set.
@@ -257,8 +279,12 @@ const config: Config = {
   ),
   pazeTokenUrl:
     process.env.PAZE_TOKEN_URL ||
-    'https://auth.wallet.cat.earlywarning.io/token',
+    PAZE_ENVIRONMENTS[pazeEnvironment || 'cat'].tokenUrl,
   pazeDemoApiKey: process.env.PAZE_DEMO_API_KEY || '',
+  pazeEnvironment,
+  pazeClientContextKey: parseClientContextKey(
+    process.env.PAZE_CLIENT_CONTEXT_KEY || ''
+  ),
   applePayMerchantId:
     process.env.APPLE_PAY_MERCHANT_ID || 'merchant.com.spreedly.example',
   applePayDisplayName:

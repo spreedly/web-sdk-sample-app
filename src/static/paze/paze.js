@@ -7,11 +7,8 @@
  * checkout() to start a flow — the SDK owns that so it can count button impressions.
  */
 
-const PAZE_CLIENT_CONFIG = {
-  id: 'Q8U2W6W9EYCO205KT5LO13iO4a4w6J-fjAjd51d2qYk96jx2M',
-  name: 'Spreedly',
-  profileId: 'Spreedly',
-};
+// Filled from /paze/web-config, so the page uses the backend's PAZE_ENVIRONMENT and client.
+let pazeClientConfig = null;
 
 const TRANSACTION_VALUE = {
   transactionAmount: '10.00',
@@ -52,7 +49,7 @@ function initElements() {
 
 /** Returns the demo Paze clientConfig */
 function getPazeClientConfig() {
-  return PAZE_CLIENT_CONFIG;
+  return pazeClientConfig;
 }
 
 /** Returns the selected SDK display mode. Named distinctly from SpreedlyUtils.getDisplayMode. */
@@ -214,6 +211,26 @@ function showResetButton() {
 /** Reloads the demo page */
 function handleReset() {
   window.location.reload();
+}
+
+/** Loads the Paze settings and Paze's SDK for the backend's PAZE_ENVIRONMENT */
+async function loadPazeWalletSDK() {
+  let webConfig;
+  try {
+    const response = await axios.get(`${API_BASE_URL}/paze/web-config`);
+    webConfig = response.data;
+  } catch {
+    throw new Error('Paze is not configured on the backend.');
+  }
+  pazeClientConfig = webConfig.clientConfig;
+
+  await new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = `https://${webConfig.checkoutHost}/web/resources/js/digitalwallet-sdk.js`;
+    script.onload = resolve;
+    script.onerror = () => reject(new Error('Failed to load the Paze SDK.'));
+    document.head.appendChild(script);
+  });
 }
 
 /** Loads Spreedly SDK and verifies SpreedlyPaze is available */
@@ -490,6 +507,7 @@ async function init() {
   elements.resetBtn?.addEventListener('click', handleReset);
 
   try {
+    await loadPazeWalletSDK();
     await loadSpreedlySDK();
 
     // Optional but recommended by the SDK. Not worth failing the demo over, so a
