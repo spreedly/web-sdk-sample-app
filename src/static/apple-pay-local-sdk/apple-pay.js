@@ -622,7 +622,7 @@ async function mountExpressCheckoutMode() {
   authAttempts = 0;
   listen(expressCheckout);
   expressCheckout.on('tokenGenerated', payload =>
-    log('tokenGenerated (card form)', { token: payload?.payment_method?.token })
+    log('tokenGenerated (card form)', { token: payload?.tokenResponse?.payment_method?.token })
   );
   // The shopper closed the pop-up with its close button.
   expressCheckout.on('close', () => {
