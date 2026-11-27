@@ -151,6 +151,11 @@ applePay.setTotal({ total: { label: 'Example Shop', amount: '52.00' } });
 A zero total needs Apple Pay JS version 4. The SDK chooses the version once, at `mount()`, from
 the constructor's `total`. A zero total passed later to `setTotal()` doesn't change that choice.
 
+If the total may become zero later, pass a zero `total` to the constructor. The SDK then requires
+version 4 at `mount()`, and a browser without it reports `UNSUPPORTED_VERSION` instead of drawing a
+button. Otherwise the SDK doesn't check a zero total set later on a browser that has only version 3,
+and what the shopper sees there hasn't been tested.
+
 #### `destroy(): void`
 
 Removes the instance for good. It aborts an open Apple Pay session (no event fires for it), removes the
@@ -224,9 +229,6 @@ detail page." Apple's guidance for each status:
 | `paymentCredentialsAvailable` | "Show an Apple Pay button and offer Apple Pay as the primary, but not necessarily sole, payment option." |
 | `paymentCredentialStatusUnknown` | "Show an Apple Pay button and offer Apple Pay as a possible payment option." Apple returns this in browsers other than Safari, including when Apple's script runs in its sandbox environment (Apple Pay JS 1.3.5 and later). |
 | `paymentCredentialsUnavailable` | "Offer Apple Pay as a payment option, but don't make it the sole or default payment option." |
-
-In browsers other than Safari, Apple's script also reports `applePayUnsupported` for a merchant ID
-or domain that Apple doesn't have registered, so with this option on the button isn't drawn there.
 
 With the option off, Apple's script in browsers other than Safari sends an empty `merchantId` when
 the payment starts. Payments still succeed: desktop Chrome with an iPhone scanning the code has
@@ -341,6 +343,9 @@ A synchronous throw from any of these callbacks is treated the same as a rejecte
 The 20 s limits are SDK choices under the 30 s Apple allows. Apple's TN3174: "each event handler
 has a thirty (30) second timeout. If the related completion method is not invoked within 30
 seconds from the start of the event, the payment sheet will dismiss with an error."
+
+Apple's reference pages for `onvalidatemerchant` state no limit of their own. Either way, the SDK
+ends merchant validation at 20 s, before Apple's 30 s could apply.
 
 ### `onValidateMerchant`
 

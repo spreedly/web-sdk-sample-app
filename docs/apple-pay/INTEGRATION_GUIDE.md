@@ -725,8 +725,7 @@ Apple Pay should be the primary payment option.
 
 With it on, the SDK waits up to 3 seconds for Apple's answer and leaves `paymentCredentialStatus`
 out if Apple takes longer. If Apple answers `applePayUnsupported`, the SDK draws no button and fires
-`applePayUnavailable` with `APPLE_PAY_UNSUPPORTED`. In browsers other than Safari, that also happens
-when Apple doesn't have your Merchant ID or domain registered.
+`applePayUnavailable` with `APPLE_PAY_UNSUPPORTED`.
 
 With the option off, Apple's script in browsers other than Safari doesn't learn your Merchant ID
 before the payment starts, and sends an empty Merchant ID when the payment begins. Before going
@@ -833,6 +832,9 @@ The SDK runs Apple Pay on the page that loads it. If that page is inside an ifra
 - the iframe needs `allow="payment"`, which Safari 17 and later supports for cross-origin iframes;
 - the domain you register with Apple and send as `initiativeContext` is the top-level page's
   domain, not the iframe's.
+
+The top-level-domain rule and the iOS 16 limit below come from Apple's developer forums, not from
+Apple's reference docs.
 
 On iOS 16 and earlier, Apple Pay calls had to come from the top-level page, so shoppers on those
 versions can't pay from inside an iframe.
