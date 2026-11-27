@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Documentation
 
-- **Mobile WebViews** (HC-2110): new `docs/webview/INTEGRATION_GUIDE.md` on running the checkout inside an iOS `WKWebView`, Android `WebView` or hybrid shell. It states that WebViews are not tested or certified and recommends the native SDKs for apps, and lists what the app must do for the card form, Google Pay (Android `webkit` 1.14.0+ / `setPaymentRequestEnabled`, iOS `GOOGLE_PAY_SUPPORTED` + popup handling) and 3DS2 (third-party cookies, sub-frame navigation, 3DS1 return URL). The Google Pay, 3DS and tokenization guides link to it.
+- **Mobile WebViews** (HC-2110): new `docs/webview/INTEGRATION_GUIDE.md` on running the checkout inside an iOS `WKWebView`, Android `WebView` or hybrid shell. It states that WebViews are not tested or certified, recommends the native SDKs for apps, and gives short hints for the card form, Google Pay (links to Google's WebView guides) and 3DS2 (third-party cookies, iframe navigation, 3DS1 return URL). The Google Pay, 3DS and tokenization guides link to it.
 
 ## [1.11.0] - 2026-11-25
 

@@ -217,16 +217,8 @@ If you're using Subresource Integrity and the SDK fails to load:
 
 ## Mobile WebViews
 
-The SDK is not tested or certified inside app WebViews; for native apps use the native Spreedly SDKs. If your checkout runs in an iOS `WKWebView` or Android `WebView`, see [Mobile WebViews](../webview/INTEGRATION_GUIDE.md) for the full setup.
+The SDK is not tested or certified inside app WebViews; for native apps use the native Spreedly SDKs. See [Mobile WebViews](../webview/INTEGRATION_GUIDE.md).
 
-### Google Pay button doesn't show inside the app
-
-`googlePayUnavailable` fires with `NOT_READY_TO_PAY` because the app hasn't turned Google Pay on. Android needs `androidx.webkit` 1.14.0+, `setPaymentRequestEnabled(true)` and the `<queries>` payment intents; iOS needs `GOOGLE_PAY_SUPPORTED` in the user agent and `WKUIDelegate` popup handling. The card form keeps working meanwhile.
-
-### 3DS challenge is blank or never completes inside the app
-
-The app is blocking third-party cookies (Android: call `setAcceptThirdPartyCookies(webView, true)`) or cancelling navigation inside the challenge iframe. Only intercept main-frame navigations. Don't use Braintree's `challengeIframeLocation: 'popup'`.
-
-### Shopper ends up in the system browser after 3DS1 fallback
-
-The SDK navigates the whole page to the gateway's `checkout_url`. Let the WebView follow it, and make sure your `redirect_url` loads back inside the app.
+- **Google Pay button doesn't show in the app:** the app hasn't turned Google Pay on in its WebView. Follow Google's WebView guide for the platform. The card form keeps working.
+- **3DS challenge is blank in the app:** the app blocks third-party cookies or navigation inside the challenge iframe.
+- **Shopper ends up in the system browser after 3DS1 fallback:** let the WebView follow the redirect and load the `redirect_url` back in the app.

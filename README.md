@@ -328,7 +328,7 @@ When integrating the SDK into your production application:
 | [Google Pay Integration Guide](./docs/google-pay/INTEGRATION_GUIDE.md) | `SpreedlyGooglePay` setup, events, shipping/offers/enrollments, backend purchase and 3DS |
 | [Google Pay API Reference](./docs/google-pay/API_REFERENCE.md)   | `SpreedlyGooglePay` config, methods, events and error codes     |
 | [Google Pay Demo Guide](./docs/google-pay/DEMO_GUIDE.md)         | The `/google-pay` demo page, local run and synthetic e2e stub   |
-| [Mobile WebViews Guide](./docs/webview/INTEGRATION_GUIDE.md)     | Running the checkout in an app WebView: support position, Google Pay and 3DS2 setup |
+| [Mobile WebViews Guide](./docs/webview/INTEGRATION_GUIDE.md)     | Running the checkout in an app WebView: support position, Google Pay and 3DS2 hints |
 | [Testing Guide](./docs/testing/TESTING_GUIDE.md)                 | Test card numbers and how to verify each flow                   |
 | [Troubleshooting Guide](./docs/testing/TROUBLESHOOTING_GUIDE.md) | SDK loading, auth, CSP, tokenization and 3DS issues             |
 
