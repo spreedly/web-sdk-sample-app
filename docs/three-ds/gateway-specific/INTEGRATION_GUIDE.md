@@ -348,6 +348,8 @@ Spreedly falls back to standard transaction processing and submits the payment.
 
 The Spreedly SDK will redirect the customer to an offsite page that is produced by the issuer and is then redirected back to the merchant's site to complete the order (using the `redirect_url`). In the event that a transaction is not immediately successful, your application should still handle callbacks in order to be updated if the customer leaves the checkout form.
 
+Inside a mobile app WebView, let the WebView follow this redirect and make sure the `redirect_url` loads back inside the app. See [Mobile WebViews](../../webview/INTEGRATION_GUIDE.md#3d-secure-spreedlythreedslifecycle).
+
 ---
 
 ## Callbacks
@@ -454,6 +456,8 @@ If your gateway is **Braintree**, you must load the Braintree SDK before initiat
 The SDK expects `window.braintree` to be available. If not loaded, you'll receive an error:
 > "Braintree SDK not loaded. Please include the Braintree client and 3D Secure scripts."
 
+Passing `challengeIframeLocation: 'popup'` lets Braintree show the challenge in its own window. Don't use it inside a mobile app WebView; pass a container id instead.
+
 ---
 
 ## Lifecycle Methods
@@ -479,3 +483,5 @@ lifecycle.stop();
 | Braintree SDK not loaded | Missing scripts | Add Braintree script tags |
 | `browserInfo` not working | Wrong casing | Use `browser_info` (with underscore) |
 | Challenge iframe wrong size | CSS mismatch | Match `challengeIframeClasses` to `browserSize` |
+| Challenge blank inside an app WebView | Third-party cookies or sub-frame navigation blocked by the app | See [Mobile WebViews](../../webview/INTEGRATION_GUIDE.md#3d-secure-spreedlythreedslifecycle) |
+| Shopper lands in the system browser after 3DS1 fallback | App opens the full-page redirect or `redirect_url` externally | Let the WebView follow it (see [Mobile WebViews](../../webview/INTEGRATION_GUIDE.md#3d-secure-spreedlythreedslifecycle)) |

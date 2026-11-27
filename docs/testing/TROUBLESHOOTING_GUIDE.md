@@ -13,6 +13,7 @@
 7. [3D Secure](#3d-secure)
 8. [Network Errors](#network-errors)
 9. [Browser DevTools Tips](#browser-devtools-tips)
+10. [Mobile WebViews](#mobile-webviews)
 
 ---
 
@@ -211,3 +212,21 @@ If you're using Subresource Integrity and the SDK fails to load:
 
 1. Open DevTools → Console — CSP violations appear as errors with `[Report Only]` or `Refused to...` messages.
 2. Each error tells you exactly which directive is blocking what resource.
+
+---
+
+## Mobile WebViews
+
+The SDK is not tested or certified inside app WebViews; for native apps use the native Spreedly SDKs. If your checkout runs in an iOS `WKWebView` or Android `WebView`, see [Mobile WebViews](../webview/INTEGRATION_GUIDE.md) for the full setup.
+
+### Google Pay button doesn't show inside the app
+
+`googlePayUnavailable` fires with `NOT_READY_TO_PAY` because the app hasn't turned Google Pay on. Android needs `androidx.webkit` 1.14.0+, `setPaymentRequestEnabled(true)` and the `<queries>` payment intents; iOS needs `GOOGLE_PAY_SUPPORTED` in the user agent and `WKUIDelegate` popup handling. The card form keeps working meanwhile.
+
+### 3DS challenge is blank or never completes inside the app
+
+The app is blocking third-party cookies (Android: call `setAcceptThirdPartyCookies(webView, true)`) or cancelling navigation inside the challenge iframe. Only intercept main-frame navigations. Don't use Braintree's `challengeIframeLocation: 'popup'`.
+
+### Shopper ends up in the system browser after 3DS1 fallback
+
+The SDK navigates the whole page to the gateway's `checkout_url`. Let the WebView follow it, and make sure your `redirect_url` loads back inside the app.
