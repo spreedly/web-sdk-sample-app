@@ -285,3 +285,4 @@ lifecycle.stop();
 | SDK not loading | Forter CDN blocked | Check network tab, verify CSP allows Forter domains |
 | `messages.failed_sca_authentication` | User failed challenge | Show user-friendly error, let them retry |
 | Challenge modal appears but is empty | Container not visible | Ensure modal is shown before challenge fires |
+| Challenge blank inside an app WebView | Third-party cookies or sub-frame navigation blocked by the app | See [Mobile WebViews](../../webview/INTEGRATION_GUIDE.md#3d-secure-spreedlythreedslifecycle) |

@@ -100,3 +100,10 @@ Creating a purchase transaction?
 | `onTriggerCompletion` | No | Yes |
 | `onFinalizationTimeout` | No | Yes |
 
+---
+
+## Running inside a mobile WebView
+
+3DS2 is not tested inside app WebViews. If your checkout runs in one, the app must accept
+third-party cookies (Android), allow navigation inside the challenge iframe, and bring the
+3DS1 fallback return URL back into the app. See [Mobile WebViews](../webview/INTEGRATION_GUIDE.md#3d-secure-spreedlythreedslifecycle).
