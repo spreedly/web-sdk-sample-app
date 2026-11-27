@@ -161,9 +161,9 @@ testing, since Pay Kit may call other Block hosts.
 | `CUSTOMER_REQUEST_FAILED` | Pay Kit rejected the customer request, or reported the request failed. |
 | `RENDER_FAILED` | Pay Kit couldn't render into `renderTarget`. |
 | `UPDATE_REJECTED` | The amount can't change any more. Call `restart()`. |
-| `TOKENIZATION_FAILED` | The approval couldn't be turned into a Spreedly payment method. |
+| `TOKENIZATION_FAILED` | The approval couldn't be turned into a Spreedly payment method. The request may have used the `nonce`: pass new auth details to `updateAuthDetails()`, then call `restart()` and `beginCheckout()`. |
 
-Configuration mistakes (missing `clientId`, bad `redirectURL`, invalid auth details) throw from
-the constructor.
+Configuration mistakes (missing `clientId`, bad `redirectURL`, invalid auth details) make
+`load()` reject.
 
 See [API_REFERENCE.md](./API_REFERENCE.md) for the full surface.

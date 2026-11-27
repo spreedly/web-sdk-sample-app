@@ -53,6 +53,25 @@ Later calls: update the amount / `referenceId` of the current request. Resolves 
 
 Clears the current customer request and the Pay Kit UI so `beginCheckout()` can start a new one.
 
+#### `updateAuthDetails(authDetails): void`
+
+Replaces the auth details used by the next tokenization. Each set works for one request to
+Spreedly, so after a `cashAppError` with `TOKENIZATION_FAILED`, get new auth details from your
+backend, call this, then `restart()` and `beginCheckout()` so the shopper can approve again. A
+tokenization already in flight keeps the details it started with. Ignored after `destroy()`.
+Throws if a field is missing or `environment_key` / `certificate_token` differ from the ones
+passed to `load()`.
+
+```javascript
+cashApp.on('cashAppError', async ({ code }) => {
+  if (code === 'TOKENIZATION_FAILED') {
+    cashApp.updateAuthDetails(await fetchAuthDetailsFromYourBackend());
+    cashApp.restart();
+    await cashApp.beginCheckout({ amount: 1234, currency: 'USD' });
+  }
+});
+```
+
 #### `isInitialized(): boolean`
 
 `true` after a successful `setup()` and before `destroy()`.
@@ -65,7 +84,7 @@ Removes Pay Kit listeners and UI and drops all callbacks. Later calls return an 
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `authDetails` | `AuthDetails` | Yes | `{ environment_key, certificate_token, nonce, signature, timestamp }`, signed server-side. Copied and frozen; a new checkout needs a new instance. |
+| `authDetails` | `AuthDetails` | Yes | `{ environment_key, certificate_token, nonce, signature, timestamp }`, signed server-side. Copied and frozen; replace it with [`updateAuthDetails()`](#updateauthdetailsauthdetails-void) after a failed tokenization. A new checkout needs a new instance. |
 | `clientId` | `string` | Yes | Cash App Client ID. A prefix that doesn't match `environment` logs a warning. |
 | `merchantId` | `string` | One of | Cash App Network API merchant ID. Pay Kit payment `scopeId` when set. |
 | `brandId` | `string` | One of | Cash App brand ID (`BRAND_…`). Pay Kit payment `scopeId` when `merchantId` is omitted. |
@@ -75,7 +94,7 @@ Removes Pay Kit listeners and UI and drops all callbacks. Later calls return an 
 | `referenceId` | `string` | No | Default reference for customer requests. |
 | `button` | `CashAppPayButtonOptions` | No | Button presentation, below. |
 
-Supply `merchantId` or `brandId`. The constructor throws if neither is set. When both are set, `merchantId` is sent as Pay Kit's payment `scopeId`.
+Supply `merchantId` or `brandId`. `load()` rejects if neither is set. When both are set, `merchantId` is sent as Pay Kit's payment `scopeId`.
 
 ### `CashAppPayButtonOptions`
 
@@ -86,7 +105,7 @@ Supply `merchantId` or `brandId`. The constructor throws if neither is set. When
 | `theme` | `dark`, `light` |
 | `width` | `static`, `full` |
 
-The constructor throws for any other key or value. Block's Pay Kit docs also describe the themes
+`load()` rejects any other key or value. Block's Pay Kit docs also describe the themes
 `monochromeDark`, `monochromeLight` and `green` and a `label` option, but the Pay Kit Block serves
 (`v1/pay.js` 1.0.33) rejects those themes and ignores `label`, so the SDK doesn't accept them yet.
 
