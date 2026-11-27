@@ -570,9 +570,10 @@ waiting for `processPayment` for up to 120 seconds, and reports the real result:
 `applePayTokenGenerated` with `sheetClosedEarly: true`, or a final `applePayError`. Tell the shopper
 their payment is still being confirmed when you see `applePaySheetClosedEarly`.
 
-In device tests (Chrome with an iPhone scanning the code, and Mac Safari), a 40-second
-`processPayment` made Apple close the sheet at 30 seconds; `applePaySheetClosedEarly` fired then,
-and the result arrived later with `sheetClosedEarly: true`.
+In device tests (Chrome with an iPhone scanning the code, Mac Safari and iPhone Safari), a
+40-second `processPayment` made Apple close the sheet at 30 seconds; `applePaySheetClosedEarly`
+fired then, and the result arrived later with `sheetClosedEarly: true`. Once the sheet closed, the
+shopper saw only the page's own message that the payment was still being confirmed.
 
 ---
 

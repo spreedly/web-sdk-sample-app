@@ -459,7 +459,7 @@ the SDK keeps waiting for your result (up to 120 s). It then reports it without 
 `completePayment` "before the 30 second timeout, after which a message appears stating that the
 payment couldn't be completed."
 
-In device tests (Chrome with an iPhone scanning the code, and Mac Safari), a 40-second `processPayment` made Apple close the sheet at 30 seconds; `applePaySheetClosedEarly` fired then, and the result arrived later with `sheetClosedEarly: true`.
+In device tests (Chrome with an iPhone scanning the code, Mac Safari and iPhone Safari), a 40-second `processPayment` made Apple close the sheet at 30 seconds; `applePaySheetClosedEarly` fired then, and the result arrived later with `sheetClosedEarly: true`. Once the sheet closed, the shopper saw only the page's own message that the payment was still being confirmed.
 
 ---
 
