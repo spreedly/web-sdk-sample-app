@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import { errorHandler } from './middlewares/errorHandler';
-// import { cspMiddleware } from './middlewares/cspMiddleware';
+import { cspReportOnlyMiddleware } from './middlewares/cspMiddleware';
 import fs from 'fs';
 import path from 'path';
 import morgan from 'morgan';
@@ -72,8 +72,9 @@ if (config.basicAuth) {
   app.use(createBasicAuth(config.basicAuth));
 }
 app.use(corsMiddleware);
-// TODO: Uncomment this when we have a valid CSP policy
-// app.use(cspMiddleware);
+// TODO: Enforce the CSP (cspMiddleware) when we have a valid policy. Until then it's sent report-only:
+// browsers log violations in the console and block nothing.
+app.use(cspReportOnlyMiddleware);
 app.use(useragent());
 app.use('/api/v1/docs', swaggerUiExpress.serve, swaggerUiExpress.setup(swaggerSpec));
 
