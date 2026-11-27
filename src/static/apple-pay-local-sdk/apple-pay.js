@@ -622,7 +622,7 @@ async function mountExpressCheckoutMode() {
   authAttempts = 0;
   listen(expressCheckout);
   expressCheckout.on('tokenGenerated', payload =>
-    log('tokenGenerated (card form)', { token: payload?.payment_method?.token })
+    log('tokenGenerated (card form)', { token: payload?.tokenResponse?.payment_method?.token })
   );
   // The shopper closed the pop-up with its close button.
   expressCheckout.on('close', () => {
@@ -847,6 +847,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   elements['update-total'].addEventListener('click', updateTotal);
   elements['open-checkout'].addEventListener('click', openCheckoutDialog);
   elements['sdk-config'].addEventListener('change', onConfigChange);
+  // Typing a country list selects 'List', so the list is sent. The box's change event then redraws.
+  field('card-countries-custom').addEventListener('input', () => {
+    elements['sdk-config'].querySelector('[name="card-countries"][value="custom"]').checked = true;
+  });
   elements['destroy-button'].addEventListener('click', () => {
     log('destroy() (debug)');
     teardown();
