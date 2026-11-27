@@ -710,6 +710,10 @@ minimum height is 30 pixels, and its minimum width is 100 pixels for `plain` and
 other types. If you set `width` or `height` in pixels below these, the SDK raises it to the
 minimum.
 
+In desktop Chrome and Mac Safari, the Tab key reaches Apple's button, and Enter and Space open
+Apple Pay. In Safari, Tab skips buttons by default: shoppers use Option+Tab, or turn on "Press Tab
+to highlight each item on a webpage" in Safari's settings.
+
 ### Checking for a card in Wallet
 
 `checkPaymentCredentialStatus: true` makes the SDK ask Apple whether the shopper has a card in

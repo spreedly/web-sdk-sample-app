@@ -127,6 +127,10 @@ The button is Apple's `<apple-pay-button>` element. The SDK sets its `type`, `bu
 synchronously inside the click, because Apple only lets a session start from the shopper's
 gesture. A tap while a sheet is already open does nothing.
 
+The SDK adds no keyboard handling of its own. In desktop Chrome and Mac Safari, Tab reaches the
+button, and Enter and Space open the sheet. Safari's Tab key skips buttons unless the shopper
+presses Option+Tab or turns on "Press Tab to highlight each item on a webpage".
+
 #### `setTotal(update): void`
 
 Replaces the total used by the **next** tap. Call it whenever the cart changes: nothing can be
