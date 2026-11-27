@@ -1,6 +1,6 @@
 # Apple Pay — API Reference
 
-> **Preview.** Apple Pay in Spreedly's checkout SDK is in final testing and not yet released, so no published SDK version includes it yet. Method names, options and behaviour may change before release. Payments have been tested end to end in desktop Chrome with an iPhone scanning Apple's code and in Safari on a Mac; testing in Safari on iPhone is in progress.
+> **Preview.** Apple Pay in Spreedly's checkout SDK is in final testing and not yet released, so no published SDK version includes it yet. Method names, options and behaviour may change before release. Payments have been tested end to end in desktop Chrome with an iPhone scanning Apple's code, in Safari on a Mac and in Safari on iPhone.
 
 The `SpreedlyApplePay` class, its configuration, the callbacks you supply, its events and error
 codes, and the `applePay` option of Express Checkout. Setup and integration steps are in
@@ -422,9 +422,9 @@ On a decline, `message` is the reason for the shopper. It becomes the `applePayE
 puts `message` in the sheet as an Apple `unknown` error. When `errors` is set, the sheet gets only
 the `errors`. The SDK never sends `message` to telemetry.
 
-In Chrome with an iPhone scanning the code, the sheet shows only that the payment failed, not the
-`message`. In Mac Safari, confirmed on an iPhone, the sheet shows Apple's own "Try Again", not the
-`message`. Show it on your page from `applePayError`.
+In Chrome with an iPhone scanning the code, and in iPhone Safari, the sheet shows only that the
+payment failed, not the `message`. In Mac Safari, confirmed on an iPhone, the sheet shows Apple's
+own "Try Again", not the `message`. Show it on your page from `applePayError`.
 
 `ApplePaySheetError` points Apple's sheet at what's wrong:
 
@@ -495,10 +495,10 @@ approving, or after a failed approval.
 
 If the sheet closes while the SDK is getting auth details and calling Spreedly, you get a final
 `applePayError` with `SHEET_CLOSED_BEFORE_CHARGE` instead, as in Spreedly's iOS SDK. The shopper
-can't close the sheet then (in Chrome with an iPhone scanning the code and in Mac Safari, its Cancel
-button is disabled), so Apple closed it, for example at its 30-second limit. Nothing was charged. A
-token that arrives later is dropped and never emitted, but a payment method may still have been
-created at Spreedly.
+can't close the sheet then (in Chrome with an iPhone scanning the code, in Mac Safari and in iPhone
+Safari, its Cancel button is disabled), so Apple closed it, for example at its 30-second limit.
+Nothing was charged. A token that arrives later is dropped and never emitted, but a payment method
+may still have been created at Spreedly.
 
 `applePayCancelled` does not fire after `destroy()`, after the SDK closed the sheet itself
 (merchant validation or `processPayment` failure), or while `processPayment` is running (then

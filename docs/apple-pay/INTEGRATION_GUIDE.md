@@ -1,6 +1,6 @@
 # Apple Pay — Integration Guide
 
-> **Preview.** Apple Pay in Spreedly's checkout SDK is in final testing and not yet released, so no published SDK version includes it yet. Method names, options and behaviour may change before release. Payments have been tested end to end in desktop Chrome with an iPhone scanning Apple's code and in Safari on a Mac; testing in Safari on iPhone is in progress.
+> **Preview.** Apple Pay in Spreedly's checkout SDK is in final testing and not yet released, so no published SDK version includes it yet. Method names, options and behaviour may change before release. Payments have been tested end to end in desktop Chrome with an iPhone scanning Apple's code, in Safari on a Mac and in Safari on iPhone.
 
 This guide shows how to add an Apple Pay button to your checkout with Spreedly's checkout SDK. The
 SDK checks whether the shopper can pay with Apple Pay, draws Apple's own button, runs Apple's
@@ -556,9 +556,9 @@ In a device test (Chrome, iPhone scanning the code), a decline with `addressUnse
 shipping `postalAddress` pointed the sheet at the address, and the shopper could edit it and pay,
 even though the SDK doesn't listen for Apple's contact-change events.
 
-In Chrome with an iPhone scanning the code, Apple's sheet shows only that the payment failed, not
-your `message`. In Mac Safari, confirmed on an iPhone, it shows Apple's own "Try Again".
-`applePayError` carries the message either way, so show it on your page.
+In Chrome with an iPhone scanning the code, and in iPhone Safari, Apple's sheet shows only that the
+payment failed, not your `message`. In Mac Safari, confirmed on an iPhone, it shows Apple's own
+"Try Again". `applePayError` carries the message either way, so show it on your page.
 
 ### Apple's 30-second limit
 
@@ -795,6 +795,9 @@ be in place. Remove `testCardNumber` before going live.
 and add Apple's [test cards](https://developer.apple.com/apple-pay/sandbox-testing/) to Wallet by
 hand. Apple says a sandbox payment "will decline pre-fulfillment as the test key will not match
 your production key". Spreedly still decrypts these payments and creates the payment method.
+
+Payments have gone through this SDK end to end in desktop Chrome with an iPhone scanning the code,
+in Mac Safari and in iPhone Safari.
 
 Before going live, Apple asks merchants to test end to end with real cards in production, to test
 their error handling, and to test in browsers other than Safari.
